@@ -587,6 +587,7 @@
                         <option value="groq">⚡ Groq</option>
                         <option value="gemini">🌟 Gemini</option>
                         <option value="openrouter">🔀 OpenRouter</option>
+                        <option value="cerebras">🧠 Cerebras</option>
                         <option value="local">💻 محلي</option>
                     </select>
                 </div>
@@ -909,11 +910,13 @@
                 } else if (model === 'openrouter') {
                     source = 'openrouter';
                     await streamOpenRouter(chat.messages, abortController.signal);
+                } else if (model === 'cerebras') {
+                    source = 'cerebras';
+                    await streamCerebras(chat.messages, abortController.signal);
                 } else if (model === 'auto') {
                     // We can't tell from the browser which server-side keys are actually
-                    // configured, so auto mode tries Groq, then Gemini, then OpenRouter in
-                    // order, falling through automatically on failure — only dropping to
-                    // local after all three miss.
+                    // configured, so auto mode tries providers in order and falls through
+                    // automatically on failure — only dropping to local after all four miss.
                     try {
                         source = 'groq';
                         await streamGroq(chat.messages, abortController.signal);
@@ -924,8 +927,14 @@
                             await streamGemini(chat.messages, abortController.signal);
                         } catch (geminiError) {
                             if (geminiError.name === 'AbortError') throw geminiError;
-                            source = 'openrouter';
-                            await streamOpenRouter(chat.messages, abortController.signal);
+                            try {
+                                source = 'openrouter';
+                                await streamOpenRouter(chat.messages, abortController.signal);
+                            } catch (openrouterError) {
+                                if (openrouterError.name === 'AbortError') throw openrouterError;
+                                source = 'cerebras';
+                                await streamCerebras(chat.messages, abortController.signal);
+                            }
                         }
                     }
                 } else {
@@ -1255,6 +1264,76 @@
 
             const chat = chats.find(c => c.id === currentChatId);
             const botMsg = { role: 'bot', content: '', source: 'openrouter', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
+            chat.messages.push(botMsg);
+
+            const msgDiv = createBotMessageShell(botMsg);
+            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
+            let hasContent = false;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) continue;
+                    const payload = line.slice(6).trim();
+                    if (payload === '[DONE]') continue;
+                    try {
+                        const data = JSON.parse(payload);
+                        const content = data.choices[0]?.delta?.content || '';
+                        if (content) {
+                            hasContent = true;
+                            queue.push(content);
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            const fullText = await queue.flush();
+
+            if (!hasContent) {
+                // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
+                msgDiv.remove();
+                chat.messages.pop();
+                await respondLocally(messages[messages.length - 1].content, chat, signal);
+                return;
+            }
+
+            finalizeBotMessage(msgDiv, botMsg);
+            saveData();
+        }
+
+        async function streamCerebras(messages, signal) {
+            const response = await fetch(`${settings.backendUrl}/api/cerebras`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b",
+                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.slice(-6).map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    stream: true
+                }),
+                signal
+            });
+
+            if (!response.ok) {
+                let detail = '';
+                try { detail = (await response.text()).slice(0, 200); } catch (e) {}
+                console.error('Cerebras API error', response.status, detail);
+                throw new Error(`Cerebras API Error (${response.status}): ${detail || 'no detail'}`);
+            }
+
+            document.getElementById('typingIndicator').classList.remove('active');
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            const chat = chats.find(c => c.id === currentChatId);
+            const botMsg = { role: 'bot', content: '', source: 'cerebras', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
             chat.messages.push(botMsg);
 
             const msgDiv = createBotMessageShell(botMsg);
