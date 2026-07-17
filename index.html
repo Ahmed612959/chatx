@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
@@ -214,7 +216,7 @@
         .action-btn:hover { border-color: var(--accent); color: var(--accent); }
 
         .chat-container {
-            flex: 1; overflow-y: auto; padding: 16px; scroll-behavior: smooth;
+            flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px; scroll-behavior: smooth;
             display: flex; flex-direction: column; gap: 16px;
         }
         .chat-container::-webkit-scrollbar { width: 4px; }
@@ -263,17 +265,55 @@
         .message.bot .msg-avatar { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; }
         .message.user .msg-avatar { background: var(--bg-2); border: 1px solid var(--border); color: var(--text-2); }
         
-        .msg-content { flex: 1; min-width: 0; }
+        .msg-content { flex: 1; min-width: 0; max-width: 100%; }
         .msg-bubble {
             padding: 12px 14px; border-radius: 16px; font-size: 14px; line-height: 1.7;
-            word-wrap: break-word; position: relative;
+            word-wrap: break-word; overflow-wrap: anywhere; max-width: 100%; position: relative;
         }
+        .msg-bubble img, .msg-bubble video { max-width: 100%; height: auto; }
         .message.bot .msg-bubble {
             background: var(--bg-glass); border: 1px solid var(--border); border-top-right-radius: 4px;
         }
         .message.user .msg-bubble {
             background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; border-top-left-radius: 4px;
         }
+
+        /* Image attached/sent by the user, shown inline in the chat */
+        .msg-image {
+            display: block; width: 100%; max-width: 260px; height: auto;
+            border-radius: 12px; margin-bottom: 8px; cursor: zoom-in;
+        }
+        @media (min-width: 768px) { .msg-image { max-width: 320px; } }
+
+        /* Code blocks: always LTR, horizontally scrollable instead of stretching the bubble, with a copy button */
+        .msg-bubble pre {
+            position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%;
+            margin: 8px 0; padding: 30px 12px 12px; background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border); border-radius: 10px; direction: ltr; text-align: left;
+        }
+        .message.user .msg-bubble pre { background: rgba(0, 0, 0, 0.2); }
+        .msg-bubble pre code {
+            background: none; padding: 0; border: none; white-space: pre; font-size: 12.5px;
+            line-height: 1.6; font-family: 'Consolas', 'SFMono-Regular', Menlo, monospace;
+        }
+        .msg-bubble code {
+            font-family: 'Consolas', 'SFMono-Regular', Menlo, monospace; background: rgba(0, 0, 0, 0.25);
+            padding: 2px 6px; border-radius: 5px; font-size: 12.5px; direction: ltr; unicode-bidi: isolate;
+        }
+        .code-copy-btn {
+            position: absolute; top: 6px; left: 6px; z-index: 2; width: 26px; height: 26px;
+            border-radius: 6px; border: 1px solid var(--border); background: var(--bg-2); color: var(--text-3);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 11px; transition: all 0.2s; opacity: 0.9;
+        }
+        .code-copy-btn:hover { color: var(--accent); opacity: 1; }
+        .code-copy-btn.copied { color: #22c55e; border-color: #22c55e; }
+        .code-lang-tag {
+            position: absolute; top: 9px; left: 40px; font-size: 10px; color: var(--text-3);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .msg-bubble table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
+        .msg-bubble table th, .msg-bubble table td { padding: 6px 10px; border: 1px solid var(--border); font-size: 12.5px; }
 
         .msg-meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 10px; color: var(--text-3); }
         .msg-actions { display: flex; gap: 3px; margin-right: auto; }
@@ -574,6 +614,9 @@
                 </div>
                 <button class="btn-calc" onclick="saveBackendUrl()">حفظ</button>
                 <div id="backendStatus" style="margin-top:10px;"></div>
+                <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--text-3);">
+                    تطوير <span style="color:var(--text-2);font-weight:700;">أحمد موسى — 𝐴ℎ𝑚𝑒𝑑 𝑚𝑜𝑢𝑠𝑠𝑎</span>
+                </div>
             </div>
         </div>
     </div>
@@ -606,6 +649,46 @@
 
     <script>
         marked.setOptions({ breaks: true, gfm: true });
+
+        // Runs after a message bubble's final HTML is set. Syntax-highlights every
+        // code block and adds a small copy button on top of each one, so code is
+        // recognizable at a glance and can be copied without selecting the bot's
+        // surrounding explanation text too.
+        function enhanceCodeBlocks(bubbleEl) {
+            if (!bubbleEl) return;
+            bubbleEl.querySelectorAll('pre code').forEach((codeEl) => {
+                if (codeEl.dataset.enhanced) return;
+                codeEl.dataset.enhanced = '1';
+
+                if (window.hljs) {
+                    try { hljs.highlightElement(codeEl); } catch (e) {}
+                }
+
+                const preEl = codeEl.parentElement;
+                const langMatch = (codeEl.className || '').match(/language-(\w+)/);
+                if (langMatch) {
+                    const tag = document.createElement('span');
+                    tag.className = 'code-lang-tag';
+                    tag.textContent = langMatch[1];
+                    preEl.appendChild(tag);
+                }
+
+                const btn = document.createElement('button');
+                btn.className = 'code-copy-btn';
+                btn.type = 'button';
+                btn.innerHTML = '<i class="fas fa-copy"></i>';
+                btn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(codeEl.textContent).then(() => {
+                        btn.innerHTML = '<i class="fas fa-check"></i>';
+                        btn.classList.add('copied');
+                        showToast('تم نسخ الكود', 'success');
+                        setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i>'; btn.classList.remove('copied'); }, 1500);
+                    }).catch(() => showToast('تعذر النسخ', 'error'));
+                });
+                preEl.appendChild(btn);
+            });
+        }
+
         let chats = JSON.parse(localStorage.getItem('sx_chats')) || [];
         let currentChatId = localStorage.getItem('sx_current_chat') || null;
         let settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: 'dark', backendUrl: '', model: 'auto' };
@@ -789,7 +872,12 @@
             const chat = chats.find(c => c.id === currentChatId);
             if (chat.messages.length === 0) chat.title = text.substring(0, 35) + (text.length > 35 ? '...' : '');
             
-            const userMsg = { role: 'user', content: text, timestamp: Date.now(), id: `msg-${Date.now()}-u` };
+            const userMsg = {
+                role: 'user', content: text, timestamp: Date.now(), id: `msg-${Date.now()}-u`,
+                image: (pendingAttachment && pendingAttachment.base64 && pendingAttachment.mimeType && pendingAttachment.mimeType.startsWith('image/'))
+                    ? { base64: pendingAttachment.base64, mimeType: pendingAttachment.mimeType, name: pendingAttachment.name }
+                    : null
+            };
             chat.messages.push(userMsg);
             saveData();
             recordQuestionForStats();
@@ -935,6 +1023,7 @@
         function finalizeBotMessage(msgDiv, botMsg) {
             const bubbleDiv = msgDiv.querySelector('.msg-bubble');
             bubbleDiv.innerHTML = marked.parse(botMsg.content);
+            enhanceCodeBlocks(bubbleDiv);
             const timeSpan = msgDiv.querySelector('.msg-time');
             const sourceSpan = msgDiv.querySelector('.msg-source-icon');
             const actionsDiv = msgDiv.querySelector('.msg-actions');
@@ -965,7 +1054,19 @@
 
             const bubble = document.createElement('div');
             bubble.className = 'msg-bubble';
-            bubble.innerHTML = contentHTML;
+            if (msg.image && msg.image.base64) {
+                const img = document.createElement('img');
+                img.className = 'msg-image';
+                img.src = `data:${msg.image.mimeType};base64,${msg.image.base64}`;
+                img.alt = msg.image.name || 'صورة مرفقة';
+                img.loading = 'lazy';
+                img.addEventListener('click', () => window.open(img.src, '_blank'));
+                bubble.appendChild(img);
+            }
+            const textWrap = document.createElement('div');
+            textWrap.innerHTML = contentHTML;
+            bubble.appendChild(textWrap);
+            enhanceCodeBlocks(bubble);
 
             const meta = document.createElement('div');
             meta.className = 'msg-meta';
