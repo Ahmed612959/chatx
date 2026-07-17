@@ -586,7 +586,7 @@
                         <option value="auto"> تلقائي</option>
                         <option value="groq">⚡ Groq</option>
                         <option value="gemini">🌟 Gemini</option>
-                        <option value="deepseek">🐋 DeepSeek</option>
+                        <option value="openrouter">🔀 OpenRouter</option>
                         <option value="local">💻 محلي</option>
                     </select>
                 </div>
@@ -906,12 +906,12 @@
                 } else if (model === 'gemini') {
                     source = 'gemini';
                     await streamGemini(chat.messages, abortController.signal);
-                } else if (model === 'deepseek') {
-                    source = 'deepseek';
-                    await streamDeepSeek(chat.messages, abortController.signal);
+                } else if (model === 'openrouter') {
+                    source = 'openrouter';
+                    await streamOpenRouter(chat.messages, abortController.signal);
                 } else if (model === 'auto') {
                     // We can't tell from the browser which server-side keys are actually
-                    // configured, so auto mode tries Groq, then Gemini, then DeepSeek in
+                    // configured, so auto mode tries Groq, then Gemini, then OpenRouter in
                     // order, falling through automatically on failure — only dropping to
                     // local after all three miss.
                     try {
@@ -924,8 +924,8 @@
                             await streamGemini(chat.messages, abortController.signal);
                         } catch (geminiError) {
                             if (geminiError.name === 'AbortError') throw geminiError;
-                            source = 'deepseek';
-                            await streamDeepSeek(chat.messages, abortController.signal);
+                            source = 'openrouter';
+                            await streamOpenRouter(chat.messages, abortController.signal);
                         }
                     }
                 } else {
@@ -1225,12 +1225,15 @@
             saveData();
         }
 
-        async function streamDeepSeek(messages, signal) {
-            const response = await fetch(`${settings.backendUrl}/api/deepseek`, {
+        async function streamOpenRouter(messages, signal) {
+            const response = await fetch(`${settings.backendUrl}/api/openrouter`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model: "deepseek-v4-flash",
+                    // "openrouter/free" is OpenRouter's own auto-router across its free-tier
+                    // models — it keeps working even as individual free model IDs rotate out,
+                    // instead of hardcoding one that might get retired without notice.
+                    model: "openrouter/free",
                     messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.slice(-6).map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
                     stream: true
                 }),
@@ -1240,8 +1243,8 @@
             if (!response.ok) {
                 let detail = '';
                 try { detail = (await response.text()).slice(0, 200); } catch (e) {}
-                console.error('DeepSeek API error', response.status, detail);
-                throw new Error(`DeepSeek API Error (${response.status}): ${detail || 'no detail'}`);
+                console.error('OpenRouter API error', response.status, detail);
+                throw new Error(`OpenRouter API Error (${response.status}): ${detail || 'no detail'}`);
             }
 
             document.getElementById('typingIndicator').classList.remove('active');
@@ -1251,7 +1254,7 @@
             let buffer = '';
 
             const chat = chats.find(c => c.id === currentChatId);
-            const botMsg = { role: 'bot', content: '', source: 'deepseek', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
+            const botMsg = { role: 'bot', content: '', source: 'openrouter', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
             chat.messages.push(botMsg);
 
             const msgDiv = createBotMessageShell(botMsg);
