@@ -8,7 +8,7 @@ export default async function handler() {
     JSON.stringify({
       groqConfigured: Boolean(process.env.GROQ_API_KEY),
       geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
-      deepseekConfigured: Boolean(process.env.DEEPSEEK_API_KEY)
+      openrouterConfigured: Boolean(process.env.OPENROUTER_API_KEY)
     }),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
   );
