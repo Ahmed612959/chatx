@@ -314,17 +314,6 @@
             position: absolute; top: 9px; left: 40px; font-size: 10px; color: var(--text-3);
             text-transform: uppercase; letter-spacing: 0.5px;
         }
-        /* Attachment cards: extracted PDF/OCR text renders as a blockquote so it reads
-           as a distinct "card" instead of a wall of plain text inside the bubble */
-        .msg-bubble blockquote {
-            margin: 10px 0; padding: 12px 14px; background: rgba(99, 102, 241, 0.08);
-            border-right: 3px solid var(--accent); border-radius: 10px;
-            font-size: 12.5px; line-height: 1.8; color: var(--text-2);
-            max-height: 280px; overflow-y: auto;
-        }
-        .msg-bubble blockquote p { margin: 0 0 6px; }
-        .msg-bubble blockquote p:last-child { margin-bottom: 0; }
-
         .table-wrap {
             max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
             margin: 8px 0; border: 1px solid var(--border); border-radius: 10px;
@@ -350,31 +339,27 @@
         }
         .msg-action-btn:hover { color: var(--accent); }
         .msg-action-btn.stop-btn { background: var(--danger); color: white; animation: pulse 1.5s infinite; }
-        .msg-action-btn.speak-btn.speaking { color: var(--accent); background: rgba(99, 102, 241, 0.18); }
-        .msg-action-btn.pin-btn.pinned { color: var(--warning); background: rgba(245, 158, 11, 0.15); }
+        .msg-action-btn.speaking { background: var(--accent); color: white; }
+        .msg-action-btn.pin-btn.pinned { background: var(--warning); color: white; }
+        .msg-bubble.pinned-msg { box-shadow: 0 0 0 2px var(--warning) inset; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
-        /* Pinned messages bar */
+        /* Pinned messages bar under the top bar */
         .pinned-bar {
-            display: none; align-items: center; gap: 8px; padding: 8px 14px;
-            border-bottom: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch;
-            background: var(--bg-2);
+            display: none; gap: 6px; overflow-x: auto; padding: 8px 16px; border-bottom: 1px solid var(--border);
+            background: var(--bg-glass); scrollbar-width: none; flex-shrink: 0;
         }
+        .pinned-bar::-webkit-scrollbar { display: none; }
         .pinned-bar.active { display: flex; }
-        .pinned-bar .pinned-label { font-size: 11px; color: var(--text-3); flex-shrink: 0; display: flex; align-items: center; gap: 4px; }
         .pinned-chip {
-            display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 10px;
-            background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35);
-            font-size: 11.5px; color: var(--text-2); white-space: nowrap; cursor: pointer; flex-shrink: 0;
-            max-width: 220px; overflow: hidden; text-overflow: ellipsis;
+            display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--bg-2);
+            border: 1px solid var(--border-accent); border-radius: 12px; font-size: 11px; color: var(--text-2);
+            white-space: nowrap; cursor: pointer; flex-shrink: 0; max-width: 220px;
         }
-        .pinned-chip:hover { background: rgba(245, 158, 11, 0.22); }
+        .pinned-chip:hover { border-color: var(--warning); }
+        .pinned-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .pinned-chip button { background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 10px; flex-shrink: 0; }
-        .message.pin-flash { animation: pinFlash 1.4s ease; }
-        @keyframes pinFlash {
-            0%, 100% { background: transparent; }
-            25% { background: rgba(245, 158, 11, 0.18); border-radius: 12px; }
-        }
+        .pinned-chip button:hover { color: var(--danger); }
 
         /* Typing Indicator */
         .typing-indicator { display: none; gap: 10px; max-width: 80%; margin-bottom: 16px; }
@@ -756,6 +741,147 @@
             });
         }
 
+        // Builds the action buttons (copy / listen / regenerate / pin) under a message bubble.
+        // isLastBotMsg restricts the "regenerate" button to the most recent bot reply only,
+        // since regenerating an older reply would also wipe every message that came after it.
+        function buildMsgActionButtons(msg, actionsDiv, isLastBotMsg) {
+            actionsDiv.innerHTML = '';
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'msg-action-btn';
+            copyBtn.title = 'نسخ';
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+            copyBtn.addEventListener('click', () => copyToClipboard(msg.content));
+            actionsDiv.appendChild(copyBtn);
+
+            if (msg.role === 'bot') {
+                const speakBtn = document.createElement('button');
+                speakBtn.className = 'msg-action-btn';
+                speakBtn.title = 'سماع الرد';
+                speakBtn.innerHTML = '<i class="fas fa-volume-high"></i>';
+                speakBtn.addEventListener('click', () => speakText(msg.content, speakBtn));
+                actionsDiv.appendChild(speakBtn);
+
+                if (isLastBotMsg) {
+                    const regenBtn = document.createElement('button');
+                    regenBtn.className = 'msg-action-btn regen-btn';
+                    regenBtn.title = 'إعادة توليد الرد';
+                    regenBtn.innerHTML = '<i class="fas fa-rotate-right"></i>';
+                    regenBtn.addEventListener('click', () => regenerateMessage(msg.id));
+                    actionsDiv.appendChild(regenBtn);
+                }
+            }
+
+            const pinBtn = document.createElement('button');
+            pinBtn.className = 'msg-action-btn pin-btn' + (msg.pinned ? ' pinned' : '');
+            pinBtn.title = msg.pinned ? 'إلغاء التثبيت' : 'تثبيت الرسالة';
+            pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i>';
+            pinBtn.addEventListener('click', () => togglePinMessage(msg.id));
+            actionsDiv.appendChild(pinBtn);
+        }
+
+        // Ensures the "regenerate" button only ever appears on the current last bot reply.
+        // Needed because older bot bubbles keep their DOM around once a new question is asked.
+        function syncRegenerateButtons(chat) {
+            if (!chat) return;
+            const lastBot = [...chat.messages].reverse().find(m => m.role === 'bot');
+            chat.messages.forEach(m => {
+                if (m.role !== 'bot') return;
+                const el = document.getElementById(m.id);
+                if (!el) return;
+                const actionsDiv = el.querySelector('.msg-actions');
+                if (!actionsDiv) return;
+                const regenBtn = actionsDiv.querySelector('.regen-btn');
+                const shouldHave = lastBot && m.id === lastBot.id;
+                if (shouldHave && !regenBtn) {
+                    const btn = document.createElement('button');
+                    btn.className = 'msg-action-btn regen-btn';
+                    btn.title = 'إعادة توليد الرد';
+                    btn.innerHTML = '<i class="fas fa-rotate-right"></i>';
+                    btn.addEventListener('click', () => regenerateMessage(m.id));
+                    const pinBtn = actionsDiv.querySelector('.pin-btn');
+                    if (pinBtn) actionsDiv.insertBefore(btn, pinBtn); else actionsDiv.appendChild(btn);
+                } else if (!shouldHave && regenBtn) {
+                    regenBtn.remove();
+                }
+            });
+        }
+
+        let currentUtterance = null;
+        let currentSpeakBtn = null;
+
+        function resetSpeakBtn() {
+            if (currentSpeakBtn) {
+                currentSpeakBtn.innerHTML = '<i class="fas fa-volume-high"></i>';
+                currentSpeakBtn.classList.remove('speaking');
+            }
+            currentUtterance = null;
+            currentSpeakBtn = null;
+        }
+
+        // Reads a bot reply out loud. Clicking the same button again (or another speak
+        // button) stops the current playback first, so only one message speaks at a time.
+        function speakText(text, btn) {
+            if (!('speechSynthesis' in window)) {
+                showToast('المتصفح لا يدعم خاصية سماع الرد', 'error');
+                return;
+            }
+            const wasThisBtn = currentSpeakBtn === btn;
+            window.speechSynthesis.cancel();
+            resetSpeakBtn();
+            if (wasThisBtn) return;
+
+            const plain = (text || '')
+                .replace(/```[\s\S]*?```/g, ' ')
+                .replace(/[*_#>`~\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            if (!plain) { showToast('لا يوجد نص لقراءته', 'error'); return; }
+
+            const utter = new SpeechSynthesisUtterance(plain);
+            utter.lang = 'ar-SA';
+            const voices = window.speechSynthesis.getVoices();
+            const arVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ar'));
+            if (arVoice) utter.voice = arVoice;
+            utter.onend = resetSpeakBtn;
+            utter.onerror = resetSpeakBtn;
+
+            currentUtterance = utter;
+            currentSpeakBtn = btn;
+            btn.innerHTML = '<i class="fas fa-stop"></i>';
+            btn.classList.add('speaking');
+            window.speechSynthesis.speak(utter);
+        }
+
+        // Deletes a bot reply (and anything after it) and asks the current model for a
+        // fresh answer to the same conversation up to that point.
+        async function regenerateMessage(msgId) {
+            if (isGenerating) return;
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat) return;
+            const idx = chat.messages.findIndex(m => m.id === msgId);
+            if (idx === -1) return;
+
+            window.speechSynthesis && window.speechSynthesis.cancel();
+            resetSpeakBtn();
+
+            const removed = chat.messages.splice(idx);
+            removed.forEach(m => {
+                const el = document.getElementById(m.id);
+                if (el) el.remove();
+            });
+            saveData();
+            renderPinnedBar(chat);
+
+            if (abortController) abortController.abort();
+            abortController = new AbortController();
+            isGenerating = true;
+            setSendButtonState(true);
+            document.getElementById('typingIndicator').classList.add('active');
+            scrollToBottom();
+            await runGeneration(chat);
+        }
+
         let chats = JSON.parse(localStorage.getItem('sx_chats')) || [];
         let currentChatId = localStorage.getItem('sx_current_chat') || null;
         let settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: 'dark', backendUrl: '', model: 'auto' };
@@ -891,11 +1017,7 @@
             const chat = chats.find(c => c.id === chatId);
             const container = document.getElementById('chatContainer');
             const welcome = document.getElementById('welcomeScreen');
-
-            if (window.speechSynthesis) window.speechSynthesis.cancel();
-            speakingMsgId = null;
-            renderPinnedBar(chat);
-
+            
             // Remove old messages only
             Array.from(container.children).forEach(child => {
                 if (!child.classList.contains('welcome-screen') && !child.classList.contains('typing-indicator')) {
@@ -905,12 +1027,74 @@
 
             if (!chat || chat.messages.length === 0) {
                 welcome.style.display = 'flex';
+                renderPinnedBar(null);
                 return;
             }
             
             welcome.style.display = 'none';
             chat.messages.forEach(msg => appendMessageToDOM(msg, false));
             scrollToBottom();
+            renderPinnedBar(chat);
+        }
+
+        // Shows a horizontal strip of pinned messages under the top bar, so the user can
+        // jump back to anything important without scrolling through the whole conversation.
+        function renderPinnedBar(chat) {
+            const bar = document.getElementById('pinnedBar');
+            if (!bar) return;
+            const pinned = chat ? chat.messages.filter(m => m.pinned) : [];
+            if (!chat || pinned.length === 0) {
+                bar.innerHTML = '';
+                bar.classList.remove('active');
+                return;
+            }
+            bar.classList.add('active');
+            bar.innerHTML = '';
+            pinned.forEach(m => {
+                const chip = document.createElement('div');
+                chip.className = 'pinned-chip';
+                chip.title = 'اذهب إلى الرسالة';
+                const icon = document.createElement('i');
+                icon.className = m.role === 'user' ? 'fas fa-user' : 'fas fa-thumbtack';
+                chip.appendChild(icon);
+                const label = document.createElement('span');
+                label.textContent = (m.content || '').replace(/\s+/g, ' ').trim().slice(0, 36) || '(بدون نص)';
+                chip.appendChild(label);
+                chip.addEventListener('click', () => {
+                    const el = document.getElementById(m.id);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+                const removeBtn = document.createElement('button');
+                removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                removeBtn.title = 'إلغاء التثبيت';
+                removeBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePinMessage(m.id); });
+                chip.appendChild(removeBtn);
+                bar.appendChild(chip);
+            });
+        }
+
+        // Toggles the pinned state of a message, keeps the on-screen button/bubble in sync,
+        // and refreshes the pinned bar.
+        function togglePinMessage(msgId) {
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat) return;
+            const msg = chat.messages.find(m => m.id === msgId);
+            if (!msg) return;
+            msg.pinned = !msg.pinned;
+            saveData();
+
+            const msgDiv = document.getElementById(msgId);
+            if (msgDiv) {
+                const pinBtn = msgDiv.querySelector('.pin-btn');
+                if (pinBtn) {
+                    pinBtn.classList.toggle('pinned', msg.pinned);
+                    pinBtn.title = msg.pinned ? 'إلغاء التثبيت' : 'تثبيت الرسالة';
+                }
+                const bubbleEl = msgDiv.querySelector('.msg-bubble');
+                if (bubbleEl) bubbleEl.classList.toggle('pinned-msg', msg.pinned);
+            }
+            renderPinnedBar(chat);
+            showToast(msg.pinned ? 'تم تثبيت الرسالة' : 'تم إلغاء تثبيت الرسالة', 'success');
         }
 
         function sendQuick(text) {
@@ -936,12 +1120,11 @@
             }
 
             if (pendingAttachment) {
-                const attachmentBlock = formatAttachmentBlock(
-                    pendingAttachment.name,
-                    pendingAttachment.kind || 'other',
-                    pendingAttachment.extraction || { text: pendingAttachment.textContent || '' }
-                );
-                text = text ? `${text}\n\n${attachmentBlock}` : attachmentBlock;
+                const kind = (pendingAttachment.mimeType && pendingAttachment.mimeType.startsWith('image/'))
+                    ? 'image'
+                    : (/\.pdf$/i.test(pendingAttachment.name) ? 'pdf' : 'file');
+                const framed = formatAttachmentForMessage(pendingAttachment.name, pendingAttachment.textContent, kind);
+                text = text ? `${text}\n\n${framed}` : framed;
             }
 
             // Cancel any ongoing request
@@ -971,19 +1154,22 @@
             appendMessageToDOM(userMsg, true);
             document.getElementById('welcomeScreen').style.display = 'none';
 
-            await generateReply(chat, text, userMsg.timestamp);
-        }
-
-        // Shared model-dispatch logic used by both sendMessage (new turn) and
-        // regenerateMessage (redoing an existing bot reply) so the two stay in sync.
-        async function generateReply(chat, triggerText, turnStartTime) {
             isGenerating = true;
             setSendButtonState(true);
             document.getElementById('typingIndicator').classList.add('active');
             scrollToBottom();
 
+            await runGeneration(chat);
+        }
+
+        // Calls the selected AI provider (with auto-fallback chain) for the given chat and
+        // appends its reply. Shared by sendMessage (new question) and regenerateMessage
+        // (re-asking after deleting the previous bot reply) so both behave identically.
+        async function runGeneration(chat) {
             const model = document.getElementById('modelSelect').value;
             let source = 'local';
+            const lastUserMsg = [...chat.messages].reverse().find(m => m.role === 'user');
+            const fallbackText = lastUserMsg ? lastUserMsg.content : '';
 
             try {
                 if (model === 'groq') {
@@ -1032,7 +1218,7 @@
                         }
                     }
                 } else {
-                    await respondLocally(triggerText, chat, abortController.signal);
+                    await respondLocally(fallbackText, chat, abortController.signal);
                 }
             } catch (error) {
                 if (error.name === 'AbortError') {
@@ -1043,9 +1229,9 @@
                     showToast(shortDetail ? `${shortDetail} — تم استخدام رد محلي` : 'حدث خطأ في الاتصال، تم استخدام رد محلي', 'error');
                     // Only add a local fallback reply if no bot reply was already added for this turn
                     const lastMsg = chat.messages[chat.messages.length - 1];
-                    const alreadyReplied = lastMsg && lastMsg.role === 'bot' && lastMsg.timestamp >= turnStartTime;
+                    const alreadyReplied = lastMsg && lastMsg.role === 'bot' && (!lastUserMsg || lastMsg.timestamp >= lastUserMsg.timestamp);
                     if (!alreadyReplied) {
-                        await respondLocally(triggerText, chat, new AbortController().signal);
+                        await respondLocally(fallbackText, chat, new AbortController().signal);
                     }
                 }
             } finally {
@@ -1055,37 +1241,6 @@
                 document.getElementById('typingIndicator').classList.remove('active');
                 updateCharCount();
             }
-        }
-
-        async function regenerateMessage(botMsgId) {
-            if (isGenerating) {
-                showToast('استنى لحد ما الرد الحالي يخلص', 'error');
-                return;
-            }
-            const chat = chats.find(c => c.id === currentChatId);
-            if (!chat) return;
-            const idx = chat.messages.findIndex(m => m.id === botMsgId);
-            if (idx === -1) return;
-
-            let userIdx = idx - 1;
-            while (userIdx >= 0 && chat.messages[userIdx].role !== 'user') userIdx--;
-            if (userIdx < 0) return;
-            const lastUserText = chat.messages[userIdx].content;
-
-            // Regenerating redoes everything from this reply onward
-            const removed = chat.messages.splice(idx);
-            removed.forEach(m => {
-                const el = document.getElementById(m.id);
-                if (el) el.remove();
-            });
-            saveData();
-            renderChatList();
-            renderPinnedBar(chat);
-
-            if (abortController) abortController.abort();
-            abortController = new AbortController();
-
-            await generateReply(chat, lastUserText, Date.now());
         }
 
         function setSendButtonState(generating) {
@@ -1165,169 +1320,19 @@
             }
         }
 
-        // Builds the action buttons (copy, speak, regenerate, pin) shared between the
-        // live-streamed bot bubble and messages re-rendered from history.
-        function buildMsgActions(msg, actionsDiv, opts = {}) {
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'msg-action-btn';
-            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-            copyBtn.title = 'نسخ';
-            copyBtn.addEventListener('click', () => copyToClipboard(msg.content));
-            actionsDiv.appendChild(copyBtn);
-
-            if (msg.role === 'bot') {
-                const speakBtn = document.createElement('button');
-                speakBtn.className = 'msg-action-btn speak-btn';
-                speakBtn.innerHTML = '<i class="fas fa-volume-high"></i>';
-                speakBtn.title = 'استماع للرد';
-                speakBtn.addEventListener('click', () => speakMessage(msg, speakBtn));
-                actionsDiv.appendChild(speakBtn);
-
-                if (opts.isLastBot) {
-                    const regenBtn = document.createElement('button');
-                    regenBtn.className = 'msg-action-btn';
-                    regenBtn.innerHTML = '<i class="fas fa-rotate-right"></i>';
-                    regenBtn.title = 'إعادة توليد الرد';
-                    regenBtn.addEventListener('click', () => regenerateMessage(msg.id));
-                    actionsDiv.appendChild(regenBtn);
-                }
-            }
-
-            const pinBtn = document.createElement('button');
-            pinBtn.className = 'msg-action-btn pin-btn' + (msg.pinned ? ' pinned' : '');
-            pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i>';
-            pinBtn.title = msg.pinned ? 'إلغاء التثبيت' : 'تثبيت الرسالة';
-            pinBtn.addEventListener('click', () => togglePinMessage(msg.id, pinBtn));
-            actionsDiv.appendChild(pinBtn);
-        }
-
-        function togglePinMessage(msgId, btn) {
-            const chat = chats.find(c => c.id === currentChatId);
-            if (!chat) return;
-            const msg = chat.messages.find(m => m.id === msgId);
-            if (!msg) return;
-            msg.pinned = !msg.pinned;
-            saveData();
-            if (btn) {
-                btn.classList.toggle('pinned', msg.pinned);
-                btn.title = msg.pinned ? 'إلغاء التثبيت' : 'تثبيت الرسالة';
-            }
-            renderPinnedBar(chat);
-            showToast(msg.pinned ? 'تم تثبيت الرسالة' : 'تم إلغاء تثبيت الرسالة', 'success');
-        }
-
-        function renderPinnedBar(chat) {
-            const bar = document.getElementById('pinnedBar');
-            if (!bar) return;
-            const pinned = chat ? chat.messages.filter(m => m.pinned) : [];
-            bar.innerHTML = '';
-            if (pinned.length === 0) {
-                bar.classList.remove('active');
-                return;
-            }
-            const label = document.createElement('div');
-            label.className = 'pinned-label';
-            label.innerHTML = `<i class="fas fa-thumbtack"></i> ${pinned.length}`;
-            bar.appendChild(label);
-            pinned.forEach(m => {
-                const chip = document.createElement('div');
-                chip.className = 'pinned-chip';
-                const plain = m.content.replace(/[#>*`_]+/g, ' ').replace(/\s+/g, ' ').trim();
-                const textSpan = document.createElement('span');
-                textSpan.textContent = plain.slice(0, 40) || '(رسالة)';
-                chip.appendChild(textSpan);
-                chip.addEventListener('click', () => jumpToMessage(m.id));
-                const removeBtn = document.createElement('button');
-                removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-                removeBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    togglePinMessage(m.id, document.querySelector(`#${CSS.escape(m.id)} .pin-btn`));
-                });
-                chip.appendChild(removeBtn);
-                bar.appendChild(chip);
-            });
-            bar.classList.add('active');
-        }
-
-        function jumpToMessage(msgId) {
-            const el = document.getElementById(msgId);
-            if (!el) return;
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            el.classList.remove('pin-flash');
-            void el.offsetWidth; // restart the flash animation if clicked twice
-            el.classList.add('pin-flash');
-        }
-
-        // Strips markdown syntax down to clean spoken text for the "listen" button
-        function stripMarkdownForSpeech(text) {
-            return text
-                .replace(/```[\s\S]*?```/g, ' كود برمجي، شوفه في الرسالة. ')
-                .replace(/`([^`]+)`/g, '$1')
-                .replace(/!\[.*?\]\(.*?\)/g, '')
-                .replace(/\[([^\]]+)\]\(.*?\)/g, '$1')
-                .replace(/^>\s?/gm, '')
-                .replace(/^#{1,6}\s*/gm, '')
-                .replace(/\*\*([^*]+)\*\*/g, '$1')
-                .replace(/\*([^*]+)\*/g, '$1')
-                .replace(/^[-*+]\s+/gm, '')
-                .replace(/\|/g, ' ')
-                .replace(/\n{2,}/g, '. ')
-                .replace(/\n/g, ' ')
-                .trim();
-        }
-
-        let speakingMsgId = null;
-
-        function speakMessage(msg, btn) {
-            if (!window.speechSynthesis) {
-                showToast('المتصفح ده مش بيدعم قراءة النص صوتيًا', 'error');
-                return;
-            }
-            const wasSpeakingThis = speakingMsgId === msg.id;
-            window.speechSynthesis.cancel();
-            document.querySelectorAll('.speak-btn.speaking').forEach(b => {
-                b.classList.remove('speaking');
-                b.innerHTML = '<i class="fas fa-volume-high"></i>';
-            });
-            if (wasSpeakingThis) {
-                speakingMsgId = null;
-                return;
-            }
-            const clean = stripMarkdownForSpeech(msg.content);
-            if (!clean) return;
-            const utterance = new SpeechSynthesisUtterance(clean);
-            utterance.lang = 'ar-EG';
-            utterance.rate = 1;
-            const reset = () => {
-                speakingMsgId = null;
-                btn.classList.remove('speaking');
-                btn.innerHTML = '<i class="fas fa-volume-high"></i>';
-            };
-            utterance.onend = reset;
-            utterance.onerror = reset;
-            speakingMsgId = msg.id;
-            btn.classList.add('speaking');
-            btn.innerHTML = '<i class="fas fa-volume-xmark"></i>';
-            window.speechSynthesis.speak(utterance);
-        }
-
         function finalizeBotMessage(msgDiv, botMsg) {
             const bubbleDiv = msgDiv.querySelector('.msg-bubble');
             bubbleDiv.innerHTML = marked.parse(botMsg.content);
+            bubbleDiv.classList.toggle('pinned-msg', !!botMsg.pinned);
             enhanceCodeBlocks(bubbleDiv);
             const timeSpan = msgDiv.querySelector('.msg-time');
             const sourceSpan = msgDiv.querySelector('.msg-source-icon');
             const actionsDiv = msgDiv.querySelector('.msg-actions');
             timeSpan.textContent = new Date(botMsg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
             sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'qwen' ? '🐉' : '💻';
-            buildMsgActions(botMsg, actionsDiv, { isLastBot: true });
-            // Only the newest bot reply should offer "regenerate" — strip it from older ones
-            document.querySelectorAll('.msg-actions button').forEach(b => {
-                const parentMsg = b.closest('.message');
-                if (parentMsg && parentMsg.id !== msgDiv.id && b.innerHTML.includes('fa-rotate-right')) {
-                    b.remove();
-                }
-            });
+            // This message was just pushed as the newest one, so it's always eligible for regenerate.
+            buildMsgActionButtons(botMsg, actionsDiv, true);
+            syncRegenerateButtons(chats.find(c => c.id === currentChatId));
         }
 
         function appendMessageToDOM(msg, scroll = true) {
@@ -1347,7 +1352,7 @@
             contentDiv.className = 'msg-content';
 
             const bubble = document.createElement('div');
-            bubble.className = 'msg-bubble';
+            bubble.className = 'msg-bubble' + (msg.pinned ? ' pinned-msg' : '');
             if (msg.image && msg.image.base64) {
                 const img = document.createElement('img');
                 img.className = 'msg-image';
@@ -1377,9 +1382,10 @@
 
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'msg-actions';
-            const chat = chats.find(c => c.id === currentChatId);
-            const isLastBot = msg.role === 'bot' && chat && chat.messages.length > 0 && chat.messages[chat.messages.length - 1].id === msg.id;
-            buildMsgActions(msg, actionsDiv, { isLastBot });
+            const chatForLastCheck = chats.find(c => c.id === currentChatId);
+            const isLastMsg = !!(chatForLastCheck && chatForLastCheck.messages.length > 0 &&
+                chatForLastCheck.messages[chatForLastCheck.messages.length - 1].id === msg.id);
+            buildMsgActionButtons(msg, actionsDiv, msg.role === 'bot' && isLastMsg);
             meta.appendChild(actionsDiv);
 
             contentDiv.appendChild(bubble);
@@ -1389,6 +1395,7 @@
             
             container.insertBefore(div, document.getElementById('typingIndicator'));
             if (scroll) scrollToBottom();
+            syncRegenerateButtons(chatForLastCheck);
         }
 
         function createTypewriterQueue(msgDiv, botMsg, signal) {
@@ -1720,9 +1727,10 @@
         }
 
         async function streamGemini(messages, signal) {
-            const parts = [{ text: messages[messages.length - 1].content }];
-            if (pendingAttachment && pendingAttachment.base64) {
-                parts.push({ inline_data: { mime_type: pendingAttachment.mimeType, data: pendingAttachment.base64 } });
+            const lastUserMsg = [...messages].reverse().find(m => m.role === 'user') || messages[messages.length - 1];
+            const parts = [{ text: lastUserMsg.content }];
+            if (lastUserMsg.image && lastUserMsg.image.base64) {
+                parts.push({ inline_data: { mime_type: lastUserMsg.image.mimeType, data: lastUserMsg.image.base64 } });
             }
             const response = await fetch(`${settings.backendUrl}/api/gemini`, {
                 method: 'POST',
@@ -1779,7 +1787,7 @@
             if (!hasContent) {
                 msgDiv.remove();
                 chat.messages.pop();
-                await respondLocally(messages[messages.length - 1].content, chat, signal);
+                await respondLocally(lastUserMsg.content, chat, signal);
                 return;
             }
 
@@ -1993,22 +2001,27 @@
         async function extractPdfText(file, onStatus) {
             const buffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-            const maxPages = pdf.numPages; // text-layer extraction is fast — no need to cap large files
+            // Large/"ضخمة" PDFs: read up to 80 pages and up to ~25k characters — enough for
+            // most textbooks/chapters — instead of bailing out early on big files.
+            const TEXT_CHAR_CAP = 25000;
+            const maxPages = Math.min(pdf.numPages, 80);
             let text = '';
-            let pagesRead = 0;
             for (let i = 1; i <= maxPages; i++) {
-                if (onStatus && (i === 1 || i % 10 === 0)) onStatus(`جارٍ قراءة صفحة ${i} من ${maxPages}...`);
+                if (onStatus && maxPages > 8 && (i % 5 === 0 || i === maxPages)) {
+                    onStatus(`جارٍ استخراج النص... صفحة ${i} من ${maxPages}`);
+                }
                 const page = await pdf.getPage(i);
                 const content = await page.getTextContent();
                 text += content.items.map(it => it.str).join(' ') + '\n';
-                pagesRead = i;
-                if (text.length > 20000) break;
+                if (text.length > TEXT_CHAR_CAP) break;
             }
             text = text.trim();
 
             // A real text layer came back — most PDFs (Word exports, typed docs, etc).
             if (text.replace(/\s/g, '').length >= 30) {
-                return { text: text.slice(0, 20000), truncated: pagesRead < maxPages || text.length > 20000, pages: pagesRead, totalPages: maxPages };
+                const truncated = text.length > TEXT_CHAR_CAP;
+                const out = text.slice(0, TEXT_CHAR_CAP);
+                return truncated ? `${out}\n\n[...تم اقتطاع باقي النص لأن الملف طويل جدًا...]` : out;
             }
 
             // Almost nothing extracted — this is a scanned/image-based PDF with no text
@@ -2017,9 +2030,198 @@
             // way we already do for uploaded photos.
             if (!window.Tesseract) throw new Error('empty');
 
-            const ocrPages = Math.min(pdf.numPages, 15); // OCR is slow client-side — cap pages even for huge scans
+            const OCR_CHAR_CAP = 25000;
+            const ocrPages = Math.min(pdf.numPages, 15); // OCR is slow client-side — cap pages
             let ocrText = '';
             for (let i = 1; i <= ocrPages; i++) {
                 if (onStatus) onStatus(`الملف صورة ممسوحة ضوئيًا، جارٍ تحليل صفحة ${i} من ${ocrPages} بالـ OCR...`);
                 const page = await pdf.getPage(i);
-                const viewport = page
+                const viewport = page.getViewport({ scale: 2 });
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                const ctx = canvas.getContext('2d');
+                await page.render({ canvasContext: ctx, viewport }).promise;
+                try {
+                    const { data } = await Tesseract.recognize(canvas, 'ara+eng');
+                    ocrText += (data.text || '') + '\n';
+                } catch (e) {}
+                if (ocrText.length > OCR_CHAR_CAP) break;
+            }
+            ocrText = ocrText.trim();
+            if (!ocrText) throw new Error('empty');
+            const truncated = ocrText.length > OCR_CHAR_CAP;
+            const out = ocrText.slice(0, OCR_CHAR_CAP);
+            return truncated ? `${out}\n\n[...تم اقتطاع باقي النص لأن الملف طويل جدًا...]` : out;
+        }
+
+        // Cleans up raw extracted text (collapses repeated spaces/blank lines from PDF/OCR
+        // extraction) and wraps it in a clearly delimited, nicely formatted block so both the
+        // AI model and the person reading the chat can tell exactly what came from the file.
+        function formatAttachmentForMessage(name, textContent, kind) {
+            const cleaned = (textContent || '')
+                .replace(/[ \t]{2,}/g, ' ')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+            const icon = kind === 'pdf' ? '📄' : kind === 'image' ? '🖼️' : '📎';
+            const label = kind === 'pdf' ? 'ملف PDF' : kind === 'image' ? 'صورة' : 'ملف';
+            const body = cleaned || '(لم يتم العثور على نص قابل للقراءة في الملف)';
+            return `${icon} **مرفق (${label}): ${name}**\n> تم استخراج النص التالي تلقائيًا وتنسيقه:\n\n---\n${body}\n---`;
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const isText = /\.(txt|md)$/i.test(file.name) || file.type.startsWith('text/');
+            const isImage = file.type.startsWith('image/');
+            const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+            const myToken = ++attachmentToken;
+
+            if (isText) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    if (myToken !== attachmentToken) return;
+                    pendingAttachment = { name: file.name, textContent: reader.result.slice(0, 6000) };
+                    showAttachmentChip();
+                    showToast(`تم إرفاق: ${file.name}`, 'success');
+                };
+                reader.onerror = () => showToast('تعذرت قراءة الملف', 'error');
+                reader.readAsText(file);
+            } else if (isPdf) {
+                pendingAttachment = { name: file.name, processing: true, status: 'جارٍ استخراج النص من الـ PDF...' };
+                showAttachmentChip();
+                extractPdfText(file, (status) => {
+                    if (myToken !== attachmentToken || !pendingAttachment) return;
+                    pendingAttachment.status = status;
+                    showAttachmentChip();
+                }).then(text => {
+                    if (myToken !== attachmentToken) return;
+                    pendingAttachment = { name: file.name, textContent: text };
+                    showAttachmentChip();
+                    showToast(`تم تحليل الملف: ${file.name}`, 'success');
+                }).catch(() => {
+                    if (myToken !== attachmentToken) return;
+                    pendingAttachment = { name: file.name };
+                    showAttachmentChip();
+                    showToast('تعذر استخراج أي نص من هذا الملف حتى بعد محاولة الـ OCR', 'error');
+                });
+            } else if (isImage) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    if (myToken !== attachmentToken) return;
+                    const base64 = reader.result.split(',')[1];
+                    pendingAttachment = {
+                        name: file.name, base64, mimeType: file.type,
+                        processing: true, status: 'جارٍ تحليل النص داخل الصورة...'
+                    };
+                    showAttachmentChip();
+                    showToast(`تم إرفاق: ${file.name}`, 'success');
+
+                    if (window.Tesseract) {
+                        Tesseract.recognize(file, 'ara+eng').then(({ data }) => {
+                            if (myToken !== attachmentToken || !pendingAttachment) return;
+                            const ocrText = (data.text || '').trim();
+                            pendingAttachment.textContent = ocrText.slice(0, 6000);
+                            pendingAttachment.processing = false;
+                            pendingAttachment.status = ocrText ? 'تم استخراج النص من الصورة ✓' : 'لم يتم العثور على نص في الصورة';
+                            showAttachmentChip();
+                        }).catch(() => {
+                            if (myToken !== attachmentToken || !pendingAttachment) return;
+                            pendingAttachment.processing = false;
+                            pendingAttachment.status = null;
+                            showAttachmentChip();
+                        });
+                    } else {
+                        pendingAttachment.processing = false;
+                        pendingAttachment.status = null;
+                        showAttachmentChip();
+                    }
+                };
+                reader.onerror = () => showToast('تعذرت قراءة الملف', 'error');
+                reader.readAsDataURL(file);
+            } else {
+                showToast('نوع الملف غير مدعوم لعرض المحتوى، سيتم إرفاق الاسم فقط', 'error');
+                pendingAttachment = { name: file.name };
+                showAttachmentChip();
+            }
+            event.target.value = '';
+        }
+
+        function showAttachmentChip() {
+            let chip = document.getElementById('attachmentChip');
+            if (chip) chip.remove();
+            if (!pendingAttachment) return;
+            chip = document.createElement('div');
+            chip.className = 'attachment-chip';
+            chip.id = 'attachmentChip';
+            const icon = pendingAttachment.processing ? 'fa-spinner fa-spin' : 'fa-paperclip';
+            chip.innerHTML = `<i class="fas ${icon}"></i><span></span>`;
+            const label = pendingAttachment.status ? `${pendingAttachment.name} — ${pendingAttachment.status}` : pendingAttachment.name;
+            chip.querySelector('span').textContent = label;
+            const removeBtn = document.createElement('button');
+            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            removeBtn.addEventListener('click', clearAttachment);
+            chip.appendChild(removeBtn);
+            document.querySelector('.input-area').insertBefore(chip, document.getElementById('smartSuggestions'));
+            updateCharCount();
+        }
+
+        function clearAttachment() {
+            attachmentToken++;
+            pendingAttachment = null;
+            const chip = document.getElementById('attachmentChip');
+            if (chip) chip.remove();
+            updateCharCount();
+        }
+
+        function exportPDF() {
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat || chat.messages.length === 0) {
+                showToast('لا توجد محادثة لتصديرها', 'error');
+                return;
+            }
+            showToast('جاري التصدير...', 'success');
+
+            const printable = document.createElement('div');
+            printable.style.cssText = 'direction:rtl;font-family:Cairo,sans-serif;padding:20px;color:#0f172a;background:#ffffff;';
+            printable.innerHTML = `<h2 style="margin-bottom:16px;">${chat.title}</h2>`;
+            chat.messages.forEach(msg => {
+                const block = document.createElement('div');
+                block.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:10px;background:' + (msg.role === 'user' ? '#eef2ff' : '#f8fafc') + ';border:1px solid #e2e8f0;';
+                block.innerHTML = `<strong>${msg.role === 'user' ? 'أنت' : 'School X'}:</strong><div>${marked.parse(msg.content)}</div>`;
+                printable.appendChild(block);
+            });
+
+            html2pdf().set({
+                margin: 10,
+                filename: `${chat.title || 'chat'}.pdf`,
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(printable).save().then(() => {
+                showToast('تم التصدير', 'success');
+            }).catch(() => {
+                showToast('تعذر تصدير PDF', 'error');
+            });
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        window.onclick = (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.classList.remove('active');
+            }
+        };
+    </script>
+</body>
+</html>
