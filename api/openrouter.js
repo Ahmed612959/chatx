@@ -23,7 +23,6 @@ export default async function handler(request) {
         headers: {
           'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
           'Content-Type': 'application/json',
-          // OpenRouter asks for these on free-tier requests for attribution — harmless to include.
           'HTTP-Referer': 'https://school-x.vercel.app',
           'X-Title': 'School X'
         },
@@ -36,7 +35,41 @@ export default async function handler(request) {
       });
     }
 
-    return new Response(upstream.body, {
+    if (!upstream.ok || !upstream.body) {
+      return new Response(upstream.body, {
+        status: upstream.status,
+        headers: { 'Content-Type': upstream.headers.get('content-type') || 'application/json' }
+      });
+    }
+
+    // See gemini.js for why this manual read loop exists: an error that happens
+    // after streaming has started is outside any try/catch around the fetch call,
+    // and left unguarded it crashes the whole function instead of ending cleanly.
+    const upstreamReader = upstream.body.getReader();
+    const safeStream = new ReadableStream({
+      async pull(controller) {
+        try {
+          const { done, value } = await upstreamReader.read();
+          if (done) {
+            controller.close();
+            return;
+          }
+          controller.enqueue(value);
+        } catch (err) {
+          try {
+            controller.enqueue(new TextEncoder().encode(
+              `data: {"error":{"message":"انقطع الاتصال بـ OpenRouter أثناء الرد"}}\n\n`
+            ));
+          } catch (e) {}
+          controller.close();
+        }
+      },
+      cancel() {
+        try { upstreamReader.cancel(); } catch (e) {}
+      }
+    });
+
+    return new Response(safeStream, {
       status: upstream.status,
       headers: {
         'Content-Type': upstream.headers.get('content-type') || 'text/event-stream',
