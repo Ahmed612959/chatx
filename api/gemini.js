@@ -33,7 +33,48 @@ export default async function handler(request) {
       });
     }
 
-    return new Response(upstream.body, {
+    if (!upstream.ok || !upstream.body) {
+      // Not streaming yet (auth/quota/bad-request errors arrive as a normal JSON
+      // body) — safe to just forward as-is, nothing is mid-flight.
+      return new Response(upstream.body, {
+        status: upstream.status,
+        headers: { 'Content-Type': upstream.headers.get('content-type') || 'application/json' }
+      });
+    }
+
+    // From here on the response has already started streaming to the client, so a
+    // network blip partway through (Google's connection dropping, a timeout, etc.)
+    // must be caught HERE — an error thrown after this function returns is outside
+    // any try/catch and used to crash the whole invocation with a generic 500 page.
+    // Wrapping the read loop in our own ReadableStream lets us end the stream
+    // gracefully instead of letting the runtime kill it.
+    const upstreamReader = upstream.body.getReader();
+    const safeStream = new ReadableStream({
+      async pull(controller) {
+        try {
+          const { done, value } = await upstreamReader.read();
+          if (done) {
+            controller.close();
+            return;
+          }
+          controller.enqueue(value);
+        } catch (err) {
+          // Surface a clean SSE error chunk instead of letting the connection just die,
+          // so the frontend's parser sees something instead of an abrupt cutoff.
+          try {
+            controller.enqueue(new TextEncoder().encode(
+              `data: {"error":{"message":"انقطع الاتصال بـ Gemini أثناء الرد"}}\n\n`
+            ));
+          } catch (e) {}
+          controller.close();
+        }
+      },
+      cancel() {
+        try { upstreamReader.cancel(); } catch (e) {}
+      }
+    });
+
+    return new Response(safeStream, {
       status: upstream.status,
       headers: {
         'Content-Type': upstream.headers.get('content-type') || 'text/event-stream',
