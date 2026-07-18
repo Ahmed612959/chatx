@@ -83,7 +83,7 @@
             z-index: 50;
             position: relative;
         }
-        
+
         @media (max-width: 767px) {
             .sidebar {
                 position: fixed;
@@ -102,7 +102,7 @@
                 transform: translateX(0); 
             }
         }
-        
+
         @media (min-width: 768px) {
             .sidebar { border-radius: 0 24px 24px 0; }
         }
@@ -115,11 +115,11 @@
             justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 15px var(--accent-glow);
         }
         .btn-new:active { transform: scale(0.98); }
-        
+
         .chat-list { flex: 1; overflow-y: auto; padding: 10px; }
         .chat-list::-webkit-scrollbar { width: 4px; }
         .chat-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-        
+
         .chat-item {
             padding: 12px; border-radius: var(--radius-sm); cursor: pointer; display: flex;
             align-items: center; gap: 10px; margin-bottom: 4px; transition: all 0.2s; border: 1px solid transparent;
@@ -137,7 +137,7 @@
         .chat-item .actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.2s; }
         .chat-item:hover .actions, .chat-item.active .actions { opacity: 1; }
         @media (max-width: 767px) { .chat-item .actions { opacity: 1; } }
-        
+
         .icon-btn {
             width: 32px; height: 32px; border-radius: 8px; border: none; background: transparent;
             color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -145,6 +145,7 @@
         }
         .icon-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-1); }
         .icon-btn.delete:hover { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .icon-btn.pinned { color: var(--warning); }
 
         .sb-footer {
             padding: 14px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px;
@@ -170,7 +171,7 @@
         .stat-pill .stat-label { font-size: 9px; color: var(--text-3); margin-top: 2px; }
 
         .main-area { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; background: var(--bg); }
-        
+
         .top-bar {
             padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center;
             gap: 10px; background: var(--bg-glass-heavy); backdrop-filter: blur(12px);
@@ -182,7 +183,7 @@
             font-size: 16px; flex-shrink: 0;
         }
         @media (max-width: 767px) { .menu-btn { display: flex; } }
-        
+
         .bot-identity { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
         .bot-logo {
             width: 40px; height: 40px; border-radius: 12px; 
@@ -190,7 +191,7 @@
             display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;
             box-shadow: 0 0 20px var(--accent-glow); flex-shrink: 0;
         }
-        
+
         .bot-text { flex: 1; min-width: 0; }
         .bot-text h2 { 
             font-size: 16px; font-weight: 900; display: flex; align-items: center; gap: 6px;
@@ -227,13 +228,13 @@
             text-align: center; padding: 20px; animation: fadeIn 0.5s ease;
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
+
         .welcome-logo {
             width: 80px; height: 80px; border-radius: 24px; background: linear-gradient(135deg, var(--accent), var(--accent-2));
             display: flex; align-items: center; justify-content: center; font-size: 36px; color: white;
             margin-bottom: 20px; box-shadow: 0 0 40px var(--accent-glow);
         }
-        
+
         .welcome-title { 
             font-size: 26px; font-weight: 900; margin-bottom: 8px;
             background: linear-gradient(135deg, var(--text-1) 30%, var(--accent));
@@ -243,7 +244,7 @@
 
         .quick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; max-width: 500px; }
         @media (max-width: 450px) { .quick-grid { grid-template-columns: 1fr; max-width: 320px; } }
-        
+
         .quick-card {
             background: var(--bg-glass); border: 1px solid var(--border); border-radius: var(--radius);
             padding: 14px; text-align: right; cursor: pointer; transition: all 0.3s;
@@ -257,14 +258,14 @@
         @media (min-width: 768px) { .message { max-width: 80%; gap: 12px; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message.user { flex-direction: row-reverse; margin-left: auto; }
-        
+
         .msg-avatar {
             width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: flex;
             align-items: center; justify-content: center; font-size: 14px; margin-top: 2px;
         }
         .message.bot .msg-avatar { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; }
         .message.user .msg-avatar { background: var(--bg-2); border: 1px solid var(--border); color: var(--text-2); }
-        
+
         .msg-content { flex: 1; min-width: 0; max-width: 100%; }
         .msg-bubble {
             padding: 12px 14px; border-radius: 16px; font-size: 14px; line-height: 1.7;
@@ -317,15 +318,31 @@
 
         .msg-meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 10px; color: var(--text-3); }
         .msg-actions { display: flex; gap: 3px; margin-right: auto; }
-        
+
         .msg-action-btn {
             width: 28px; height: 28px; border-radius: 7px; border: none; background: var(--bg-2);
             color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center;
             transition: all 0.2s; font-size: 11px;
         }
         .msg-action-btn:hover { color: var(--accent); }
+        .msg-action-btn.speaking { color: var(--accent); animation: pulse 1.5s infinite; }
         .msg-action-btn.stop-btn { background: var(--danger); color: white; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        /* Message edit mode (user bubble becomes an editable textarea) */
+        .msg-edit-wrap { display: flex; flex-direction: column; gap: 8px; }
+        .msg-edit-textarea {
+            width: 100%; min-height: 60px; resize: vertical; background: rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.35); border-radius: 10px; color: inherit;
+            font-family: var(--font); font-size: 14px; padding: 8px 10px; line-height: 1.6;
+        }
+        .msg-edit-actions { display: flex; gap: 6px; justify-content: flex-end; }
+        .msg-edit-btn {
+            padding: 6px 12px; border-radius: 8px; border: none; font-family: var(--font);
+            font-size: 12px; font-weight: 700; cursor: pointer;
+        }
+        .msg-edit-btn.save { background: white; color: var(--accent); }
+        .msg-edit-btn.cancel { background: rgba(255,255,255,0.15); color: white; }
 
         /* Typing Indicator */
         .typing-indicator { display: none; gap: 10px; max-width: 80%; margin-bottom: 16px; }
@@ -365,7 +382,7 @@
             transition: all 0.3s;
         }
         .input-wrapper:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
-        
+
         .attach-btn {
             width: 38px; height: 38px; border-radius: 50%; border: none; background: transparent;
             color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -392,7 +409,7 @@
             font-size: 14px; padding: 9px 4px; resize: none; outline: none; max-height: 100px; min-height: 38px; line-height: 1.5;
         }
         #messageInput::placeholder { color: var(--text-3); }
-        
+
         .send-btn {
             width: 38px; height: 38px; border-radius: 50%; border: none;
             background: linear-gradient(135deg, var(--accent), var(--accent-2));
@@ -554,7 +571,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="typing-indicator" id="typingIndicator">
                     <div class="msg-avatar" style="background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white;"><i class="fas fa-graduation-cap"></i></div>
                     <div class="typing-dots"><span></span><span></span><span></span></div>
@@ -610,6 +627,8 @@
                     الموقع بينادي /api/groq و /api/gemini تلقائي على نفس الدومين — مفيش حاجة تحتاج تعملها لو السيرفر والموقع منشورين مع بعض (زي Vercel). المفاتيح متخزنة كـ Environment Variables على السيرفر، مش في المتصفح خالص.
                     <br><br>
                     استخدم الحقل ده بس لو مستضيف الـ API في مكان تاني غير الموقع نفسه.
+                    <br><br>
+                    <strong style="color:var(--text-1);">صوت AI بجودة عالية (اختياري):</strong> لو عايز زرار "الاستماع" يطلع بصوت طبيعي زي ChatGPT بدل صوت الجهاز، ضيف Route اسمه <code style="background:rgba(0,0,0,0.25);padding:1px 5px;border-radius:4px;">/api/tts</code> على نفس السيرفر، بياخد POST بـ <code style="background:rgba(0,0,0,0.25);padding:1px 5px;border-radius:4px;">{ text, lang }</code> ويرجّع ملف صوت (audio/mpeg) من أي خدمة TTS ذكاء اصطناعي زي OpenAI TTS أو ElevenLabs أو Google Cloud TTS — بنفس فكرة GROQ_API_KEY بالظبط. لو الـ Route مش موجود، التطبيق بيرجع تلقائي لصوت الجهاز.
                 </p>
                 <div class="input-group">
                     <input type="text" id="backendUrlInput" class="tool-input" placeholder="https://your-api-server.com (سيبه فاضي للتلقائي)">
@@ -746,7 +765,7 @@
         }
 
         function createNewChat() {
-            const newChat = { id: 'chat_' + Date.now(), title: 'محادثة جديدة', messages: [], timestamp: Date.now() };
+            const newChat = { id: 'chat_' + Date.now(), title: 'محادثة جديدة', messages: [], timestamp: Date.now(), pinned: false };
             chats.unshift(newChat);
             currentChatId = newChat.id;
             saveData();
@@ -767,6 +786,16 @@
             renderChatList();
         }
 
+        function togglePinChat(id, event) {
+            event.stopPropagation();
+            const chat = chats.find(c => c.id === id);
+            if (!chat) return;
+            chat.pinned = !chat.pinned;
+            saveData();
+            renderChatList();
+            showToast(chat.pinned ? 'تم التثبيت' : 'تم إلغاء التثبيت', 'success');
+        }
+
         function saveData() {
             localStorage.setItem('sx_chats', JSON.stringify(chats));
             localStorage.setItem('sx_current_chat', currentChatId);
@@ -781,7 +810,11 @@
         function renderChatList() {
             const list = document.getElementById('chatList');
             list.innerHTML = '';
-            chats.forEach(chat => {
+            const sorted = [...chats].sort((a, b) => {
+                if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+                return b.timestamp - a.timestamp;
+            });
+            sorted.forEach(chat => {
                 const div = document.createElement('div');
                 div.className = `chat-item ${chat.id === currentChatId ? 'active' : ''}`;
                 div.addEventListener('click', () => {
@@ -794,7 +827,7 @@
 
                 const icon = document.createElement('div');
                 icon.className = 'icon';
-                icon.innerHTML = '<i class="fas fa-message"></i>';
+                icon.innerHTML = chat.pinned ? '<i class="fas fa-thumbtack"></i>' : '<i class="fas fa-message"></i>';
 
                 const info = document.createElement('div');
                 info.className = 'info';
@@ -809,6 +842,14 @@
 
                 const actions = document.createElement('div');
                 actions.className = 'actions';
+
+                const pinBtn = document.createElement('button');
+                pinBtn.className = `icon-btn ${chat.pinned ? 'pinned' : ''}`;
+                pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i>';
+                pinBtn.title = chat.pinned ? 'إلغاء التثبيت' : 'تثبيت المحادثة';
+                pinBtn.addEventListener('click', (e) => togglePinChat(chat.id, e));
+                actions.appendChild(pinBtn);
+
                 const delBtn = document.createElement('button');
                 delBtn.className = 'icon-btn delete';
                 delBtn.innerHTML = '<i class="fas fa-trash"></i>';
@@ -826,7 +867,7 @@
             const chat = chats.find(c => c.id === chatId);
             const container = document.getElementById('chatContainer');
             const welcome = document.getElementById('welcomeScreen');
-            
+
             // Remove old messages only
             Array.from(container.children).forEach(child => {
                 if (!child.classList.contains('welcome-screen') && !child.classList.contains('typing-indicator')) {
@@ -838,7 +879,7 @@
                 welcome.style.display = 'flex';
                 return;
             }
-            
+
             welcome.style.display = 'none';
             chat.messages.forEach(msg => appendMessageToDOM(msg, false));
             scrollToBottom();
@@ -849,6 +890,20 @@
             autoResize(document.getElementById('messageInput'));
             updateCharCount();
             sendMessage();
+        }
+
+        // ── Local "brain" for identity questions & canned local answers ──────────
+        const IDENTITY_PATTERNS = [
+            /احمد\s*موسي|أحمد\s*موسى|ahmed\s*mo?u?ssa/i,
+            /مين\s*(اللي\s*)?(عملك|صنعك|طورك|برمجك)/,
+            /من\s*(الذي\s*)?(صنعك|طورك|برمجك|أنشأك)/,
+            /مين\s*انت\b|من\s*أنت\b|من\s*انت\b/,
+            /^\s*(انت|أنت)\s*مين\s*\??\s*$/
+        ];
+        const IDENTITY_ANSWER = "أنا **Chat School X**، تم تطويري بواسطة **أحمد موسى**. لو حابب تتواصل معاه، رقم الواتساب: **01095722174**.";
+
+        function isIdentityQuestion(text) {
+            return IDENTITY_PATTERNS.some(re => re.test(text));
         }
 
         async function sendMessage() {
@@ -873,7 +928,7 @@
 
             const chat = chats.find(c => c.id === currentChatId);
             if (chat.messages.length === 0) chat.title = text.substring(0, 35) + (text.length > 35 ? '...' : '');
-            
+
             const userMsg = {
                 role: 'user', content: text, timestamp: Date.now(), id: `msg-${Date.now()}-u`,
                 image: (pendingAttachment && pendingAttachment.base64 && pendingAttachment.mimeType && pendingAttachment.mimeType.startsWith('image/'))
@@ -883,7 +938,7 @@
             chat.messages.push(userMsg);
             saveData();
             recordQuestionForStats();
-            
+
             input.value = ''; 
             autoResize(input); 
             updateCharCount();
@@ -892,10 +947,30 @@
             appendMessageToDOM(userMsg, true);
             document.getElementById('welcomeScreen').style.display = 'none';
 
+            await generateReplyForChat(chat, text);
+        }
+
+        async function generateReplyForChat(chat, text) {
+            if (abortController) abortController.abort();
+            abortController = new AbortController();
+
             isGenerating = true;
             setSendButtonState(true);
             document.getElementById('typingIndicator').classList.add('active');
             scrollToBottom();
+
+            // Identity questions are always answered locally & instantly, regardless of the
+            // selected model — this is a fixed fact about the app, not something to send to a
+            // third-party API (and it must stay correct even if a provider call fails/changes).
+            if (isIdentityQuestion(text)) {
+                document.getElementById('typingIndicator').classList.remove('active');
+                await respondLocallyWithText(IDENTITY_ANSWER, chat, abortController.signal);
+                isGenerating = false;
+                abortController = null;
+                setSendButtonState(false);
+                updateCharCount();
+                return;
+            }
 
             const model = document.getElementById('modelSelect').value;
             let source = 'local';
@@ -949,7 +1024,7 @@
                     showToast(shortDetail ? `${shortDetail} — تم استخدام رد محلي` : 'حدث خطأ في الاتصال، تم استخدام رد محلي', 'error');
                     // Only add a local fallback reply if no bot reply was already added for this turn
                     const lastMsg = chat.messages[chat.messages.length - 1];
-                    const alreadyReplied = lastMsg && lastMsg.role === 'bot' && lastMsg.timestamp >= userMsg.timestamp;
+                    const alreadyReplied = lastMsg && lastMsg.role === 'bot' && lastMsg.timestamp >= (chat.messages.find(m => m.content === text)?.timestamp || 0);
                     if (!alreadyReplied) {
                         await respondLocally(text, chat, new AbortController().signal);
                     }
@@ -984,13 +1059,17 @@
         }
 
         async function respondLocally(text, chat, signal) {
+            const fullText = getLocalResponse(text);
+            await respondLocallyWithText(fullText, chat, signal, 'local');
+        }
+
+        async function respondLocallyWithText(fullText, chat, signal, source = 'local') {
             document.getElementById('typingIndicator').classList.add('active');
             await sleep(600, signal);
             document.getElementById('typingIndicator').classList.remove('active');
             if (signal.aborted) return;
 
-            const fullText = getLocalResponse(text);
-            const botMsg = { role: 'bot', content: '', source: 'local', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
+            const botMsg = { role: 'bot', content: '', source, timestamp: Date.now(), id: `msg-${Date.now()}-b` };
             chat.messages.push(botMsg);
 
             const msgDiv = createBotMessageShell(botMsg);
@@ -1040,6 +1119,31 @@
             }
         }
 
+        function buildMsgActions(actionsDiv, botMsg, msgDiv) {
+            actionsDiv.innerHTML = '';
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'msg-action-btn';
+            copyBtn.title = 'نسخ';
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+            copyBtn.addEventListener('click', () => copyToClipboard(botMsg.content));
+            actionsDiv.appendChild(copyBtn);
+
+            const speakBtn = document.createElement('button');
+            speakBtn.className = 'msg-action-btn';
+            speakBtn.title = 'استماع';
+            speakBtn.innerHTML = '<i class="fas fa-volume-high"></i>';
+            speakBtn.addEventListener('click', () => toggleSpeak(botMsg.content, speakBtn));
+            actionsDiv.appendChild(speakBtn);
+
+            const regenBtn = document.createElement('button');
+            regenBtn.className = 'msg-action-btn';
+            regenBtn.title = 'إعادة توليد الرد';
+            regenBtn.innerHTML = '<i class="fas fa-rotate-right"></i>';
+            regenBtn.addEventListener('click', () => regenerateResponse(botMsg.id));
+            actionsDiv.appendChild(regenBtn);
+        }
+
         function finalizeBotMessage(msgDiv, botMsg) {
             const bubbleDiv = msgDiv.querySelector('.msg-bubble');
             bubbleDiv.innerHTML = marked.parse(botMsg.content);
@@ -1048,12 +1152,341 @@
             const sourceSpan = msgDiv.querySelector('.msg-source-icon');
             const actionsDiv = msgDiv.querySelector('.msg-actions');
             timeSpan.textContent = new Date(botMsg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
-            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : '💻';
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'msg-action-btn';
-            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-            copyBtn.addEventListener('click', () => copyToClipboard(botMsg.content));
-            actionsDiv.appendChild(copyBtn);
+            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : '💻';
+            buildMsgActions(actionsDiv, botMsg, msgDiv);
+        }
+
+        // ── Regenerate: re-runs the reply for the user turn right before this bot message ──
+        async function regenerateResponse(botMsgId) {
+            if (isGenerating) return;
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat) return;
+            const idx = chat.messages.findIndex(m => m.id === botMsgId);
+            if (idx === -1) return;
+
+            // Find the user message that this bot reply answered (the nearest user message before it)
+            let userIdx = idx - 1;
+            while (userIdx >= 0 && chat.messages[userIdx].role !== 'user') userIdx--;
+            if (userIdx < 0) return;
+            const userText = chat.messages[userIdx].content;
+
+            // Remove the old bot message (from data + DOM) and every message after it,
+            // since regenerating only makes sense for the latest turn's reply.
+            const removed = chat.messages.splice(idx);
+            removed.forEach(m => { const el = document.getElementById(m.id); if (el) el.remove(); });
+            saveData();
+
+            await generateReplyForChat(chat, userText);
+        }
+
+        // ── Edit & resend a user message ──────────────────────────────────────
+        function startEditMessage(msgId) {
+            if (isGenerating) return;
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat) return;
+            const msg = chat.messages.find(m => m.id === msgId);
+            if (!msg) return;
+
+            const msgDiv = document.getElementById(msgId);
+            if (!msgDiv) return;
+            const bubble = msgDiv.querySelector('.msg-bubble');
+            const originalHTML = bubble.innerHTML;
+
+            bubble.innerHTML = '';
+            const wrap = document.createElement('div');
+            wrap.className = 'msg-edit-wrap';
+            const textarea = document.createElement('textarea');
+            textarea.className = 'msg-edit-textarea';
+            textarea.value = msg.content;
+            wrap.appendChild(textarea);
+
+            const actions = document.createElement('div');
+            actions.className = 'msg-edit-actions';
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'msg-edit-btn cancel';
+            cancelBtn.textContent = 'إلغاء';
+            cancelBtn.addEventListener('click', () => { bubble.innerHTML = originalHTML; enhanceCodeBlocks(bubble); });
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'msg-edit-btn save';
+            saveBtn.textContent = 'حفظ وإرسال';
+            saveBtn.addEventListener('click', () => saveEditedMessage(msgId, textarea.value));
+            actions.appendChild(cancelBtn);
+            actions.appendChild(saveBtn);
+            wrap.appendChild(actions);
+
+            bubble.appendChild(wrap);
+            textarea.focus();
+            autoResize(textarea);
+        }
+
+        async function saveEditedMessage(msgId, newText) {
+            newText = newText.trim();
+            if (!newText || isGenerating) return;
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat) return;
+            const idx = chat.messages.findIndex(m => m.id === msgId);
+            if (idx === -1) return;
+
+            chat.messages[idx].content = newText;
+            // Editing a message invalidates everything that came after it in the conversation
+            const removed = chat.messages.splice(idx + 1);
+            removed.forEach(m => { const el = document.getElementById(m.id); if (el) el.remove(); });
+
+            if (idx === 0) chat.title = newText.substring(0, 35) + (newText.length > 35 ? '...' : '');
+            saveData();
+            renderChatList();
+
+            // Re-render this message bubble normally
+            const msgDiv = document.getElementById(msgId);
+            if (msgDiv) msgDiv.remove();
+            appendMessageToDOM(chat.messages[idx], true);
+
+            await generateReplyForChat(chat, newText);
+        }
+
+        // ── Text-to-Speech ────────────────────────────────────────────────────
+        // Two tiers: (1) the device's own installed voice — instant, free, offline.
+        // (2) if the device has NO voice installed at all (or the local attempt errors),
+        // fall back to an online audio-generation service so playback still works.
+        // Tier 2 needs an internet connection — there is no way around that; a phone
+        // with zero installed voices AND no network genuinely cannot produce speech
+        // from pure client-side code, so that combination is the one true dead end.
+        let currentUtterance = null;
+        let currentSpeakBtn = null;
+        let currentAudioEls = [];
+        let speechAborted = false;
+
+        function stripMarkdownForSpeech(text) {
+            return text
+                .replace(/```[\s\S]*?```/g, ' كود برمجي ')
+                .replace(/`([^`]+)`/g, '$1')
+                .replace(/!\[.*?\]\(.*?\)/g, '')
+                .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+                .replace(/[#*_>~-]/g, ' ')
+                .trim();
+        }
+
+        // Chrome/Edge don't fire 'voiceschanged' reliably on first load, and getVoices() can
+        // return an empty array the first time it's called — so we wait for it once, briefly.
+        let voicesReadyPromise = null;
+        function getVoicesReady() {
+            if (!('speechSynthesis' in window)) return Promise.resolve([]);
+            if (voicesReadyPromise) return voicesReadyPromise;
+            voicesReadyPromise = new Promise((resolve) => {
+                const existing = window.speechSynthesis.getVoices();
+                if (existing.length > 0) { resolve(existing); return; }
+                let settled = false;
+                const finish = () => {
+                    if (settled) return;
+                    settled = true;
+                    resolve(window.speechSynthesis.getVoices());
+                };
+                window.speechSynthesis.onvoiceschanged = finish;
+                setTimeout(finish, 800); // some browsers never fire the event at all
+            });
+            return voicesReadyPromise;
+        }
+
+        function pickArabicVoice(voices) {
+            return voices.find(v => v.lang && v.lang.toLowerCase() === 'ar-eg')
+                || voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ar'))
+                || null;
+        }
+
+        // Chrome has a long-standing bug where speechSynthesis auto-pauses ~15s into a long
+        // utterance and never resumes on its own. This keeps it alive for the duration of speech.
+        let keepAliveTimer = null;
+        function startKeepAlive() {
+            stopKeepAlive();
+            keepAliveTimer = setInterval(() => {
+                if (window.speechSynthesis.speaking) {
+                    window.speechSynthesis.pause();
+                    window.speechSynthesis.resume();
+                } else {
+                    stopKeepAlive();
+                }
+            }, 12000);
+        }
+        function stopKeepAlive() {
+            if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
+        }
+
+        function resetSpeakBtn(btn) {
+            if (!btn) return;
+            btn.classList.remove('speaking');
+            btn.innerHTML = '<i class="fas fa-volume-high"></i>';
+        }
+
+        function stopAllSpeech() {
+            speechAborted = true;
+            stopKeepAlive();
+            try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) {}
+            currentAudioEls.forEach(a => { try { a.pause(); a.src = ''; } catch (e) {} });
+            currentAudioEls = [];
+            currentUtterance = null;
+        }
+
+        // Tries the device's installed voice. Resolves true if it played (or was
+        // deliberately stopped), false if it errored and the caller should fall back.
+        function speakWithDeviceVoice(text, voices) {
+            return new Promise((resolve) => {
+                const arabicVoice = pickArabicVoice(voices);
+                // Chrome silently drops speak() if it's called in the same tick as cancel() —
+                // a tiny delay avoids that race condition.
+                setTimeout(() => {
+                    if (speechAborted) { resolve(true); return; }
+                    const utter = new SpeechSynthesisUtterance(text);
+                    utter.lang = arabicVoice ? arabicVoice.lang : (voices[0].lang || 'ar-EG');
+                    if (arabicVoice) utter.voice = arabicVoice;
+                    utter.rate = 1;
+                    utter.pitch = 1;
+                    utter.onstart = () => startKeepAlive();
+                    utter.onend = () => { stopKeepAlive(); resolve(true); };
+                    utter.onerror = (e) => {
+                        stopKeepAlive();
+                        // A deliberate stop by the user counts as "worked" — don't fall back to
+                        // the network in that case. Any real failure (e.g. no matching voice on
+                        // some Android builds) triggers the online fallback.
+                        resolve(e.error === 'interrupted' || e.error === 'canceled');
+                    };
+                    currentUtterance = utter;
+                    window.speechSynthesis.speak(utter);
+                }, 60);
+            });
+        }
+
+        // Splits text into pieces short enough for the fallback TTS endpoint, preferring
+        // sentence boundaries so audio doesn't cut off mid-word.
+        function chunkTextForSpeech(text, maxLen = 180) {
+            const sentences = text.split(/(?<=[.!؟?\n])\s+/);
+            const chunks = [];
+            let cur = '';
+            sentences.forEach(s => {
+                s = s.trim();
+                if (!s) return;
+                if ((cur ? cur + ' ' + s : s).length > maxLen) {
+                    if (cur) { chunks.push(cur); cur = ''; }
+                    if (s.length > maxLen) {
+                        for (let i = 0; i < s.length; i += maxLen) chunks.push(s.slice(i, i + maxLen));
+                    } else {
+                        cur = s;
+                    }
+                } else {
+                    cur = cur ? cur + ' ' + s : s;
+                }
+            });
+            if (cur) chunks.push(cur);
+            return chunks;
+        }
+
+        function playAudioUrl(url) {
+            return new Promise((resolve, reject) => {
+                if (speechAborted) { resolve(); return; }
+                const audio = new Audio();
+                currentAudioEls.push(audio);
+                audio.onended = () => resolve();
+                audio.onerror = () => reject(new Error('audio-failed'));
+                audio.src = url;
+                audio.play().catch(reject);
+            });
+        }
+
+        // Online fallback: generates speech server-side (via Google Translate's public TTS
+        // endpoint) so audio plays even when the device has zero installed voices. Needs
+        // an internet connection — the one case nothing client-side can work around.
+        async function speakWithOnlineFallback(text) {
+            const chunks = chunkTextForSpeech(text);
+            try {
+                for (const chunk of chunks) {
+                    if (speechAborted) break;
+                    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=ar&client=tw-ob`;
+                    await playAudioUrl(url);
+                }
+            } catch (e) {
+                console.error(e);
+                if (!speechAborted) {
+                    showToast('تعذر تشغيل الصوت من كل المصادر المتاحة', 'error');
+                }
+            }
+            return !speechAborted;
+        }
+
+        // Tier 0 (best quality): a real neural voice via your own backend, exactly like the
+        // /api/groq, /api/gemini, /api/openrouter, /api/cerebras routes already in this app.
+        // Add a POST /api/tts route on your server that accepts { text, lang } and returns raw
+        // audio bytes (e.g. audio/mpeg) from a provider like OpenAI TTS, ElevenLabs, Google
+        // Cloud TTS, or Azure — the same way you already keep GROQ_API_KEY etc. as server-side
+        // env vars. This is what actually gives a natural voice; without it, this tier is
+        // simply skipped and the app falls back to the device voice / online fallback below.
+        async function speakWithBackendTTS(text, signal) {
+            try {
+                const response = await fetch(`${settings.backendUrl}/api/tts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, lang: 'ar' }),
+                    signal
+                });
+                if (!response.ok) return false;
+                const blob = await response.blob();
+                if (!blob || blob.size === 0 || !blob.type.startsWith('audio')) return false;
+                const url = URL.createObjectURL(blob);
+                try {
+                    await playAudioUrl(url);
+                } finally {
+                    URL.revokeObjectURL(url);
+                }
+                return true;
+            } catch (e) {
+                return false; // route not implemented / offline / provider error — silently fall through
+            }
+        }
+
+        async function toggleSpeak(text, btn) {
+            // If this exact button is already active, treat the click as "stop"
+            if (currentSpeakBtn === btn) {
+                stopAllSpeech();
+                resetSpeakBtn(btn);
+                currentSpeakBtn = null;
+                return;
+            }
+            // Switching to a different message mid-speech: stop the previous one first
+            if (currentSpeakBtn) {
+                stopAllSpeech();
+                resetSpeakBtn(currentSpeakBtn);
+            }
+
+            const cleanText = stripMarkdownForSpeech(text);
+            if (!cleanText) {
+                showToast('مفيش نص يتقال', 'error');
+                return;
+            }
+
+            speechAborted = false;
+            currentSpeakBtn = btn;
+            btn.classList.add('speaking');
+            btn.innerHTML = '<i class="fas fa-stop"></i>';
+
+            // Tier 0: real AI voice from your backend (best quality — needs /api/tts set up server-side)
+            let worked = await speakWithBackendTTS(cleanText);
+
+            // Tier 1: the device's own installed voice
+            if (!worked && currentSpeakBtn === btn && !speechAborted) {
+                if ('speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined') {
+                    const voices = await getVoicesReady();
+                    if (voices.length > 0 && currentSpeakBtn === btn) {
+                        worked = await speakWithDeviceVoice(cleanText, voices);
+                    }
+                }
+            }
+
+            if (!worked && currentSpeakBtn === btn && !speechAborted) {
+                await speakWithOnlineFallback(cleanText);
+            }
+
+            if (currentSpeakBtn === btn) {
+                resetSpeakBtn(btn);
+                currentSpeakBtn = null;
+            }
         }
 
         function appendMessageToDOM(msg, scroll = true) {
@@ -1061,7 +1494,7 @@
             const div = document.createElement('div');
             div.className = `message ${msg.role}`;
             div.id = msg.id || `msg-${Date.now()}`;
-            
+
             const contentHTML = marked.parse(msg.content);
             const time = new Date(msg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
 
@@ -1094,19 +1527,23 @@
             timeSpan.textContent = time;
             meta.appendChild(timeSpan);
 
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'msg-actions';
+
             if (msg.role === 'bot') {
                 const sourceSpan = document.createElement('span');
                 sourceSpan.style.cssText = 'margin-right:6px;opacity:0.6';
-                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : '💻';
+                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : '💻';
                 meta.appendChild(sourceSpan);
-
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'msg-actions';
-                const copyBtn = document.createElement('button');
-                copyBtn.className = 'msg-action-btn';
-                copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-                copyBtn.addEventListener('click', () => copyToClipboard(msg.content));
-                actionsDiv.appendChild(copyBtn);
+                buildMsgActions(actionsDiv, msg, div);
+                meta.appendChild(actionsDiv);
+            } else {
+                const editBtn = document.createElement('button');
+                editBtn.className = 'msg-action-btn';
+                editBtn.title = 'تعديل وإعادة الإرسال';
+                editBtn.innerHTML = '<i class="fas fa-pen"></i>';
+                editBtn.addEventListener('click', () => startEditMessage(div.id));
+                actionsDiv.appendChild(editBtn);
                 meta.appendChild(actionsDiv);
             }
 
@@ -1114,7 +1551,7 @@
             contentDiv.appendChild(meta);
             div.appendChild(avatar);
             div.appendChild(contentDiv);
-            
+
             container.insertBefore(div, document.getElementById('typingIndicator'));
             if (scroll) scrollToBottom();
         }
@@ -1175,7 +1612,7 @@
                 }),
                 signal
             });
-            
+
             if (!response.ok) {
                 let detail = '';
                 try { detail = (await response.text()).slice(0, 200); } catch (e) {}
@@ -1188,23 +1625,23 @@
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            
+
             const chat = chats.find(c => c.id === currentChatId);
             const botMsg = { role: 'bot', content: '', source: 'groq', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
             chat.messages.push(botMsg);
-            
+
             const msgDiv = createBotMessageShell(botMsg);
             const queue = createTypewriterQueue(msgDiv, botMsg, signal);
             let hasContent = false;
-            
+
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                
+
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split('\n');
                 buffer = lines.pop();
-                
+
                 for (const line of lines) {
                     if (!line.startsWith('data: ')) continue;
                     const payload = line.slice(6).trim();
@@ -1221,7 +1658,7 @@
             }
 
             const fullText = await queue.flush();
-            
+
             if (!hasContent) {
                 // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
                 msgDiv.remove();
@@ -1640,14 +2077,77 @@
             resDiv.classList.add('show');
         }
 
+        // ── PDF text extraction (pdf.js) ─────────────────────────────────────
+        let pdfjsLoadPromise = null;
+        function loadPdfJs() {
+            if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+            if (pdfjsLoadPromise) return pdfjsLoadPromise;
+            pdfjsLoadPromise = new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+                script.onload = () => {
+                    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    resolve(window.pdfjsLib);
+                };
+                script.onerror = () => reject(new Error('تعذر تحميل مكتبة قراءة PDF'));
+                document.head.appendChild(script);
+            });
+            return pdfjsLoadPromise;
+        }
+
+        async function extractPdfText(arrayBuffer, maxChars = 12000) {
+            const pdfjsLib = await loadPdfJs();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let text = '';
+            const maxPages = Math.min(pdf.numPages, 40);
+            for (let i = 1; i <= maxPages; i++) {
+                if (text.length >= maxChars) break;
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                const pageText = content.items.map(item => item.str).join(' ');
+                text += `\n\n[صفحة ${i}]\n${pageText}`;
+            }
+            text = text.trim().slice(0, maxChars);
+            return { text, pageCount: pdf.numPages };
+        }
+
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             const isText = /\.(txt|md)$/i.test(file.name) || file.type.startsWith('text/');
             const isImage = file.type.startsWith('image/');
+            const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
 
-            if (isText) {
+            if (isPdf) {
+                pendingAttachment = { name: file.name, textContent: '', loading: true };
+                showAttachmentChip();
+                showToast('جاري قراءة ملف PDF...', 'success');
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    try {
+                        const { text, pageCount } = await extractPdfText(reader.result);
+                        if (!text) {
+                            showToast('الملف مش فيه نص يمكن قراءته (ممكن يكون صور ممسوحة ضوئياً)', 'error');
+                            pendingAttachment = { name: file.name, textContent: '' };
+                        } else {
+                            pendingAttachment = { name: file.name, textContent: text };
+                            showToast(`تم استخراج نص من ${pageCount} صفحة ✓`, 'success');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        showToast('تعذرت قراءة ملف الـ PDF', 'error');
+                        pendingAttachment = { name: file.name, textContent: '' };
+                    }
+                    showAttachmentChip();
+                };
+                reader.onerror = () => {
+                    showToast('تعذرت قراءة الملف', 'error');
+                    pendingAttachment = { name: file.name, textContent: '' };
+                    showAttachmentChip();
+                };
+                reader.readAsArrayBuffer(file);
+            } else if (isText) {
                 const reader = new FileReader();
                 reader.onload = () => {
                     pendingAttachment = { name: file.name, textContent: reader.result.slice(0, 6000) };
@@ -1681,8 +2181,9 @@
             chip = document.createElement('div');
             chip.className = 'attachment-chip';
             chip.id = 'attachmentChip';
+            const label = pendingAttachment.loading ? `${pendingAttachment.name} — جاري القراءة...` : pendingAttachment.name;
             chip.innerHTML = `<i class="fas fa-paperclip"></i><span></span>`;
-            chip.querySelector('span').textContent = pendingAttachment.name;
+            chip.querySelector('span').textContent = label;
             const removeBtn = document.createElement('button');
             removeBtn.innerHTML = '<i class="fas fa-times"></i>';
             removeBtn.addEventListener('click', clearAttachment);
