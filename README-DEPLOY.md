@@ -12,6 +12,9 @@
 4. قبل الضغط على Deploy، افتح **Environment Variables** وضيف:
    - `GROQ_API_KEY` = مفتاحك من Groq
    - `GEMINI_API_KEY` = مفتاحك من Gemini
+   - `OPENROUTER_API_KEY` = مفتاحك من OpenRouter (اختياري)
+   - `CEREBRAS_API_KEY` = مفتاحك من Cerebras (اختياري)
+   - `QWEN_API_KEY` = مفتاحك من Qwen / DashScope (اختياري) — من [https://dashscope.console.aliyun.com](https://dashscope.console.aliyun.com)
 5. اضغط **Deploy**
 6. بعد ما يخلص، هتاخد رابط زي `https://school-x-xxxx.vercel.app`
 
@@ -29,6 +32,7 @@ vercel
 ```bash
 vercel env add GROQ_API_KEY
 vercel env add GEMINI_API_KEY
+vercel env add QWEN_API_KEY
 ```
 
 هيطلب منك تختار Environment (Production / Preview / Development) — اختار **Production** على الأقل، وأدخل قيمة المفتاح.
@@ -60,7 +64,7 @@ https://your-app.vercel.app/api/health
 هيرجعلك رد زي:
 
 ```json
-{ "groqConfigured": true, "geminiConfigured": true }
+{ "groqConfigured": true, "geminiConfigured": true, "openrouterConfigured": false, "cerebrasConfigured": false, "qwenConfigured": true }
 ```
 
 لو أي واحدة فيهم `false`، معناها المتغير ده مش واصل للديبلوي الحالي — روح على الـ checklist اللي تحت. الصفحة دي متعمل معمول عشان تتأكد في ثانية من غير ما تفتح Developer Console أو تدور في الـ Network tab.
