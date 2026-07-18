@@ -603,6 +603,7 @@
                         <option value="gemini">🌟 Gemini</option>
                         <option value="openrouter">🔀 OpenRouter</option>
                         <option value="cerebras">🧠 Cerebras</option>
+                        <option value="qwen">🐉 Qwen</option>
                         <option value="local">💻 محلي</option>
                     </select>
                 </div>
@@ -945,10 +946,13 @@
                 } else if (model === 'cerebras') {
                     source = 'cerebras';
                     await streamCerebras(chat.messages, abortController.signal);
+                } else if (model === 'qwen') {
+                    source = 'qwen';
+                    await streamQwen(chat.messages, abortController.signal);
                 } else if (model === 'auto') {
                     // We can't tell from the browser which server-side keys are actually
                     // configured, so auto mode tries providers in order and falls through
-                    // automatically on failure — only dropping to local after all four miss.
+                    // automatically on failure — only dropping to local after all five miss.
                     try {
                         source = 'groq';
                         await streamGroq(chat.messages, abortController.signal);
@@ -964,8 +968,14 @@
                                 await streamOpenRouter(chat.messages, abortController.signal);
                             } catch (openrouterError) {
                                 if (openrouterError.name === 'AbortError') throw openrouterError;
-                                source = 'cerebras';
-                                await streamCerebras(chat.messages, abortController.signal);
+                                try {
+                                    source = 'cerebras';
+                                    await streamCerebras(chat.messages, abortController.signal);
+                                } catch (cerebrasError) {
+                                    if (cerebrasError.name === 'AbortError') throw cerebrasError;
+                                    source = 'qwen';
+                                    await streamQwen(chat.messages, abortController.signal);
+                                }
                             }
                         }
                     }
@@ -1080,7 +1090,7 @@
             const sourceSpan = msgDiv.querySelector('.msg-source-icon');
             const actionsDiv = msgDiv.querySelector('.msg-actions');
             timeSpan.textContent = new Date(botMsg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
-            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : '💻';
+            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'qwen' ? '🐉' : '💻';
             const copyBtn = document.createElement('button');
             copyBtn.className = 'msg-action-btn';
             copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
@@ -1129,7 +1139,7 @@
             if (msg.role === 'bot') {
                 const sourceSpan = document.createElement('span');
                 sourceSpan.style.cssText = 'margin-right:6px;opacity:0.6';
-                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : '💻';
+                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'qwen' ? '🐉' : '💻';
                 meta.appendChild(sourceSpan);
 
                 const actionsDiv = document.createElement('div');
@@ -1366,6 +1376,76 @@
 
             const chat = chats.find(c => c.id === currentChatId);
             const botMsg = { role: 'bot', content: '', source: 'cerebras', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
+            chat.messages.push(botMsg);
+
+            const msgDiv = createBotMessageShell(botMsg);
+            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
+            let hasContent = false;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) continue;
+                    const payload = line.slice(6).trim();
+                    if (payload === '[DONE]') continue;
+                    try {
+                        const data = JSON.parse(payload);
+                        const content = data.choices[0]?.delta?.content || '';
+                        if (content) {
+                            hasContent = true;
+                            queue.push(content);
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            const fullText = await queue.flush();
+
+            if (!hasContent) {
+                // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
+                msgDiv.remove();
+                chat.messages.pop();
+                await respondLocally(messages[messages.length - 1].content, chat, signal);
+                return;
+            }
+
+            finalizeBotMessage(msgDiv, botMsg);
+            saveData();
+        }
+
+        async function streamQwen(messages, signal) {
+            const response = await fetch(`${settings.backendUrl}/api/qwen`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: "qwen-plus",
+                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.slice(-6).map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    stream: true
+                }),
+                signal
+            });
+
+            if (!response.ok) {
+                let detail = '';
+                try { detail = (await response.text()).slice(0, 200); } catch (e) {}
+                console.error('Qwen API error', response.status, detail);
+                throw new Error(`Qwen API Error (${response.status}): ${detail || 'no detail'}`);
+            }
+
+            document.getElementById('typingIndicator').classList.remove('active');
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            const chat = chats.find(c => c.id === currentChatId);
+            const botMsg = { role: 'bot', content: '', source: 'qwen', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
             chat.messages.push(botMsg);
 
             const msgDiv = createBotMessageShell(botMsg);
@@ -1680,11 +1760,11 @@
         // overwrite a newer attachment or resurrect one the user already removed.
         let attachmentToken = 0;
 
-        async function extractPdfText(file) {
+        async function extractPdfText(file, onStatus) {
             const buffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-            let text = '';
             const maxPages = Math.min(pdf.numPages, 30);
+            let text = '';
             for (let i = 1; i <= maxPages; i++) {
                 const page = await pdf.getPage(i);
                 const content = await page.getTextContent();
@@ -1692,8 +1772,38 @@
                 if (text.length > 12000) break;
             }
             text = text.trim();
-            if (!text) throw new Error('empty');
-            return text.slice(0, 12000);
+
+            // A real text layer came back — most PDFs (Word exports, typed docs, etc).
+            if (text.replace(/\s/g, '').length >= 30) {
+                return text.slice(0, 12000);
+            }
+
+            // Almost nothing extracted — this is a scanned/image-based PDF with no text
+            // layer, which is exactly the case that used to fail outright. Instead of
+            // giving up, render each page to a canvas and run OCR on the image, the same
+            // way we already do for uploaded photos.
+            if (!window.Tesseract) throw new Error('empty');
+
+            const ocrPages = Math.min(pdf.numPages, 8); // OCR is slow client-side — cap pages
+            let ocrText = '';
+            for (let i = 1; i <= ocrPages; i++) {
+                if (onStatus) onStatus(`الملف صورة ممسوحة ضوئيًا، جارٍ تحليل صفحة ${i} من ${ocrPages} بالـ OCR...`);
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 2 });
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                const ctx = canvas.getContext('2d');
+                await page.render({ canvasContext: ctx, viewport }).promise;
+                try {
+                    const { data } = await Tesseract.recognize(canvas, 'ara+eng');
+                    ocrText += (data.text || '') + '\n';
+                } catch (e) {}
+                if (ocrText.length > 12000) break;
+            }
+            ocrText = ocrText.trim();
+            if (!ocrText) throw new Error('empty');
+            return ocrText.slice(0, 12000);
         }
 
         function handleFileUpload(event) {
@@ -1718,7 +1828,11 @@
             } else if (isPdf) {
                 pendingAttachment = { name: file.name, processing: true, status: 'جارٍ استخراج النص من الـ PDF...' };
                 showAttachmentChip();
-                extractPdfText(file).then(text => {
+                extractPdfText(file, (status) => {
+                    if (myToken !== attachmentToken || !pendingAttachment) return;
+                    pendingAttachment.status = status;
+                    showAttachmentChip();
+                }).then(text => {
                     if (myToken !== attachmentToken) return;
                     pendingAttachment = { name: file.name, textContent: text };
                     showAttachmentChip();
@@ -1727,7 +1841,7 @@
                     if (myToken !== attachmentToken) return;
                     pendingAttachment = { name: file.name };
                     showAttachmentChip();
-                    showToast('تعذر استخراج نص من هذا الـ PDF (قد يكون صورة ممسوحة ضوئيًا بدون نص)', 'error');
+                    showToast('تعذر استخراج أي نص من هذا الملف حتى بعد محاولة الـ OCR', 'error');
                 });
             } else if (isImage) {
                 const reader = new FileReader();
