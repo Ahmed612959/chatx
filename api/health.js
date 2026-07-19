@@ -10,7 +10,8 @@ export default async function handler() {
       geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
       openrouterConfigured: Boolean(process.env.OPENROUTER_API_KEY),
       cerebrasConfigured: Boolean(process.env.CEREBRAS_API_KEY),
-      qwenConfigured: Boolean(process.env.QWEN_API_KEY)
+      qwenConfigured: Boolean(process.env.QWEN_API_KEY),
+      zimageConfigured: Boolean(process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY)
     }),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
   );
