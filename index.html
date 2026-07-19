@@ -1680,7 +1680,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: "openai/gpt-oss-20b",
-                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.slice(-6).map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
                     stream: true
                 }),
                 signal
@@ -1753,7 +1753,7 @@
                     // models — it keeps working even as individual free model IDs rotate out,
                     // instead of hardcoding one that might get retired without notice.
                     model: "openrouter/free",
-                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.slice(-6).map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
                     stream: true
                 }),
                 signal
@@ -1823,7 +1823,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: "gpt-oss-120b",
-                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.slice(-6).map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
                     stream: true
                 }),
                 signal
@@ -1893,7 +1893,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: "qwen-plus",
-                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.slice(-6).map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
                     stream: true
                 }),
                 signal
@@ -1976,8 +1976,12 @@
             if (lastUserMsg.image && lastUserMsg.image.base64) {
                 parts.push({ inline_data: { mime_type: lastUserMsg.image.mimeType, data: lastUserMsg.image.base64 } });
             }
+            // Gemini has no memory of its own between requests — every call is stateless,
+            // so "remembering" earlier parts of the lesson only works if we actually send
+            // them again as history. Send the full conversation every time.
+            const history = messages.slice(0, -1);
             const requestBody = {
-                contents: messages.slice(-6, -1).map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })).concat([{ role: 'user', parts }])
+                contents: history.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })).concat([{ role: 'user', parts }])
             };
             if (systemPrompt) {
                 requestBody.systemInstruction = { parts: [{ text: systemPrompt }] };
@@ -2055,7 +2059,7 @@
                   ]
                 : lastUserMsg.content;
 
-            const historyMessages = messages.slice(-6, -1)
+            const historyMessages = messages.slice(0, -1)
                 .filter(m => m.role === 'user' || m.role === 'bot')
                 .map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }));
 
