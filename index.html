@@ -341,8 +341,25 @@
         .msg-action-btn.stop-btn { background: var(--danger); color: white; animation: pulse 1.5s infinite; }
         .msg-action-btn.speaking { background: var(--accent); color: white; }
         .msg-action-btn.pin-btn.pinned { background: var(--warning); color: white; }
+        .msg-action-btn.delete-btn:hover { color: var(--danger); }
         .msg-bubble.pinned-msg { box-shadow: 0 0 0 2px var(--warning) inset; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        /* Inline edit mode for a sent (user) message */
+        .msg-edit-textarea {
+            width: 100%; min-height: 60px; resize: vertical; border-radius: 10px; padding: 8px 10px;
+            background: rgba(0, 0, 0, 0.2); color: inherit; border: 1px solid rgba(255, 255, 255, 0.3);
+            font-family: var(--font); font-size: 14px; line-height: 1.6;
+        }
+        .msg-edit-actions { display: flex; gap: 8px; margin-top: 8px; }
+        .msg-edit-btn {
+            padding: 6px 12px; border-radius: 8px; border: none; font-family: var(--font);
+            font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;
+            transition: opacity 0.2s;
+        }
+        .msg-edit-btn:active { opacity: 0.8; }
+        .msg-edit-btn.save { background: #fff; color: var(--accent); }
+        .msg-edit-btn.cancel { background: rgba(255, 255, 255, 0.18); color: #fff; }
 
         /* Pinned messages bar under the top bar */
         .pinned-bar {
@@ -773,6 +790,22 @@
                 }
             }
 
+            if (msg.role === 'user') {
+                const editBtn = document.createElement('button');
+                editBtn.className = 'msg-action-btn';
+                editBtn.title = 'تعديل الرسالة';
+                editBtn.innerHTML = '<i class="fas fa-pen"></i>';
+                editBtn.addEventListener('click', () => enterEditMode(msg.id));
+                actionsDiv.appendChild(editBtn);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'msg-action-btn delete-btn';
+                deleteBtn.title = 'حذف الرسالة';
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.addEventListener('click', () => deleteMessage(msg.id));
+                actionsDiv.appendChild(deleteBtn);
+            }
+
             const pinBtn = document.createElement('button');
             pinBtn.className = 'msg-action-btn pin-btn' + (msg.pinned ? ' pinned' : '');
             pinBtn.title = msg.pinned ? 'إلغاء التثبيت' : 'تثبيت الرسالة';
@@ -809,7 +842,9 @@
         }
 
         let currentUtterance = null;
+        let currentAudio = null;
         let currentSpeakBtn = null;
+        let speakToken = 0;
 
         function resetSpeakBtn() {
             if (currentSpeakBtn) {
@@ -820,16 +855,28 @@
             currentSpeakBtn = null;
         }
 
-        // Reads a bot reply out loud. Clicking the same button again (or another speak
-        // button) stops the current playback first, so only one message speaks at a time.
-        function speakText(text, btn) {
-            if (!('speechSynthesis' in window)) {
-                showToast('المتصفح لا يدعم خاصية سماع الرد', 'error');
-                return;
+        // Stops whatever is currently speaking, whether it's the /api/tts audio player
+        // or the browser's built-in speechSynthesis fallback. Bumping speakToken also
+        // cancels any in-flight /api/tts fetch so a stale response can't start playing late.
+        function stopSpeaking() {
+            speakToken++;
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.src = '';
+                currentAudio = null;
             }
-            const wasThisBtn = currentSpeakBtn === btn;
-            window.speechSynthesis.cancel();
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
             resetSpeakBtn();
+        }
+
+        // Reads a bot reply out loud using the free /api/tts backend route (real speech
+        // audio, works even where the browser has no/poor Arabic voices). Falls back to
+        // speechSynthesis if the API route is unreachable or returns an error. Clicking
+        // the same button again (or another speak button) stops playback first, so only
+        // one message speaks at a time.
+        async function speakText(text, btn) {
+            const wasThisBtn = currentSpeakBtn === btn;
+            stopSpeaking();
             if (wasThisBtn) return;
 
             const plain = (text || '')
@@ -839,18 +886,61 @@
                 .trim();
             if (!plain) { showToast('لا يوجد نص لقراءته', 'error'); return; }
 
+            const myToken = ++speakToken;
+            currentSpeakBtn = btn;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.classList.add('speaking');
+
+            try {
+                const res = await fetch('/api/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: plain, lang: 'ar' })
+                });
+                if (myToken !== speakToken) return; // stopped/replaced while we were waiting
+                if (!res.ok) throw new Error('tts-request-failed');
+
+                const blob = await res.blob();
+                if (myToken !== speakToken) return;
+
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                currentAudio = audio;
+                btn.innerHTML = '<i class="fas fa-stop"></i>';
+                const cleanup = () => {
+                    URL.revokeObjectURL(url);
+                    if (currentAudio === audio) {
+                        currentAudio = null;
+                        if (myToken === speakToken) resetSpeakBtn();
+                    }
+                };
+                audio.onended = cleanup;
+                audio.onerror = cleanup;
+                await audio.play();
+            } catch (err) {
+                if (myToken !== speakToken) return;
+                speakWithBrowserFallback(plain, btn, myToken);
+            }
+        }
+
+        // Backup path: the browser's own text-to-speech, used only when /api/tts fails
+        // (e.g. offline, or the free upstream TTS service is temporarily unavailable).
+        function speakWithBrowserFallback(plain, btn, myToken) {
+            if (!('speechSynthesis' in window)) {
+                showToast('تعذّر توليد الصوت، والمتصفح لا يدعم القراءة كبديل', 'error');
+                resetSpeakBtn();
+                return;
+            }
             const utter = new SpeechSynthesisUtterance(plain);
             utter.lang = 'ar-SA';
             const voices = window.speechSynthesis.getVoices();
             const arVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ar'));
             if (arVoice) utter.voice = arVoice;
-            utter.onend = resetSpeakBtn;
-            utter.onerror = resetSpeakBtn;
+            utter.onend = () => { if (myToken === speakToken) resetSpeakBtn(); };
+            utter.onerror = () => { if (myToken === speakToken) resetSpeakBtn(); };
 
             currentUtterance = utter;
-            currentSpeakBtn = btn;
             btn.innerHTML = '<i class="fas fa-stop"></i>';
-            btn.classList.add('speaking');
             window.speechSynthesis.speak(utter);
         }
 
@@ -863,8 +953,7 @@
             const idx = chat.messages.findIndex(m => m.id === msgId);
             if (idx === -1) return;
 
-            window.speechSynthesis && window.speechSynthesis.cancel();
-            resetSpeakBtn();
+            stopSpeaking();
 
             const removed = chat.messages.splice(idx);
             removed.forEach(m => {
@@ -1096,6 +1185,118 @@
             }
             renderPinnedBar(chat);
             showToast(msg.pinned ? 'تم تثبيت الرسالة' : 'تم إلغاء تثبيت الرسالة', 'success');
+        }
+
+        // Turns a sent (user) message bubble into an inline textarea so it can be edited
+        // in place. Only the text portion is swapped out — an attached image (if any)
+        // stays visible above it untouched.
+        function enterEditMode(msgId) {
+            if (isGenerating) { showToast('استنى لحظة، البوت لسه بيرد على آخر رسالة', 'error'); return; }
+            const chat = chats.find(c => c.id === currentChatId);
+            const msg = chat && chat.messages.find(m => m.id === msgId);
+            if (!msg) return;
+            const msgDiv = document.getElementById(msgId);
+            const bubble = msgDiv && msgDiv.querySelector('.msg-bubble');
+            const textWrap = bubble && bubble.querySelector('.msg-text');
+            if (!bubble || !textWrap || bubble.dataset.editing) return;
+
+            bubble.dataset.editing = '1';
+            const originalHTML = textWrap.innerHTML;
+            textWrap.innerHTML = '';
+
+            const textarea = document.createElement('textarea');
+            textarea.className = 'msg-edit-textarea';
+            textarea.value = msg.content;
+            textWrap.appendChild(textarea);
+
+            const editActions = document.createElement('div');
+            editActions.className = 'msg-edit-actions';
+
+            const saveBtn = document.createElement('button');
+            saveBtn.type = 'button';
+            saveBtn.className = 'msg-edit-btn save';
+            saveBtn.innerHTML = '<i class="fas fa-check"></i> حفظ وإعادة الإرسال';
+            saveBtn.addEventListener('click', () => saveEditMessage(msgId, textarea.value));
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.className = 'msg-edit-btn cancel';
+            cancelBtn.innerHTML = '<i class="fas fa-xmark"></i> إلغاء';
+            cancelBtn.addEventListener('click', () => {
+                delete bubble.dataset.editing;
+                textWrap.innerHTML = originalHTML;
+                enhanceCodeBlocks(bubble);
+            });
+
+            editActions.appendChild(saveBtn);
+            editActions.appendChild(cancelBtn);
+            textWrap.appendChild(editActions);
+
+            textarea.style.height = Math.min(textarea.scrollHeight, 300) + 'px';
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+
+        // Saves an edited message. Because everything after it in the conversation was a
+        // reply built on the old text, that tail (bot answers, follow-ups...) is removed
+        // and a fresh reply is generated for the edited message — same as regenerateMessage.
+        async function saveEditMessage(msgId, newText) {
+            newText = (newText || '').trim();
+            if (!newText) { showToast('الرسالة لا يمكن أن تكون فارغة', 'error'); return; }
+            if (isGenerating) return;
+
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat) return;
+            const idx = chat.messages.findIndex(m => m.id === msgId);
+            if (idx === -1) return;
+
+            stopSpeaking();
+
+            chat.messages[idx].content = newText;
+            const removed = chat.messages.splice(idx + 1);
+            removed.forEach(m => {
+                const el = document.getElementById(m.id);
+                if (el) el.remove();
+            });
+
+            if (idx === 0) chat.title = newText.substring(0, 35) + (newText.length > 35 ? '...' : '');
+
+            saveData();
+            renderChatList();
+            renderChat(currentChatId);
+
+            if (abortController) abortController.abort();
+            abortController = new AbortController();
+            isGenerating = true;
+            setSendButtonState(true);
+            document.getElementById('typingIndicator').classList.add('active');
+            scrollToBottom();
+            await runGeneration(chat);
+        }
+
+        // Deletes a single sent message. Anything after it in the conversation is left as-is.
+        function deleteMessage(msgId) {
+            if (isGenerating) { showToast('استنى لحظة، البوت لسه بيرد على آخر رسالة', 'error'); return; }
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat) return;
+            const idx = chat.messages.findIndex(m => m.id === msgId);
+            if (idx === -1) return;
+            if (!confirm('تحذف الرسالة دي؟')) return;
+
+            stopSpeaking();
+
+            chat.messages.splice(idx, 1);
+            const el = document.getElementById(msgId);
+            if (el) el.remove();
+            saveData();
+            renderChatList();
+            renderPinnedBar(chat);
+            syncRegenerateButtons(chat);
+
+            if (chat.messages.length === 0) {
+                document.getElementById('welcomeScreen').style.display = 'flex';
+            }
+            showToast('تم حذف الرسالة', 'success');
         }
 
         function sendQuick(text) {
@@ -1388,6 +1589,7 @@
                 bubble.appendChild(img);
             }
             const textWrap = document.createElement('div');
+            textWrap.className = 'msg-text';
             textWrap.innerHTML = contentHTML;
             bubble.appendChild(textWrap);
             enhanceCodeBlocks(bubble);
@@ -1790,550 +1992,4 @@
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop(); // keep any partial line for the next chunk
-
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    try {
-                        const data = JSON.parse(line.slice(6));
-                        const piece = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                        if (piece) {
-                            hasContent = true;
-                            queue.push(piece);
-                        }
-                    } catch (e) {}
-                }
-            }
-
-            const fullText = await queue.flush();
-
-            if (!hasContent) {
-                msgDiv.remove();
-                chat.messages.pop();
-                await respondLocally(lastUserMsg.content, chat, signal);
-                return;
-            }
-
-            finalizeBotMessage(msgDiv, botMsg);
-            saveData();
-        }
-
-        // Sends the last user message (with its attached image, if any) to the vision-capable
-        // model behind /api/zimage and streams back an analysis/answer about it. Falls back to
-        // plain text if no image is attached, so picking this model still works normally.
-        async function streamZimage(messages, signal) {
-            const lastUserMsg = [...messages].reverse().find(m => m.role === 'user') || messages[messages.length - 1];
-            const userContent = (lastUserMsg.image && lastUserMsg.image.base64)
-                ? [
-                      { type: 'text', text: lastUserMsg.content || 'صف هذه الصورة بالتفصيل وحلل محتواها.' },
-                      { type: 'image_url', image_url: { url: `data:${lastUserMsg.image.mimeType};base64,${lastUserMsg.image.base64}` } }
-                  ]
-                : lastUserMsg.content;
-
-            const historyMessages = messages.slice(-6, -1)
-                .filter(m => m.role === 'user' || m.role === 'bot')
-                .map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }));
-
-            const response = await fetch(`${settings.backendUrl}/api/zimage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: "qwen-vl-max",
-                    messages: [
-                        { role: "system", content: "أنت مساعد أكاديمي ذكي قادر على تحليل الصور المرفوعة بدقة ووصف محتواها والإجابة عن أي سؤال متعلق بها." },
-                        ...historyMessages,
-                        { role: "user", content: userContent }
-                    ],
-                    stream: true
-                }),
-                signal
-            });
-
-            if (!response.ok) {
-                let detail = '';
-                try { detail = (await response.text()).slice(0, 200); } catch (e) {}
-                console.error('Z-Image API error', response.status, detail);
-                throw new Error(`Z-Image API Error (${response.status}): ${detail || 'no detail'}`);
-            }
-
-            document.getElementById('typingIndicator').classList.remove('active');
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-
-            const chat = chats.find(c => c.id === currentChatId);
-            const botMsg = { role: 'bot', content: '', source: 'zimage', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
-            chat.messages.push(botMsg);
-            const msgDiv = createBotMessageShell(botMsg);
-            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
-            let hasContent = false;
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop();
-
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    const payload = line.slice(6).trim();
-                    if (payload === '[DONE]') continue;
-                    try {
-                        const data = JSON.parse(payload);
-                        const content = data.choices[0]?.delta?.content || '';
-                        if (content) {
-                            hasContent = true;
-                            queue.push(content);
-                        }
-                    } catch (e) {}
-                }
-            }
-
-            const fullText = await queue.flush();
-
-            if (!hasContent) {
-                msgDiv.remove();
-                chat.messages.pop();
-                await respondLocally(lastUserMsg.content, chat, signal);
-                return;
-            }
-
-            finalizeBotMessage(msgDiv, botMsg);
-            saveData();
-        }
-
-        function getLocalResponse(prompt) {
-            const p = prompt.toLowerCase();
-            if (p.includes('خطة') || p.includes('دراسة')) {
-                return "### خطة دراسة مقترحة:\n\n**1. تحديد الأولويات:** ابدأ بالمواد الأصعب.\n**2. تقنية بومودورو:** 25 دقيقة دراسة + 5 دقائق راحة.\n**3. المراجعة النشطة:** اختبر نفسك باستمرار.\n**4. النوم الكافي:** 7-8 ساعات يومياً.";
-            }
-            if (p.includes('تلخيص') || p.includes('درس')) {
-                return "لتلخيص أي درس:\n1. اقرأ العنوان والأهداف\n2. حدد الكلمات المفتاحية\n3. أعد الصياغة بأسلوبك\n4. ارسم خريطة ذهنية";
-            }
-            if (p.includes('mcq') || p.includes('اختبار') || p.includes('سؤال')) {
-                return "**س:** ما هي عاصمة السعودية؟\n**ج:** الرياض\n\n**س:** كم عدد قارات العالم؟\n**ج:** 7 قارات";
-            }
-            return "أهلاً بك في School X! كيف يمكنني مساعدتك في دراستك اليوم؟";
-        }
-
-        function initSpeechRecognition() {
-            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const micBtn = document.getElementById('micBtn');
-            if (!SR) {
-                micBtn.classList.add('unsupported');
-                return;
-            }
-            recognition = new SR();
-            recognition.lang = 'ar-EG';
-            recognition.continuous = false;
-            recognition.interimResults = true;
-            recognition.maxAlternatives = 1;
-
-            recognition.onstart = () => {
-                isListening = true;
-                micBtn.classList.add('listening');
-                document.getElementById('micIcon').className = 'fas fa-stop';
-            };
-
-            recognition.onresult = (event) => {
-                let transcript = '';
-                for (let i = 0; i < event.results.length; i++) {
-                    transcript += event.results[i][0].transcript;
-                }
-                const input = document.getElementById('messageInput');
-                input.value = transcript;
-                autoResize(input);
-                updateCharCount();
-            };
-
-            recognition.onerror = (event) => {
-                const messages = {
-                    'not-allowed': 'رفضت إذن الميكروفون — سمح بيه من إعدادات المتصفح وجرب تاني',
-                    'service-not-allowed': 'خدمة التعرف على الصوت مرفوضة من المتصفح',
-                    'audio-capture': 'مفيش ميكروفون متاح على الجهاز',
-                    'network': 'مشكلة في الاتصال بخدمة التعرف على الصوت'
-                };
-                if (messages[event.error]) showToast(messages[event.error], 'error');
-            };
-
-            recognition.onend = () => {
-                isListening = false;
-                micBtn.classList.remove('listening');
-                document.getElementById('micIcon').className = 'fas fa-microphone';
-            };
-        }
-
-        async function toggleVoiceInput() {
-            if (!recognition || isGenerating) return;
-
-            if (isListening) {
-                recognition.stop();
-                return;
-            }
-
-            // SpeechRecognition (and getUserMedia) only work in a secure context — https:// or
-            // localhost. Opening the file directly (file://) or over plain http:// silently fails
-            // without this check, which is the #1 cause of "the mic just doesn't work".
-            if (!window.isSecureContext) {
-                showToast('المايك محتاج الصفحة تتفتح عن طريق HTTPS أو localhost', 'error');
-                return;
-            }
-
-            // Explicitly request mic permission first so denial/no-device errors show a clear
-            // message immediately, instead of recognition failing silently a moment later.
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    stream.getTracks().forEach(t => t.stop());
-                } catch (e) {
-                    showToast('محتاج إذن الميكروفون عشان الميزة دي تشتغل', 'error');
-                    return;
-                }
-            }
-
-            try {
-                recognition.start();
-            } catch (e) {
-                // start() throws if called while a previous session is still winding down —
-                // reset cleanly and retry once instead of leaving the mic stuck "on" visually.
-                try { recognition.stop(); } catch (_) {}
-                setTimeout(() => { try { recognition.start(); } catch (_) {} }, 250);
-            }
-        }
-
-        function autoResize(textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
-        }
-
-        function updateCharCount() {
-            const len = document.getElementById('messageInput').value.length;
-            document.getElementById('charCount').textContent = `${len} / 4000`;
-            if (!isGenerating) {
-                document.getElementById('sendBtn').disabled = len === 0 && !pendingAttachment;
-            }
-        }
-
-        function handleKeyDown(e) {
-            // Ignore Enter presses that are part of IME composition (common on mobile keyboards
-            // with Arabic predictive text) — otherwise a single Enter can fire sendMessage() twice.
-            if (e.isComposing || e.keyCode === 229) return;
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        }
-
-        function scrollToBottom() {
-            const container = document.getElementById('chatContainer');
-            setTimeout(() => container.scrollTop = container.scrollHeight, 50);
-        }
-
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => showToast('تم النسخ', 'success'))
-                .catch(() => showToast('تعذر النسخ', 'error'));
-        }
-
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('sidebarOverlay').classList.toggle('active');
-        }
-
-        function closeSidebar() {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.remove('active');
-        }
-
-        function toggleTheme() {
-            settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
-            applyTheme(settings.theme);
-            saveData();
-        }
-
-        function applyTheme(theme) {
-            document.body.className = theme === 'light' ? 'light' : '';
-            document.getElementById('themeIcon').className = theme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
-        }
-
-        function openModal(id) {
-            document.getElementById(id).classList.add('active');
-            if (window.innerWidth < 768) closeSidebar();
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
-
-        function saveBackendUrl() {
-            const input = document.getElementById('backendUrlInput');
-            const url = input.value.trim().replace(/\/+$/, '');
-            settings.backendUrl = url;
-            saveData();
-            const status = document.getElementById('backendStatus');
-            if (url) {
-                status.innerHTML = '<span style="color:var(--success)">تم الحفظ ✓ هيتم النداء على ' + url + '</span>';
-            } else {
-                status.innerHTML = '<span style="color:var(--text-2)">تلقائي — هيتم النداء على /api/groq و /api/gemini على نفس الدومين</span>';
-            }
-            showToast('تم الحفظ', 'success');
-        }
-
-        function calculatePercentage() {
-            const v = parseFloat(document.getElementById('percValue').value);
-            const t = parseFloat(document.getElementById('percTotal').value);
-            const resDiv = document.getElementById('percResult');
-            if (!v || !t) { resDiv.innerHTML = 'أدخل القيم'; resDiv.classList.add('show'); return; }
-            resDiv.innerHTML = `${((v / t) * 100).toFixed(1)}%`;
-            resDiv.classList.add('show');
-        }
-
-        function calculateBMI() {
-            const w = parseFloat(document.getElementById('bmiWeight').value);
-            const h = parseFloat(document.getElementById('bmiHeight').value) / 100;
-            const resDiv = document.getElementById('bmiResult');
-            if (!w || !h) { resDiv.innerHTML = 'أدخل القيم'; resDiv.classList.add('show'); return; }
-            const bmi = (w / (h * h)).toFixed(1);
-            resDiv.innerHTML = `${bmi}`;
-            resDiv.classList.add('show');
-        }
-
-        if (window.pdfjsLib) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        }
-
-        // Tracks the upload "session" so a stale async extraction (PDF/OCR) can't
-        // overwrite a newer attachment or resurrect one the user already removed.
-        let attachmentToken = 0;
-
-        async function extractPdfText(file, onStatus) {
-            const buffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-            // Large/"ضخمة" PDFs: read up to 80 pages and up to ~25k characters — enough for
-            // most textbooks/chapters — instead of bailing out early on big files.
-            const TEXT_CHAR_CAP = 25000;
-            const maxPages = Math.min(pdf.numPages, 80);
-            let text = '';
-            for (let i = 1; i <= maxPages; i++) {
-                if (onStatus && maxPages > 8 && (i % 5 === 0 || i === maxPages)) {
-                    onStatus(`جارٍ استخراج النص... صفحة ${i} من ${maxPages}`);
-                }
-                const page = await pdf.getPage(i);
-                const content = await page.getTextContent();
-                text += content.items.map(it => it.str).join(' ') + '\n';
-                if (text.length > TEXT_CHAR_CAP) break;
-            }
-            text = text.trim();
-
-            // A real text layer came back — most PDFs (Word exports, typed docs, etc).
-            if (text.replace(/\s/g, '').length >= 30) {
-                const truncated = text.length > TEXT_CHAR_CAP;
-                const out = text.slice(0, TEXT_CHAR_CAP);
-                return truncated ? `${out}\n\n[...تم اقتطاع باقي النص لأن الملف طويل جدًا...]` : out;
-            }
-
-            // Almost nothing extracted — this is a scanned/image-based PDF with no text
-            // layer, which is exactly the case that used to fail outright. Instead of
-            // giving up, render each page to a canvas and run OCR on the image, the same
-            // way we already do for uploaded photos.
-            if (!window.Tesseract) throw new Error('empty');
-
-            const OCR_CHAR_CAP = 25000;
-            const ocrPages = Math.min(pdf.numPages, 15); // OCR is slow client-side — cap pages
-            let ocrText = '';
-            for (let i = 1; i <= ocrPages; i++) {
-                if (onStatus) onStatus(`الملف صورة ممسوحة ضوئيًا، جارٍ تحليل صفحة ${i} من ${ocrPages} بالـ OCR...`);
-                const page = await pdf.getPage(i);
-                const viewport = page.getViewport({ scale: 2 });
-                const canvas = document.createElement('canvas');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                const ctx = canvas.getContext('2d');
-                await page.render({ canvasContext: ctx, viewport }).promise;
-                try {
-                    const { data } = await Tesseract.recognize(canvas, 'ara+eng');
-                    ocrText += (data.text || '') + '\n';
-                } catch (e) {}
-                if (ocrText.length > OCR_CHAR_CAP) break;
-            }
-            ocrText = ocrText.trim();
-            if (!ocrText) throw new Error('empty');
-            const truncated = ocrText.length > OCR_CHAR_CAP;
-            const out = ocrText.slice(0, OCR_CHAR_CAP);
-            return truncated ? `${out}\n\n[...تم اقتطاع باقي النص لأن الملف طويل جدًا...]` : out;
-        }
-
-        // Cleans up raw extracted text (collapses repeated spaces/blank lines from PDF/OCR
-        // extraction) and wraps it in a clearly delimited, nicely formatted block so both the
-        // AI model and the person reading the chat can tell exactly what came from the file.
-        function formatAttachmentForMessage(name, textContent, kind) {
-            const cleaned = (textContent || '')
-                .replace(/[ \t]{2,}/g, ' ')
-                .replace(/\n{3,}/g, '\n\n')
-                .trim();
-            const icon = kind === 'pdf' ? '📄' : kind === 'image' ? '🖼️' : '📎';
-            const label = kind === 'pdf' ? 'ملف PDF' : kind === 'image' ? 'صورة' : 'ملف';
-            const body = cleaned || '(لم يتم العثور على نص قابل للقراءة في الملف)';
-            return `${icon} **مرفق (${label}): ${name}**\n> تم استخراج النص التالي تلقائيًا وتنسيقه:\n\n---\n${body}\n---`;
-        }
-
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const isText = /\.(txt|md)$/i.test(file.name) || file.type.startsWith('text/');
-            const isImage = file.type.startsWith('image/');
-            const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
-            const myToken = ++attachmentToken;
-
-            if (isText) {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    if (myToken !== attachmentToken) return;
-                    pendingAttachment = { name: file.name, textContent: reader.result.slice(0, 6000) };
-                    showAttachmentChip();
-                    showToast(`تم إرفاق: ${file.name}`, 'success');
-                };
-                reader.onerror = () => showToast('تعذرت قراءة الملف', 'error');
-                reader.readAsText(file);
-            } else if (isPdf) {
-                pendingAttachment = { name: file.name, processing: true, status: 'جارٍ استخراج النص من الـ PDF...' };
-                showAttachmentChip();
-                extractPdfText(file, (status) => {
-                    if (myToken !== attachmentToken || !pendingAttachment) return;
-                    pendingAttachment.status = status;
-                    showAttachmentChip();
-                }).then(text => {
-                    if (myToken !== attachmentToken) return;
-                    pendingAttachment = { name: file.name, textContent: text };
-                    showAttachmentChip();
-                    showToast(`تم تحليل الملف: ${file.name}`, 'success');
-                }).catch(() => {
-                    if (myToken !== attachmentToken) return;
-                    pendingAttachment = { name: file.name };
-                    showAttachmentChip();
-                    showToast('تعذر استخراج أي نص من هذا الملف حتى بعد محاولة الـ OCR', 'error');
-                });
-            } else if (isImage) {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    if (myToken !== attachmentToken) return;
-                    const base64 = reader.result.split(',')[1];
-                    pendingAttachment = {
-                        name: file.name, base64, mimeType: file.type,
-                        processing: true, status: 'جارٍ تحليل النص داخل الصورة...'
-                    };
-                    showAttachmentChip();
-                    showToast(`تم إرفاق: ${file.name}`, 'success');
-
-                    if (window.Tesseract) {
-                        Tesseract.recognize(file, 'ara+eng').then(({ data }) => {
-                            if (myToken !== attachmentToken || !pendingAttachment) return;
-                            const ocrText = (data.text || '').trim();
-                            pendingAttachment.textContent = ocrText.slice(0, 6000);
-                            pendingAttachment.processing = false;
-                            pendingAttachment.status = ocrText ? 'تم استخراج النص من الصورة ✓' : 'لم يتم العثور على نص في الصورة';
-                            showAttachmentChip();
-                        }).catch(() => {
-                            if (myToken !== attachmentToken || !pendingAttachment) return;
-                            pendingAttachment.processing = false;
-                            pendingAttachment.status = null;
-                            showAttachmentChip();
-                        });
-                    } else {
-                        pendingAttachment.processing = false;
-                        pendingAttachment.status = null;
-                        showAttachmentChip();
-                    }
-                };
-                reader.onerror = () => showToast('تعذرت قراءة الملف', 'error');
-                reader.readAsDataURL(file);
-            } else {
-                showToast('نوع الملف غير مدعوم لعرض المحتوى، سيتم إرفاق الاسم فقط', 'error');
-                pendingAttachment = { name: file.name };
-                showAttachmentChip();
-            }
-            event.target.value = '';
-        }
-
-        function showAttachmentChip() {
-            let chip = document.getElementById('attachmentChip');
-            if (chip) chip.remove();
-            if (!pendingAttachment) return;
-            chip = document.createElement('div');
-            chip.className = 'attachment-chip';
-            chip.id = 'attachmentChip';
-            const icon = pendingAttachment.processing ? 'fa-spinner fa-spin' : 'fa-paperclip';
-            chip.innerHTML = `<i class="fas ${icon}"></i><span></span>`;
-            const label = pendingAttachment.status ? `${pendingAttachment.name} — ${pendingAttachment.status}` : pendingAttachment.name;
-            chip.querySelector('span').textContent = label;
-            const removeBtn = document.createElement('button');
-            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-            removeBtn.addEventListener('click', clearAttachment);
-            chip.appendChild(removeBtn);
-            document.querySelector('.input-area').insertBefore(chip, document.getElementById('smartSuggestions'));
-            updateCharCount();
-        }
-
-        function clearAttachment() {
-            attachmentToken++;
-            pendingAttachment = null;
-            const chip = document.getElementById('attachmentChip');
-            if (chip) chip.remove();
-            updateCharCount();
-        }
-
-        function exportPDF() {
-            const chat = chats.find(c => c.id === currentChatId);
-            if (!chat || chat.messages.length === 0) {
-                showToast('لا توجد محادثة لتصديرها', 'error');
-                return;
-            }
-            showToast('جاري التصدير...', 'success');
-
-            const printable = document.createElement('div');
-            printable.style.cssText = 'direction:rtl;font-family:Cairo,sans-serif;padding:20px;color:#0f172a;background:#ffffff;';
-            printable.innerHTML = `<h2 style="margin-bottom:16px;">${chat.title}</h2>`;
-            chat.messages.forEach(msg => {
-                const block = document.createElement('div');
-                block.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:10px;background:' + (msg.role === 'user' ? '#eef2ff' : '#f8fafc') + ';border:1px solid #e2e8f0;';
-                block.innerHTML = `<strong>${msg.role === 'user' ? 'أنت' : 'School X'}:</strong><div>${marked.parse(msg.content)}</div>`;
-                printable.appendChild(block);
-            });
-
-            html2pdf().set({
-                margin: 10,
-                filename: `${chat.title || 'chat'}.pdf`,
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            }).from(printable).save().then(() => {
-                showToast('تم التصدير', 'success');
-            }).catch(() => {
-                showToast('تعذر تصدير PDF', 'error');
-            });
-        }
-
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        window.onclick = (e) => {
-            if (e.target.classList.contains('modal-overlay')) {
-                e.target.classList.remove('active');
-            }
-        };
-    </script>
-</body>
-</html>
+                buffer += decoder.decode(value, { str
