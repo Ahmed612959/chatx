@@ -15,6 +15,8 @@
    - `OPENROUTER_API_KEY` = مفتاحك من OpenRouter (اختياري)
    - `CEREBRAS_API_KEY` = مفتاحك من Cerebras (اختياري)
    - `QWEN_API_KEY` = مفتاحك من Qwen / DashScope (اختياري) — من [https://dashscope.console.aliyun.com](https://dashscope.console.aliyun.com)
+   - `DASHSCOPE_API_KEY` = نفس نوع مفتاح DashScope/Model Studio (اختياري — لتحليل الصور عن طريق موديل Qwen-VL؛ لو `QWEN_API_KEY` موجود أصلاً هيستخدمه تلقائي كبديل)
+   - `DEEPSEEK_API_KEY` = مفتاحك من DeepSeek (اختياري) — من [https://platform.deepseek.com](https://platform.deepseek.com)
 5. اضغط **Deploy**
 6. بعد ما يخلص، هتاخد رابط زي `https://school-x-xxxx.vercel.app`
 
@@ -64,7 +66,7 @@ https://your-app.vercel.app/api/health
 هيرجعلك رد زي:
 
 ```json
-{ "groqConfigured": true, "geminiConfigured": true, "openrouterConfigured": false, "cerebrasConfigured": false, "qwenConfigured": true }
+{ "groqConfigured": true, "geminiConfigured": true, "openrouterConfigured": false, "cerebrasConfigured": false, "qwenConfigured": true, "deepseekConfigured": true, "zimageConfigured": true }
 ```
 
 لو أي واحدة فيهم `false`، معناها المتغير ده مش واصل للديبلوي الحالي — روح على الـ checklist اللي تحت. الصفحة دي متعمل معمول عشان تتأكد في ثانية من غير ما تفتح Developer Console أو تدور في الـ Network tab.
