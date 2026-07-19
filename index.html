@@ -626,6 +626,7 @@
                         <option value="openrouter">🔀 OpenRouter</option>
                         <option value="cerebras">🧠 Cerebras</option>
                         <option value="qwen">🐉 Qwen</option>
+                        <option value="zimage">🖼️ تحليل الصور</option>
                         <option value="local">💻 محلي</option>
                     </select>
                 </div>
@@ -1166,10 +1167,18 @@
         // appends its reply. Shared by sendMessage (new question) and regenerateMessage
         // (re-asking after deleting the previous bot reply) so both behave identically.
         async function runGeneration(chat) {
-            const model = document.getElementById('modelSelect').value;
+            let model = document.getElementById('modelSelect').value;
             let source = 'local';
             const lastUserMsg = [...chat.messages].reverse().find(m => m.role === 'user');
             const fallbackText = lastUserMsg ? lastUserMsg.content : '';
+            const hasImage = !!(lastUserMsg && lastUserMsg.image && lastUserMsg.image.base64);
+
+            // Groq/OpenRouter/Cerebras/Qwen are text-only — if the user attached a photo,
+            // routing to them would silently ignore it. Force a vision-capable model instead
+            // so an attached image always actually gets looked at.
+            if (hasImage && model !== 'gemini' && model !== 'zimage') {
+                model = 'zimage';
+            }
 
             try {
                 if (model === 'groq') {
@@ -1178,6 +1187,9 @@
                 } else if (model === 'gemini') {
                     source = 'gemini';
                     await streamGemini(chat.messages, abortController.signal);
+                } else if (model === 'zimage') {
+                    source = 'zimage';
+                    await streamZimage(chat.messages, abortController.signal);
                 } else if (model === 'openrouter') {
                     source = 'openrouter';
                     await streamOpenRouter(chat.messages, abortController.signal);
@@ -1188,6 +1200,18 @@
                     source = 'qwen';
                     await streamQwen(chat.messages, abortController.signal);
                 } else if (model === 'auto') {
+                    if (hasImage) {
+                        // Image attached in auto mode: try the dedicated vision model first,
+                        // then Gemini (also vision-capable) before giving up on the image.
+                        try {
+                            source = 'zimage';
+                            await streamZimage(chat.messages, abortController.signal);
+                        } catch (zimageError) {
+                            if (zimageError.name === 'AbortError') throw zimageError;
+                            source = 'gemini';
+                            await streamGemini(chat.messages, abortController.signal);
+                        }
+                    } else {
                     // We can't tell from the browser which server-side keys are actually
                     // configured, so auto mode tries providers in order and falls through
                     // automatically on failure — only dropping to local after all five miss.
@@ -1216,6 +1240,7 @@
                                 }
                             }
                         }
+                    }
                     }
                 } else {
                     await respondLocally(fallbackText, chat, abortController.signal);
@@ -1329,7 +1354,7 @@
             const sourceSpan = msgDiv.querySelector('.msg-source-icon');
             const actionsDiv = msgDiv.querySelector('.msg-actions');
             timeSpan.textContent = new Date(botMsg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
-            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'qwen' ? '🐉' : '💻';
+            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'zimage' ? '🖼️' : '💻';
             // This message was just pushed as the newest one, so it's always eligible for regenerate.
             buildMsgActionButtons(botMsg, actionsDiv, true);
             syncRegenerateButtons(chats.find(c => c.id === currentChatId));
@@ -1376,7 +1401,7 @@
             if (msg.role === 'bot') {
                 const sourceSpan = document.createElement('span');
                 sourceSpan.style.cssText = 'margin-right:6px;opacity:0.6';
-                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'qwen' ? '🐉' : '💻';
+                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'qwen' ? '🐉' : msg.source === 'zimage' ? '🖼️' : '💻';
                 meta.appendChild(sourceSpan);
             }
 
@@ -1777,6 +1802,93 @@
                         if (piece) {
                             hasContent = true;
                             queue.push(piece);
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            const fullText = await queue.flush();
+
+            if (!hasContent) {
+                msgDiv.remove();
+                chat.messages.pop();
+                await respondLocally(lastUserMsg.content, chat, signal);
+                return;
+            }
+
+            finalizeBotMessage(msgDiv, botMsg);
+            saveData();
+        }
+
+        // Sends the last user message (with its attached image, if any) to the vision-capable
+        // model behind /api/zimage and streams back an analysis/answer about it. Falls back to
+        // plain text if no image is attached, so picking this model still works normally.
+        async function streamZimage(messages, signal) {
+            const lastUserMsg = [...messages].reverse().find(m => m.role === 'user') || messages[messages.length - 1];
+            const userContent = (lastUserMsg.image && lastUserMsg.image.base64)
+                ? [
+                      { type: 'text', text: lastUserMsg.content || 'صف هذه الصورة بالتفصيل وحلل محتواها.' },
+                      { type: 'image_url', image_url: { url: `data:${lastUserMsg.image.mimeType};base64,${lastUserMsg.image.base64}` } }
+                  ]
+                : lastUserMsg.content;
+
+            const historyMessages = messages.slice(-6, -1)
+                .filter(m => m.role === 'user' || m.role === 'bot')
+                .map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }));
+
+            const response = await fetch(`${settings.backendUrl}/api/zimage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: "qwen-vl-max",
+                    messages: [
+                        { role: "system", content: "أنت مساعد أكاديمي ذكي قادر على تحليل الصور المرفوعة بدقة ووصف محتواها والإجابة عن أي سؤال متعلق بها." },
+                        ...historyMessages,
+                        { role: "user", content: userContent }
+                    ],
+                    stream: true
+                }),
+                signal
+            });
+
+            if (!response.ok) {
+                let detail = '';
+                try { detail = (await response.text()).slice(0, 200); } catch (e) {}
+                console.error('Z-Image API error', response.status, detail);
+                throw new Error(`Z-Image API Error (${response.status}): ${detail || 'no detail'}`);
+            }
+
+            document.getElementById('typingIndicator').classList.remove('active');
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            const chat = chats.find(c => c.id === currentChatId);
+            const botMsg = { role: 'bot', content: '', source: 'zimage', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
+            chat.messages.push(botMsg);
+            const msgDiv = createBotMessageShell(botMsg);
+            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
+            let hasContent = false;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) continue;
+                    const payload = line.slice(6).trim();
+                    if (payload === '[DONE]') continue;
+                    try {
+                        const data = JSON.parse(payload);
+                        const content = data.choices[0]?.delta?.content || '';
+                        if (content) {
+                            hasContent = true;
+                            queue.push(content);
                         }
                     } catch (e) {}
                 }
