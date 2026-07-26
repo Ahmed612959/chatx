@@ -723,7 +723,7 @@
                 <div class="calc-result" id="bmiResult"></div>
             </div>
             <div class="tool-section">
-                <div class="tool-title"><i class="fas fa-book-medical"></i> اختبار من بنك الأسئلة (School X)</div>
+                <div class="tool-title"><i class="fas fa-book-medical"></i> بنك الأسئلة (School X)</div>
                 <div class="input-group">
                     <label>المادة</label>
                     <select id="bankSubjectSelect" class="tool-input" onchange="populateBankChapters()">
@@ -732,14 +732,31 @@
                 </div>
                 <div class="input-group">
                     <label>الفصل</label>
-                    <select id="bankChapterSelect" class="tool-input"><option value="">اختر الفصل...</option></select>
+                    <select id="bankChapterSelect" class="tool-input" onchange="updateBankTypeCheckboxes()"><option value="">اختر الفصل...</option></select>
                 </div>
                 <div class="input-group">
-                    <label>عدد الأسئلة</label>
-                    <input type="number" id="bankQuestionCount" class="tool-input" value="10" min="1" max="50">
+                    <label>نوع الأسئلة</label>
+                    <div id="bankTypeChecks" style="display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--text-2);">
+                        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" value="mcq" checked> اختيار من متعدد</label>
+                        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" value="truefalse" checked> صح / خطأ</label>
+                        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" value="complete" checked> إكمال الفراغ</label>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>عدد الأسئلة (اسيبه فاضي أو 0 = كل الأسئلة المتاحة)</label>
+                    <input type="number" id="bankQuestionCount" class="tool-input" value="10" min="0" max="300">
                 </div>
                 <button class="btn-calc" onclick="generateBankQuiz()">أنشئ الاختبار</button>
                 <div class="calc-result" id="bankQuizStatus"></div>
+
+                <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);">
+                    <p style="font-size:11px;color:var(--text-2);margin-bottom:8px;line-height:1.7;">
+                        أو خلّي المساعد "يركّز" على الفصل ده بالذات ويذاكرلك إياه بمحتواه الحقيقي (تعريفات، أسئلة، حالات) — كلمه عادي في الشات وهو هيرد من محتوى الفصل نفسه بدل ما يجيب كلام عام.
+                    </p>
+                    <button class="btn-calc" onclick="focusOnBankChapter()">ذاكر الفصل ده مع المساعد</button>
+                    <button class="btn-calc" style="background:var(--bg-2);color:var(--text-2);margin-top:6px;" onclick="clearBankChapterFocus()">إلغاء التركيز</button>
+                    <div id="bankFocusStatus" style="margin-top:8px;font-size:12px;"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -2487,19 +2504,28 @@
         // بيتضاف قبل الـ system prompt الثابت في كل نداء للـ AI
         function getSystemPrompt(base) {
             base = base || 'أنت مساعد أكاديمي ذكي.';
-            if (!schoolContext) return base;
-            return `${base}
+            let extra = '';
+            if (schoolContext) {
+                extra += `
 
 أنت مساعد شخصي متكامل للمستخدم، متصل ببيانات حقيقية له من منصة School X. استخدم البيانات دي بذكاء:
 - لو سأل عن نفسه (درجاته، غيابه، مخالفاته، واجباته، البطولات المتاحة) جاوبه منها مباشرة وبالأرقام الحقيقية.
 - لو عنده واجبات لسه متسلمتش أو بطولة نشطة لسه مشاركش فيها ومناسب تفتكّره، اذكرها له بشكل طبيعي في سياق الكلام لو مناسب.
 - لو طلب مساعدة في مذاكرة أو حل واجب أو مراجعة، خد في اعتبارك صفه الدراسي ومستواه من نتائجه لتخصيص المساعدة (لو درجاته ضعيفة في مادة معينة ركز فيها، ولو ممتاز قدّم له تحديات أصعب).
-- لو الطالب طلب منك تعمل له اختبار أو تجيب أسئلة من بنك معين، متختلقش أسئلة من عندك — قوله يفتح "🧰 الأدوات" (زرار الآلة الحاسبة) ويختار "اختبار من بنك الأسئلة" ويحدد المادة والفصل وعدد الأسئلة، وهيطلعله اختبار حقيقي من بنك المدرسة الفعلي، وبعد ما يجاوب عليه ويبعتلك إجاباته هتصححها له وتشرحله غلطه.
 - لو الكلام مش له علاقة ببياناته، اتصرف كمساعد أكاديمي عادي من غير ما تقحم بياناته في الكلام.
 - متقولش "مش عندي بيانات عنك" أو حاجة زي كده — البيانات دي معاك فعلاً وموضحة تحت.
 
 بيانات المستخدم الحقيقية:
-${schoolContext}` + (pendingQuizContext ? `\n\n${pendingQuizContext}` : '');
+${schoolContext}`;
+            }
+            extra += `
+
+لو الطالب طلب منك تعمل له اختبار أو تجيب أسئلة من بنك معين، متختلقش أسئلة من عندك — قوله يفتح "🧰 الأدوات" (زرار الآلة الحاسبة) ويختار "بنك الأسئلة" ويحدد المادة والفصل ونوع الأسئلة وعددها، وهيطلعله اختبار حقيقي من بنك المدرسة الفعلي، وبعد ما يجاوب عليه ويبعتلك إجاباته هتصححها له وتشرحله غلطه.`;
+            if (pendingQuizContext) extra += `\n\n${pendingQuizContext}`;
+            if (activeStudyChapterContext) {
+                extra += `\n\nالطالب حاليًا "مركّز" على مذاكرة الفصل ده بالذات من بنك المدرسة الحقيقي، فاستخدم محتواه الفعلي في كل شرح أو سؤال بدل معلومات عامة من عندك، وميجيبش حاجة من برا الفصل ده إلا لو الطالب سأل عن حاجة تانية صراحة:\n${activeStudyChapterContext}`;
+            }
+            return base + extra;
         }
 
         // ====================== بنك الأسئلة (School X) — جلب أسئلة حقيقية وإنشاء اختبارات ======================
@@ -2564,8 +2590,10 @@ ${schoolContext}` + (pendingQuizContext ? `\n\n${pendingQuizContext}` : '');
             } catch (e) { return null; }
         }
 
-        let activeQuiz = null; // {subject, chapterName, questions:[{text, options, correct}], answers:{}}
+        let activeQuiz = null; // {chapterName, questions:[{type, text, options?, correct, completion?}]}
         let pendingQuizContext = ''; // بيتحط في الـ system prompt مرة واحدة بعد التصحيح عشان الـ AI يشرح الأخطاء
+        let activeStudyChapterContext = ''; // محتوى الفصل اللي الطالب "مركّز" عليه دلوقتي
+        let activeStudyChapterName = '';
 
         function shuffleArray(arr) {
             const a = [...arr];
@@ -2576,30 +2604,63 @@ ${schoolContext}` + (pendingQuizContext ? `\n\n${pendingQuizContext}` : '');
             return a;
         }
 
+        // بيوضّح للمستخدم كام سؤال متاح فعليًا من كل نوع في الفصل المختار
+        function updateBankTypeCheckboxes() {
+            const cacheKey = document.getElementById('bankChapterSelect').value;
+            const data = bankChaptersCache[cacheKey];
+            const box = document.getElementById('bankTypeChecks');
+            if (!box) return;
+            const labels = { mcq: 'اختيار من متعدد', truefalse: 'صح / خطأ', complete: 'إكمال الفراغ' };
+            box.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                const key = cb.value;
+                const n = data && Array.isArray(data[key]) ? data[key].length : 0;
+                const labelEl = cb.parentElement;
+                labelEl.lastChild.textContent = ` ${labels[key]} (${n})`;
+                cb.disabled = n === 0;
+                if (n === 0) cb.checked = false;
+            });
+        }
+
+        function getSelectedBankTypes() {
+            return [...document.querySelectorAll('#bankTypeChecks input[type="checkbox"]:checked')].map(cb => cb.value);
+        }
+
         async function generateBankQuiz() {
             const status = document.getElementById('bankQuizStatus');
             const cacheKey = document.getElementById('bankChapterSelect').value;
-            const count = parseInt(document.getElementById('bankQuestionCount').value) || 10;
+            const countRaw = parseInt(document.getElementById('bankQuestionCount').value);
+            const count = (!countRaw || countRaw <= 0) ? Infinity : countRaw; // 0 أو فاضي = كل الأسئلة المتاحة
+            const types = getSelectedBankTypes();
             if (!cacheKey) { status.innerHTML = '<span style="color:var(--danger)">اختر الفصل الأول</span>'; return; }
+            if (!types.length) { status.innerHTML = '<span style="color:var(--danger)">اختر نوع سؤال واحد على الأقل</span>'; return; }
             const data = bankChaptersCache[cacheKey];
-            if (!data || !data.mcq || !data.mcq.length) {
-                status.innerHTML = '<span style="color:var(--danger)">مفيش أسئلة اختيار من متعدد في الفصل ده</span>';
-                return;
-            }
-            const picked = shuffleArray(data.mcq).slice(0, Math.min(count, data.mcq.length));
-            activeQuiz = {
-                chapterName: data.name,
-                questions: picked.map(q => ({ text: q.text, options: q.options, correct: q.correct, correctTranslation: q.correctTranslation || '' })),
-                answers: {}
-            };
+            if (!data) { status.innerHTML = '<span style="color:var(--danger)">تعذر تحميل بيانات الفصل</span>'; return; }
+
+            // بنجمع الأنواع المختارة كلها في مجموعة واحدة، كل عنصر بياخد نوعه معاه
+            let pool = [];
+            types.forEach(t => {
+                const arr = Array.isArray(data[t]) ? data[t] : [];
+                arr.forEach(item => pool.push({ type: t, ...item }));
+            });
+            if (!pool.length) { status.innerHTML = '<span style="color:var(--danger)">مفيش أسئلة من الأنواع دي في الفصل ده</span>'; return; }
+
+            const picked = shuffleArray(pool).slice(0, Math.min(count, pool.length));
+            activeQuiz = { chapterName: data.name, questions: picked };
 
             let msg = `📚 **اختبار: ${data.name}** (${picked.length} سؤال)\n\n`;
             picked.forEach((q, i) => {
-                msg += `**${i + 1}. ${q.text}**\n`;
-                (q.options || []).forEach(o => { msg += `${o}\n`; });
+                if (q.type === 'mcq') {
+                    msg += `**${i + 1}. [اختيار من متعدد] ${q.text}**\n`;
+                    (q.options || []).forEach(o => { msg += `${o}\n`; });
+                } else if (q.type === 'truefalse') {
+                    msg += `**${i + 1}. [صح / خطأ] ${q.text}**\n`;
+                } else if (q.type === 'complete') {
+                    msg += `**${i + 1}. [إكمال] ${q.text}**\n`;
+                }
                 msg += '\n';
             });
-            msg += `---\nلما تخلص، اكتبلي إجاباتك كده في رسالة واحدة: \`1-B 2-A 3-C ...\` وأنا هصححها وأشرحلك أي غلط.`;
+            msg += `---\nلما تخلص، اكتبلي إجاباتك سطر لكل سؤال بالشكل ده:\n`;
+            msg += `\`1: B\` (لو اختيار من متعدد)\n\`2: صح\` أو \`2: خطأ\`\n\`3: الكلمة الناقصة\`\n\nوأنا هصححها فعليًا وأشرحلك أي غلط.`;
 
             const chat = chats.find(c => c.id === currentChatId);
             if (chat) {
@@ -2613,30 +2674,94 @@ ${schoolContext}` + (pendingQuizContext ? `\n\n${pendingQuizContext}` : '');
         }
 
         // بتتنادى قبل ما نبعت رسالة المستخدم للـ AI: لو فيه اختبار نشط وجت إجابات فيها
-        // شكل "رقم-حرف"، بيتم تصحيحها فعليًا هنا (مش بالذكاء الاصطناعي) عشان النتيجة تبقى دقيقة 100%،
+        // شكل "رقم: إجابة"، بيتم تصحيحها فعليًا هنا (مش بالذكاء الاصطناعي) عشان النتيجة تبقى دقيقة 100%،
         // وبعدين بنسيب الـ AI يشرح الأخطاء بس.
         function tryGradeActiveQuiz(userText) {
             if (!activeQuiz || !activeQuiz.questions.length) return;
-            const matches = [...userText.matchAll(/(\d+)\s*[-:]\s*([A-Dأ-د])/g)];
-            if (matches.length < Math.ceil(activeQuiz.questions.length / 2)) return; // مش شكل إجابة اختبار، سيبها عادي
+            const lines = userText.split('\n').map(l => l.trim()).filter(Boolean);
+            const answerMap = {};
+            lines.forEach(line => {
+                const m = line.match(/^(\d+)\s*[-:]\s*(.+)$/);
+                if (m) answerMap[parseInt(m[1])] = m[2].trim();
+            });
+            const answeredCount = Object.keys(answerMap).length;
+            if (answeredCount < Math.ceil(activeQuiz.questions.length / 2)) return; // مش شكل إجابة اختبار، سيبها عادي
 
             let correctCount = 0;
             const details = [];
-            matches.forEach(m => {
-                const qNum = parseInt(m[1]);
-                let ans = m[2].toUpperCase();
-                const arToEn = { 'أ': 'A', 'ب': 'B', 'ج': 'C', 'د': 'D' };
-                if (arToEn[m[2]]) ans = arToEn[m[2]];
+            const arToEn = { 'أ': 'A', 'ب': 'B', 'ج': 'C', 'د': 'D' };
+            Object.entries(answerMap).forEach(([qNumStr, rawAns]) => {
+                const qNum = parseInt(qNumStr);
                 const q = activeQuiz.questions[qNum - 1];
                 if (!q) return;
-                const isCorrect = ans === (q.correct || '').toUpperCase();
+                let isCorrect = false;
+                let correctLabel = '';
+                if (q.type === 'mcq') {
+                    let ans = rawAns.trim().charAt(0).toUpperCase();
+                    if (arToEn[rawAns.trim().charAt(0)]) ans = arToEn[rawAns.trim().charAt(0)];
+                    isCorrect = ans === (q.correct || '').toUpperCase();
+                    correctLabel = q.correct;
+                } else if (q.type === 'truefalse') {
+                    const norm = rawAns.trim().toLowerCase();
+                    const saidTrue = ['صح', 'صحيح', 't', 'true'].includes(norm);
+                    const saidFalse = ['خطأ', 'خطا', 'غلط', 'f', 'false'].includes(norm);
+                    if (saidTrue) isCorrect = q.correct === true;
+                    else if (saidFalse) isCorrect = q.correct === false;
+                    correctLabel = q.correct ? 'صح' : 'خطأ';
+                } else if (q.type === 'complete') {
+                    const norm = s => (s || '').toString().trim().toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '');
+                    isCorrect = norm(rawAns) === norm(q.completion);
+                    correctLabel = q.completion;
+                }
                 if (isCorrect) correctCount++;
-                details.push(`سؤال ${qNum}: إجابة الطالب ${ans} — ${isCorrect ? 'صح ✅' : `غلط ❌ (الصح: ${q.correct})`}`);
+                details.push(`سؤال ${qNum} (${q.type}): إجابة الطالب "${rawAns}" — ${isCorrect ? 'صح ✅' : `غلط ❌ (الصح: ${correctLabel})`}`);
             });
 
             const total = activeQuiz.questions.length;
             pendingQuizContext = `نتيجة تصحيح اختبار "${activeQuiz.chapterName}": ${correctCount} من ${total}.\nتفاصيل التصحيح (استخدمها عشان تشرح للطالب أخطاءه فقط بأسلوب تعليمي مبسط، ومتكررش كل التفاصيل لو مش لازم):\n${details.join('\n')}`;
             activeQuiz = null; // خلصنا الاختبار ده
+        }
+
+        // ====================== وضع "التركيز" على فصل معين — المساعد يذاكره مع الطالب بمحتواه الحقيقي ======================
+        function buildChapterStudyText(data) {
+            let t = `اسم الفصل: ${data.name}\n`;
+            if (data.definitions && data.definitions.length) {
+                t += `\nالتعريفات (${data.definitions.length}):\n` + data.definitions.map(d => `- ${d.text}${d.translation ? ' | ' + d.translation : ''}`).join('\n') + '\n';
+            }
+            if (data.explain && data.explain.length) {
+                t += `\nأسئلة شرح ومقالية (${data.explain.length}):\n` + data.explain.map(e => `- س: ${e.text}\n  ج: ${e.answer}`).join('\n') + '\n';
+            }
+            if (data.list && data.list.length) {
+                t += `\nقوائم/خطوات (${data.list.length}):\n` + data.list.map(l => `- ${l.text}: ${(l.items || []).join(' | ')}`).join('\n') + '\n';
+            }
+            if (data.mcq && data.mcq.length) {
+                t += `\nأمثلة أسئلة اختيار من متعدد (${data.mcq.length} سؤال متاح، دي عينة بس):\n` + data.mcq.slice(0, 15).map(q => `- ${q.text} → الإجابة: ${q.correct}`).join('\n') + '\n';
+            }
+            if (data.truefalse && data.truefalse.length) {
+                t += `\nأمثلة صح/خطأ (${data.truefalse.length} متاح):\n` + data.truefalse.slice(0, 10).map(q => `- ${q.text} → ${q.correct ? 'صح' : 'خطأ'}`).join('\n') + '\n';
+            }
+            return t;
+        }
+
+        async function focusOnBankChapter() {
+            const status = document.getElementById('bankFocusStatus');
+            const cacheKey = document.getElementById('bankChapterSelect').value;
+            if (!cacheKey) { status.innerHTML = '<span style="color:var(--danger)">اختر الفصل الأول</span>'; return; }
+            const data = bankChaptersCache[cacheKey];
+            if (!data) { status.innerHTML = '<span style="color:var(--danger)">تعذر تحميل بيانات الفصل</span>'; return; }
+            activeStudyChapterContext = buildChapterStudyText(data);
+            activeStudyChapterName = data.name;
+            status.innerHTML = `<span style="color:var(--success)">تمام ✓ المساعد بقى مركّز على: ${data.name}</span>`;
+            showToast(`المساعد دلوقتي بيذاكرلك: ${data.name}`, 'success');
+            closeModal('toolsModal');
+        }
+
+        function clearBankChapterFocus() {
+            activeStudyChapterContext = '';
+            activeStudyChapterName = '';
+            const status = document.getElementById('bankFocusStatus');
+            if (status) status.innerHTML = 'اتلغى التركيز';
+            showToast('اتلغى تركيز المساعد على الفصل', 'success');
         }
 
 
