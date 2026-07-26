@@ -673,9 +673,30 @@
                 </div>
                 <button class="btn-calc" onclick="saveBackendUrl()">حفظ</button>
                 <div id="backendStatus" style="margin-top:10px;"></div>
-                <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--text-3);">
-                    تطوير <span style="color:var(--text-2);font-weight:700;">أحمد موسى — 𝐴ℎ𝑚𝑒𝑑 𝑚𝑜𝑢𝑠𝑠𝑎</span>
+            </div>
+
+            <div class="tool-section" id="schoolLoginSection">
+                <div class="tool-title"><i class="fas fa-school"></i> تسجيل الدخول - School X</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    سجّل دخولك بنفس بيانات منصة School X عشان المساعد يقدر يشوف بياناتك (الدرجات، الحضور، المخالفات...) ويجاوبك بناءً عليها.
+                </p>
+                <div class="input-group">
+                    <input type="text" id="schoolApiUrlInput" class="tool-input" placeholder="رابط سيرفر School X مثل https://schoolx-xxxx.vercel.app">
                 </div>
+                <div id="schoolLoggedOutBox">
+                    <div class="input-group"><input type="text" id="schoolUsernameInput" class="tool-input" placeholder="اسم المستخدم"></div>
+                    <div class="input-group"><input type="password" id="schoolPasswordInput" class="tool-input" placeholder="كلمة المرور"></div>
+                    <button class="btn-calc" onclick="schoolLogin()">تسجيل الدخول</button>
+                </div>
+                <div id="schoolLoggedInBox" style="display:none;">
+                    <div id="schoolLoggedInText" style="font-size:13px;margin-bottom:10px;"></div>
+                    <button class="btn-calc" onclick="schoolLogout()">تسجيل الخروج</button>
+                </div>
+                <div id="schoolLoginStatus" style="margin-top:10px;"></div>
+            </div>
+
+            <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--text-3);">
+                تطوير <span style="color:var(--text-2);font-weight:700;">أحمد موسى — 𝐴ℎ𝑚𝑒𝑑 𝑚𝑜𝑢𝑠𝑠𝑎</span>
             </div>
         </div>
     </div>
@@ -975,7 +996,11 @@
 
         let chats = JSON.parse(localStorage.getItem('sx_chats')) || [];
         let currentChatId = localStorage.getItem('sx_current_chat') || null;
-        let settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: 'dark', backendUrl: '', model: 'auto' };
+        let settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: 'dark', backendUrl: '', model: 'auto', schoolApiUrl: '' };
+        // بيانات ربط School X (مشروع منفصل تماماً بدومين ومتغيرات بيئة مختلفة)
+        let schoolToken = localStorage.getItem('sx_school_token') || null;
+        let schoolUser = JSON.parse(localStorage.getItem('sx_school_user') || 'null');
+        let schoolContext = localStorage.getItem('sx_school_context') || '';
         let isGenerating = false;
         let abortController = null;
         let lastSendTime = 0;
@@ -997,6 +1022,10 @@
             initSpeechRecognition();
             const backendInput = document.getElementById('backendUrlInput');
             if (backendInput) backendInput.value = settings.backendUrl || '';
+            const schoolInput = document.getElementById('schoolApiUrlInput');
+            if (schoolInput) schoolInput.value = settings.schoolApiUrl || '';
+            updateSchoolLoginUI();
+            if (schoolToken) fetchSchoolProfile(); // حدّث بيانات الطالب/الأدمن من السيرفر
         };
 
         function todayKey() {
@@ -1680,7 +1709,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: "openai/gpt-oss-20b",
-                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    messages: [{role: "system", content: getSystemPrompt()}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
                     stream: true
                 }),
                 signal
@@ -1753,7 +1782,7 @@
                     // models — it keeps working even as individual free model IDs rotate out,
                     // instead of hardcoding one that might get retired without notice.
                     model: "openrouter/free",
-                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    messages: [{role: "system", content: getSystemPrompt()}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
                     stream: true
                 }),
                 signal
@@ -1823,7 +1852,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: "gpt-oss-120b",
-                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    messages: [{role: "system", content: getSystemPrompt()}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
                     stream: true
                 }),
                 signal
@@ -1893,7 +1922,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: "qwen-plus",
-                    messages: [{role: "system", content: "أنت مساعد أكاديمي ذكي."}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    messages: [{role: "system", content: getSystemPrompt()}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
                     stream: true
                 }),
                 signal
@@ -2069,7 +2098,7 @@
                 body: JSON.stringify({
                     model: "qwen-vl-max",
                     messages: [
-                        { role: "system", content: "أنت مساعد أكاديمي ذكي قادر على تحليل الصور المرفوعة بدقة ووصف محتواها والإجابة عن أي سؤال متعلق بها." },
+                        { role: "system", content: getSystemPrompt("أنت مساعد أكاديمي ذكي قادر على تحليل الصور المرفوعة بدقة ووصف محتواها والإجابة عن أي سؤال متعلق بها.") },
                         ...historyMessages,
                         { role: "user", content: userContent }
                     ],
@@ -2308,6 +2337,122 @@
                 status.innerHTML = '<span style="color:var(--text-2)">تلقائي — هيتم النداء على /api/groq و /api/gemini على نفس الدومين</span>';
             }
             showToast('تم الحفظ', 'success');
+        }
+
+        // ====================== ربط School X (مشروع منفصل - سيرفر تاني) ======================
+        function getSchoolApiUrl() {
+            const input = document.getElementById('schoolApiUrlInput');
+            const url = (input ? input.value : settings.schoolApiUrl || '').trim().replace(/\/+$/, '');
+            return url;
+        }
+
+        function updateSchoolLoginUI() {
+            const loggedOutBox = document.getElementById('schoolLoggedOutBox');
+            const loggedInBox = document.getElementById('schoolLoggedInBox');
+            const loggedInText = document.getElementById('schoolLoggedInText');
+            if (!loggedOutBox || !loggedInBox) return;
+            if (schoolToken && schoolUser) {
+                loggedOutBox.style.display = 'none';
+                loggedInBox.style.display = 'block';
+                loggedInText.innerHTML = `مسجّل دخول باسم: <b>${schoolUser.fullName || schoolUser.username}</b> (${schoolUser.type === 'admin' ? 'أدمن' : 'طالب'})`;
+            } else {
+                loggedOutBox.style.display = 'block';
+                loggedInBox.style.display = 'none';
+            }
+        }
+
+        async function schoolLogin() {
+            const apiUrl = getSchoolApiUrl();
+            const username = document.getElementById('schoolUsernameInput').value.trim();
+            const password = document.getElementById('schoolPasswordInput').value;
+            const status = document.getElementById('schoolLoginStatus');
+            if (!apiUrl) { status.innerHTML = '<span style="color:var(--danger)">حط رابط سيرفر School X الأول</span>'; return; }
+            if (!username || !password) { status.innerHTML = '<span style="color:var(--danger)">اكتب اسم المستخدم وكلمة المرور</span>'; return; }
+            settings.schoolApiUrl = apiUrl;
+            saveData();
+            status.innerHTML = 'جاري تسجيل الدخول...';
+            try {
+                const res = await fetch(`${apiUrl}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    status.innerHTML = `<span style="color:var(--danger)">${data.error || 'فشل تسجيل الدخول'}</span>`;
+                    return;
+                }
+                schoolToken = data.token;
+                schoolUser = data.user;
+                localStorage.setItem('sx_school_token', schoolToken);
+                localStorage.setItem('sx_school_user', JSON.stringify(schoolUser));
+                document.getElementById('schoolPasswordInput').value = '';
+                status.innerHTML = '<span style="color:var(--success)">تم تسجيل الدخول ✓</span>';
+                updateSchoolLoginUI();
+                await fetchSchoolProfile();
+                showToast('تم ربط حسابك بمنصة School X', 'success');
+            } catch (e) {
+                status.innerHTML = '<span style="color:var(--danger)">تعذر الاتصال بالسيرفر — تأكد من الرابط</span>';
+            }
+        }
+
+        function schoolLogout() {
+            schoolToken = null;
+            schoolUser = null;
+            schoolContext = '';
+            localStorage.removeItem('sx_school_token');
+            localStorage.removeItem('sx_school_user');
+            localStorage.removeItem('sx_school_context');
+            updateSchoolLoginUI();
+            showToast('تم تسجيل الخروج من School X', 'success');
+        }
+
+        // بيجيب بيانات المستخدم كاملة من سيرفر School X وبيبني منها ملخص نصي
+        // بيتحط كـ "سياق" جوه الـ system prompt عشان المساعد يعرف يجاوب عليه
+        async function fetchSchoolProfile() {
+            const apiUrl = settings.schoolApiUrl || getSchoolApiUrl();
+            if (!apiUrl || !schoolToken) return;
+            try {
+                const res = await fetch(`${apiUrl}/api/me`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (res.status === 401) { schoolLogout(); return; }
+                const data = await res.json();
+                if (!res.ok) return;
+                schoolContext = buildSchoolContextText(data);
+                localStorage.setItem('sx_school_context', schoolContext);
+            } catch (e) { /* السيرفر مش متاح دلوقتي، هنستخدم آخر نسخة متخزنة */ }
+        }
+
+        function buildSchoolContextText(data) {
+            if (data.type === 'admin') {
+                const a = data.profile;
+                return `المستخدم مسجل دخوله كأدمن في منصة School X.\nالاسم: ${a.fullName}\nاسم المستخدم: ${a.username}`;
+            }
+            const s = data.profile;
+            let text = `المستخدم مسجل دخوله كطالب في منصة School X، وده بياناته الحقيقية من السيرفر (استخدمها في إجاباتك لو سأل عن نفسه):\n`;
+            text += `الاسم: ${s.fullName}\nكود الطالب: ${s.studentCode}\nالصف: ${s.grade}\n`;
+            if (s.subjects && s.subjects.length) text += `المواد: ${s.subjects.join('، ')}\n`;
+            if (data.examResults && data.examResults.length) {
+                text += `\nنتائج آخر اختبارات:\n` + data.examResults.slice(0, 10).map(r => `- كود الاختبار ${r.examCode}: ${r.score}`).join('\n') + '\n';
+            }
+            if (data.attendance && data.attendance.length) {
+                const present = data.attendance.filter(x => x.status === 'present').length;
+                const absent = data.attendance.filter(x => x.status === 'absent').length;
+                const late = data.attendance.filter(x => x.status === 'late').length;
+                text += `\nملخص الحضور (آخر ${data.attendance.length} سجل): حاضر ${present} - غايب ${absent} - متأخر ${late}\n`;
+            }
+            if (data.violations && data.violations.length) {
+                text += `\nمخالفات مسجلة (${data.violations.length}):\n` + data.violations.slice(0, 10).map(v => `- ${v.type || ''}: ${v.reason || ''}`).join('\n') + '\n';
+            }
+            return text;
+        }
+
+        // بيتضاف قبل الـ system prompt الثابت في كل نداء للـ AI
+        function getSystemPrompt(base) {
+            base = base || 'أنت مساعد أكاديمي ذكي.';
+            if (schoolContext) return `${base}\n\n${schoolContext}`;
+            return base;
         }
 
         function calculatePercentage() {
