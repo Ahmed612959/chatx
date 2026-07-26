@@ -1391,6 +1391,7 @@
             document.getElementById('typingIndicator').classList.add('active');
             scrollToBottom();
 
+            if (schoolToken) await fetchSchoolProfile(); // بيتجدد بس لو عدى عليه أكتر من 3 دقايق
             await runGeneration(chat);
         }
 
@@ -2409,9 +2410,12 @@
 
         // بيجيب بيانات المستخدم كاملة من سيرفر School X وبيبني منها ملخص نصي
         // بيتحط كـ "سياق" جوه الـ system prompt عشان المساعد يعرف يجاوب عليه
-        async function fetchSchoolProfile() {
+        // بيتجدد تلقائيًا كل 3 دقايق (مش في كل رسالة) عشان البيانات (واجبات/غياب/درجات) تفضل حديثة
+        let schoolContextFetchedAt = Number(localStorage.getItem('sx_school_context_at') || 0);
+        async function fetchSchoolProfile(force) {
             const apiUrl = settings.schoolApiUrl || getSchoolApiUrl();
             if (!apiUrl || !schoolToken) return;
+            if (!force && schoolContext && (Date.now() - schoolContextFetchedAt) < 3 * 60 * 1000) return;
             try {
                 const res = await fetch(`${apiUrl}/api/me`, {
                     headers: { 'Authorization': `Bearer ${schoolToken}` }
@@ -2420,7 +2424,9 @@
                 const data = await res.json();
                 if (!res.ok) return;
                 schoolContext = buildSchoolContextText(data);
+                schoolContextFetchedAt = Date.now();
                 localStorage.setItem('sx_school_context', schoolContext);
+                localStorage.setItem('sx_school_context_at', String(schoolContextFetchedAt));
             } catch (e) { /* السيرفر مش متاح دلوقتي، هنستخدم آخر نسخة متخزنة */ }
         }
 
@@ -2445,14 +2451,32 @@
             if (data.violations && data.violations.length) {
                 text += `\nمخالفات مسجلة (${data.violations.length}):\n` + data.violations.slice(0, 10).map(v => `- ${v.type || ''}: ${v.reason || ''}`).join('\n') + '\n';
             }
+            if (data.pendingHomework && data.pendingHomework.length) {
+                text += `\nواجبات لسه مسلمهاش (${data.pendingHomework.length}):\n` + data.pendingHomework.slice(0, 10).map(h => `- ${h.title} (${h.chapterName}) - آخر موعد: ${h.deadline}`).join('\n') + '\n';
+            } else {
+                text += `\nمفيش واجبات معلقة عليه دلوقتي.\n`;
+            }
+            if (data.activeTournaments && data.activeTournaments.length) {
+                text += `\nبطولات نشطة حاليًا:\n` + data.activeTournaments.map(t => `- ${t.title} (كود ${t.code}) - تنتهي ${t.endDate}${t.alreadyJoined ? ' - مشارك فيها بالفعل' : ' - لسه مشاركش فيها'}`).join('\n') + '\n';
+            }
             return text;
         }
 
         // بيتضاف قبل الـ system prompt الثابت في كل نداء للـ AI
         function getSystemPrompt(base) {
             base = base || 'أنت مساعد أكاديمي ذكي.';
-            if (schoolContext) return `${base}\n\n${schoolContext}`;
-            return base;
+            if (!schoolContext) return base;
+            return `${base}
+
+أنت مساعد شخصي متكامل للمستخدم، متصل ببيانات حقيقية له من منصة School X. استخدم البيانات دي بذكاء:
+- لو سأل عن نفسه (درجاته، غيابه، مخالفاته، واجباته، البطولات المتاحة) جاوبه منها مباشرة وبالأرقام الحقيقية.
+- لو عنده واجبات لسه متسلمتش أو بطولة نشطة لسه مشاركش فيها ومناسب تفتكّره، اذكرها له بشكل طبيعي في سياق الكلام لو مناسب.
+- لو طلب مساعدة في مذاكرة أو حل واجب أو مراجعة، خد في اعتبارك صفه الدراسي ومستواه من نتائجه لتخصيص المساعدة (لو درجاته ضعيفة في مادة معينة ركز فيها، ولو ممتاز قدّم له تحديات أصعب).
+- لو الكلام مش له علاقة ببياناته، اتصرف كمساعد أكاديمي عادي من غير ما تقحم بياناته في الكلام.
+- متقولش "مش عندي بيانات عنك" أو حاجة زي كده — البيانات دي معاك فعلاً وموضحة تحت.
+
+بيانات المستخدم الحقيقية:
+${schoolContext}`;
         }
 
         function calculatePercentage() {
