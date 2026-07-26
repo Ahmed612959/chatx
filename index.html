@@ -1061,7 +1061,7 @@
             const schoolInput = document.getElementById('schoolApiUrlInput');
             if (schoolInput) schoolInput.value = settings.schoolApiUrl || '';
             updateSchoolLoginUI();
-            if (schoolToken) fetchSchoolProfile(); // حدّث بيانات الطالب/الأدمن من السيرفر
+            if (schoolToken) fetchSchoolProfile(true); // حدّث بيانات الطالب/الأدمن من السيرفر (فريش دايمًا)
             populateBankSubjects();
         };
 
@@ -1428,7 +1428,7 @@
             document.getElementById('typingIndicator').classList.add('active');
             scrollToBottom();
 
-            if (schoolToken) await fetchSchoolProfile(); // بيتجدد بس لو عدى عليه أكتر من 3 دقايق
+            if (schoolToken) await fetchSchoolProfile(true); // force=true دايمًا: نجيب بيانات فريش من السيرفر قبل كل رسالة عشان الدقة، بدل الاعتماد على كاش قديم
             tryGradeActiveQuiz(text);
             await runGeneration(chat);
             pendingQuizContext = '';
@@ -2429,7 +2429,7 @@
                 document.getElementById('schoolPasswordInput').value = '';
                 status.innerHTML = '<span style="color:var(--success)">تم تسجيل الدخول ✓</span>';
                 updateSchoolLoginUI();
-                await fetchSchoolProfile();
+                await fetchSchoolProfile(true); // force=true: نجيب بيانات جديدة فورًا (منتجنبش استخدام كاش حساب قديم)
                 showToast('تم ربط حسابك بمنصة School X', 'success');
             } catch (e) {
                 status.innerHTML = '<span style="color:var(--danger)">تعذر الاتصال بالسيرفر — تأكد من الرابط</span>';
@@ -2475,28 +2475,44 @@
                 return `المستخدم مسجل دخوله كأدمن في منصة School X.\nالاسم: ${a.fullName}\nاسم المستخدم: ${a.username}`;
             }
             const s = data.profile;
-            let text = `المستخدم مسجل دخوله كطالب في منصة School X، وده بياناته الحقيقية من السيرفر (استخدمها في إجاباتك لو سأل عن نفسه):\n`;
+            let text = `المستخدم مسجل دخوله كطالب في منصة School X، وده بياناته الحقيقية والدقيقة من قاعدة البيانات مباشرة (مفيش رقم هنا تقديري أو تخميني):\n`;
             text += `الاسم: ${s.fullName}\nكود الطالب: ${s.studentCode}\nالصف: ${s.grade}\n`;
             if (s.subjects && s.subjects.length) text += `المواد: ${s.subjects.join('، ')}\n`;
+
+            // نتائج الاختبارات - بنذكر صراحة لو مفيش نتايج خالص عشان منسيبش فراغ يتفسر غلط
             if (data.examResults && data.examResults.length) {
-                text += `\nنتائج آخر اختبارات:\n` + data.examResults.slice(0, 10).map(r => `- كود الاختبار ${r.examCode}: ${r.score}`).join('\n') + '\n';
+                text += `\nنتائج آخر اختبارات (${data.examResults.length}):\n` + data.examResults.slice(0, 10).map(r => `- كود الاختبار ${r.examCode}: ${r.score}`).join('\n') + '\n';
+            } else {
+                text += `\nنتائج الاختبارات: لا توجد أي نتائج اختبارات مسجلة لهذا الطالب في قاعدة البيانات (العدد = 0).\n`;
             }
-            if (data.attendance && data.attendance.length) {
+
+            // الحضور - أهم حاجة نوضحها بالراحة بالأرقام صراحة عشان محدش يحزر رقم غلط
+            const totalAttRecords = (data.attendance && data.attendance.length) || 0;
+            if (totalAttRecords > 0) {
                 const present = data.attendance.filter(x => x.status === 'present').length;
                 const absent = data.attendance.filter(x => x.status === 'absent').length;
                 const late = data.attendance.filter(x => x.status === 'late').length;
-                text += `\nملخص الحضور (آخر ${data.attendance.length} سجل): حاضر ${present} - غايب ${absent} - متأخر ${late}\n`;
+                text += `\nسجل الحضور (آخر ${totalAttRecords} سجل مأخوذين من قاعدة البيانات مباشرة):\nعدد أيام الحضور = ${present}\nعدد أيام الغياب = ${absent}\nعدد أيام التأخير = ${late}\nهذه الأرقام دقيقة ونهائية، استخدمها كما هي بدون أي تقريب أو تخمين.\n`;
+            } else {
+                text += `\nسجل الحضور: لا يوجد أي سجل حضور أو غياب مسجل لهذا الطالب في قاعدة البيانات إطلاقًا (لا حضور ولا غياب ولا تأخير مسجل = 0 سجلات). لو الطالب سأل عن غيابه، قوله بوضوح إن مفيش سجل غياب متسجل ليه خالص، ومتقولوش رقم من عندك.\n`;
             }
+
+            // المخالفات - نفس المبدأ: نص صريح حتى لو العدد صفر
             if (data.violations && data.violations.length) {
                 text += `\nمخالفات مسجلة (${data.violations.length}):\n` + data.violations.slice(0, 10).map(v => `- ${v.type || ''}: ${v.reason || ''}`).join('\n') + '\n';
+            } else {
+                text += `\nالمخالفات: لا توجد أي مخالفات مسجلة على هذا الطالب (العدد = 0).\n`;
             }
+
             if (data.pendingHomework && data.pendingHomework.length) {
                 text += `\nواجبات لسه مسلمهاش (${data.pendingHomework.length}):\n` + data.pendingHomework.slice(0, 10).map(h => `- ${h.title} (${h.chapterName}) - آخر موعد: ${h.deadline}`).join('\n') + '\n';
             } else {
-                text += `\nمفيش واجبات معلقة عليه دلوقتي.\n`;
+                text += `\nمفيش واجبات معلقة عليه دلوقتي (العدد = 0).\n`;
             }
             if (data.activeTournaments && data.activeTournaments.length) {
                 text += `\nبطولات نشطة حاليًا:\n` + data.activeTournaments.map(t => `- ${t.title} (كود ${t.code}) - تنتهي ${t.endDate}${t.alreadyJoined ? ' - مشارك فيها بالفعل' : ' - لسه مشاركش فيها'}`).join('\n') + '\n';
+            } else {
+                text += `\nمفيش بطولات نشطة حاليًا (العدد = 0).\n`;
             }
             return text;
         }
@@ -2508,12 +2524,15 @@
             if (schoolContext) {
                 extra += `
 
-أنت مساعد شخصي متكامل للمستخدم، متصل ببيانات حقيقية له من منصة School X. استخدم البيانات دي بذكاء:
-- لو سأل عن نفسه (درجاته، غيابه، مخالفاته، واجباته، البطولات المتاحة) جاوبه منها مباشرة وبالأرقام الحقيقية.
+أنت مساعد شخصي متكامل للمستخدم، متصل ببيانات حقيقية له من منصة School X. القاعدة الأهم: البيانات المكتوبة تحت في قسم "بيانات المستخدم الحقيقية" هي أرقام نهائية وموثوقة 100% لأنها جاية مباشرة من قاعدة بيانات المدرسة، فالتزم بيها حرفيًا:
+- ممنوع منعًا باتًا إنك تخترع أو تقدّر أو "تحزر" أي رقم (زي عدد أيام الغياب أو الدرجات أو عدد المخالفات) من عندك تحت أي ظرف. لو مش متأكد، ارجع اقرأ الرقم من البيانات تحت بالظبط.
+- قبل ما ترد على أي سؤال شخصي عن الطالب (غياب، درجات، مخالفات، واجبات)، راجع قسم البيانات تحت أولًا وانقل الرقم المكتوب فيه حرفيًا زي ما هو، متغيرهوش ولا تقربّه.
+- كل قسم من البيانات تحت مكتوب فيه رقم صريح حتى لو كان صفر (يعني لو مكتوب "العدد = 0" ده معناه فعلاً صفر وأكيد، مش إن البيانات ناقصة) — استخدم الصفر ده زي ما هو، ومتقولش رقم تاني.
+- لو سأل عن نفسه (درجاته، غيابه، مخالفاته، واجباته، البطولات المتاحة) جاوبه منها مباشرة وبالأرقام الحقيقية المكتوبة تحت بالظبط.
 - لو عنده واجبات لسه متسلمتش أو بطولة نشطة لسه مشاركش فيها ومناسب تفتكّره، اذكرها له بشكل طبيعي في سياق الكلام لو مناسب.
 - لو طلب مساعدة في مذاكرة أو حل واجب أو مراجعة، خد في اعتبارك صفه الدراسي ومستواه من نتائجه لتخصيص المساعدة (لو درجاته ضعيفة في مادة معينة ركز فيها، ولو ممتاز قدّم له تحديات أصعب).
 - لو الكلام مش له علاقة ببياناته، اتصرف كمساعد أكاديمي عادي من غير ما تقحم بياناته في الكلام.
-- متقولش "مش عندي بيانات عنك" أو حاجة زي كده — البيانات دي معاك فعلاً وموضحة تحت.
+- متقولش "مش عندي بيانات عنك" أو حاجة زي كده — البيانات دي معاك فعلاً وموضحة تحت بالتفصيل، حتى لو كانت أصفار.
 
 بيانات المستخدم الحقيقية:
 ${schoolContext}`;
