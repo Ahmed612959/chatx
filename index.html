@@ -722,6 +722,25 @@
                 <button class="btn-calc" onclick="calculateBMI()">احسب</button>
                 <div class="calc-result" id="bmiResult"></div>
             </div>
+            <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-book-medical"></i> اختبار من بنك الأسئلة (School X)</div>
+                <div class="input-group">
+                    <label>المادة</label>
+                    <select id="bankSubjectSelect" class="tool-input" onchange="populateBankChapters()">
+                        <option value="">اختر المادة...</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>الفصل</label>
+                    <select id="bankChapterSelect" class="tool-input"><option value="">اختر الفصل...</option></select>
+                </div>
+                <div class="input-group">
+                    <label>عدد الأسئلة</label>
+                    <input type="number" id="bankQuestionCount" class="tool-input" value="10" min="1" max="50">
+                </div>
+                <button class="btn-calc" onclick="generateBankQuiz()">أنشئ الاختبار</button>
+                <div class="calc-result" id="bankQuizStatus"></div>
+            </div>
         </div>
     </div>
 
@@ -1026,6 +1045,7 @@
             if (schoolInput) schoolInput.value = settings.schoolApiUrl || '';
             updateSchoolLoginUI();
             if (schoolToken) fetchSchoolProfile(); // حدّث بيانات الطالب/الأدمن من السيرفر
+            populateBankSubjects();
         };
 
         function todayKey() {
@@ -1392,7 +1412,9 @@
             scrollToBottom();
 
             if (schoolToken) await fetchSchoolProfile(); // بيتجدد بس لو عدى عليه أكتر من 3 دقايق
+            tryGradeActiveQuiz(text);
             await runGeneration(chat);
+            pendingQuizContext = '';
         }
 
         // Calls the selected AI provider (with auto-fallback chain) for the given chat and
@@ -2472,12 +2494,151 @@
 - لو سأل عن نفسه (درجاته، غيابه، مخالفاته، واجباته، البطولات المتاحة) جاوبه منها مباشرة وبالأرقام الحقيقية.
 - لو عنده واجبات لسه متسلمتش أو بطولة نشطة لسه مشاركش فيها ومناسب تفتكّره، اذكرها له بشكل طبيعي في سياق الكلام لو مناسب.
 - لو طلب مساعدة في مذاكرة أو حل واجب أو مراجعة، خد في اعتبارك صفه الدراسي ومستواه من نتائجه لتخصيص المساعدة (لو درجاته ضعيفة في مادة معينة ركز فيها، ولو ممتاز قدّم له تحديات أصعب).
+- لو الطالب طلب منك تعمل له اختبار أو تجيب أسئلة من بنك معين، متختلقش أسئلة من عندك — قوله يفتح "🧰 الأدوات" (زرار الآلة الحاسبة) ويختار "اختبار من بنك الأسئلة" ويحدد المادة والفصل وعدد الأسئلة، وهيطلعله اختبار حقيقي من بنك المدرسة الفعلي، وبعد ما يجاوب عليه ويبعتلك إجاباته هتصححها له وتشرحله غلطه.
 - لو الكلام مش له علاقة ببياناته، اتصرف كمساعد أكاديمي عادي من غير ما تقحم بياناته في الكلام.
 - متقولش "مش عندي بيانات عنك" أو حاجة زي كده — البيانات دي معاك فعلاً وموضحة تحت.
 
 بيانات المستخدم الحقيقية:
-${schoolContext}`;
+${schoolContext}` + (pendingQuizContext ? `\n\n${pendingQuizContext}` : '');
         }
+
+        // ====================== بنك الأسئلة (School X) — جلب أسئلة حقيقية وإنشاء اختبارات ======================
+        // البنوك دي ملفات ثابتة عامة على سيرفر school x (نفس رابط تسجيل الدخول)، كل ملف فيه
+        // متغيّر JS واحد شكله { name, mcq: [{text, options, correct, correctTranslation}, ...], ... }
+        const BANK_CATALOG = [
+            { subject: 'باطنة وجراحة (بنك 1)', prefix: 'chap', ids: [1,2,3,4,5,6,7,8,10] },
+            { subject: 'رعاية التمريض (Nursing Care)', prefix: 'chapter', ids: [1,2,3,4,5,6,7,8,9,10,11] },
+            { subject: 'الجراحة العامة (General Surgery)', prefix: 'gs_chapter', ids: [1,2,3,4,5,6,7,8] }
+        ];
+        let bankChaptersCache = {}; // key: "prefixN" -> {name, mcq:[...]} بعد أول تحميل
+
+        function populateBankSubjects() {
+            const sel = document.getElementById('bankSubjectSelect');
+            if (!sel || sel.dataset.filled) return;
+            sel.dataset.filled = '1';
+            BANK_CATALOG.forEach((s, i) => {
+                const opt = document.createElement('option');
+                opt.value = i; opt.textContent = s.subject;
+                sel.appendChild(opt);
+            });
+        }
+
+        async function populateBankChapters() {
+            const subjIdx = document.getElementById('bankSubjectSelect').value;
+            const chapSel = document.getElementById('bankChapterSelect');
+            chapSel.innerHTML = '<option value="">جاري التحميل...</option>';
+            if (subjIdx === '') { chapSel.innerHTML = '<option value="">اختر الفصل...</option>'; return; }
+            const subj = BANK_CATALOG[subjIdx];
+            const apiUrl = settings.schoolApiUrl || getSchoolApiUrl();
+            if (!apiUrl) { chapSel.innerHTML = '<option value="">حط رابط School X في إعدادات تسجيل الدخول الأول</option>'; return; }
+            chapSel.innerHTML = '';
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = ''; defaultOpt.textContent = 'اختر الفصل...';
+            chapSel.appendChild(defaultOpt);
+            for (const id of subj.ids) {
+                const file = `${subj.prefix}${id}.js`;
+                const varName = `${subj.prefix}${id}`;
+                const cacheKey = varName;
+                let data = bankChaptersCache[cacheKey];
+                if (!data) {
+                    data = await fetchBankFile(apiUrl, file, varName);
+                    if (data) bankChaptersCache[cacheKey] = data;
+                }
+                const opt = document.createElement('option');
+                opt.value = cacheKey;
+                opt.textContent = data ? (data.name || file) : `${file} (تعذر التحميل)`;
+                if (!data) opt.disabled = true;
+                chapSel.appendChild(opt);
+            }
+        }
+
+        // بيجيب كود الملف كنص ثم ينفذه في سكوب منعزل ويرجع قيمة المتغير المطلوب منه فقط
+        async function fetchBankFile(apiUrl, file, varName) {
+            try {
+                const res = await fetch(`${apiUrl}/${file}`);
+                if (!res.ok) return null;
+                const code = await res.text();
+                // eslint-disable-next-line no-new-func
+                const runner = new Function(`${code}\ntry { return ${varName}; } catch(e) { return null; }`);
+                return runner();
+            } catch (e) { return null; }
+        }
+
+        let activeQuiz = null; // {subject, chapterName, questions:[{text, options, correct}], answers:{}}
+        let pendingQuizContext = ''; // بيتحط في الـ system prompt مرة واحدة بعد التصحيح عشان الـ AI يشرح الأخطاء
+
+        function shuffleArray(arr) {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        async function generateBankQuiz() {
+            const status = document.getElementById('bankQuizStatus');
+            const cacheKey = document.getElementById('bankChapterSelect').value;
+            const count = parseInt(document.getElementById('bankQuestionCount').value) || 10;
+            if (!cacheKey) { status.innerHTML = '<span style="color:var(--danger)">اختر الفصل الأول</span>'; return; }
+            const data = bankChaptersCache[cacheKey];
+            if (!data || !data.mcq || !data.mcq.length) {
+                status.innerHTML = '<span style="color:var(--danger)">مفيش أسئلة اختيار من متعدد في الفصل ده</span>';
+                return;
+            }
+            const picked = shuffleArray(data.mcq).slice(0, Math.min(count, data.mcq.length));
+            activeQuiz = {
+                chapterName: data.name,
+                questions: picked.map(q => ({ text: q.text, options: q.options, correct: q.correct, correctTranslation: q.correctTranslation || '' })),
+                answers: {}
+            };
+
+            let msg = `📚 **اختبار: ${data.name}** (${picked.length} سؤال)\n\n`;
+            picked.forEach((q, i) => {
+                msg += `**${i + 1}. ${q.text}**\n`;
+                (q.options || []).forEach(o => { msg += `${o}\n`; });
+                msg += '\n';
+            });
+            msg += `---\nلما تخلص، اكتبلي إجاباتك كده في رسالة واحدة: \`1-B 2-A 3-C ...\` وأنا هصححها وأشرحلك أي غلط.`;
+
+            const chat = chats.find(c => c.id === currentChatId);
+            if (chat) {
+                const botMsg = { role: 'assistant', content: msg, id: Date.now() };
+                chat.messages.push(botMsg);
+                appendMessageToDOM(botMsg);
+                saveData();
+            }
+            closeModal('toolsModal');
+            showToast('اتعمل الاختبار — جاوب عليه في الشات', 'success');
+        }
+
+        // بتتنادى قبل ما نبعت رسالة المستخدم للـ AI: لو فيه اختبار نشط وجت إجابات فيها
+        // شكل "رقم-حرف"، بيتم تصحيحها فعليًا هنا (مش بالذكاء الاصطناعي) عشان النتيجة تبقى دقيقة 100%،
+        // وبعدين بنسيب الـ AI يشرح الأخطاء بس.
+        function tryGradeActiveQuiz(userText) {
+            if (!activeQuiz || !activeQuiz.questions.length) return;
+            const matches = [...userText.matchAll(/(\d+)\s*[-:]\s*([A-Dأ-د])/g)];
+            if (matches.length < Math.ceil(activeQuiz.questions.length / 2)) return; // مش شكل إجابة اختبار، سيبها عادي
+
+            let correctCount = 0;
+            const details = [];
+            matches.forEach(m => {
+                const qNum = parseInt(m[1]);
+                let ans = m[2].toUpperCase();
+                const arToEn = { 'أ': 'A', 'ب': 'B', 'ج': 'C', 'د': 'D' };
+                if (arToEn[m[2]]) ans = arToEn[m[2]];
+                const q = activeQuiz.questions[qNum - 1];
+                if (!q) return;
+                const isCorrect = ans === (q.correct || '').toUpperCase();
+                if (isCorrect) correctCount++;
+                details.push(`سؤال ${qNum}: إجابة الطالب ${ans} — ${isCorrect ? 'صح ✅' : `غلط ❌ (الصح: ${q.correct})`}`);
+            });
+
+            const total = activeQuiz.questions.length;
+            pendingQuizContext = `نتيجة تصحيح اختبار "${activeQuiz.chapterName}": ${correctCount} من ${total}.\nتفاصيل التصحيح (استخدمها عشان تشرح للطالب أخطاءه فقط بأسلوب تعليمي مبسط، ومتكررش كل التفاصيل لو مش لازم):\n${details.join('\n')}`;
+            activeQuiz = null; // خلصنا الاختبار ده
+        }
+
 
         function calculatePercentage() {
             const v = parseFloat(document.getElementById('percValue').value);
