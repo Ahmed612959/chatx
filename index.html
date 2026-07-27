@@ -530,6 +530,36 @@
             display: none; align-items: center; justify-content: center; z-index: 40;
         }
         @media (max-width: 767px) { .fab { display: flex; } }
+        /* ===== تذكير الصلاة على النبي والاستغفار ===== */
+        .dua-overlay { position: fixed; inset: 0; background: rgba(4, 10, 8, 0.72); backdrop-filter: blur(6px);
+            display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; transition: opacity .5s ease; padding: 20px; }
+        .dua-overlay.show { opacity: 1; }
+        .dua-card { width: 100%; max-width: 380px; border-radius: 24px; padding: 28px 24px;
+            background: linear-gradient(160deg, #0d3b2e 0%, #114b3a 45%, #1a5c46 100%);
+            border: 1px solid rgba(212, 175, 55, 0.35); box-shadow: 0 20px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+            text-align: center; position: relative; transform: translateY(14px) scale(.96); transition: transform .5s cubic-bezier(.2,.9,.3,1.3); overflow: hidden; }
+        .dua-overlay.show .dua-card { transform: translateY(0) scale(1); }
+        .dua-card::before { content: ''; position: absolute; inset: 0; opacity: .08; pointer-events: none;
+            background-image: radial-gradient(circle at 20% 15%, #d4af37 0, transparent 35%), radial-gradient(circle at 85% 85%, #d4af37 0, transparent 35%); }
+        .dua-icon { font-size: 34px; color: #d4af37; margin-bottom: 10px; text-shadow: 0 0 20px rgba(212,175,55,.5); }
+        .dua-title { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+        .dua-sub { font-size: 11px; color: rgba(255,255,255,.6); margin-bottom: 18px; }
+        .dua-phase { display: none; }
+        .dua-phase.active { display: block; animation: duaFadeIn .5s ease; }
+        @keyframes duaFadeIn { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: translateY(0);} }
+        .dua-phase-label { font-size: 12px; color: #d4af37; font-weight: 700; margin-bottom: 8px; letter-spacing: .3px; }
+        .dua-text { font-size: 16px; line-height: 2; color: #f4f0e4; background: rgba(255,255,255,.05);
+            border: 1px solid rgba(212,175,55,.25); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+        .dua-progress-wrap { height: 6px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; margin-bottom: 8px; }
+        .dua-progress-bar { height: 100%; width: 100%; background: linear-gradient(90deg, #d4af37, #f4e5a3); border-radius: 4px; transform-origin: right;
+            animation: duaCountdown 20s linear forwards; }
+        [dir="ltr"] .dua-progress-bar, html:not([dir="rtl"]) .dua-progress-bar { transform-origin: left; }
+        @keyframes duaCountdown { from { width: 100%; } to { width: 0%; } }
+        .dua-timer { font-size: 11px; color: rgba(255,255,255,.55); }
+        .dua-extra { margin-top: 14px; font-size: 11.5px; color: rgba(255,255,255,.65); line-height: 1.8; border-top: 1px dashed rgba(212,175,55,.25); padding-top: 12px; }
+        .dua-close { position: absolute; top: 14px; left: 14px; width: 28px; height: 28px; border-radius: 50%; border: none;
+            background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: .2s; }
+        .dua-close:hover { background: rgba(255,255,255,.2); }
     </style>
 </head>
 <body>
@@ -681,7 +711,8 @@
                     سجّل دخولك بنفس بيانات منصة School X عشان المساعد يقدر يشوف بياناتك (الدرجات، الحضور، المخالفات...) ويجاوبك بناءً عليها.
                 </p>
                 <div class="input-group">
-                    <input type="text" id="schoolApiUrlInput" class="tool-input" placeholder="رابط سيرفر School X مثل https://schoolx-xxxx.vercel.app">
+                    <input type="text" id="schoolApiUrlInput" class="tool-input" value="https://schoolx-eta.vercel.app" readonly disabled style="opacity:0.75;cursor:not-allowed;">
+                    <p style="font-size:10px;color:var(--text-3);margin-top:4px;">رابط سيرفر School X ثابت ومش قابل للتعديل.</p>
                 </div>
                 <div id="schoolLoggedOutBox">
                     <div class="input-group"><input type="text" id="schoolUsernameInput" class="tool-input" placeholder="اسم المستخدم"></div>
@@ -762,6 +793,7 @@
     </div>
 
     <div class="toast-container" id="toastContainer"></div>
+    <div id="duaOverlayContainer"></div>
 
     <script>
         marked.setOptions({ breaks: true, gfm: true });
@@ -1032,7 +1064,10 @@
 
         let chats = JSON.parse(localStorage.getItem('sx_chats')) || [];
         let currentChatId = localStorage.getItem('sx_current_chat') || null;
-        let settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: 'dark', backendUrl: '', model: 'auto', schoolApiUrl: '' };
+        // رابط سيرفر School X ثابت مش قابل للتعديل من المستخدم
+        const FIXED_SCHOOL_API_URL = 'https://schoolx-eta.vercel.app';
+        let settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: 'dark', backendUrl: '', model: 'auto', schoolApiUrl: FIXED_SCHOOL_API_URL };
+        settings.schoolApiUrl = FIXED_SCHOOL_API_URL; // بنفرضه دايمًا حتى لو كان متخزن قديم مختلف
         // بيانات ربط School X (مشروع منفصل تماماً بدومين ومتغيرات بيئة مختلفة)
         let schoolToken = localStorage.getItem('sx_school_token') || null;
         let schoolUser = JSON.parse(localStorage.getItem('sx_school_user') || 'null');
@@ -1063,7 +1098,96 @@
             updateSchoolLoginUI();
             if (schoolToken) fetchSchoolProfile(true); // حدّث بيانات الطالب/الأدمن من السيرفر (فريش دايمًا)
             populateBankSubjects();
+            setTimeout(() => showDuaReminder(), 2200); // تظهر أول ما الصفحة تفتح
         };
+
+        // ====================== تذكير الصلاة على النبي والاستغفار ======================
+        let duaReminderShowing = false;
+        let duaReminderTimers = [];
+        const DUA_PHASES = [
+            {
+                label: '🕌 الصلاة على النبي ﷺ',
+                text: 'اللهم صلِّ وسلِّم وبارك على سيدنا محمد، وعلى آله وصحبه أجمعين'
+            },
+            {
+                label: '🤲 الاستغفار',
+                text: 'أستغفر الله العظيم الذي لا إله إلا هو، الحي القيوم، وأتوب إليه'
+            }
+        ];
+
+        function clearDuaTimers() {
+            duaReminderTimers.forEach(t => clearTimeout(t));
+            duaReminderTimers = [];
+        }
+
+        function showDuaReminder(quick) {
+            if (duaReminderShowing) return;
+            duaReminderShowing = true;
+            const container = document.getElementById('duaOverlayContainer');
+            if (!container) { duaReminderShowing = false; return; }
+
+            const phasesHTML = DUA_PHASES.map((p, i) => `
+                <div class="dua-phase${i === 0 ? ' active' : ''}" data-phase="${i}">
+                    <div class="dua-phase-label">${p.label}</div>
+                    <div class="dua-text">${p.text}</div>
+                    <div class="dua-progress-wrap"><div class="dua-progress-bar" id="duaProgress${i}"></div></div>
+                    <div class="dua-timer">٢٠ ثانية</div>
+                </div>`).join('');
+
+            container.innerHTML = `
+                <div class="dua-overlay" id="duaOverlayEl">
+                    <div class="dua-card">
+                        <button class="dua-close" onclick="closeDuaReminder()"><i class="fas fa-times"></i></button>
+                        <div class="dua-icon"><i class="fas fa-moon"></i></div>
+                        <div class="dua-title">لحظة مع الله 🌙</div>
+                        <div class="dua-sub">خد لك دقيقة بسيطة وانت بتذاكر</div>
+                        ${phasesHTML}
+                        <div class="dua-extra">
+                            💚 «من صلَّى عليَّ صلاةً واحدة صلَّى الله عليه بها عشرًا»<br>
+                            وخد بالك من نفسك: اشرب شوية ميه دلوقتي وريّح عينك ثانية من الشاشة 🤍
+                        </div>
+                    </div>
+                </div>`;
+
+            const overlayEl = document.getElementById('duaOverlayEl');
+            requestAnimationFrame(() => overlayEl.classList.add('show'));
+
+            // الانتقال التلقائي بين المرحلتين كل 20 ثانية، وقفل تلقائي بعدها
+            const t1 = setTimeout(() => {
+                const phase0 = container.querySelector('[data-phase="0"]');
+                const phase1 = container.querySelector('[data-phase="1"]');
+                if (phase0) phase0.classList.remove('active');
+                if (phase1) phase1.classList.add('active');
+            }, 20000);
+            const t2 = setTimeout(() => closeDuaReminder(), quick ? 6000 : 40000);
+            duaReminderTimers.push(t1, t2);
+        }
+
+        function closeDuaReminder() {
+            const overlayEl = document.getElementById('duaOverlayEl');
+            clearDuaTimers();
+            if (overlayEl) {
+                overlayEl.classList.remove('show');
+                setTimeout(() => {
+                    const container = document.getElementById('duaOverlayContainer');
+                    if (container) container.innerHTML = '';
+                    duaReminderShowing = false;
+                }, 500);
+            } else {
+                duaReminderShowing = false;
+            }
+        }
+
+        // كل 10 دقايق من فتح الصفحة (طول ما هي ظاهرة قدام المستخدم)
+        setInterval(() => {
+            if (document.visibilityState === 'visible') showDuaReminder();
+        }, 10 * 60 * 1000);
+
+        // "قبل ما يغادر الصفحة" — المتصفحات بتمنع رسايل مخصصة فعلية عند الإغلاق الفعلي،
+        // فأقرب حاجة بنقدر نعملها فعليًا هي إننا نظهرله التذكير لما يسيب التاب أو يقفلها/يرجع تاني
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') showDuaReminder(true);
+        });
 
         function todayKey() {
             const d = new Date();
@@ -2379,12 +2503,7 @@
             showToast('تم الحفظ', 'success');
         }
 
-        // ====================== ربط School X (مشروع منفصل - سيرفر تاني) ======================
-        function getSchoolApiUrl() {
-            const input = document.getElementById('schoolApiUrlInput');
-            const url = (input ? input.value : settings.schoolApiUrl || '').trim().replace(/\/+$/, '');
-            return url;
-        }
+        // ====================== ربط School X (مشروع منفصل - سيرفر تاني، رابط ثابت) ======================
 
         function updateSchoolLoginUI() {
             const loggedOutBox = document.getElementById('schoolLoggedOutBox');
@@ -2402,14 +2521,11 @@
         }
 
         async function schoolLogin() {
-            const apiUrl = getSchoolApiUrl();
+            const apiUrl = FIXED_SCHOOL_API_URL;
             const username = document.getElementById('schoolUsernameInput').value.trim();
             const password = document.getElementById('schoolPasswordInput').value;
             const status = document.getElementById('schoolLoginStatus');
-            if (!apiUrl) { status.innerHTML = '<span style="color:var(--danger)">حط رابط سيرفر School X الأول</span>'; return; }
             if (!username || !password) { status.innerHTML = '<span style="color:var(--danger)">اكتب اسم المستخدم وكلمة المرور</span>'; return; }
-            settings.schoolApiUrl = apiUrl;
-            saveData();
             status.innerHTML = 'جاري تسجيل الدخول...';
             try {
                 const res = await fetch(`${apiUrl}/api/login`, {
@@ -2452,8 +2568,8 @@
         // بيتجدد تلقائيًا كل 3 دقايق (مش في كل رسالة) عشان البيانات (واجبات/غياب/درجات) تفضل حديثة
         let schoolContextFetchedAt = Number(localStorage.getItem('sx_school_context_at') || 0);
         async function fetchSchoolProfile(force) {
-            const apiUrl = settings.schoolApiUrl || getSchoolApiUrl();
-            if (!apiUrl || !schoolToken) return;
+            const apiUrl = FIXED_SCHOOL_API_URL;
+            if (!schoolToken) return;
             if (!force && schoolContext && (Date.now() - schoolContextFetchedAt) < 3 * 60 * 1000) return;
             try {
                 const res = await fetch(`${apiUrl}/api/me`, {
@@ -2574,8 +2690,7 @@ ${schoolContext}`;
             chapSel.innerHTML = '<option value="">جاري التحميل...</option>';
             if (subjIdx === '') { chapSel.innerHTML = '<option value="">اختر الفصل...</option>'; return; }
             const subj = BANK_CATALOG[subjIdx];
-            const apiUrl = settings.schoolApiUrl || getSchoolApiUrl();
-            if (!apiUrl) { chapSel.innerHTML = '<option value="">حط رابط School X في إعدادات تسجيل الدخول الأول</option>'; return; }
+            const apiUrl = FIXED_SCHOOL_API_URL;
             chapSel.innerHTML = '';
             const defaultOpt = document.createElement('option');
             defaultOpt.value = ''; defaultOpt.textContent = 'اختر الفصل...';
