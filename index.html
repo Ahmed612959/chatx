@@ -870,6 +870,13 @@
                 speakBtn.addEventListener('click', () => speakText(msg.content, speakBtn));
                 actionsDiv.appendChild(speakBtn);
 
+                const downloadBtn = document.createElement('button');
+                downloadBtn.className = 'msg-action-btn';
+                downloadBtn.title = 'تحميل كملف صوتي (تسمعه وانت ماشي)';
+                downloadBtn.innerHTML = '<i class="fas fa-download"></i>';
+                downloadBtn.addEventListener('click', () => downloadAsAudio(msg.content, downloadBtn));
+                actionsDiv.appendChild(downloadBtn);
+
                 if (isLastBotMsg) {
                     const regenBtn = document.createElement('button');
                     regenBtn.className = 'msg-action-btn regen-btn';
@@ -1013,7 +1020,43 @@
             }
         }
 
-        // Backup path: the browser's own text-to-speech, used only when /api/tts fails
+        // بيحوّل رد المساعد كامل لملف MP3 حقيقي وينزّله على جهاز الطالب (يسمعه بعدين وهو ماشي/أوفلاين)
+        async function downloadAsAudio(text, btn) {
+            const plain = (text || '')
+                .replace(/```[\s\S]*?```/g, ' ')
+                .replace(/[*_#>`~\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            if (!plain) { showToast('لا يوجد نص لتحويله', 'error'); return; }
+
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: plain, lang: 'ar' })
+                });
+                if (!res.ok) throw new Error('tts-request-failed');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ملخص-صوتي-${Date.now()}.mp3`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 4000);
+                showToast('اتحمّل الملف الصوتي ✓', 'success');
+            } catch (err) {
+                showToast('تعذر إنشاء الملف الصوتي، حاول تاني', 'error');
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        }
+
         // (e.g. offline, or the free upstream TTS service is temporarily unavailable).
         function speakWithBrowserFallback(plain, btn, myToken) {
             if (!('speechSynthesis' in window)) {
@@ -1101,7 +1144,61 @@
             setTimeout(() => showDuaReminder(), 2200); // تظهر أول ما الصفحة تفتح
         };
 
-        // ====================== تذكير الصلاة على النبي والاستغفار ======================
+        // ====================== تنبيه الواجبات القريب ميعادها ======================
+        let homeworkAlertShownFor = new Set(); // عشان منفتحش نفس التنبيه أكتر من مرة في نفس الجلسة
+        function checkUpcomingHomeworkAlert(pendingHomework) {
+            if (!pendingHomework || !pendingHomework.length) return;
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const urgent = pendingHomework.filter(h => {
+                const d = new Date(h.deadline); d.setHours(0, 0, 0, 0);
+                const diffDays = Math.round((d - today) / (1000 * 60 * 60 * 24));
+                h._diffDays = diffDays;
+                return diffDays >= 0 && diffDays <= 2;
+            });
+            if (!urgent.length) return;
+            const key = urgent.map(h => `${h.title}-${h.deadline}`).sort().join('|');
+            if (homeworkAlertShownFor.has(key)) return;
+            homeworkAlertShownFor.add(key);
+            showHomeworkAlert(urgent);
+        }
+
+        function dayLabel(diff) {
+            if (diff === 0) return 'النهاردة آخر ميعاده! ⏰';
+            if (diff === 1) return 'باقيله يوم واحد بس';
+            return `باقيله ${diff} يوم`;
+        }
+
+        function showHomeworkAlert(urgentList) {
+            const container = document.getElementById('duaOverlayContainer');
+            if (!container || duaReminderShowing) return; // منزحمش على تذكير تاني لو ظاهر دلوقتي
+            duaReminderShowing = true;
+
+            const itemsHTML = urgentList.map(h => `
+                <div class="dua-text" style="text-align:right;">
+                    <b>${h.title}</b> <span style="color:#f4c542;">(${h.chapterName})</span><br>
+                    <span style="font-size:12.5px;color:rgba(255,255,255,.75);">${dayLabel(h._diffDays)} — آخر ميعاد: ${h.deadline}</span>
+                </div>`).join('');
+
+            container.innerHTML = `
+                <div class="dua-overlay" id="duaOverlayEl">
+                    <div class="dua-card" style="background:linear-gradient(160deg, #3a2b0d 0%, #4b3a11 45%, #5c4a1a 100%); border-color: rgba(244,197,66,.4);">
+                        <button class="dua-close" onclick="closeDuaReminder()"><i class="fas fa-times"></i></button>
+                        <div class="dua-icon" style="color:#f4c542;text-shadow:0 0 20px rgba(244,197,66,.5);"><i class="fas fa-triangle-exclamation"></i></div>
+                        <div class="dua-title">واجب قربّ ميعاده ⏳</div>
+                        <div class="dua-sub">متنساش تسلّمه قبل ما يفوتك</div>
+                        ${itemsHTML}
+                        <div class="dua-extra">
+                            وفّقك الله وسهّل عليك المذاكرة 🤍
+                        </div>
+                    </div>
+                </div>`;
+
+            const overlayEl = document.getElementById('duaOverlayEl');
+            requestAnimationFrame(() => overlayEl.classList.add('show'));
+            const t = setTimeout(() => closeDuaReminder(), 12000);
+            duaReminderTimers.push(t);
+        }
+
         let duaReminderShowing = false;
         let duaReminderTimers = [];
         const DUA_PHASES = [
@@ -2582,7 +2679,42 @@
                 schoolContextFetchedAt = Date.now();
                 localStorage.setItem('sx_school_context', schoolContext);
                 localStorage.setItem('sx_school_context_at', String(schoolContextFetchedAt));
+                if (data.type === 'student') checkUpcomingHomeworkAlert(data.pendingHomework || []);
             } catch (e) { /* السيرفر مش متاح دلوقتي، هنستخدم آخر نسخة متخزنة */ }
+        }
+
+        // بيحلل نتائج الطالب مجمّعة حسب اسم كل امتحان (زي "امتحان باطنة"، "امتحان جراحة")
+        // ويقارن آخر 3 نتائج بيه في كل مادة مع بعض عشان يعرف هل بيتحسن ولا ثابت ولا بيتراجع.
+        // ده تحليل حقيقي مبني على أرقامه هو بس، مش مقارنة بحد تاني.
+        function buildPerformanceTrendText(examResults) {
+            if (!examResults || examResults.length < 2) return '';
+            const groups = {};
+            examResults.forEach(r => {
+                const key = r.examName || 'اختبارات عامة';
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(r);
+            });
+
+            const lines = [];
+            Object.entries(groups).forEach(([subject, results]) => {
+                if (results.length < 2) return;
+                // الأحدث أولًا في البيانات الأصلية، فبنقلبها عشان نرتبها من الأقدم للأحدث زمنيًا
+                const chrono = [...results].sort((a, b) => new Date(a.completionTime) - new Date(b.completionTime));
+                const last3 = chrono.slice(-3);
+                const toPercent = r => (r.totalQuestions ? (r.score / r.totalQuestions) * 100 : r.score);
+                const first = toPercent(last3[0]);
+                const last = toPercent(last3[last3.length - 1]);
+                const diff = last - first;
+                let verdict;
+                if (last3.length < 2) return;
+                if (diff > 5) verdict = `في تحسّن ملحوظ (كان حواليه ${Math.round(first)}% وبقى ${Math.round(last)}%)`;
+                else if (diff < -5) verdict = `في تراجع مؤخرًا (كان حواليه ${Math.round(first)}% ودلوقتي ${Math.round(last)}%)`;
+                else verdict = `مستوى ثابت تقريبًا (حوالين ${Math.round(last)}%)`;
+                lines.push(`- ${subject}: ${verdict}`);
+            });
+
+            if (!lines.length) return '';
+            return `تحليل أداء الطالب بمرور الوقت (مقارنة بنفسه هو بس، مش بزمايله):\n${lines.join('\n')}\nاستخدم التحليل ده لو الطالب سأل عن مستواه أو طلب نصيحة للمذاكرة، وشجّعه لو بيتحسن ونبّهه بلطف لو في تراجع من غير ما تحبطه.`;
         }
 
         function buildSchoolContextText(data) {
@@ -2597,7 +2729,14 @@
 
             // نتائج الاختبارات - بنذكر صراحة لو مفيش نتايج خالص عشان منسيبش فراغ يتفسر غلط
             if (data.examResults && data.examResults.length) {
-                text += `\nنتائج آخر اختبارات (${data.examResults.length}):\n` + data.examResults.slice(0, 10).map(r => `- كود الاختبار ${r.examCode}: ${r.score}`).join('\n') + '\n';
+                text += `\nنتائج آخر اختبارات (${data.examResults.length}):\n` + data.examResults.slice(0, 10).map(r => {
+                    const label = r.examName || `كود ${r.examCode}`;
+                    const outOf = r.totalQuestions ? ` من ${r.totalQuestions}` : '';
+                    return `- ${label}: ${r.score}${outOf}`;
+                }).join('\n') + '\n';
+
+                const trendText = buildPerformanceTrendText(data.examResults);
+                if (trendText) text += `\n${trendText}\n`;
             } else {
                 text += `\nنتائج الاختبارات: لا توجد أي نتائج اختبارات مسجلة لهذا الطالب في قاعدة البيانات (العدد = 0).\n`;
             }
@@ -2798,7 +2937,7 @@ ${schoolContext}`;
 
             const chat = chats.find(c => c.id === currentChatId);
             if (chat) {
-                const botMsg = { role: 'assistant', content: msg, id: Date.now() };
+                const botMsg = { role: 'bot', content: msg, source: 'local', timestamp: Date.now(), id: `msg-${Date.now()}-quiz` };
                 chat.messages.push(botMsg);
                 appendMessageToDOM(botMsg);
                 saveData();
