@@ -552,7 +552,7 @@
             border: 1px solid rgba(212,175,55,.25); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
         .dua-progress-wrap { height: 6px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; margin-bottom: 8px; }
         .dua-progress-bar { height: 100%; width: 100%; background: linear-gradient(90deg, #d4af37, #f4e5a3); border-radius: 4px; transform-origin: right;
-            animation: duaCountdown 20s linear forwards; }
+            animation: duaCountdown 30s linear forwards; }
         [dir="ltr"] .dua-progress-bar, html:not([dir="rtl"]) .dua-progress-bar { transform-origin: left; }
         @keyframes duaCountdown { from { width: 100%; } to { width: 0%; } }
         .dua-timer { font-size: 11px; color: rgba(255,255,255,.55); }
@@ -1131,7 +1131,7 @@
                     <div class="dua-phase-label">${p.label}</div>
                     <div class="dua-text">${p.text}</div>
                     <div class="dua-progress-wrap"><div class="dua-progress-bar" id="duaProgress${i}"></div></div>
-                    <div class="dua-timer">٢٠ ثانية</div>
+                    <div class="dua-timer">٣٠ ثانية</div>
                 </div>`).join('');
 
             container.innerHTML = `
@@ -1152,14 +1152,14 @@
             const overlayEl = document.getElementById('duaOverlayEl');
             requestAnimationFrame(() => overlayEl.classList.add('show'));
 
-            // الانتقال التلقائي بين المرحلتين كل 20 ثانية، وقفل تلقائي بعدها
+            // الانتقال التلقائي بين المرحلتين كل 30 ثانية، وقفل تلقائي بعدها
             const t1 = setTimeout(() => {
                 const phase0 = container.querySelector('[data-phase="0"]');
                 const phase1 = container.querySelector('[data-phase="1"]');
                 if (phase0) phase0.classList.remove('active');
                 if (phase1) phase1.classList.add('active');
-            }, 20000);
-            const t2 = setTimeout(() => closeDuaReminder(), quick ? 6000 : 40000);
+            }, 30000);
+            const t2 = setTimeout(() => closeDuaReminder(), quick ? 6000 : 60000);
             duaReminderTimers.push(t1, t2);
         }
 
