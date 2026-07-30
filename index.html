@@ -560,6 +560,12 @@
         .dua-close { position: absolute; top: 14px; left: 14px; width: 28px; height: 28px; border-radius: 50%; border: none;
             background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: .2s; }
         .dua-close:hover { background: rgba(255,255,255,.2); }
+        /* ===== مساحة الإعلان ===== */
+        .ad-slot { min-height: 50px; max-height: 90px; margin: 0 14px 10px; border-radius: 12px;
+            border: 1.5px dashed var(--border); display: flex; align-items: center; justify-content: center;
+            background: var(--bg-2); overflow: hidden; flex-shrink: 0; }
+        .ad-slot-label { font-size: 11px; color: var(--text-3); letter-spacing: .3px; }
+        .ad-slot:empty::before { content: ''; }
     </style>
 </head>
 <body>
@@ -679,6 +685,19 @@
                     </select>
                 </div>
             </div>
+
+            <!-- ============================================================
+                 مساحة إعلانية (Ad Slot)
+                 لما تتوافق مع Google AdSense أو أي راعي، حط كود الإعلان هنا بدل
+                 الـ placeholder اللي جوه الـ div. الحجم ده متوافق مع بانر
+                 responsive عادي (320x50 على الموبايل تلقائيًا).
+                 مكانها هنا مقصود: تحت الشات وفوق حدود الصفحة، عشان متضايقش
+                 المستخدم وهو بيكتب أو بيقرأ رد المساعد.
+            ============================================================ -->
+            <div class="ad-slot" id="adSlot">
+                <span class="ad-slot-label">مساحة إعلانية</span>
+                <!-- ضيف هنا كود AdSense (<ins class="adsbygoogle">...) أو لوجو الراعي -->
+            </div>
         </main>
     </div>
 
@@ -728,6 +747,7 @@
 
             <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--text-3);">
                 تطوير <span style="color:var(--text-2);font-weight:700;">أحمد موسى — 𝐴ℎ𝑚𝑒𝑑 𝑚𝑜𝑢𝑠𝑠𝑎</span>
+                <br><a href="/privacy.html" target="_blank" style="color:var(--text-3);text-decoration:underline;">سياسة الخصوصية</a>
             </div>
         </div>
     </div>
@@ -2808,7 +2828,9 @@ ${schoolContext}`;
         const BANK_CATALOG = [
             { subject: 'باطنة وجراحة (بنك 1)', prefix: 'chap', ids: [1,2,3,4,5,6,7,8,10] },
             { subject: 'رعاية التمريض (Nursing Care)', prefix: 'chapter', ids: [1,2,3,4,5,6,7,8,9,10,11] },
-            { subject: 'الجراحة العامة (General Surgery)', prefix: 'gs_chapter', ids: [1,2,3,4,5,6,7,8] }
+            { subject: 'الجراحة العامة (General Surgery)', prefix: 'gs_chapter', ids: [1,2,3,4,5,6,7,8] },
+            { subject: 'التشريح (Anatomy)', prefix: 'an1_chapter', ids: [1,2,3,4,5,6,7,8,9,10] },
+            { subject: 'تمريض صحة المجتمع (Community Health)', prefix: 'comm1_chapter', ids: [1,2,3,4,5] }
         ];
         let bankChaptersCache = {}; // key: "prefixN" -> {name, mcq:[...]} بعد أول تحميل
 
