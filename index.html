@@ -3,8 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#0f172a">
-    <title>School X | المساعد الأكاديمي الذكي</title>
+    <meta name="theme-color" content="#6366f1">
+    <title>School X PRO | المساعد الأكاديمي الذكي</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="School X PRO">
+
+    <!-- مشاركة الرابط (واتساب/فيسبوك/إلخ) -->
+    <meta property="og:title" content="School X PRO | المساعد الأكاديمي الذكي">
+    <meta property="og:description" content="مساعد ذكاء اصطناعي لطلاب معهد رعاية الضبعية الفني للتمريض — بنك أسئلة، متابعة درجات وحضور، وشرح فوري.">
+    <meta property="og:image" content="/icons/icon-512.png">
+    <meta property="og:type" content="website">
+
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -560,12 +575,6 @@
         .dua-close { position: absolute; top: 14px; left: 14px; width: 28px; height: 28px; border-radius: 50%; border: none;
             background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: .2s; }
         .dua-close:hover { background: rgba(255,255,255,.2); }
-        /* ===== مساحة الإعلان ===== */
-        .ad-slot { min-height: 50px; max-height: 90px; margin: 0 14px 10px; border-radius: 12px;
-            border: 1.5px dashed var(--border); display: flex; align-items: center; justify-content: center;
-            background: var(--bg-2); overflow: hidden; flex-shrink: 0; }
-        .ad-slot-label { font-size: 11px; color: var(--text-3); letter-spacing: .3px; }
-        .ad-slot:empty::before { content: ''; }
     </style>
 </head>
 <body>
@@ -685,25 +694,49 @@
                     </select>
                 </div>
             </div>
-
-            <!-- ============================================================
-                 مساحة إعلانية (Ad Slot)
-                 لما تتوافق مع Google AdSense أو أي راعي، حط كود الإعلان هنا بدل
-                 الـ placeholder اللي جوه الـ div. الحجم ده متوافق مع بانر
-                 responsive عادي (320x50 على الموبايل تلقائيًا).
-                 مكانها هنا مقصود: تحت الشات وفوق حدود الصفحة، عشان متضايقش
-                 المستخدم وهو بيكتب أو بيقرأ رد المساعد.
-            ============================================================ -->
-            <div class="ad-slot" id="adSlot">
-                <span class="ad-slot-label">مساحة إعلانية</span>
-                <!-- ضيف هنا كود AdSense (<ins class="adsbygoogle">...) أو لوجو الراعي -->
-            </div>
         </main>
     </div>
 
     <button class="fab" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
 
     <!-- Settings Modal -->
+    <!-- شاشة ترحيب أول استخدام -->
+    <div class="modal-overlay" id="onboardingModal">
+        <div class="modal" style="max-width:380px;text-align:center;">
+            <div style="padding:28px 22px 22px;">
+                <img src="/icons/icon-192.png" alt="School X PRO" style="width:64px;height:64px;border-radius:18px;margin-bottom:14px;box-shadow:0 8px 24px rgba(99,102,241,.35);">
+                <div style="font-size:19px;font-weight:800;margin-bottom:6px;">أهلاً بيك في School X PRO 👋</div>
+                <div style="font-size:13px;color:var(--text-2);margin-bottom:20px;">مساعدك الأكاديمي الذكي — خد دقيقة واحدة تتعرف عليه</div>
+
+                <div style="text-align:right;display:flex;flex-direction:column;gap:14px;margin-bottom:22px;">
+                    <div style="display:flex;gap:12px;align-items:flex-start;">
+                        <div style="font-size:22px;">💬</div>
+                        <div>
+                            <div style="font-weight:700;font-size:13.5px;">اسأل واذاكر</div>
+                            <div style="font-size:12px;color:var(--text-2);">اسأله في أي مادة، وهيشرحلك ويحل معاك واجباتك.</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start;">
+                        <div style="font-size:22px;">🔗</div>
+                        <div>
+                            <div style="font-weight:700;font-size:13.5px;">اربط حسابك</div>
+                            <div style="font-size:12px;color:var(--text-2);">من ⚙️ الإعدادات، سجّل دخولك بحساب School X عشان يشوف درجاتك وحضورك وواجباتك.</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:flex-start;">
+                        <div style="font-size:22px;">📚</div>
+                        <div>
+                            <div style="font-weight:700;font-size:13.5px;">بنك أسئلة حقيقي</div>
+                            <div style="font-size:12px;color:var(--text-2);">من 🧰 الأدوات، اعمل اختبار حقيقي من بنك المدرسة ويصححلك فورًا.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-calc" onclick="closeOnboarding()">يلا نبدأ 🚀</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="settingsModal">
         <div class="modal">
             <div class="modal-header">
@@ -1161,8 +1194,23 @@
             updateSchoolLoginUI();
             if (schoolToken) fetchSchoolProfile(true); // حدّث بيانات الطالب/الأدمن من السيرفر (فريش دايمًا)
             populateBankSubjects();
-            setTimeout(() => showDuaReminder(), 2200); // تظهر أول ما الصفحة تفتح
+
+            if (!localStorage.getItem('sx_onboarded')) {
+                openModal('onboardingModal');
+            } else {
+                setTimeout(() => showDuaReminder(), 2200); // تظهر أول ما الصفحة تفتح (بعد الترحيب لو أول مرة)
+            }
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            }
         };
+
+        function closeOnboarding() {
+            localStorage.setItem('sx_onboarded', '1');
+            closeModal('onboardingModal');
+            setTimeout(() => showDuaReminder(), 1200);
+        }
 
         // ====================== تنبيه الواجبات القريب ميعادها ======================
         let homeworkAlertShownFor = new Set(); // عشان منفتحش نفس التنبيه أكتر من مرة في نفس الجلسة
