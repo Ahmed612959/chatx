@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="School X PRO">
+    <meta name="apple-mobile-web-app-title" content="Chat X">
 
     <!-- مشاركة الرابط (واتساب/فيسبوك/إلخ) -->
     <meta property="og:title" content="Chat X | المساعد الأكاديمي الذكي">
@@ -704,7 +704,7 @@
     <div class="modal-overlay" id="onboardingModal">
         <div class="modal" style="max-width:380px;text-align:center;">
             <div style="padding:28px 22px 22px;">
-                <img src="/icons/icon-192.png" alt="School X PRO" style="width:64px;height:64px;border-radius:18px;margin-bottom:14px;box-shadow:0 8px 24px rgba(99,102,241,.35);">
+                <img src="/icons/icon-192.png" alt="Chat X" style="width:64px;height:64px;border-radius:18px;margin-bottom:14px;box-shadow:0 8px 24px rgba(99,102,241,.35);">
                 <div style="font-size:19px;font-weight:800;margin-bottom:6px;">أهلاً بيك في chat x  👋</div>
                 <div style="font-size:13px;color:var(--text-2);margin-bottom:20px;">مساعدك الأكاديمي الذكي — خد دقيقة واحدة تتعرف عليه</div>
 
@@ -757,8 +757,36 @@
                 <div id="backendStatus" style="margin-top:10px;"></div>
             </div>
 
+            <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-layer-group"></i> منصات المطور</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:12px;line-height:1.7;">
+                    منصتين من تطوير <b style="color:var(--text-1);">Ahmed Mousaa</b>، بيشتغلوا مع بعض عشان يقدملك تجربة تعليمية متكاملة.
+                </p>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-glass);border:1px solid var(--border-accent);border-radius:12px;">
+                        <div style="width:42px;height:42px;flex-shrink:0;border-radius:11px;background:linear-gradient(135deg, var(--accent), var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;box-shadow:0 4px 14px var(--accent-glow);">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:800;font-size:13.5px;display:flex;align-items:center;gap:6px;">Chat X <span class="badge" style="font-size:8px;position:relative;top:-1px;">أنت هنا</span></div>
+                            <div style="font-size:11px;color:var(--text-2);margin-top:1px;">المساعد الأكاديمي الذكي — الشات ده</div>
+                        </div>
+                    </div>
+                    <a href="https://schoolx-eta.vercel.app" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;transition:all .2s;">
+                        <div style="width:42px;height:42px;flex-shrink:0;border-radius:11px;background:var(--bg-glass);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:17px;">
+                            <i class="fas fa-school"></i>
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:800;font-size:13.5px;color:var(--text-1);">School X</div>
+                            <div style="font-size:11px;color:var(--text-2);margin-top:1px;">منصة المدرسة — درجات، حضور، بنك أسئلة</div>
+                        </div>
+                        <i class="fas fa-arrow-up-left-from-square" style="color:var(--text-3);font-size:12px;flex-shrink:0;"></i>
+                    </a>
+                </div>
+            </div>
+
             <div class="tool-section" id="schoolLoginSection">
-                <div class="tool-title"><i class="fas fa-school"></i> تسجيل الدخول - School X</div>
+                <div class="tool-title"><i class="fas fa-school"></i> ربط حساب School X</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
                     سجّل دخولك بنفس بيانات منصة School X عشان المساعد يقدر يشوف بياناتك (الدرجات، الحضور، المخالفات...) ويجاوبك بناءً عليها.
                 </p>
@@ -779,7 +807,7 @@
             </div>
 
             <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--text-3);">
-                تطوير <span style="color:var(--text-2);font-weight:700;">أحمد موسى — 𝐴ℎ𝑚𝑒𝑑 𝑚𝑜𝑢𝑠𝑠𝑎</span>
+                Chat X — تطوير <span style="color:var(--text-2);font-weight:700;">Ahmed Mousaa</span>
                 <br><a href="/privacy.html" target="_blank" style="color:var(--text-3);text-decoration:underline;">سياسة الخصوصية</a>
             </div>
         </div>
@@ -1902,6 +1930,7 @@
                 if (signal.aborted) break;
                 displayed += chars.slice(i, i + chunkSize).join('');
                 bubbleDiv.innerHTML = marked.parse(displayed);
+                wrapTables(bubbleDiv);
                 botMsg.content = displayed;
                 scrollToBottom();
                 await sleep(12, signal);
@@ -2002,6 +2031,7 @@
                 buffer = buffer.slice(step);
                 botMsg.content = displayed;
                 bubbleDiv.innerHTML = marked.parse(displayed);
+                wrapTables(bubbleDiv);
                 scrollToBottom();
             }
 
@@ -2027,6 +2057,7 @@
                     buffer = '';
                     botMsg.content = displayed;
                     bubbleDiv.innerHTML = marked.parse(displayed);
+                    wrapTables(bubbleDiv);
                     return displayed;
                 }
             };
@@ -2503,7 +2534,7 @@
             if (p.includes('mcq') || p.includes('اختبار') || p.includes('سؤال')) {
                 return "**س:** ما هي عاصمة السعودية؟\n**ج:** الرياض\n\n**س:** كم عدد قارات العالم؟\n**ج:** 7 قارات";
             }
-            return "أهلاً بك في School X! كيف يمكنني مساعدتك في دراستك اليوم؟";
+            return "أهلاً بك في Chat X! كيف يمكنني مساعدتك في دراستك اليوم؟";
         }
 
         function initSpeechRecognition() {
@@ -2843,7 +2874,11 @@
         // بيتضاف قبل الـ system prompt الثابت في كل نداء للـ AI
         function getSystemPrompt(base) {
             base = base || 'أنت مساعد أكاديمي ذكي.';
-            let extra = '';
+            let extra = `
+
+معلومات ثابتة عن هويتك — التزم بيها حرفيًا في أي وقت حد يسأل عنها:
+- اسم المنصة اللي بتشتغل جواها هو "Chat X"، وده اسمك الرسمي. لو حد سألك "مين عملك؟" أو "مين المطور بتاعك؟" أو "مين صنعك؟" أو أي سؤال مشابه عن هوية Chat X أو مين طوّرها، جاوبه إن مطورها هو web developer اسمه Ahmed Mousaa، بأسلوب طبيعي ومختصر (متلزمش تكتب اسمه بالعربي، اكتبه زي ما هو بالإنجليزي "Ahmed Mousaa").
+- "School X" منصة مختلفة تمامًا ومنفصلة عن Chat X — هي منصة مدرسية بيربط الطالب بيها حسابه عشان تجيب بياناته الحقيقية (درجات، حضور، بنك أسئلة). متلخبطش بينها وبين اسمك إنت (Chat X)؛ لو الطالب سأل عن هوية School X أو مين عملها بلاش تتكلم نيابة عنها، وركّز إجابتك على إنك إنت (Chat X) صنعك Ahmed Mousaa.`;
             if (schoolContext) {
                 extra += `
 
@@ -3326,7 +3361,7 @@ ${schoolContext}`;
             chat.messages.forEach(msg => {
                 const block = document.createElement('div');
                 block.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:10px;background:' + (msg.role === 'user' ? '#eef2ff' : '#f8fafc') + ';border:1px solid #e2e8f0;';
-                block.innerHTML = `<strong>${msg.role === 'user' ? 'أنت' : 'School X'}:</strong><div>${marked.parse(msg.content)}</div>`;
+                block.innerHTML = `<strong>${msg.role === 'user' ? 'أنت' : 'Chat X'}:</strong><div>${marked.parse(msg.content)}</div>`;
                 printable.appendChild(block);
             });
 
