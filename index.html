@@ -585,8 +585,16 @@
         <aside class="sidebar" id="sidebar">
             <div class="sb-header">
                 <button class="btn-new" onclick="createNewChat()"><i class="fas fa-plus"></i> محادثة جديدة</button>
+                <div style="position:relative;margin-top:10px;">
+                    <i class="fas fa-magnifying-glass" style="position:absolute;top:50%;right:12px;transform:translateY(-50%);color:var(--text-3);font-size:12px;pointer-events:none;"></i>
+                    <input type="text" id="chatSearchInput" class="tool-input" placeholder="ابحث في محادثاتك..." aria-label="ابحث في محادثاتك" style="padding-right:32px;font-size:12px;" oninput="filterChatList(this.value)">
+                </div>
             </div>
             <div class="chat-list" id="chatList"></div>
+            <div id="chatSearchEmpty" style="display:none;text-align:center;padding:20px 10px;color:var(--text-3);font-size:12px;">
+                <i class="fas fa-magnifying-glass" style="font-size:20px;margin-bottom:8px;display:block;opacity:.5;"></i>
+                مفيش نتايج تطابق بحثك
+            </div>
             <div class="stats-bar">
                 <div class="stat-pill">
                     <div class="stat-num"><i class="fas fa-fire" style="color:var(--warning)"></i> <span id="streakCount">0</span></div>
@@ -600,16 +608,17 @@
             <div class="sb-footer">
                 <div class="user-avatar"><i class="fas fa-user-graduate"></i></div>
                 <div class="user-info">
-                    <div class="user-name">طالب chat X</div>
-                    <div class="user-status">متصل الآن</div>
+                    <div class="user-name" id="sbUserName">طالب Chat X</div>
+                    <div class="user-status" id="sbUserStatus">متصل الآن</div>
                 </div>
-                <button class="icon-btn" onclick="openModal('settingsModal')"><i class="fas fa-gear"></i></button>
+                <button class="icon-btn" id="sbQuickLogoutBtn" style="display:none;" title="تسجيل الخروج من School X" aria-label="تسجيل الخروج من School X" onclick="quickSchoolLogout()"><i class="fas fa-right-from-bracket"></i></button>
+                <button class="icon-btn" aria-label="الإعدادات" onclick="openModal('settingsModal')"><i class="fas fa-gear"></i></button>
             </div>
         </aside>
 
         <main class="main-area">
             <div class="top-bar">
-                <button class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <button class="menu-btn" aria-label="فتح القائمة الجانبية" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                 <div class="bot-identity">
                     <div class="bot-logo"><i class="fas fa-graduation-cap"></i></div>
                     <div class="bot-text">
@@ -617,15 +626,15 @@
                     </div>
                 </div>
                 <div class="top-actions">
-                    <button class="action-btn" onclick="exportPDF()"><i class="fas fa-file-pdf"></i></button>
-                    <button class="action-btn" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i></button>
-                    <button class="action-btn" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
+                    <button class="action-btn" aria-label="تصدير المحادثة كملف PDF" onclick="exportPDF()"><i class="fas fa-file-pdf"></i></button>
+                    <button class="action-btn" aria-label="تبديل الوضع الليلي والنهاري" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i></button>
+                    <button class="action-btn" aria-label="فتح الأدوات" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
                 </div>
             </div>
 
             <div class="pinned-bar" id="pinnedBar"></div>
 
-            <div class="chat-container" id="chatContainer">
+            <div class="chat-container" id="chatContainer" role="log" aria-live="polite" aria-label="سجل المحادثة">
                 <div class="welcome-screen" id="welcomeScreen">
                     <div class="welcome-logo"><i class="fas fa-graduation-cap"></i></div>
                     <h1 class="welcome-title">أهلاً بك في Chat X</h1>
@@ -667,15 +676,15 @@
                     <div class="sug-chip" onclick="sendQuick('اشرح ببساطة')">اشرح</div>
                 </div>
                 <div class="input-wrapper">
-                    <button class="attach-btn" onclick="document.getElementById('fileInput').click()">
+                    <button class="attach-btn" aria-label="إرفاق ملف" onclick="document.getElementById('fileInput').click()">
                         <i class="fas fa-paperclip"></i>
                     </button>
                     <input type="file" id="fileInput" hidden accept=".txt,.md,.jpg,.jpeg,.png,.pdf" onchange="handleFileUpload(event)">
-                    <button class="mic-btn" id="micBtn" onclick="toggleVoiceInput()" title="سؤال بالصوت">
+                    <button class="mic-btn" id="micBtn" onclick="toggleVoiceInput()" title="سؤال بالصوت" aria-label="سؤال بالصوت">
                         <i class="fas fa-microphone" id="micIcon"></i>
                     </button>
-                    <textarea id="messageInput" rows="1" placeholder="اكتب سؤالك هنا..." oninput="autoResize(this); updateCharCount()" onkeydown="handleKeyDown(event)"></textarea>
-                    <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+                    <textarea id="messageInput" rows="1" placeholder="اكتب سؤالك هنا..." aria-label="اكتب رسالتك" oninput="autoResize(this); updateCharCount()" onkeydown="handleKeyDown(event)"></textarea>
+                    <button class="send-btn" id="sendBtn" aria-label="إرسال الرسالة" onclick="sendMessage()" disabled>
                         <i class="fas fa-paper-plane" id="sendBtnIcon"></i>
                     </button>
                 </div>
@@ -697,7 +706,7 @@
         </main>
     </div>
 
-    <button class="fab" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
+    <button class="fab" aria-label="فتح الأدوات" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
 
     <!-- Settings Modal -->
     <!-- شاشة ترحيب أول استخدام -->
@@ -741,7 +750,7 @@
         <div class="modal">
             <div class="modal-header">
                 <div class="modal-title"><i class="fas fa-server"></i> إعدادات السيرفر</div>
-                <button class="close-modal" onclick="closeModal('settingsModal')"><i class="fas fa-times"></i></button>
+                <button class="close-modal" aria-label="إغلاق نافذة الإعدادات" onclick="closeModal('settingsModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-link"></i> رابط سيرفر مخصص (اختياري)</div>
@@ -755,6 +764,27 @@
                 </div>
                 <button class="btn-calc" onclick="saveBackendUrl()">حفظ</button>
                 <div id="backendStatus" style="margin-top:10px;"></div>
+            </div>
+
+            <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-cloud-arrow-down"></i> نسخة احتياطية لبياناتك</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    محادثاتك وإعداداتك متخزنة على جهازك بس (المتصفح ده). لو مسحت الكاش أو غيّرت جهاز/متصفح، هتفقدها للأبد إلا لو عملتلها نسخة احتياطية.
+                </p>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn-calc" style="flex:1;" onclick="exportAllData()"><i class="fas fa-download"></i> تصدير نسخة احتياطية</button>
+                    <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);" onclick="document.getElementById('importDataInput').click()"><i class="fas fa-upload"></i> استيراد</button>
+                </div>
+                <input type="file" id="importDataInput" hidden accept="application/json,.json" onchange="importAllData(event)">
+                <div id="backupStatus" style="margin-top:10px;"></div>
+            </div>
+
+            <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-bell"></i> التنبيهات</div>
+                <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;">
+                    <span style="font-size:12.5px;color:var(--text-2);">تذكير الصلاة على النبي والاستغفار كل 10 دقايق</span>
+                    <input type="checkbox" id="duaReminderToggle" onchange="toggleDuaReminders(this.checked)" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;">
+                </label>
             </div>
 
             <div class="tool-section">
@@ -818,7 +848,7 @@
         <div class="modal">
             <div class="modal-header">
                 <div class="modal-title"><i class="fas fa-calculator"></i> الأدوات</div>
-                <button class="close-modal" onclick="closeModal('toolsModal')"><i class="fas fa-times"></i></button>
+                <button class="close-modal" aria-label="إغلاق نافذة الأدوات" onclick="closeModal('toolsModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-percentage"></i> النسبة المئوية</div>
@@ -939,6 +969,7 @@
             const copyBtn = document.createElement('button');
             copyBtn.className = 'msg-action-btn';
             copyBtn.title = 'نسخ';
+            copyBtn.setAttribute('aria-label', 'نسخ الرسالة');
             copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
             copyBtn.addEventListener('click', () => copyToClipboard(msg.content));
             actionsDiv.appendChild(copyBtn);
@@ -947,6 +978,7 @@
                 const speakBtn = document.createElement('button');
                 speakBtn.className = 'msg-action-btn';
                 speakBtn.title = 'سماع الرد';
+                speakBtn.setAttribute('aria-label', 'سماع الرد');
                 speakBtn.innerHTML = '<i class="fas fa-volume-high"></i>';
                 speakBtn.addEventListener('click', () => speakText(msg.content, speakBtn));
                 actionsDiv.appendChild(speakBtn);
@@ -954,6 +986,7 @@
                 const downloadBtn = document.createElement('button');
                 downloadBtn.className = 'msg-action-btn';
                 downloadBtn.title = 'تحميل كملف صوتي (تسمعه وانت ماشي)';
+                downloadBtn.setAttribute('aria-label', 'تحميل الرد كملف صوتي');
                 downloadBtn.innerHTML = '<i class="fas fa-download"></i>';
                 downloadBtn.addEventListener('click', () => downloadAsAudio(msg.content, downloadBtn));
                 actionsDiv.appendChild(downloadBtn);
@@ -962,6 +995,7 @@
                     const regenBtn = document.createElement('button');
                     regenBtn.className = 'msg-action-btn regen-btn';
                     regenBtn.title = 'إعادة توليد الرد';
+                    regenBtn.setAttribute('aria-label', 'إعادة توليد الرد');
                     regenBtn.innerHTML = '<i class="fas fa-rotate-right"></i>';
                     regenBtn.addEventListener('click', () => regenerateMessage(msg.id));
                     actionsDiv.appendChild(regenBtn);
@@ -972,6 +1006,7 @@
                 const editBtn = document.createElement('button');
                 editBtn.className = 'msg-action-btn';
                 editBtn.title = 'تعديل الرسالة';
+                editBtn.setAttribute('aria-label', 'تعديل الرسالة');
                 editBtn.innerHTML = '<i class="fas fa-pen"></i>';
                 editBtn.addEventListener('click', () => enterEditMode(msg.id));
                 actionsDiv.appendChild(editBtn);
@@ -979,6 +1014,7 @@
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'msg-action-btn delete-btn';
                 deleteBtn.title = 'حذف الرسالة';
+                deleteBtn.setAttribute('aria-label', 'حذف الرسالة');
                 deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
                 deleteBtn.addEventListener('click', () => deleteMessage(msg.id));
                 actionsDiv.appendChild(deleteBtn);
@@ -987,6 +1023,7 @@
             const pinBtn = document.createElement('button');
             pinBtn.className = 'msg-action-btn pin-btn' + (msg.pinned ? ' pinned' : '');
             pinBtn.title = msg.pinned ? 'إلغاء التثبيت' : 'تثبيت الرسالة';
+            pinBtn.setAttribute('aria-label', msg.pinned ? 'إلغاء تثبيت الرسالة' : 'تثبيت الرسالة');
             pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i>';
             pinBtn.addEventListener('click', () => togglePinMessage(msg.id));
             actionsDiv.appendChild(pinBtn);
@@ -1190,7 +1227,10 @@
         let currentChatId = localStorage.getItem('sx_current_chat') || null;
         // رابط سيرفر School X ثابت مش قابل للتعديل من المستخدم
         const FIXED_SCHOOL_API_URL = 'https://schoolx-eta.vercel.app';
-        let settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: 'dark', backendUrl: '', model: 'auto', schoolApiUrl: FIXED_SCHOOL_API_URL };
+        // أول مرة يفتح فيها الطالب الموقع (مفيش إعدادات متخزنة قبل كده)، بنحترم تفضيل نظام
+        // تشغيله (فاتح/غامق) بدل ما نفرض الوضع الغامق عليه دايمًا كافتراضي ثابت.
+        const systemPrefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+        let settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: systemPrefersLight ? 'light' : 'dark', backendUrl: '', model: 'auto', schoolApiUrl: FIXED_SCHOOL_API_URL };
         settings.schoolApiUrl = FIXED_SCHOOL_API_URL; // بنفرضه دايمًا حتى لو كان متخزن قديم مختلف
         // بيانات ربط School X (مشروع منفصل تماماً بدومين ومتغيرات بيئة مختلفة)
         let schoolToken = localStorage.getItem('sx_school_token') || null;
@@ -1199,6 +1239,7 @@
         let isGenerating = false;
         let abortController = null;
         let lastSendTime = 0;
+        let recentSendTimestamps = []; // للـ rate limiting: تايم ستامب كل رسالة اتبعتت في آخر دقيقة
         let pendingAttachment = null;
         let stats = JSON.parse(localStorage.getItem('sx_stats')) || { streak: 0, lastActiveDay: null, todayCount: 0 };
         let recognition = null;
@@ -1219,13 +1260,22 @@
             if (backendInput) backendInput.value = settings.backendUrl || '';
             const schoolInput = document.getElementById('schoolApiUrlInput');
             if (schoolInput) schoolInput.value = settings.schoolApiUrl || '';
+            const duaToggle = document.getElementById('duaReminderToggle');
+            if (duaToggle) duaToggle.checked = settings.duaReminders !== false;
             updateSchoolLoginUI();
-            if (schoolToken) fetchSchoolProfile(true); // حدّث بيانات الطالب/الأدمن من السيرفر (فريش دايمًا)
+            if (schoolToken) {
+                fetchSchoolProfile(true); // حدّث بيانات الطالب/الأدمن من السيرفر (فريش دايمًا)
+                // تذكير لطيف عند فتح الصفحة: لو الجهاز ده بيتشارك بين أكتر من طالب، سهل حد
+                // ينسى إنه لسه مسجل دخول بحساب زميله من المرة اللي فاتت.
+                setTimeout(() => {
+                    if (schoolUser) showToast(`مسجّل دخول باسم ${schoolUser.fullName || schoolUser.username} — مش إنت؟ سجّل خروج من ⚙️`, 'success');
+                }, 900);
+            }
             populateBankSubjects();
 
             if (!localStorage.getItem('sx_onboarded')) {
                 openModal('onboardingModal');
-            } else {
+            } else if (settings.duaReminders !== false) {
                 setTimeout(() => showDuaReminder(), 2200); // تظهر أول ما الصفحة تفتح (بعد الترحيب لو أول مرة)
             }
 
@@ -1237,11 +1287,17 @@
         function closeOnboarding() {
             localStorage.setItem('sx_onboarded', '1');
             closeModal('onboardingModal');
-            setTimeout(() => showDuaReminder(), 1200);
+            if (settings.duaReminders !== false) setTimeout(() => showDuaReminder(), 1200);
         }
 
         // ====================== تنبيه الواجبات القريب ميعادها ======================
-        let homeworkAlertShownFor = new Set(); // عشان منفتحش نفس التنبيه أكتر من مرة في نفس الجلسة
+        // بنخزن آخر تنبيه اتعرض في localStorage (مش متغير في الذاكرة بس) عشان لو الطالب قفل
+        // وفتح المتصفح كذا مرة في نفس اليوم، مايشوفش نفس تنبيه الواجب من كل فتح — يشوفه مرة
+        // واحدة في اليوم لنفس مجموعة الواجبات، وتاني يوم لو لسه المواعيد قريبة يفتكّره تاني.
+        function homeworkAlertStorageKey() {
+            const d = new Date();
+            return `sx_hw_alert_${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        }
         function checkUpcomingHomeworkAlert(pendingHomework) {
             if (!pendingHomework || !pendingHomework.length) return;
             const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -1253,8 +1309,9 @@
             });
             if (!urgent.length) return;
             const key = urgent.map(h => `${h.title}-${h.deadline}`).sort().join('|');
-            if (homeworkAlertShownFor.has(key)) return;
-            homeworkAlertShownFor.add(key);
+            const storageKey = homeworkAlertStorageKey();
+            if (localStorage.getItem(storageKey) === key) return;
+            localStorage.setItem(storageKey, key);
             showHomeworkAlert(urgent);
         }
 
@@ -1371,15 +1428,16 @@
             }
         }
 
-        // كل 10 دقايق من فتح الصفحة (طول ما هي ظاهرة قدام المستخدم)
+        // كل 10 دقايق من فتح الصفحة (طول ما هي ظاهرة قدام المستخدم) — وبس لو الطالب مفعّل
+        // الميزة دي من الإعدادات (بعض الطلبة بيحسوا إنها بتقاطعهم وهما في نص حل مسألة).
         setInterval(() => {
-            if (document.visibilityState === 'visible') showDuaReminder();
+            if (document.visibilityState === 'visible' && settings.duaReminders !== false) showDuaReminder();
         }, 10 * 60 * 1000);
 
         // "قبل ما يغادر الصفحة" — المتصفحات بتمنع رسايل مخصصة فعلية عند الإغلاق الفعلي،
         // فأقرب حاجة بنقدر نعملها فعليًا هي إننا نظهرله التذكير لما يسيب التاب أو يقفلها/يرجع تاني
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') showDuaReminder(true);
+            if (document.visibilityState === 'hidden' && settings.duaReminders !== false) showDuaReminder(true);
         });
 
         function todayKey() {
@@ -1443,10 +1501,31 @@
             saveData();
         }
 
-        function renderChatList() {
+        function toggleDuaReminders(enabled) {
+            settings.duaReminders = enabled;
+            saveData();
+            showToast(enabled ? 'اتفعّلت التذكيرات' : 'اتوقفت التذكيرات', 'success');
+        }
+
+        function renderChatList(filterQuery) {
             const list = document.getElementById('chatList');
+            const emptyBox = document.getElementById('chatSearchEmpty');
             list.innerHTML = '';
-            chats.forEach(chat => {
+
+            const q = (filterQuery !== undefined ? filterQuery : (document.getElementById('chatSearchInput')?.value || '')).trim();
+            // البحث بيدور في عنوان المحادثة وكمان في نص كل الرسائل جواها، مش بس العنوان —
+            // عشان الطالب يقدر يلاقي محادثة قديمة حتى لو مش فاكر عنوانها بالظبط.
+            const visibleChats = q
+                ? chats.filter(chat => {
+                    const inTitle = chat.title && chat.title.includes(q);
+                    const inMessages = chat.messages.some(m => (m.content || '').includes(q));
+                    return inTitle || inMessages;
+                })
+                : chats;
+
+            if (emptyBox) emptyBox.style.display = (q && visibleChats.length === 0) ? 'block' : 'none';
+
+            visibleChats.forEach(chat => {
                 const div = document.createElement('div');
                 div.className = `chat-item ${chat.id === currentChatId ? 'active' : ''}`;
                 div.addEventListener('click', () => {
@@ -1476,6 +1555,8 @@
                 actions.className = 'actions';
                 const delBtn = document.createElement('button');
                 delBtn.className = 'icon-btn delete';
+                delBtn.title = 'حذف المحادثة';
+                delBtn.setAttribute('aria-label', `حذف محادثة ${chat.title}`);
                 delBtn.innerHTML = '<i class="fas fa-trash"></i>';
                 delBtn.addEventListener('click', (e) => deleteChat(chat.id, e));
                 actions.appendChild(delBtn);
@@ -1485,6 +1566,10 @@
                 div.appendChild(actions);
                 list.appendChild(div);
             });
+        }
+
+        function filterChatList(query) {
+            renderChatList(query);
         }
 
         function renderChat(chatId) {
@@ -1694,6 +1779,15 @@
             // Debounce: guards against double key-events / double taps firing sendMessage twice in quick succession
             const now = Date.now();
             if (now - lastSendTime < 600) return;
+
+            // Rate limit: حد أقصى 15 رسالة في الدقيقة الواحدة — بيحمي من إساءة استخدام الـ API
+            // (وبالتالي تكلفة فلوس حقيقية على المطور) لو حد حاول يبعت رسايل بشكل آلي أو مكثف.
+            recentSendTimestamps = recentSendTimestamps.filter(t => now - t < 60000);
+            if (recentSendTimestamps.length >= 15) {
+                showToast('استنى شوية، بتبعت رسايل كتير بسرعة — جرب تاني بعد دقيقة', 'error');
+                return;
+            }
+            recentSendTimestamps.push(now);
             lastSendTime = now;
 
             const input = document.getElementById('messageInput');
@@ -1935,6 +2029,12 @@
                 scrollToBottom();
                 await sleep(12, signal);
             }
+            if (signal.aborted) {
+                displayed = cleanupTruncatedMarkdown(displayed);
+                botMsg.content = displayed;
+                bubbleDiv.innerHTML = marked.parse(displayed);
+                wrapTables(bubbleDiv);
+            }
         }
 
         function finalizeBotMessage(msgDiv, botMsg) {
@@ -2016,6 +2116,24 @@
             syncRegenerateButtons(chatForLastCheck);
         }
 
+        // لو الرد اتقطع (المستخدم ضغط إيقاف) في نص صف جدول Markdown أو بلوك كود مش مقفول،
+        // marked.parse بيعرضه كنص خام مكسور بدل جدول/كود منسق. بنشيل آخر سطر لو كان جزء من
+        // جدول ناقص واضح (بيبدأ بـ | ومش منتهي بـ |)، وبنقفل ``` مفتوحة لو عددها فردي —
+        // كده الجزء الأخير المقطوع بيتشال بدل ما يتعرض مكسور وبرا الإطار.
+        function cleanupTruncatedMarkdown(text) {
+            if (!text) return text;
+            let out = text;
+            const lines = out.split('\n');
+            const lastLine = lines[lines.length - 1];
+            if (lastLine && lastLine.trim().startsWith('|') && !lastLine.trim().endsWith('|')) {
+                lines.pop();
+                out = lines.join('\n');
+            }
+            const fenceCount = (out.match(/```/g) || []).length;
+            if (fenceCount % 2 !== 0) out += '\n```';
+            return out;
+        }
+
         function createTypewriterQueue(msgDiv, botMsg, signal) {
             let buffer = '';
             let displayed = '';
@@ -2055,6 +2173,7 @@
                     stop();
                     displayed += buffer;
                     buffer = '';
+                    if (signal.aborted) displayed = cleanupTruncatedMarkdown(displayed);
                     botMsg.content = displayed;
                     bubbleDiv.innerHTML = marked.parse(displayed);
                     wrapTables(bubbleDiv);
@@ -2685,6 +2804,86 @@
             document.getElementById(id).classList.remove('active');
         }
 
+        // ====================== نسخ احتياطي: تصدير/استيراد كل بيانات الطالب ======================
+        // بنصدّر المحادثات والإحصائيات والإعدادات كملف JSON ينزل على جهاز الطالب.
+        // عمدًا مبنصدّرش sx_school_token (توكن الدخول الحيّ) — لو الملف اتبعت لحد أو
+        // اتشيّر بالغلط، أسوأ حاجة ممكن تحصل إنه يشوف محادثات الطالب، مش إنه يدخل حسابه.
+        function exportAllData() {
+            try {
+                const backup = {
+                    app: 'chat-x',
+                    exportedAt: new Date().toISOString(),
+                    version: 1,
+                    chats: JSON.parse(localStorage.getItem('sx_chats') || '[]'),
+                    currentChatId: localStorage.getItem('sx_current_chat') || null,
+                    settings: JSON.parse(localStorage.getItem('sx_settings') || '{}'),
+                    stats: JSON.parse(localStorage.getItem('sx_stats') || '{}'),
+                    onboarded: localStorage.getItem('sx_onboarded') || null
+                };
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `chat-x-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 4000);
+                const status = document.getElementById('backupStatus');
+                if (status) status.innerHTML = '<span style="color:var(--success)">تم تنزيل النسخة الاحتياطية ✓</span>';
+                showToast('تم تصدير بياناتك بنجاح', 'success');
+            } catch (e) {
+                showToast('تعذر تصدير البيانات', 'error');
+            }
+        }
+
+        // بيقرأ ملف نسخة احتياطية ويرجّع البيانات — بيستبدل المحادثات الحالية بعد تأكيد من
+        // الطالب (عشان منخسرش بياناته الحالية بالغلط لو ضغط استيراد وهو ناسي إن عنده حاجة جديدة).
+        function importAllData(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            const status = document.getElementById('backupStatus');
+            const reader = new FileReader();
+            reader.onload = () => {
+                let data;
+                try {
+                    data = JSON.parse(reader.result);
+                } catch (e) {
+                    if (status) status.innerHTML = '<span style="color:var(--danger)">الملف تالف أو مش نسخة احتياطية صحيحة</span>';
+                    showToast('تعذر قراءة الملف', 'error');
+                    return;
+                }
+                if (!data || data.app !== 'chat-x' || !Array.isArray(data.chats)) {
+                    if (status) status.innerHTML = '<span style="color:var(--danger)">الملف ده مش نسخة احتياطية من Chat X</span>';
+                    showToast('ملف غير صالح', 'error');
+                    return;
+                }
+                const confirmMsg = `هيتم استبدال محادثاتك الحالية (${chats.length}) بمحادثات من النسخة الاحتياطية (${data.chats.length}). متأكد؟`;
+                if (!confirm(confirmMsg)) return;
+
+                chats = data.chats;
+                currentChatId = data.currentChatId || (chats[0] && chats[0].id) || null;
+                if (data.settings && typeof data.settings === 'object') {
+                    settings = { ...settings, ...data.settings, schoolApiUrl: FIXED_SCHOOL_API_URL };
+                }
+                if (data.stats && typeof data.stats === 'object') {
+                    stats = data.stats;
+                    localStorage.setItem('sx_stats', JSON.stringify(stats));
+                }
+                saveData();
+                renderChatList();
+                if (currentChatId) renderChat(currentChatId);
+                applyTheme(settings.theme);
+                renderStats();
+                if (status) status.innerHTML = '<span style="color:var(--success)">تم استيراد البيانات بنجاح ✓</span>';
+                showToast('تم استعادة بياناتك', 'success');
+                closeModal('settingsModal');
+            };
+            reader.onerror = () => showToast('تعذرت قراءة الملف', 'error');
+            reader.readAsText(file);
+        }
+
         function saveBackendUrl() {
             const input = document.getElementById('backendUrlInput');
             const url = input.value.trim().replace(/\/+$/, '');
@@ -2705,15 +2904,38 @@
             const loggedOutBox = document.getElementById('schoolLoggedOutBox');
             const loggedInBox = document.getElementById('schoolLoggedInBox');
             const loggedInText = document.getElementById('schoolLoggedInText');
-            if (!loggedOutBox || !loggedInBox) return;
+            const sbUserName = document.getElementById('sbUserName');
+            const sbUserStatus = document.getElementById('sbUserStatus');
+            const sbQuickLogoutBtn = document.getElementById('sbQuickLogoutBtn');
+
             if (schoolToken && schoolUser) {
-                loggedOutBox.style.display = 'none';
-                loggedInBox.style.display = 'block';
-                loggedInText.innerHTML = `مسجّل دخول باسم: <b>${schoolUser.fullName || schoolUser.username}</b> (${schoolUser.type === 'admin' ? 'أدمن' : 'طالب'})`;
+                const name = schoolUser.fullName || schoolUser.username;
+                if (loggedOutBox && loggedInBox) {
+                    loggedOutBox.style.display = 'none';
+                    loggedInBox.style.display = 'block';
+                    loggedInText.innerHTML = `مسجّل دخول باسم: <b>${name}</b> (${schoolUser.type === 'admin' ? 'أدمن' : 'طالب'})`;
+                }
+                // نعرض اسم الطالب الحقيقي بشكل دائم في السايدبار — عشان لو الجهاز مشترك،
+                // أي حد يفتح الشات يلاقي فورًا (من غير ما يفتح إعدادات) إن فيه حساب حد تاني
+                // لسه مسجل دخول، ويقدر يعمل logout بضغطة واحدة بدل ما يدخل يدور في القوائم.
+                if (sbUserName) sbUserName.textContent = name;
+                if (sbUserStatus) sbUserStatus.innerHTML = '<span style="color:var(--warning)">مربوط بحساب School X</span>';
+                if (sbQuickLogoutBtn) sbQuickLogoutBtn.style.display = 'flex';
             } else {
-                loggedOutBox.style.display = 'block';
-                loggedInBox.style.display = 'none';
+                if (loggedOutBox && loggedInBox) {
+                    loggedOutBox.style.display = 'block';
+                    loggedInBox.style.display = 'none';
+                }
+                if (sbUserName) sbUserName.textContent = 'طالب Chat X';
+                if (sbUserStatus) sbUserStatus.textContent = 'متصل الآن';
+                if (sbQuickLogoutBtn) sbQuickLogoutBtn.style.display = 'none';
             }
+        }
+
+        // خروج سريع من السايدبار مباشرة، مع تأكيد عشان محدش يعمله بالغلط بضغطة عرضية
+        function quickSchoolLogout() {
+            if (!confirm('تسجيل الخروج من حساب School X؟ (مفيد لو الجهاز ده بيستخدمه أكتر من طالب)')) return;
+            schoolLogout();
         }
 
         async function schoolLogin() {
@@ -2956,15 +3178,54 @@ ${schoolContext}`;
             }
         }
 
-        // بيجيب كود الملف كنص ثم ينفذه في سكوب منعزل ويرجع قيمة المتغير المطلوب منه فقط
+        // بيجيب كود الملف وينفذه بأمان جوه Web Worker معزول تمامًا عن صفحة الشات — مش زي
+        // new Function القديمة اللي كانت بتنفذ الكود بكل صلاحيات الصفحة (وصول لـ localStorage
+        // وتوكن تسجيل الدخول وكل حاجة). الـ Worker معندوش أي وصول لـ DOM ولا localStorage
+        // ولا الـ cookies بتاعة الصفحة، فحتى لو ملف البنك اتلاعب فيه (سيرفر مخترق أو اعتراض
+        // اتصال)، أقصى ضرر ممكن يحصل إنه يرجع بيانات غلط — مش إنه يسرق بيانات الطالب.
+        function runInSandboxWorker(code, varName) {
+            return new Promise((resolve) => {
+                const workerSrc = `
+                    self.onmessage = function() {
+                        try {
+                            ${code}
+                            self.postMessage({ ok: true, data: ${varName} });
+                        } catch (e) {
+                            self.postMessage({ ok: false });
+                        }
+                    };
+                `;
+                let worker;
+                try {
+                    const blob = new Blob([workerSrc], { type: 'application/javascript' });
+                    const url = URL.createObjectURL(blob);
+                    worker = new Worker(url);
+                    const timeout = setTimeout(() => { worker.terminate(); URL.revokeObjectURL(url); resolve(null); }, 5000);
+                    worker.onmessage = (e) => {
+                        clearTimeout(timeout);
+                        worker.terminate();
+                        URL.revokeObjectURL(url);
+                        resolve(e.data && e.data.ok ? e.data.data : null);
+                    };
+                    worker.onerror = () => {
+                        clearTimeout(timeout);
+                        worker.terminate();
+                        URL.revokeObjectURL(url);
+                        resolve(null);
+                    };
+                    worker.postMessage('run');
+                } catch (e) {
+                    resolve(null);
+                }
+            });
+        }
+
         async function fetchBankFile(apiUrl, file, varName) {
             try {
                 const res = await fetch(`${apiUrl}/${file}`);
                 if (!res.ok) return null;
                 const code = await res.text();
-                // eslint-disable-next-line no-new-func
-                const runner = new Function(`${code}\ntry { return ${varName}; } catch(e) { return null; }`);
-                return runner();
+                return await runInSandboxWorker(code, varName);
             } catch (e) { return null; }
         }
 
@@ -3206,7 +3467,6 @@ ${schoolContext}`;
             const ocrPages = Math.min(pdf.numPages, 15); // OCR is slow client-side — cap pages
             let ocrText = '';
             for (let i = 1; i <= ocrPages; i++) {
-                if (onStatus) onStatus(`الملف صورة ممسوحة ضوئيًا، جارٍ تحليل صفحة ${i} من ${ocrPages} بالـ OCR...`);
                 const page = await pdf.getPage(i);
                 const viewport = page.getViewport({ scale: 2 });
                 const canvas = document.createElement('canvas');
@@ -3215,7 +3475,18 @@ ${schoolContext}`;
                 const ctx = canvas.getContext('2d');
                 await page.render({ canvasContext: ctx, viewport }).promise;
                 try {
-                    const { data } = await Tesseract.recognize(canvas, 'ara+eng');
+                    // logger بيدينا نسبة تقدم حقيقية (0 إلى 1) بدل ما تفضل الرسالة ثابتة —
+                    // الطالب يشوف فعلاً إن في تقدم حقيقي وإن الصفحة مش عالقة.
+                    const { data } = await Tesseract.recognize(canvas, 'ara+eng', {
+                        logger: (m) => {
+                            if (onStatus && m.status === 'recognizing text') {
+                                const pct = Math.round((m.progress || 0) * 100);
+                                onStatus(`جارٍ تحليل صفحة ${i} من ${ocrPages} بالـ OCR... ${pct}%`);
+                            } else if (onStatus) {
+                                onStatus(`جارٍ تحليل صفحة ${i} من ${ocrPages} بالـ OCR...`);
+                            }
+                        }
+                    });
                     ocrText += (data.text || '') + '\n';
                 } catch (e) {}
                 if (ocrText.length > OCR_CHAR_CAP) break;
@@ -3291,7 +3562,16 @@ ${schoolContext}`;
                     showToast(`تم إرفاق: ${file.name}`, 'success');
 
                     if (window.Tesseract) {
-                        Tesseract.recognize(file, 'ara+eng').then(({ data }) => {
+                        Tesseract.recognize(file, 'ara+eng', {
+                            logger: (m) => {
+                                if (myToken !== attachmentToken || !pendingAttachment) return;
+                                if (m.status === 'recognizing text') {
+                                    const pct = Math.round((m.progress || 0) * 100);
+                                    pendingAttachment.status = `جارٍ تحليل النص داخل الصورة... ${pct}%`;
+                                    showAttachmentChip();
+                                }
+                            }
+                        }).then(({ data }) => {
                             if (myToken !== attachmentToken || !pendingAttachment) return;
                             const ocrText = (data.text || '').trim();
                             pendingAttachment.textContent = ocrText.slice(0, 6000);
