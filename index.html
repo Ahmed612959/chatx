@@ -39,7 +39,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <!-- Firebase (لإشعارات البوش) — لازم تحط بيانات مشروعك في FIREBASE_CONFIG جوه الـ <script> الرئيسي -->
+    <!-- Firebase (لإشعارات البوش) — لازم تحط بيانات مشروعك في FIREBASE_CONFIG جوه السكريبت الرئيسي -->
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
     <style>
@@ -3444,9 +3444,13 @@
         // ⚠️ محتاج تحط بيانات مشروع Firebase بتاعك هنا (Project settings → General → Web app)
         // وتحط VAPID key اللي هتجيبه من Project settings → Cloud Messaging.
         const FIREBASE_CONFIG = {
-            apiKey: "", authDomain: "", projectId: "", messagingSenderId: "", appId: ""
+            apiKey: "AIzaSyCL6EePGDEgk03Il3V8WtngziaqcRhnuIg",
+            authDomain: "chat-x-school.firebaseapp.com",
+            projectId: "chat-x-school",
+            messagingSenderId: "288505551281",
+            appId: "1:288505551281:web:a73ef0ca5f91b1b6124590"
         };
-        const FIREBASE_VAPID_KEY = "";
+        const FIREBASE_VAPID_KEY = "BKnW1R_cQxU4fuDX3iJiC9UFU0i4vlagq_Kd2HJq-1E4_ILfb9RW-NH2Muevv6KjGZZ0ZEvQAAVLKQDmXxVvePM";
 
         async function enablePushNotifications() {
             const statusEl = document.getElementById('pushNotifStatus');
