@@ -3476,7 +3476,7 @@
                 }
                 if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
                 const messaging = firebase.messaging();
-                const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                const reg = await navigator.serviceWorker.register('/sw.js');
                 const token = await messaging.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: reg });
                 if (!token) throw new Error('no token');
                 await fetch(`${FIXED_SCHOOL_API_URL}/api/push/subscribe`, {
