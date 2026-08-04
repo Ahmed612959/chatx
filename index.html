@@ -836,6 +836,32 @@
                 <div id="schoolLoginStatus" style="margin-top:10px;"></div>
             </div>
 
+            <div class="tool-section" id="contactAdminSection" style="display:none;">
+                <div class="tool-title"><i class="fas fa-envelope"></i> تواصل مع الأدمن</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    عايز تبلّغ عن مشكلة أو تقول رأيك لصاحب المنصة؟ ابعتله رسالة من هنا مباشرة.
+                </p>
+                <textarea id="adminMsgText" class="tool-input" rows="4" placeholder="اكتب رسالتك هنا..." style="resize:vertical;font-family:inherit;"></textarea>
+                <div style="margin:12px 0;display:flex;flex-direction:column;gap:8px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;padding:10px;border:1px solid var(--border);border-radius:10px;">
+                        <input type="radio" name="adminMsgIdentity" value="named" checked style="accent-color:var(--accent);">
+                        <span>ابعتها <b>باسمي</b> — الأدمن هيشوف إني أنا اللي بعتها</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;padding:10px;border:1px solid var(--border);border-radius:10px;">
+                        <input type="radio" name="adminMsgIdentity" value="anonymous" style="accent-color:var(--accent);">
+                        <span>ابعتها <b>من غير اسمي</b> — هتتبعت فعليًا من غير أي معرّف لهويتي، والأدمن مش هيقدر يعرف مين بعتها</span>
+                    </label>
+                </div>
+                <button class="btn-calc" onclick="sendAdminMessage()"><i class="fas fa-paper-plane"></i> إرسال للأدمن</button>
+                <div id="adminMsgStatus" style="margin-top:10px;"></div>
+            </div>
+
+            <div class="tool-section" id="adminInboxSection" style="display:none;">
+                <div class="tool-title"><i class="fas fa-inbox"></i> الرسايل الواردة من الطلاب</div>
+                <button class="btn-calc" style="margin-bottom:10px;background:var(--bg-2);color:var(--text-2);" onclick="loadAdminInbox()"><i class="fas fa-rotate"></i> تحديث</button>
+                <div id="adminInboxList" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;"></div>
+            </div>
+
             <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--text-3);">
                 Chat X — تطوير <span style="color:var(--text-2);font-weight:700;">Ahmed Mousaa</span>
                 <br><a href="/privacy.html" target="_blank" style="color:var(--text-3);text-decoration:underline;">سياسة الخصوصية</a>
@@ -2907,13 +2933,16 @@
             const sbUserName = document.getElementById('sbUserName');
             const sbUserStatus = document.getElementById('sbUserStatus');
             const sbQuickLogoutBtn = document.getElementById('sbQuickLogoutBtn');
+            const contactAdminSection = document.getElementById('contactAdminSection');
+            const adminInboxSection = document.getElementById('adminInboxSection');
 
             if (schoolToken && schoolUser) {
                 const name = schoolUser.fullName || schoolUser.username;
+                const isAdmin = schoolUser.type === 'admin';
                 if (loggedOutBox && loggedInBox) {
                     loggedOutBox.style.display = 'none';
                     loggedInBox.style.display = 'block';
-                    loggedInText.innerHTML = `مسجّل دخول باسم: <b>${name}</b> (${schoolUser.type === 'admin' ? 'أدمن' : 'طالب'})`;
+                    loggedInText.innerHTML = `مسجّل دخول باسم: <b>${name}</b> (${isAdmin ? 'أدمن' : 'طالب'})`;
                 }
                 // نعرض اسم الطالب الحقيقي بشكل دائم في السايدبار — عشان لو الجهاز مشترك،
                 // أي حد يفتح الشات يلاقي فورًا (من غير ما يفتح إعدادات) إن فيه حساب حد تاني
@@ -2921,6 +2950,14 @@
                 if (sbUserName) sbUserName.textContent = name;
                 if (sbUserStatus) sbUserStatus.innerHTML = '<span style="color:var(--warning)">مربوط بحساب School X</span>';
                 if (sbQuickLogoutBtn) sbQuickLogoutBtn.style.display = 'flex';
+
+                // قسم "تواصل مع الأدمن" يظهر لغير الأدمن بس (الأدمن مش محتاج يبعت رسالة لنفسه).
+                // قسم "الرسايل الواردة" يظهر للأدمن بس، وبيتحمّل تلقائيًا أول ما يظهر.
+                if (contactAdminSection) contactAdminSection.style.display = isAdmin ? 'none' : 'block';
+                if (adminInboxSection) {
+                    adminInboxSection.style.display = isAdmin ? 'block' : 'none';
+                    if (isAdmin) loadAdminInbox();
+                }
             } else {
                 if (loggedOutBox && loggedInBox) {
                     loggedOutBox.style.display = 'block';
@@ -2929,6 +2966,8 @@
                 if (sbUserName) sbUserName.textContent = 'طالب Chat X';
                 if (sbUserStatus) sbUserStatus.textContent = 'متصل الآن';
                 if (sbQuickLogoutBtn) sbQuickLogoutBtn.style.display = 'none';
+                if (contactAdminSection) contactAdminSection.style.display = 'none';
+                if (adminInboxSection) adminInboxSection.style.display = 'none';
             }
         }
 
@@ -2979,6 +3018,91 @@
             localStorage.removeItem('sx_school_context');
             updateSchoolLoginUI();
             showToast('تم تسجيل الخروج من School X', 'success');
+        }
+
+        // ====================== تواصل الطلاب مع الأدمن ======================
+        // نقطة مهمة جدًا لازم تتحترم في التنفيذ ده: لو الطالب اختار "من غير اسمي"، مبنبعتش
+        // أي هيدر Authorization ولا أي معرّف تاني مع الطلب — يعني السيرفر نفسه معندوش وسيلة
+        // تقنية يعرف بيها مين بعت الرسالة، مش بس إحنا "بنخفي" الاسم في الواجهة. لو بعتنا
+        // التوكن مع الرسالة حتى لو مكتوب عليها "مجهول"، يبقى الوعد للطالب كذب — وده حاجة
+        // خطيرة لو استخدم الميزة عشان يبلّغ عن حاجة حساسة على أساس إنه محمي فعلاً.
+        async function sendAdminMessage() {
+            const textEl = document.getElementById('adminMsgText');
+            const statusEl = document.getElementById('adminMsgStatus');
+            const text = textEl.value.trim();
+            if (!text) {
+                statusEl.innerHTML = '<span style="color:var(--danger)">اكتب رسالتك الأول</span>';
+                return;
+            }
+            if (!schoolToken) {
+                statusEl.innerHTML = '<span style="color:var(--danger)">لازم تكون مسجل دخول في School X عشان تبعت رسالة</span>';
+                return;
+            }
+            const identity = document.querySelector('input[name="adminMsgIdentity"]:checked')?.value || 'named';
+            const isAnonymous = identity === 'anonymous';
+
+            statusEl.innerHTML = '<span style="color:var(--text-3)">جارٍ الإرسال...</span>';
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                // الشرط ده هو جوهر الأمانة في الميزة: التوكن بيتبعت بس لو الطالب اختار "باسمي"
+                if (!isAnonymous) headers['Authorization'] = `Bearer ${schoolToken}`;
+
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/admin-messages`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ text, anonymous: isAnonymous })
+                });
+                if (!res.ok) throw new Error('failed');
+                textEl.value = '';
+                statusEl.innerHTML = '<span style="color:var(--success)">تم إرسال رسالتك ✓</span>';
+                showToast('اتبعتت رسالتك للأدمن', 'success');
+            } catch (e) {
+                statusEl.innerHTML = '<span style="color:var(--danger)">تعذر الإرسال — جرب تاني كمان شوية. لو المشكلة استمرت يبقى endpoint الرسايل لسه مش متاح على سيرفر School X.</span>';
+            }
+        }
+
+        // بيظهر بس للأدمن (schoolUser.type === 'admin') — بيجيب كل الرسايل المتبعتة
+        async function loadAdminInbox() {
+            const listEl = document.getElementById('adminInboxList');
+            if (!schoolToken) return;
+            listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/admin-messages`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+                const messages = data.messages || [];
+                if (!messages.length) {
+                    listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش رسايل لسه</div>';
+                    return;
+                }
+                listEl.innerHTML = '';
+                messages.slice().reverse().forEach(m => {
+                    const item = document.createElement('div');
+                    item.style.cssText = 'padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-glass);';
+                    const senderLabel = m.anonymous
+                        ? '<span style="color:var(--text-3);"><i class="fas fa-user-secret"></i> طالب مجهول</span>'
+                        : `<span style="color:var(--text-1);font-weight:700;"><i class="fas fa-user"></i> ${escapeHtml(m.senderName || 'غير معروف')}</span>`;
+                    const date = m.createdAt ? new Date(m.createdAt).toLocaleString('ar-EG') : '';
+                    item.innerHTML = `
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11.5px;">
+                            ${senderLabel}
+                            <span style="color:var(--text-3);">${date}</span>
+                        </div>
+                        <div style="font-size:13px;line-height:1.7;white-space:pre-wrap;">${escapeHtml(m.text || '')}</div>
+                    `;
+                    listEl.appendChild(item);
+                });
+            } catch (e) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل الرسايل — endpoint الرسايل لسه مش متاح على سيرفر School X</div>';
+            }
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
         }
 
         // بيجيب بيانات المستخدم كاملة من سيرفر School X وبيبني منها ملخص نصي
