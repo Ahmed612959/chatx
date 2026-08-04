@@ -1,19 +1,38 @@
 {
-  "name": "School X PRO — المساعد الذكي",
-  "short_name": "School X PRO",
-  "description": "مساعد ذكاء اصطناعي لطلاب معهد رعاية الضبعية الفني للتمريض — بنك أسئلة، متابعة درجات وحضور، وشرح فوري.",
+  "name": "Chat X - المساعد الأكاديمي الذكي",
+  "short_name": "Chat X",
+  "description": "مساعد أكاديمي ذكي لطلاب معاهد التمريض — شرح، أسئلة، ومتابعة دراسية.",
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0a0e1a",
+  "background_color": "#0f1117",
   "theme_color": "#6366f1",
-  "dir": "rtl",
+  "orientation": "portrait",
   "lang": "ar",
+  "dir": "rtl",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
