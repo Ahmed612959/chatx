@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://chat-x.vercel.app/sitemap.xml
+Sitemap: https://chatx-wheat.vercel.app/sitemap.xml
