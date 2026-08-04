@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6142526662943741"
-     crossorigin="anonymous"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#6366f1">
@@ -10,8 +8,8 @@
     <meta name="description" content="Chat X مساعد أكاديمي ذكي مجاني لطلاب معاهد التمريض — شرح المناهج، حل الأسئلة، بنك أسئلة تفاعلي، ومتابعة الدرجات والواجبات في مكان واحد.">
     <meta name="keywords" content="مساعد دراسي, طلاب تمريض, شرح مناهج طبية, بنك أسئلة تمريض, مساعد ذكاء اصطناعي تعليمي, Chat X">
     <meta name="author" content="Ahmed Mousaa">
-    
-    <link rel="canonical" href="https://chatx-wheat.vercel.app/">
+    <!-- ⚠️ غيّر الرابط ده لدومين Chat X الفعلي بتاعك على Vercel قبل النشر -->
+    <link rel="canonical" href="https://chat-x.vercel.app/">
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
@@ -41,6 +39,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- Firebase (لإشعارات البوش) — لازم تحط بيانات مشروعك في FIREBASE_CONFIG جوه الـ <script> الرئيسي -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
     <style>
         :root {
             --bg: #0a0e1a; --bg-2: #131827; --bg-glass: rgba(19, 24, 39, 0.75); --bg-glass-heavy: rgba(10, 14, 26, 0.95);
@@ -645,6 +646,8 @@
                     <div class="user-status" id="sbUserStatus">متصل الآن</div>
                 </div>
                 <button class="icon-btn" id="sbQuickLogoutBtn" style="display:none;" title="تسجيل الخروج من School X" aria-label="تسجيل الخروج من School X" onclick="quickSchoolLogout()"><i class="fas fa-right-from-bracket"></i></button>
+                <button class="icon-btn" id="leaderboardBtn" style="display:none;" title="لوحة الصدارة الأسبوعية" aria-label="لوحة الصدارة الأسبوعية" onclick="openLeaderboard()"><i class="fas fa-trophy"></i></button>
+                <button class="icon-btn" id="groupChatBtn" style="display:none;" title="غرفة مذاكرة جماعية" aria-label="غرفة مذاكرة جماعية" onclick="openGroupChatList()"><i class="fas fa-user-group"></i></button>
                 <button class="icon-btn" aria-label="الإعدادات" onclick="openModal('settingsModal')"><i class="fas fa-gear"></i></button>
             </div>
         </aside>
@@ -820,6 +823,15 @@
                 </label>
             </div>
 
+            <div class="tool-section" id="pushNotifSection" style="display:none;">
+                <div class="tool-title"><i class="fas fa-bell-concierge"></i> إشعارات الرسايل والغرف الجماعية</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    فعّل الإشعارات عشان توصلك رسالة زميلك في غرفة المذاكرة حتى لو الشات مقفول.
+                </p>
+                <button class="btn-calc" id="pushEnableBtn" onclick="enablePushNotifications()"><i class="fas fa-bell"></i> تفعيل الإشعارات</button>
+                <div id="pushNotifStatus" style="margin-top:10px;font-size:12px;color:var(--text-2);"></div>
+            </div>
+
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-layer-group"></i> منصات المطور</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:12px;line-height:1.7;">
@@ -903,6 +915,65 @@
                 <a href="/privacy.html" target="_blank" style="color:var(--text-3);text-decoration:underline;">سياسة الخصوصية</a>
                 &nbsp;·&nbsp;
                 <a href="/terms.html" target="_blank" style="color:var(--text-3);text-decoration:underline;">شروط الاستخدام</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Leaderboard Modal -->
+    <div class="modal-overlay" id="leaderboardModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-trophy"></i> لوحة الصدارة الأسبوعية</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('leaderboardModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tool-section">
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    ترتيبك بيتحسب من نشاطك الأسبوعي (شات + حل بنك الأسئلة). أعلى 10 طلاب كل أسبوع
+                    بيفتحلهم مميزات إضافية، والترتيب بيرجع صفر تاني كل أسبوع جديد.
+                </p>
+                <div id="myRankBox" style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-glass);border:1px solid var(--border-accent);border-radius:12px;margin-bottom:14px;">
+                    <div style="font-size:12.5px;color:var(--text-2);">ترتيبك الأسبوع ده</div>
+                    <div style="font-weight:800;font-size:15px;" id="myRankText">—</div>
+                </div>
+                <div id="leaderboardList" style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;"></div>
+                <button class="btn-calc" style="margin-top:12px;background:var(--bg-2);color:var(--text-2);" onclick="loadWeeklyLeaderboard()"><i class="fas fa-rotate"></i> تحديث</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Study Chats List Modal -->
+    <div class="modal-overlay" id="groupChatListModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-user-group"></i> غرف المذاكرة الجماعية</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('groupChatListModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-user-plus"></i> ابدأ مذاكرة مع زميلك</div>
+                <div style="position:relative;">
+                    <input type="text" id="mentionSearchInput" class="tool-input" placeholder="اكتب @ ثم اسم زميلك..." oninput="handleMentionSearch(this.value)" autocomplete="off">
+                    <div id="mentionSuggestions" style="display:none;position:absolute;top:100%;right:0;left:0;margin-top:4px;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;overflow:hidden;z-index:10;max-height:200px;overflow-y:auto;"></div>
+                </div>
+                <div id="mentionSearchStatus" style="margin-top:8px;font-size:11px;color:var(--text-3);"></div>
+            </div>
+            <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-comments"></i> محادثاتك</div>
+                <div id="groupChatsList" style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Study Chat Room Modal -->
+    <div class="modal-overlay" id="groupChatRoomModal">
+        <div class="modal" style="display:flex;flex-direction:column;height:80vh;max-height:640px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-user-group"></i> <span id="groupChatRoomTitle">غرفة مذاكرة</span></div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeGroupChatRoom()"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="groupChatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+            <div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;">
+                <input type="text" id="groupChatInput" class="tool-input" placeholder="اكتب رسالتك..." style="flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();sendGroupChatMessage();}">
+                <button class="btn-calc" style="width:auto;padding:0 16px;" onclick="sendGroupChatMessage()"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
     </div>
@@ -1510,6 +1581,7 @@
         }
 
         function recordQuestionForStats() {
+            pingActivity(); // نشاط حقيقي (سؤال/رسالة) → يتحسب في لوحة الصدارة الأسبوعية
             const key = todayKey();
             if (stats.lastActiveDay === key) {
                 stats.todayCount += 1;
@@ -2988,6 +3060,12 @@
                 if (sbUserName) sbUserName.textContent = name;
                 if (sbUserStatus) sbUserStatus.innerHTML = '<span style="color:var(--warning)">مربوط بحساب School X</span>';
                 if (sbQuickLogoutBtn) sbQuickLogoutBtn.style.display = 'flex';
+                const leaderboardBtn = document.getElementById('leaderboardBtn');
+                const groupChatBtn = document.getElementById('groupChatBtn');
+                const pushNotifSection = document.getElementById('pushNotifSection');
+                if (leaderboardBtn) leaderboardBtn.style.display = 'flex';
+                if (groupChatBtn) groupChatBtn.style.display = 'flex';
+                if (pushNotifSection) pushNotifSection.style.display = 'block';
 
                 // قسم "تواصل مع الأدمن" يظهر لغير الأدمن بس (الأدمن مش محتاج يبعت رسالة لنفسه).
                 // قسم "الرسايل الواردة" يظهر للأدمن بس، وبيتحمّل تلقائيًا أول ما يظهر.
@@ -3006,6 +3084,12 @@
                 if (sbQuickLogoutBtn) sbQuickLogoutBtn.style.display = 'none';
                 if (contactAdminSection) contactAdminSection.style.display = 'none';
                 if (adminInboxSection) adminInboxSection.style.display = 'none';
+                const leaderboardBtnOff = document.getElementById('leaderboardBtn');
+                const groupChatBtnOff = document.getElementById('groupChatBtn');
+                const pushNotifSectionOff = document.getElementById('pushNotifSection');
+                if (leaderboardBtnOff) leaderboardBtnOff.style.display = 'none';
+                if (groupChatBtnOff) groupChatBtnOff.style.display = 'none';
+                if (pushNotifSectionOff) pushNotifSectionOff.style.display = 'none';
             }
         }
 
@@ -3141,6 +3225,265 @@
             const div = document.createElement('div');
             div.textContent = str;
             return div.innerHTML;
+        }
+
+        // ====================== لوحة الصدارة الأسبوعية ======================
+        // بيتنادى بس لو الطالب مسجل دخول School X. بنبعت "ping" كل ما الطالب يبعت
+        // رسالة أو يحل سؤال من بنك الأسئلة، مش على كل تفاعل صغير — عشان منزنقش السيرفر.
+        let lastActivityPingAt = 0;
+        async function pingActivity() {
+            if (!schoolToken) return;
+            const now = Date.now();
+            if (now - lastActivityPingAt < 60 * 1000) return; // حد أقصى مرة كل دقيقة
+            lastActivityPingAt = now;
+            try {
+                await fetch(`${FIXED_SCHOOL_API_URL}/api/activity/ping`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+            } catch (e) { /* السيرفر لسه ملحقش يضيف الـ endpoint ده، متجاهلينها بهدوء */ }
+        }
+
+        function openLeaderboard() {
+            openModal('leaderboardModal');
+            loadWeeklyLeaderboard();
+        }
+
+        async function loadWeeklyLeaderboard() {
+            const listEl = document.getElementById('leaderboardList');
+            const rankText = document.getElementById('myRankText');
+            listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>';
+            if (!schoolToken) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">لازم تسجّل دخول School X الأول</div>';
+                return;
+            }
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/leaderboard/weekly`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+                const top = data.top || [];
+                rankText.textContent = data.myRank ? `#${data.myRank} — ${data.myScore || 0} نقطة` : 'لسه معملتش نشاط الأسبوع ده';
+                if (!top.length) {
+                    listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش بيانات لسه</div>';
+                    return;
+                }
+                listEl.innerHTML = '';
+                top.forEach((s, i) => {
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
+                    const isMe = schoolUser && s.username === schoolUser.username;
+                    const row = document.createElement('div');
+                    row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:${isMe ? 'var(--accent-glow)' : 'var(--bg-glass)'};border:1px solid ${isMe ? 'var(--border-accent)' : 'var(--border)'};`;
+                    row.innerHTML = `
+                        <div style="width:26px;text-align:center;font-weight:800;font-size:13px;">${medal}</div>
+                        <div style="flex:1;min-width:0;font-size:13px;font-weight:${isMe ? '800' : '600'};">${escapeHtml(s.fullName || s.username)}</div>
+                        <div style="font-size:12px;color:var(--text-2);">${s.score} نقطة</div>
+                    `;
+                    listEl.appendChild(row);
+                });
+            } catch (e) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل لوحة الصدارة — endpoint لوحة الصدارة لسه مش متاح على سيرفر School X</div>';
+            }
+        }
+
+        // ====================== غرف المذاكرة الجماعية ======================
+        let mentionSearchToken = 0;
+        let activeGroupChatId = null;
+        let groupChatPollTimer = null;
+
+        function openGroupChatList() {
+            openModal('groupChatListModal');
+            document.getElementById('mentionSearchInput').value = '';
+            document.getElementById('mentionSuggestions').style.display = 'none';
+            loadMyGroupChats();
+        }
+
+        async function handleMentionSearch(value) {
+            const box = document.getElementById('mentionSuggestions');
+            const statusEl = document.getElementById('mentionSearchStatus');
+            const atIndex = value.lastIndexOf('@');
+            if (atIndex === -1) { box.style.display = 'none'; return; }
+            const q = value.slice(atIndex + 1).trim();
+            if (q.length < 2) { box.style.display = 'none'; statusEl.textContent = 'اكتب حرفين على الأقل بعد @'; return; }
+            statusEl.textContent = '';
+            const myToken = ++mentionSearchToken;
+            if (!schoolToken) { statusEl.textContent = 'لازم تسجّل دخول School X الأول'; return; }
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/users/search?q=${encodeURIComponent(q)}`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (myToken !== mentionSearchToken) return;
+                if (!res.ok) throw new Error('failed');
+                const users = await res.json();
+                if (!users.length) { box.style.display = 'none'; statusEl.textContent = 'مفيش نتايج'; return; }
+                box.innerHTML = '';
+                users.forEach(u => {
+                    const item = document.createElement('div');
+                    item.style.cssText = 'padding:10px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);';
+                    item.textContent = `${u.fullName || u.username} (@${u.username})`;
+                    item.onclick = () => startGroupChatWith(u.username);
+                    box.appendChild(item);
+                });
+                box.style.display = 'block';
+            } catch (e) {
+                statusEl.textContent = 'تعذر البحث — endpoint البحث عن الطلاب لسه مش متاح على سيرفر School X';
+            }
+        }
+
+        async function startGroupChatWith(memberUsername) {
+            document.getElementById('mentionSuggestions').style.display = 'none';
+            document.getElementById('mentionSearchInput').value = '';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ memberUsername })
+                });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+                openGroupChatRoom(data.chatId, memberUsername);
+                loadMyGroupChats();
+            } catch (e) {
+                showToast('تعذر إنشاء المحادثة — endpoint غرف المذاكرة لسه مش متاح على سيرفر School X', 'error');
+            }
+        }
+
+        async function loadMyGroupChats() {
+            const listEl = document.getElementById('groupChatsList');
+            if (!schoolToken) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">لازم تسجّل دخول School X الأول</div>';
+                return;
+            }
+            listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+                const chatsList = data.chats || [];
+                if (!chatsList.length) {
+                    listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش محادثات لسه — دور على زميلك بـ @ فوق</div>';
+                    return;
+                }
+                listEl.innerHTML = '';
+                chatsList.forEach(c => {
+                    const otherName = (c.memberUsernames || []).filter(u => u !== schoolUser?.username).join(', ');
+                    const row = document.createElement('div');
+                    row.style.cssText = 'padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;';
+                    row.innerHTML = `<div><div style="font-size:13px;font-weight:700;">${escapeHtml(otherName)}</div><div style="font-size:11px;color:var(--text-3);margin-top:2px;">${escapeHtml(c.lastMessage || 'ابدأ المذاكرة...')}</div></div><i class="fas fa-chevron-left" style="color:var(--text-3);"></i>`;
+                    row.onclick = () => openGroupChatRoom(c.id, otherName);
+                    listEl.appendChild(row);
+                });
+            } catch (e) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل المحادثات — endpoint غرف المذاكرة لسه مش متاح على سيرفر School X</div>';
+            }
+        }
+
+        function openGroupChatRoom(chatId, title) {
+            activeGroupChatId = chatId;
+            document.getElementById('groupChatRoomTitle').textContent = title || 'غرفة مذاكرة';
+            document.getElementById('groupChatMessages').innerHTML = '';
+            closeModal('groupChatListModal');
+            openModal('groupChatRoomModal');
+            loadGroupChatMessages(true);
+            if (groupChatPollTimer) clearInterval(groupChatPollTimer);
+            groupChatPollTimer = setInterval(() => loadGroupChatMessages(false), 4000);
+        }
+
+        function closeGroupChatRoom() {
+            closeModal('groupChatRoomModal');
+            if (groupChatPollTimer) { clearInterval(groupChatPollTimer); groupChatPollTimer = null; }
+            activeGroupChatId = null;
+        }
+
+        let lastGroupMsgAt = 0;
+        async function loadGroupChatMessages(isFirstLoad) {
+            if (!activeGroupChatId) return;
+            try {
+                const since = isFirstLoad ? 0 : lastGroupMsgAt;
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats/${activeGroupChatId}/messages?since=${since}`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+                const msgs = data.messages || [];
+                if (!msgs.length) return;
+                const box = document.getElementById('groupChatMessages');
+                msgs.forEach(m => {
+                    const isMe = m.senderUsername === schoolUser?.username;
+                    const bubble = document.createElement('div');
+                    bubble.style.cssText = `max-width:78%;align-self:${isMe ? 'flex-end' : 'flex-start'};padding:10px 14px;border-radius:14px;background:${isMe ? 'linear-gradient(135deg, var(--accent), var(--accent-2))' : 'var(--bg-2)'};color:${isMe ? '#fff' : 'var(--text-1)'};font-size:13px;line-height:1.7;`;
+                    bubble.textContent = m.text;
+                    box.appendChild(bubble);
+                    lastGroupMsgAt = Math.max(lastGroupMsgAt, m.createdAt || 0);
+                });
+                box.scrollTop = box.scrollHeight;
+            } catch (e) { /* هنحاول تاني في الـ poll الجاي */ }
+        }
+
+        async function sendGroupChatMessage() {
+            const input = document.getElementById('groupChatInput');
+            const text = input.value.trim();
+            if (!text || !activeGroupChatId) return;
+            input.value = '';
+            try {
+                await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats/${activeGroupChatId}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ text })
+                });
+                loadGroupChatMessages(false);
+            } catch (e) {
+                showToast('تعذر إرسال الرسالة', 'error');
+            }
+        }
+
+        // ====================== إشعارات البوش (Firebase Cloud Messaging) ======================
+        // ⚠️ محتاج تحط بيانات مشروع Firebase بتاعك هنا (Project settings → General → Web app)
+        // وتحط VAPID key اللي هتجيبه من Project settings → Cloud Messaging.
+        const FIREBASE_CONFIG = {
+            apiKey: "", authDomain: "", projectId: "", messagingSenderId: "", appId: ""
+        };
+        const FIREBASE_VAPID_KEY = "";
+
+        async function enablePushNotifications() {
+            const statusEl = document.getElementById('pushNotifStatus');
+            if (!FIREBASE_CONFIG.apiKey) {
+                statusEl.innerHTML = '<span style="color:var(--danger)">لسه محتاج تحط بيانات Firebase في الكود (FIREBASE_CONFIG) قبل ما الزرار ده يشتغل</span>';
+                return;
+            }
+            if (!('Notification' in window)) {
+                statusEl.innerHTML = '<span style="color:var(--danger)">المتصفح ده مش بيدعم الإشعارات</span>';
+                return;
+            }
+            statusEl.textContent = 'جارٍ الطلب...';
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    statusEl.innerHTML = '<span style="color:var(--warning)">محتاج توافق على إذن الإشعارات من المتصفح</span>';
+                    return;
+                }
+                // Firebase SDK لازم يتحمّل قبل استدعاء الدالة دي (v9 compat عبر CDN، مضاف في <head>)
+                if (!window.firebase) {
+                    statusEl.innerHTML = '<span style="color:var(--danger)">مكتبة Firebase مش متحملة — راجع ملف الـ spec</span>';
+                    return;
+                }
+                if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+                const messaging = firebase.messaging();
+                const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                const token = await messaging.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: reg });
+                if (!token) throw new Error('no token');
+                await fetch(`${FIXED_SCHOOL_API_URL}/api/push/subscribe`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ fcmToken: token })
+                });
+                statusEl.innerHTML = '<span style="color:var(--success)">تم تفعيل الإشعارات ✓</span>';
+            } catch (e) {
+                statusEl.innerHTML = '<span style="color:var(--danger)">تعذر تفعيل الإشعارات — تأكد من بيانات Firebase و endpoint /api/push/subscribe</span>';
+            }
         }
 
         // بيجيب بيانات المستخدم كاملة من سيرفر School X وبيبني منها ملخص نصي
