@@ -3478,15 +3478,21 @@
                 const messaging = firebase.messaging();
                 const reg = await navigator.serviceWorker.register('/sw.js');
                 const token = await messaging.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: reg });
-                if (!token) throw new Error('no token');
-                await fetch(`${FIXED_SCHOOL_API_URL}/api/push/subscribe`, {
+                if (!token) throw new Error('لم يتم الحصول على توكن FCM من المتصفح (getToken رجع فاضي)');
+                const subRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/push/subscribe`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
                     body: JSON.stringify({ fcmToken: token })
                 });
+                if (!subRes.ok) {
+                    let serverMsg = '';
+                    try { serverMsg = (await subRes.json()).error || ''; } catch (_) {}
+                    throw new Error(`السيرفر رفض الطلب (${subRes.status}) ${serverMsg}`);
+                }
                 statusEl.innerHTML = '<span style="color:var(--success)">تم تفعيل الإشعارات ✓</span>';
             } catch (e) {
-                statusEl.innerHTML = '<span style="color:var(--danger)">تعذر تفعيل الإشعارات — تأكد من بيانات Firebase و endpoint /api/push/subscribe</span>';
+                statusEl.innerHTML = `<span style="color:var(--danger)">تعذر تفعيل الإشعارات — السبب الحقيقي: ${escapeHtml(e.message || String(e))}</span>`;
+                console.error('enablePushNotifications error:', e);
             }
         }
 
