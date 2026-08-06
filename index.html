@@ -733,6 +733,7 @@
                         <option value="german-teacher">🇩🇪 معلم الألماني</option>
                         <option value="openrouter">🔀 OpenRouter</option>
                         <option value="cerebras">🧠 Cerebras</option>
+                        <option value="mistral">🌬️ Mistral</option>
                         <option value="qwen">🐉 Qwen</option>
                         <option value="zimage">🖼️ تحليل الصور</option>
                         <option value="local">💻 محلي</option>
@@ -1995,7 +1996,7 @@
             const fallbackText = lastUserMsg ? lastUserMsg.content : '';
             const hasImage = !!(lastUserMsg && lastUserMsg.image && lastUserMsg.image.base64);
 
-            // Groq/OpenRouter/Cerebras/Qwen are text-only — if the user attached a photo,
+            // Groq/OpenRouter/Cerebras/Mistral/Qwen are text-only — if the user attached a photo,
             // routing to them would silently ignore it. Force a vision-capable model instead
             // so an attached image always actually gets looked at.
             if (hasImage && model !== 'gemini' && model !== 'zimage' && model !== 'german-teacher') {
@@ -2021,6 +2022,9 @@
                 } else if (model === 'cerebras') {
                     source = 'cerebras';
                     await streamCerebras(chat.messages, abortController.signal);
+                } else if (model === 'mistral') {
+                    source = 'mistral';
+                    await streamMistral(chat.messages, abortController.signal);
                 } else if (model === 'qwen') {
                     source = 'qwen';
                     await streamQwen(chat.messages, abortController.signal);
@@ -2060,8 +2064,14 @@
                                     await streamCerebras(chat.messages, abortController.signal);
                                 } catch (cerebrasError) {
                                     if (cerebrasError.name === 'AbortError') throw cerebrasError;
-                                    source = 'qwen';
-                                    await streamQwen(chat.messages, abortController.signal);
+                                    try {
+                                        source = 'mistral';
+                                        await streamMistral(chat.messages, abortController.signal);
+                                    } catch (mistralError) {
+                                        if (mistralError.name === 'AbortError') throw mistralError;
+                                        source = 'qwen';
+                                        await streamQwen(chat.messages, abortController.signal);
+                                    }
                                 }
                             }
                         }
@@ -2186,7 +2196,7 @@
             const sourceSpan = msgDiv.querySelector('.msg-source-icon');
             const actionsDiv = msgDiv.querySelector('.msg-actions');
             timeSpan.textContent = new Date(botMsg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
-            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'zimage' ? '🖼️' : '💻';
+            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'mistral' ? '🌬️' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'zimage' ? '🖼️' : '💻';
             // This message was just pushed as the newest one, so it's always eligible for regenerate.
             buildMsgActionButtons(botMsg, actionsDiv, true);
             syncRegenerateButtons(chats.find(c => c.id === currentChatId));
@@ -2234,7 +2244,7 @@
             if (msg.role === 'bot') {
                 const sourceSpan = document.createElement('span');
                 sourceSpan.style.cssText = 'margin-right:6px;opacity:0.6';
-                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'qwen' ? '🐉' : msg.source === 'zimage' ? '🖼️' : '💻';
+                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'mistral' ? '🌬️' : msg.source === 'qwen' ? '🐉' : msg.source === 'zimage' ? '🖼️' : '💻';
                 meta.appendChild(sourceSpan);
             }
 
@@ -2492,6 +2502,76 @@
 
             const chat = chats.find(c => c.id === currentChatId);
             const botMsg = { role: 'bot', content: '', source: 'cerebras', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
+            chat.messages.push(botMsg);
+
+            const msgDiv = createBotMessageShell(botMsg);
+            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
+            let hasContent = false;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) continue;
+                    const payload = line.slice(6).trim();
+                    if (payload === '[DONE]') continue;
+                    try {
+                        const data = JSON.parse(payload);
+                        const content = data.choices[0]?.delta?.content || '';
+                        if (content) {
+                            hasContent = true;
+                            queue.push(content);
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            const fullText = await queue.flush();
+
+            if (!hasContent) {
+                // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
+                msgDiv.remove();
+                chat.messages.pop();
+                await respondLocally(messages[messages.length - 1].content, chat, signal);
+                return;
+            }
+
+            finalizeBotMessage(msgDiv, botMsg);
+            saveData();
+        }
+
+        async function streamMistral(messages, signal) {
+            const response = await fetch(`${settings.backendUrl}/api/mistral`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: "mistral-small-latest",
+                    messages: [{role: "system", content: getSystemPrompt()}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    stream: true
+                }),
+                signal
+            });
+
+            if (!response.ok) {
+                let detail = '';
+                try { detail = (await response.text()).slice(0, 200); } catch (e) {}
+                console.error('Mistral API error', response.status, detail);
+                throw new Error(`Mistral API Error (${response.status}): ${detail || 'no detail'}`);
+            }
+
+            document.getElementById('typingIndicator').classList.remove('active');
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            const chat = chats.find(c => c.id === currentChatId);
+            const botMsg = { role: 'bot', content: '', source: 'mistral', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
             chat.messages.push(botMsg);
 
             const msgDiv = createBotMessageShell(botMsg);
