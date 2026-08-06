@@ -3264,7 +3264,7 @@
                 if (!res.ok) throw new Error('failed');
                 const data = await res.json();
                 const top = data.top || [];
-                rankText.textContent = data.myRank ? `#${data.myRank} — ${data.myScore || 0} نقطة` : 'لسه معملتش نشاط الأسبوع ده';
+                rankText.textContent = data.myRank ? (data.myRank === 1 ? `👑 إنت بطل الأسبوع! — ${data.myScore || 0} نقطة` : `#${data.myRank} — ${data.myScore || 0} نقطة`) : 'لسه معملتش نشاط الأسبوع ده';
                 if (!top.length) {
                     listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش بيانات لسه</div>';
                     return;
@@ -3273,12 +3273,18 @@
                 top.forEach((s, i) => {
                     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
                     const isMe = schoolUser && s.username === schoolUser.username;
+                    const championBadge = s.isChampion ? ' <span title="بطل الأسبوع" style="filter:drop-shadow(0 0 3px gold);">👑</span>' : '';
                     const row = document.createElement('div');
-                    row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:${isMe ? 'var(--accent-glow)' : 'var(--bg-glass)'};border:1px solid ${isMe ? 'var(--border-accent)' : 'var(--border)'};`;
+                    row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:${s.isChampion ? 'linear-gradient(135deg, rgba(255,215,0,0.14), var(--bg-glass))' : (isMe ? 'var(--accent-glow)' : 'var(--bg-glass)')};border:1px solid ${s.isChampion ? 'rgba(255,215,0,0.5)' : (isMe ? 'var(--border-accent)' : 'var(--border)')};`;
                     row.innerHTML = `
                         <div style="width:26px;text-align:center;font-weight:800;font-size:13px;">${medal}</div>
-                        <div style="flex:1;min-width:0;font-size:13px;font-weight:${isMe ? '800' : '600'};">${escapeHtml(s.fullName || s.username)}</div>
-                        <div style="font-size:12px;color:var(--text-2);">${s.score} نقطة</div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:13px;font-weight:${isMe ? '800' : '600'};">${escapeHtml(s.fullName || s.username)}${championBadge}</div>
+                            <div style="font-size:11px;color:var(--text-3);margin-top:2px;">
+                                ${s.isOnline ? '🟢 أونلاين' : '⚪ أوفلاين'} • استخدام: ${s.usageHours}س • درجات: ${s.quizAvg}%
+                            </div>
+                        </div>
+                        <div style="font-size:13px;font-weight:800;color:var(--accent);">${s.score}</div>
                     `;
                     listEl.appendChild(row);
                 });
@@ -3320,8 +3326,19 @@
                 box.innerHTML = '';
                 users.forEach(u => {
                     const item = document.createElement('div');
-                    item.style.cssText = 'padding:10px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);';
-                    item.textContent = `${u.fullName || u.username} (@${u.username})`;
+                    item.style.cssText = 'padding:10px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;';
+                    const championBadge = u.isChampion ? ' <span title="بطل الأسبوع" style="filter:drop-shadow(0 0 3px gold);">👑</span>' : '';
+                    item.innerHTML = `
+                        <div style="flex:1;">
+                            <div style="font-weight:600;">${escapeHtml(u.fullName)}${championBadge}</div>
+                            <div style="font-size:11px;color:var(--text-3);">@${u.username}</div>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-3);text-align:right;">
+                            <div style="font-weight:700;color:${u.isOnline ? 'var(--success)' : 'var(--text-3)'};">${u.isOnline ? '🟢' : '⚪'} ${u.matchScore}</div>
+                            <div>استخدام: ${u.usageHours}س</div>
+                            <div>درجات: ${u.quizAvg}%</div>
+                        </div>
+                    `;
                     item.onclick = () => startGroupChatWith(u.username);
                     box.appendChild(item);
                 });
