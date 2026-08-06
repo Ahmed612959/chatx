@@ -931,9 +931,13 @@
                     ترتيبك بيتحسب من نشاطك الأسبوعي (شات + حل بنك الأسئلة). أعلى 10 طلاب كل أسبوع
                     بيفتحلهم مميزات إضافية، والترتيب بيرجع صفر تاني كل أسبوع جديد.
                 </p>
-                <div id="myRankBox" style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-glass);border:1px solid var(--border-accent);border-radius:12px;margin-bottom:14px;">
+                <div id="myRankBox" style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-glass);border:1px solid var(--border-accent);border-radius:12px;margin-bottom:10px;">
                     <div style="font-size:12.5px;color:var(--text-2);">ترتيبك الأسبوع ده</div>
                     <div style="font-weight:800;font-size:15px;" id="myRankText">—</div>
+                </div>
+                <div id="myRewardsBox" style="display:none;padding:12px;background:linear-gradient(135deg, rgba(255,215,0,0.14), var(--bg-glass));border:1px solid rgba(255,215,0,0.5);border-radius:12px;margin-bottom:14px;">
+                    <div style="font-weight:800;font-size:13px;margin-bottom:8px;" id="myRewardsMessage"></div>
+                    <div id="myRewardsList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
                 </div>
                 <div id="leaderboardList" style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;"></div>
                 <button class="btn-calc" style="margin-top:12px;background:var(--bg-2);color:var(--text-2);" onclick="loadWeeklyLeaderboard()"><i class="fas fa-rotate"></i> تحديث</button>
@@ -3235,13 +3239,21 @@
             if (!schoolToken) return;
             const now = Date.now();
             if (now - lastActivityPingAt < 60 * 1000) return; // حد أقصى مرة كل دقيقة
+            // بنبعت وقت الفجوة الفعلي من آخر ping (السيرفر بيقصّه أقصى 120 ثانية بنفسه)
+            const elapsedSeconds = lastActivityPingAt ? Math.round((now - lastActivityPingAt) / 1000) : 30;
             lastActivityPingAt = now;
             try {
-                await fetch(`${FIXED_SCHOOL_API_URL}/api/activity/ping`, {
+                await fetch(`${FIXED_SCHOOL_API_URL}/api/presence/heartbeat`, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({
+                        messages: 1,
+                        questions: 0,
+                        seconds: elapsedSeconds,
+                        fullName: schoolUser?.fullName
+                    })
                 });
-            } catch (e) { /* السيرفر لسه ملحقش يضيف الـ endpoint ده، متجاهلينها بهدوء */ }
+            } catch (e) { /* متجاهلينها بهدوء لو حصل خطأ شبكة */ }
         }
 
         function openLeaderboard() {
@@ -3249,22 +3261,52 @@
             loadWeeklyLeaderboard();
         }
 
+        // بيحول ثواني لصيغة "س دقيقة" مختصرة للعرض
+        function formatDurationShort(seconds) {
+            const totalMinutes = Math.round((seconds || 0) / 60);
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            if (h > 0) return `${h}س ${m}د`;
+            return `${m}د`;
+        }
+
         async function loadWeeklyLeaderboard() {
             const listEl = document.getElementById('leaderboardList');
             const rankText = document.getElementById('myRankText');
+            const rewardsBox = document.getElementById('myRewardsBox');
             listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>';
+            rewardsBox.style.display = 'none';
             if (!schoolToken) {
                 listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">لازم تسجّل دخول School X الأول</div>';
                 return;
             }
             try {
-                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/leaderboard/weekly`, {
-                    headers: { 'Authorization': `Bearer ${schoolToken}` }
-                });
-                if (!res.ok) throw new Error('failed');
-                const data = await res.json();
-                const top = data.top || [];
-                rankText.textContent = data.myRank ? (data.myRank === 1 ? `👑 إنت بطل الأسبوع! — ${data.myScore || 0} نقطة` : `#${data.myRank} — ${data.myScore || 0} نقطة`) : 'لسه معملتش نشاط الأسبوع ده';
+                const headers = { 'Authorization': `Bearer ${schoolToken}` };
+                const [lbRes, rwRes] = await Promise.all([
+                    fetch(`${FIXED_SCHOOL_API_URL}/api/leaderboard/live`, { headers }),
+                    fetch(`${FIXED_SCHOOL_API_URL}/api/leaderboard/rewards`, { headers }).catch(() => null)
+                ]);
+                if (!lbRes.ok) throw new Error('failed');
+                const data = await lbRes.json();
+                const top = data.weeklyTop || [];
+                const onlineUsernames = new Set((data.online || []).map(u => u.username));
+                const myRank = data.me && data.me.rank;
+                const myStats = data.me && data.me.stats;
+                rankText.textContent = myRank ? `#${myRank}${myStats ? ' — ' + formatDurationShort(myStats.timeSpentSeconds) : ''}` : 'لسه معملتش نشاط الأسبوع ده';
+
+                // مزايا "بطل الأسبوع" الخاصة بيا (لو مستحقّها)
+                if (rwRes && rwRes.ok) {
+                    const rw = await rwRes.json();
+                    if (rw.isChampion) {
+                        document.getElementById('myRewardsMessage').textContent = rw.message || '👑 أنت بطل الأسبوع!';
+                        const rewardsListEl = document.getElementById('myRewardsList');
+                        rewardsListEl.innerHTML = (rw.rewards || []).map(r =>
+                            `<span title="${escapeHtml(r.desc)}" style="font-size:11px;background:var(--bg-glass);border:1px solid var(--border);border-radius:20px;padding:4px 10px;">${r.icon} ${escapeHtml(r.name)}</span>`
+                        ).join('');
+                        rewardsBox.style.display = 'block';
+                    }
+                }
+
                 if (!top.length) {
                     listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش بيانات لسه</div>';
                     return;
@@ -3273,23 +3315,23 @@
                 top.forEach((s, i) => {
                     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
                     const isMe = schoolUser && s.username === schoolUser.username;
-                    const championBadge = s.isChampion ? ' <span title="بطل الأسبوع" style="filter:drop-shadow(0 0 3px gold);">👑</span>' : '';
+                    const isOnline = onlineUsernames.has(s.username);
+                    const championBadge = i === 0 ? ' <span title="المتصدر الحالي" style="filter:drop-shadow(0 0 3px gold);">👑</span>' : '';
                     const row = document.createElement('div');
-                    row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:${s.isChampion ? 'linear-gradient(135deg, rgba(255,215,0,0.14), var(--bg-glass))' : (isMe ? 'var(--accent-glow)' : 'var(--bg-glass)')};border:1px solid ${s.isChampion ? 'rgba(255,215,0,0.5)' : (isMe ? 'var(--border-accent)' : 'var(--border)')};`;
+                    row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:${i === 0 ? 'linear-gradient(135deg, rgba(255,215,0,0.14), var(--bg-glass))' : (isMe ? 'var(--accent-glow)' : 'var(--bg-glass)')};border:1px solid ${i === 0 ? 'rgba(255,215,0,0.5)' : (isMe ? 'var(--border-accent)' : 'var(--border)')};`;
                     row.innerHTML = `
                         <div style="width:26px;text-align:center;font-weight:800;font-size:13px;">${medal}</div>
                         <div style="flex:1;min-width:0;">
                             <div style="font-size:13px;font-weight:${isMe ? '800' : '600'};">${escapeHtml(s.fullName || s.username)}${championBadge}</div>
                             <div style="font-size:11px;color:var(--text-3);margin-top:2px;">
-                                ${s.isOnline ? '🟢 أونلاين' : '⚪ أوفلاين'} • استخدام: ${s.usageHours}س • درجات: ${s.quizAvg}%
+                                ${isOnline ? '🟢 أونلاين' : '⚪ أوفلاين'} • نشاط: ${formatDurationShort(s.timeSpentSeconds)} • أسئلة: ${s.questionsCount || 0}
                             </div>
                         </div>
-                        <div style="font-size:13px;font-weight:800;color:var(--accent);">${s.score}</div>
                     `;
                     listEl.appendChild(row);
                 });
             } catch (e) {
-                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل لوحة الصدارة — endpoint لوحة الصدارة لسه مش متاح على سيرفر School X</div>';
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل لوحة الصدارة</div>';
             }
         }
 
@@ -3316,35 +3358,31 @@
             const myToken = ++mentionSearchToken;
             if (!schoolToken) { statusEl.textContent = 'لازم تسجّل دخول School X الأول'; return; }
             try {
-                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/users/search?q=${encodeURIComponent(q)}`, {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/rooms/search-friends?q=${encodeURIComponent(q)}`, {
                     headers: { 'Authorization': `Bearer ${schoolToken}` }
                 });
                 if (myToken !== mentionSearchToken) return;
                 if (!res.ok) throw new Error('failed');
-                const users = await res.json();
+                const data = await res.json();
+                const users = data.results || [];
                 if (!users.length) { box.style.display = 'none'; statusEl.textContent = 'مفيش نتايج'; return; }
                 box.innerHTML = '';
                 users.forEach(u => {
                     const item = document.createElement('div');
-                    item.style.cssText = 'padding:10px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;';
-                    const championBadge = u.isChampion ? ' <span title="بطل الأسبوع" style="filter:drop-shadow(0 0 3px gold);">👑</span>' : '';
+                    item.style.cssText = 'padding:10px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;';
                     item.innerHTML = `
-                        <div style="flex:1;">
-                            <div style="font-weight:600;">${escapeHtml(u.fullName)}${championBadge}</div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:600;">${escapeHtml(u.fullName || u.username)}</div>
                             <div style="font-size:11px;color:var(--text-3);">@${u.username}</div>
                         </div>
-                        <div style="font-size:11px;color:var(--text-3);text-align:right;">
-                            <div style="font-weight:700;color:${u.isOnline ? 'var(--success)' : 'var(--text-3)'};">${u.isOnline ? '🟢' : '⚪'} ${u.matchScore}</div>
-                            <div>استخدام: ${u.usageHours}س</div>
-                            <div>درجات: ${u.quizAvg}%</div>
-                        </div>
+                        <div style="font-size:15px;">${u.online ? '🟢' : '⚪'}</div>
                     `;
                     item.onclick = () => startGroupChatWith(u.username);
                     box.appendChild(item);
                 });
                 box.style.display = 'block';
             } catch (e) {
-                statusEl.textContent = 'تعذر البحث — endpoint البحث عن الطلاب لسه مش متاح على سيرفر School X';
+                statusEl.textContent = 'تعذر البحث، حاول تاني';
             }
         }
 
