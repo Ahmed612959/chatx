@@ -45,18 +45,36 @@
     <style>
         :root {
             --bg: #0a0e1a; --bg-2: #131827; --bg-glass: rgba(19, 24, 39, 0.75); --bg-glass-heavy: rgba(10, 14, 26, 0.95);
-            --accent: #6366f1; --accent-2: #8b5cf6; --accent-glow: rgba(99, 102, 241, 0.35);
+            --accent: #6366f1; --accent-2: #8b5cf6; --accent-3: #ec4899; --accent-glow: rgba(99, 102, 241, 0.35);
             --text-1: #f1f5f9; --text-2: #94a3b8; --text-3: #64748b;
             --border: rgba(255, 255, 255, 0.08); --border-accent: rgba(99, 102, 241, 0.4);
             --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
             --radius: 16px; --radius-sm: 10px;
             --font: 'Cairo', sans-serif;
+            --grad-bold: linear-gradient(120deg, var(--accent), var(--accent-2) 55%, var(--accent-3));
         }
         body.light {
             --bg: #f8fafc; --bg-2: #ffffff; --bg-glass: rgba(255, 255, 255, 0.8); --bg-glass-heavy: rgba(255, 255, 255, 0.95);
-            --accent: #4f46e5; --accent-2: #7c3aed; --accent-glow: rgba(79, 70, 229, 0.2);
+            --accent: #4f46e5; --accent-2: #7c3aed; --accent-3: #db2777; --accent-glow: rgba(79, 70, 229, 0.2);
             --text-1: #0f172a; --text-2: #475569; --text-3: #94a3b8;
             --border: rgba(0, 0, 0, 0.08); --border-accent: rgba(79, 70, 229, 0.3);
+        }
+
+        /* خلفية متدرجة بتتحرك بهدوء جوه أهم عناصر التطبيق — مسافة الألوان أوسع (indigo → violet → pink)
+           عشان يديّ إحساس "جامد" وحيوي أكتر من التدرج الثابت البسيط اللي كان موجود قبل كده. */
+        @keyframes gradientFlow { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 12px 0 var(--accent-glow); }
+            50% { box-shadow: 0 0 24px 4px var(--accent-glow); }
+        }
+        @keyframes floatIn {
+            from { opacity: 0; transform: translateY(14px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .grad-bold-anim {
+            background: var(--grad-bold);
+            background-size: 200% 200%;
+            animation: gradientFlow 6s ease infinite;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -140,7 +158,7 @@
 
         .sb-header { padding: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
         .btn-new {
-            width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            width: 100%; padding: 12px; background: var(--grad-bold);
             border: none; border-radius: var(--radius-sm); color: white; font-family: var(--font);
             font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center;
             justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 15px var(--accent-glow);
@@ -165,12 +183,13 @@
             font-size: 16px; border-radius: var(--radius-sm); cursor: pointer;
         }
         .chat-item:hover { background: rgba(255,255,255,0.04); }
-        .chat-item.active { background: rgba(99, 102, 241, 0.1); border-color: var(--border-accent); }
+        .chat-item.active { background: rgba(99, 102, 241, 0.12); border-color: var(--border-accent); box-shadow: 0 0 0 1px var(--border-accent), 0 4px 16px -4px var(--accent-glow); }
         .chat-item .icon {
             width: 36px; height: 36px; border-radius: 10px; background: var(--bg-2);
             display: flex; align-items: center; justify-content: center; color: var(--text-2); font-size: 14px; flex-shrink: 0;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .chat-item.active .icon { background: var(--accent); color: white; }
+        .chat-item.active .icon { background: var(--grad-bold); color: white; }
         .chat-item .info { flex: 1; min-width: 0; }
         .chat-item .title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .chat-item .date { font-size: 10px; color: var(--text-3); margin-top: 2px; }
@@ -191,7 +210,7 @@
             flex-shrink: 0; padding-bottom: max(14px, env(safe-area-inset-bottom));
         }
         .user-avatar {
-            width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            width: 40px; height: 40px; border-radius: 10px; background: var(--grad-bold);
             display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; flex-shrink: 0;
         }
         .user-info { flex: 1; min-width: 0; }
@@ -226,7 +245,9 @@
         .bot-identity { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
         .bot-logo {
             width: 40px; height: 40px; border-radius: 12px; 
-            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            background: var(--grad-bold);
+            background-size: 200% 200%;
+            animation: gradientFlow 6s ease infinite, glowPulse 2.5s ease-in-out infinite;
             display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;
             box-shadow: 0 0 20px var(--accent-glow); flex-shrink: 0;
         }
@@ -234,14 +255,16 @@
         .bot-text { flex: 1; min-width: 0; }
         .bot-text h2 { 
             font-size: 16px; font-weight: 900; display: flex; align-items: center; gap: 6px;
-            background: linear-gradient(135deg, var(--text-1) 30%, var(--accent));
+            background: linear-gradient(120deg, var(--text-1) 20%, var(--accent) 55%, var(--accent-3));
+            background-size: 200% 200%;
+            animation: gradientFlow 6s ease infinite;
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
             white-space: nowrap;
         }
         @media (max-width: 400px) { .bot-text h2 { font-size: 14px; } }
         .badge { 
             font-size: 9px; padding: 2px 6px; 
-            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            background: var(--grad-bold);
             color: white; border-radius: 5px; font-weight: 800;
             -webkit-text-fill-color: white;
         }
@@ -251,9 +274,10 @@
         .action-btn {
             width: 38px; height: 38px; border-radius: 10px; background: var(--bg-2); border: 1px solid var(--border);
             color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s; font-size: 14px; flex-shrink: 0;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); font-size: 14px; flex-shrink: 0;
         }
-        .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .action-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px) scale(1.08); box-shadow: 0 4px 14px var(--accent-glow); }
+        .action-btn:active { transform: translateY(0) scale(0.94); }
 
         .chat-container {
             flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px; scroll-behavior: smooth;
@@ -269,7 +293,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         .welcome-logo {
-            width: 80px; height: 80px; border-radius: 24px; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            width: 80px; height: 80px; border-radius: 24px; background: var(--grad-bold);
             display: flex; align-items: center; justify-content: center; font-size: 36px; color: white;
             margin-bottom: 20px; box-shadow: 0 0 40px var(--accent-glow);
         }
@@ -293,7 +317,7 @@
         .quick-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
         .quick-card p { font-size: 10px; color: var(--text-3); line-height: 1.5; }
 
-        .message { display: flex; gap: 10px; max-width: 90%; animation: slideUp 0.35s ease; }
+        .message { display: flex; gap: 10px; max-width: 90%; animation: floatIn 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
         @media (min-width: 768px) { .message { max-width: 80%; gap: 12px; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message.user { flex-direction: row-reverse; margin-left: auto; }
@@ -302,7 +326,7 @@
             width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: flex;
             align-items: center; justify-content: center; font-size: 14px; margin-top: 2px;
         }
-        .message.bot .msg-avatar { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; }
+        .message.bot .msg-avatar { background: var(--grad-bold); color: white; }
         .message.user .msg-avatar { background: var(--bg-2); border: 1px solid var(--border); color: var(--text-2); }
         
         .msg-content { flex: 1; min-width: 0; max-width: 100%; }
@@ -315,7 +339,8 @@
             background: var(--bg-glass); border: 1px solid var(--border); border-top-right-radius: 4px;
         }
         .message.user .msg-bubble {
-            background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; border-top-left-radius: 4px;
+            background: var(--grad-bold); background-size: 200% 200%; color: white; border-top-left-radius: 4px;
+            animation: gradientFlow 8s ease infinite; box-shadow: 0 4px 16px -6px var(--accent-glow);
         }
 
         /* Image attached/sent by the user, shown inline in the chat */
@@ -484,7 +509,7 @@
         
         .send-btn {
             width: 38px; height: 38px; border-radius: 50%; border: none;
-            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            background: var(--grad-bold);
             color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
             font-size: 14px; transition: all 0.2s; flex-shrink: 0;
         }
@@ -539,10 +564,12 @@
         }
         .tool-input:focus { border-color: var(--accent); }
         .btn-calc {
-            width: 100%; padding: 11px; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            width: 100%; padding: 11px; background: var(--grad-bold); background-size: 200% 200%;
             border: none; border-radius: 9px; color: white; font-family: var(--font); font-weight: 700; font-size: 13px; 
-            cursor: pointer; margin-top: 6px;
+            cursor: pointer; margin-top: 6px; transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s, background-position 0.4s;
         }
+        .btn-calc:hover { background-position: 100% 50%; box-shadow: 0 6px 18px -4px var(--accent-glow); transform: translateY(-1px); }
+        .btn-calc:active { transform: scale(0.96); }
         .calc-result {
             margin-top: 12px; padding: 14px; background: rgba(99, 102, 241, 0.1); border: 1px solid var(--border-accent);
             border-radius: 10px; text-align: center; font-size: 16px; font-weight: 800; color: var(--accent);
@@ -563,7 +590,7 @@
 
         .fab {
             position: fixed; bottom: max(100px, env(safe-area-inset-bottom)); left: 16px; width: 52px; height: 52px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white;
+            background: var(--grad-bold); color: white;
             border: none; font-size: 20px; cursor: pointer; box-shadow: 0 8px 25px var(--accent-glow);
             display: none; align-items: center; justify-content: center; z-index: 40;
         }
@@ -714,7 +741,7 @@
                 </div>
                 
                 <div class="typing-indicator" id="typingIndicator">
-                    <div class="msg-avatar" style="background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white;"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="msg-avatar" style="background: var(--grad-bold); color: white;"><i class="fas fa-graduation-cap"></i></div>
                     <div class="typing-dots"><span></span><span></span><span></span></div>
                 </div>
             </div>
@@ -748,6 +775,7 @@
                         <option value="openrouter">🔀 OpenRouter</option>
                         <option value="cerebras">🧠 Cerebras</option>
                         <option value="mistral">🌬️ Mistral</option>
+                        <option value="sambanova">🚀 SambaNova</option>
                         <option value="qwen">🐉 Qwen</option>
                         <option value="zimage">🖼️ تحليل الصور</option>
                         <option value="local">💻 محلي</option>
@@ -854,7 +882,7 @@
                 </p>
                 <div style="display:flex;flex-direction:column;gap:10px;">
                     <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-glass);border:1px solid var(--border-accent);border-radius:12px;">
-                        <div style="width:42px;height:42px;flex-shrink:0;border-radius:11px;background:linear-gradient(135deg, var(--accent), var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;box-shadow:0 4px 14px var(--accent-glow);">
+                        <div style="width:42px;height:42px;flex-shrink:0;border-radius:11px;background:var(--grad-bold);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;box-shadow:0 4px 14px var(--accent-glow);">
                             <i class="fas fa-graduation-cap"></i>
                         </div>
                         <div style="flex:1;min-width:0;">
@@ -2104,6 +2132,9 @@
                 } else if (model === 'mistral') {
                     source = 'mistral';
                     await streamMistral(chat.messages, abortController.signal);
+                } else if (model === 'sambanova') {
+                    source = 'sambanova';
+                    await streamSambanova(chat.messages, abortController.signal);
                 } else if (model === 'qwen') {
                     source = 'qwen';
                     await streamQwen(chat.messages, abortController.signal);
@@ -2148,8 +2179,14 @@
                                         await streamMistral(chat.messages, abortController.signal);
                                     } catch (mistralError) {
                                         if (mistralError.name === 'AbortError') throw mistralError;
-                                        source = 'qwen';
-                                        await streamQwen(chat.messages, abortController.signal);
+                                        try {
+                                            source = 'sambanova';
+                                            await streamSambanova(chat.messages, abortController.signal);
+                                        } catch (sambanovaError) {
+                                            if (sambanovaError.name === 'AbortError') throw sambanovaError;
+                                            source = 'qwen';
+                                            await streamQwen(chat.messages, abortController.signal);
+                                        }
                                     }
                                 }
                             }
@@ -2230,7 +2267,7 @@
             msgDiv.className = 'message bot';
             msgDiv.id = botMsg.id;
             msgDiv.innerHTML = `
-                <div class="msg-avatar" style="background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white;"><i class="fas fa-graduation-cap"></i></div>
+                <div class="msg-avatar" style="background: var(--grad-bold); color: white;"><i class="fas fa-graduation-cap"></i></div>
                 <div class="msg-content">
                     <div class="msg-bubble"></div>
                     <div class="msg-meta">
@@ -2275,7 +2312,7 @@
             const sourceSpan = msgDiv.querySelector('.msg-source-icon');
             const actionsDiv = msgDiv.querySelector('.msg-actions');
             timeSpan.textContent = new Date(botMsg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
-            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'mistral' ? '🌬️' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'zimage' ? '🖼️' : '💻';
+            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'mistral' ? '🌬️' : botMsg.source === 'sambanova' ? '🚀' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'zimage' ? '🖼️' : '💻';
             // This message was just pushed as the newest one, so it's always eligible for regenerate.
             buildMsgActionButtons(botMsg, actionsDiv, true);
             syncRegenerateButtons(chats.find(c => c.id === currentChatId));
@@ -2323,7 +2360,7 @@
             if (msg.role === 'bot') {
                 const sourceSpan = document.createElement('span');
                 sourceSpan.style.cssText = 'margin-right:6px;opacity:0.6';
-                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'mistral' ? '🌬️' : msg.source === 'qwen' ? '🐉' : msg.source === 'zimage' ? '🖼️' : '💻';
+                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'mistral' ? '🌬️' : msg.source === 'sambanova' ? '🚀' : msg.source === 'qwen' ? '🐉' : msg.source === 'zimage' ? '🖼️' : '💻';
                 meta.appendChild(sourceSpan);
             }
 
@@ -2706,6 +2743,75 @@
 
             if (!hasContent) {
                 // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
+                msgDiv.remove();
+                chat.messages.pop();
+                await respondLocally(messages[messages.length - 1].content, chat, signal);
+                return;
+            }
+
+            finalizeBotMessage(msgDiv, botMsg);
+            saveData();
+        }
+
+        async function streamSambanova(messages, signal) {
+            const response = await fetchWithRetry(`${settings.backendUrl}/api/sambanova`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: "Meta-Llama-3.3-70B-Instruct",
+                    messages: [{role: "system", content: getSystemPrompt()}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    stream: true
+                }),
+                signal
+            });
+
+            if (!response.ok) {
+                let detail = '';
+                try { detail = (await response.text()).slice(0, 200); } catch (e) {}
+                console.error('SambaNova API error', response.status, detail);
+                throw new Error(`SambaNova API Error (${response.status}): ${detail || 'no detail'}`);
+            }
+
+            document.getElementById('typingIndicator').classList.remove('active');
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            const chat = chats.find(c => c.id === currentChatId);
+            const botMsg = { role: 'bot', content: '', source: 'sambanova', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
+            chat.messages.push(botMsg);
+
+            const msgDiv = createBotMessageShell(botMsg);
+            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
+            let hasContent = false;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) continue;
+                    const payload = line.slice(6).trim();
+                    if (payload === '[DONE]') continue;
+                    try {
+                        const data = JSON.parse(payload);
+                        const content = data.choices[0]?.delta?.content || '';
+                        if (content) {
+                            hasContent = true;
+                            queue.push(content);
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            const fullText = await queue.flush();
+
+            if (!hasContent) {
                 msgDiv.remove();
                 chat.messages.pop();
                 await respondLocally(messages[messages.length - 1].content, chat, signal);
@@ -3681,7 +3787,7 @@
                     const bubble = document.createElement('div');
                     bubble.dataset.isMe = isMe ? '1' : '0';
                     bubble.dataset.createdAt = m.createdAt;
-                    bubble.style.cssText = `max-width:78%;align-self:${isMe ? 'flex-end' : 'flex-start'};padding:10px 14px;border-radius:14px;background:${isMe ? 'linear-gradient(135deg, var(--accent), var(--accent-2))' : 'var(--bg-2)'};color:${isMe ? '#fff' : 'var(--text-1)'};font-size:13px;line-height:1.7;`;
+                    bubble.style.cssText = `max-width:78%;align-self:${isMe ? 'flex-end' : 'flex-start'};padding:10px 14px;border-radius:14px;background:${isMe ? 'var(--grad-bold)' : 'var(--bg-2)'};color:${isMe ? '#fff' : 'var(--text-1)'};font-size:13px;line-height:1.7;`;
                     const textSpan = document.createElement('span');
                     textSpan.textContent = m.text;
                     bubble.appendChild(textSpan);
