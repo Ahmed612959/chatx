@@ -3,10 +3,18 @@
 // outright (returning an HTML block page instead of a JSON API response). Regular
 // Node functions send a different network/TLS fingerprint that gets through.
 
+import { checkRateLimit } from './_rateLimit.js';
+
 export default async function handler(request, response) {
   try {
     if (request.method !== 'POST') {
       return response.status(405).json({ error: 'Method not allowed' });
+    }
+
+    const rl = checkRateLimit(request, { limit: 20, windowMs: 60_000 });
+    if (!rl.allowed) {
+      response.setHeader('Retry-After', String(rl.retryAfterSeconds));
+      return response.status(429).json({ error: `طلبات كتير أوي في وقت قصير — حاول تاني بعد ${rl.retryAfterSeconds} ثانية` });
     }
 
     const CEREBRAS_API_KEY = process.env.CEREBRAS_API_KEY;
