@@ -54,6 +54,15 @@ const PROVIDERS = [
     })
   },
   {
+    name: 'sambanova',
+    envKey: 'SAMBANOVA_API_KEY',
+    ping: (key) => fetch('https://api.sambanova.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'Meta-Llama-3.3-70B-Instruct', messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 })
+    })
+  },
+  {
     name: 'qwen',
     envKey: 'QWEN_API_KEY',
     ping: (key) => fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
@@ -86,6 +95,7 @@ export default async function handler(request) {
         openrouterConfigured: Boolean(process.env.OPENROUTER_API_KEY),
         cerebrasConfigured: Boolean(process.env.CEREBRAS_API_KEY),
         mistralConfigured: Boolean(process.env.MISTRAL_API_KEY),
+        sambanovaConfigured: Boolean(process.env.SAMBANOVA_API_KEY),
         qwenConfigured: Boolean(process.env.QWEN_API_KEY),
         deepseekConfigured: Boolean(process.env.DEEPSEEK_API_KEY),
         zimageConfigured: Boolean(process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY)
