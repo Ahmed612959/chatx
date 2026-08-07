@@ -1,10 +1,14 @@
 export const config = { runtime: 'edge' };
+import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
 
 export default async function handler(request) {
   try {
     if (request.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
     }
+
+    const rl = checkRateLimit(request, { limit: 20, windowMs: 60_000 });
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
     const QWEN_API_KEY = process.env.QWEN_API_KEY;
     if (!QWEN_API_KEY) {
