@@ -1,4 +1,5 @@
 export const config = { runtime: 'edge' };
+import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
 
 // Handles image analysis. Uses DashScope's OpenAI-compatible chat/completions endpoint with a
 // vision-capable Qwen-VL model, so it can accept the same {role, content:[{type:'image_url',...}]}
@@ -10,6 +11,10 @@ export default async function handler(request) {
     if (request.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
     }
+
+    // ليمت أقل من مزودي النص العاديين لأن تحليل الصور أتقل على الـ upstream
+    const rl = checkRateLimit(request, { limit: 10, windowMs: 60_000 });
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
     const API_KEY = process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY;
     if (!API_KEY) {
