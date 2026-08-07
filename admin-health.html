@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>حالة المزودين — Chat X</title>
+<style>
+    :root {
+        --bg: #0a0e1a; --bg-2: #131827;
+        --accent: #6366f1; --accent-2: #8b5cf6;
+        --text-1: #f1f5f9; --text-2: #94a3b8; --text-3: #64748b;
+        --border: rgba(255, 255, 255, 0.08);
+        --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+        --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: var(--font); background: var(--bg); color: var(--text-1);
+        min-height: 100vh; padding: 20px 16px 60px;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    h1 { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .sub { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+    button {
+        font-family: inherit; font-size: 13px; font-weight: 700; color: #fff; cursor: pointer;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2)); border: none;
+        border-radius: 10px; padding: 10px 18px; transition: opacity .15s, transform .15s;
+    }
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: .5; cursor: default; }
+    button.ghost { background: var(--bg-2); border: 1px solid var(--border); color: var(--text-2); }
+    .grid { display: grid; gap: 10px; }
+    .row {
+        display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+        background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px;
+        opacity: 0; animation: rise .35s ease forwards;
+    }
+    .row:nth-child(1) { animation-delay: .02s; } .row:nth-child(2) { animation-delay: .06s; }
+    .row:nth-child(3) { animation-delay: .10s; } .row:nth-child(4) { animation-delay: .14s; }
+    .row:nth-child(5) { animation-delay: .18s; } .row:nth-child(6) { animation-delay: .22s; }
+    .row:nth-child(7) { animation-delay: .26s; } .row:nth-child(8) { animation-delay: .30s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .dot.ok { background: var(--success); box-shadow: 0 0 10px var(--success); }
+    .dot.error, .dot.unreachable { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+    .dot.not_configured { background: var(--text-3); }
+    .dot.pending { background: var(--warning); animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+    .name { font-weight: 700; font-size: 14px; flex: 1; }
+    .status-label { font-size: 12px; color: var(--text-3); }
+    .status-label.ok { color: var(--success); }
+    .status-label.error, .status-label.unreachable { color: var(--danger); }
+    .detail { font-size: 11px; color: var(--text-3); margin-top: 4px; max-width: 100%; overflow-wrap: break-word; }
+    .empty { text-align: center; padding: 40px 20px; color: var(--text-3); font-size: 13px; }
+    .actions { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+    .checked-at { font-size: 11px; color: var(--text-3); margin-top: 14px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <div>
+            <h1>حالة مزودي الذكاء الاصطناعي</h1>
+            <div class="sub">فحص سريع لكل موديل — Chat X</div>
+        </div>
+    </header>
+
+    <div class="actions">
+        <button id="btnConfigured" onclick="runCheck(false)">فحص سريع (مجاني)</button>
+        <button id="btnLive" class="ghost" onclick="runCheck(true)">فحص حقيقي (بيستهلك جزء بسيط من الكوتة)</button>
+    </div>
+
+    <div id="grid" class="grid">
+        <div class="empty">اضغط "فحص سريع" أو "فحص حقيقي" عشان تشوف الحالة</div>
+    </div>
+
+    <div id="checkedAt" class="checked-at"></div>
+</div>
+
+<script>
+    const PROVIDER_LABELS = {
+        groq: '⚡ Groq', gemini: '🌟 Gemini', openrouter: '🔀 OpenRouter',
+        cerebras: '🧠 Cerebras', mistral: '🌬️ Mistral', qwen: '🐉 Qwen',
+        deepseek: '🐋 DeepSeek', zimage: '🖼️ تحليل الصور'
+    };
+    const STATUS_LABELS = {
+        ok: 'شغال ✓', error: 'فيه مشكلة', unreachable: 'تعذر الوصول',
+        not_configured: 'المفتاح مش مضبوط', pending: 'جارٍ الفحص...'
+    };
+
+    async function runCheck(live) {
+        const grid = document.getElementById('grid');
+        document.getElementById('btnConfigured').disabled = true;
+        document.getElementById('btnLive').disabled = true;
+
+        const names = Object.keys(PROVIDER_LABELS);
+        grid.innerHTML = names.map(n => renderRow(n, { status: 'pending' })).join('');
+
+        try {
+            const res = await fetch(`/api/health${live ? '?live=1' : ''}`);
+            const data = await res.json();
+
+            if (!live) {
+                grid.innerHTML = names
+                    .filter(n => n !== 'zimage' || true)
+                    .map(n => {
+                        const key = n + 'Configured';
+                        const configured = Boolean(data[key]);
+                        return renderRow(n, { status: configured ? 'ok' : 'not_configured' }, configured ? 'المفتاح موجود (فحص وجود بس، مش فحص حقيقي)' : '');
+                    }).join('');
+            } else {
+                const byName = Object.fromEntries((data.providers || []).map(p => [p.name, p]));
+                grid.innerHTML = names.map(n => {
+                    const p = byName[n];
+                    if (!p) return renderRow(n, { status: 'not_configured' });
+                    return renderRow(n, p, p.detail || '');
+                }).join('');
+                document.getElementById('checkedAt').textContent = 'آخر فحص: ' + new Date(data.checkedAt).toLocaleTimeString('ar-EG');
+            }
+        } catch (e) {
+            grid.innerHTML = `<div class="empty">تعذر تحميل حالة المزودين — ${e.message}</div>`;
+        } finally {
+            document.getElementById('btnConfigured').disabled = false;
+            document.getElementById('btnLive').disabled = false;
+        }
+    }
+
+    function renderRow(name, p, detail) {
+        const label = PROVIDER_LABELS[name] || name;
+        const statusText = STATUS_LABELS[p.status] || p.status;
+        return `
+            <div class="row">
+                <div class="dot ${p.status}"></div>
+                <div style="flex:1;min-width:0;">
+                    <div class="name">${label}</div>
+                    ${detail ? `<div class="detail">${escapeHtml(detail)}</div>` : ''}
+                </div>
+                <div class="status-label ${p.status}">${statusText}</div>
+            </div>
+        `;
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+</script>
+</body>
+</html>
