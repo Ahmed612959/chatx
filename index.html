@@ -181,7 +181,9 @@
             position: absolute; inset-inline-start: 0; top: 0; bottom: 0; width: 64px;
             background: var(--danger); color: #fff; display: flex; align-items: center; justify-content: center;
             font-size: 16px; border-radius: var(--radius-sm); cursor: pointer;
+            opacity: 0; pointer-events: none; transition: opacity 0.15s;
         }
+        .swipe-delete-reveal.visible { opacity: 1; pointer-events: auto; }
         .chat-item:hover { background: rgba(255,255,255,0.04); }
         .chat-item.active { background: rgba(99, 102, 241, 0.12); border-color: var(--border-accent); box-shadow: 0 0 0 1px var(--border-accent), 0 4px 16px -4px var(--accent-glow); }
         .chat-item .icon {
@@ -951,9 +953,11 @@
             </div>
 
             <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--text-3);">
-                Chat X — تطوير <span style="color:var(--text-2);font-weight:700;">Ahmed Mousaa</span>
+                Chat X — تطوير <a href="/developer.html" target="_blank" style="color:var(--text-2);font-weight:700;text-decoration:none;">Ahmed Mousaa</a>
                 <br>
                 <a href="/about.html" target="_blank" style="color:var(--text-3);text-decoration:underline;">من نحن</a>
+                &nbsp;·&nbsp;
+                <a href="/developer.html" target="_blank" style="color:var(--text-3);text-decoration:underline;">عن المطور</a>
                 &nbsp;·&nbsp;
                 <a href="/privacy.html" target="_blank" style="color:var(--text-3);text-decoration:underline;">سياسة الخصوصية</a>
                 &nbsp;·&nbsp;
@@ -1772,10 +1776,13 @@
             div.dataset.swipeX = '0';
             div.style.transform = '';
             div.classList.remove('swiping');
+            const reveal = div.parentElement?.querySelector('.swipe-delete-reveal');
+            if (reveal) reveal.classList.remove('visible');
         }
         function attachSwipeToDelete(div) {
             let startX = 0, startY = 0, dragging = false, lockedHorizontal = false;
             const MAX_SWIPE = 64;
+            const getReveal = () => div.parentElement?.querySelector('.swipe-delete-reveal');
 
             div.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
@@ -1797,6 +1804,8 @@
                 const clamped = Math.max(-MAX_SWIPE, Math.min(0, dx));
                 div.dataset.swipeX = String(clamped);
                 div.style.transform = `translateX(${clamped}px)`;
+                const reveal = getReveal();
+                if (reveal) reveal.classList.toggle('visible', clamped < -4);
             }, { passive: true });
 
             const endHandler = () => {
@@ -1808,6 +1817,8 @@
                 if (dx < -MAX_SWIPE / 2) {
                     div.dataset.swipeX = String(-MAX_SWIPE);
                     div.style.transform = `translateX(${-MAX_SWIPE}px)`;
+                    const reveal = getReveal();
+                    if (reveal) reveal.classList.add('visible');
                 } else {
                     closeSwipe(div);
                 }
