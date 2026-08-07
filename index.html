@@ -1018,8 +1018,14 @@
     <div class="modal-overlay" id="groupChatRoomModal">
         <div class="modal" style="display:flex;flex-direction:column;height:80vh;max-height:640px;">
             <div class="modal-header">
-                <div class="modal-title"><i class="fas fa-user-group"></i> <span id="groupChatRoomTitle">غرفة مذاكرة</span></div>
-                <button class="close-modal" aria-label="إغلاق" onclick="closeGroupChatRoom()"><i class="fas fa-times"></i></button>
+                <div>
+                    <div class="modal-title"><i class="fas fa-user-group"></i> <span id="groupChatRoomTitle">غرفة مذاكرة</span></div>
+                    <div id="groupChatOnlineStatus" style="font-size:11px;margin-top:2px;"></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;">
+                    <button class="action-btn" style="width:32px;height:32px;font-size:12px;" aria-label="مسح كل الرسايل" onclick="clearGroupChat()"><i class="fas fa-trash"></i></button>
+                    <button class="close-modal" aria-label="إغلاق" onclick="closeGroupChatRoom()"><i class="fas fa-times"></i></button>
+                </div>
             </div>
             <div id="groupChatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
             <div id="groupChatTypingIndicator" style="display:none;padding:0 14px 6px;font-size:11px;color:var(--text-3);"></div>
@@ -3645,14 +3651,21 @@
             loadMyGroupChats();
         }
 
-        async function handleMentionSearch(value) {
+        let mentionSearchDebounceTimer = null;
+        function handleMentionSearch(value) {
+            // Debounce 350ms — من غير كده كانت بتبعت طلب مع كل حرف، وده اللي كان حاسسه إن
+            // البحث "بيعلق" (كذا طلب متراكم بيتسابقوا على بعض).
+            clearTimeout(mentionSearchDebounceTimer);
+            mentionSearchDebounceTimer = setTimeout(() => performMentionSearch(value), 350);
+        }
+        async function performMentionSearch(value) {
             const box = document.getElementById('mentionSuggestions');
             const statusEl = document.getElementById('mentionSearchStatus');
             const atIndex = value.lastIndexOf('@');
             if (atIndex === -1) { box.style.display = 'none'; return; }
             const q = value.slice(atIndex + 1).trim();
             if (q.length < 2) { box.style.display = 'none'; statusEl.textContent = 'اكتب حرفين على الأقل بعد @'; return; }
-            statusEl.textContent = '';
+            statusEl.textContent = 'جارٍ البحث...';
             const myToken = ++mentionSearchToken;
             if (!schoolToken) { statusEl.textContent = 'لازم تسجّل دخول School X الأول'; return; }
             try {
@@ -3746,7 +3759,7 @@
             openModal('groupChatRoomModal');
             loadGroupChatMessages(true);
             if (groupChatPollTimer) clearInterval(groupChatPollTimer);
-            groupChatPollTimer = setInterval(() => loadGroupChatMessages(false), 4000);
+            groupChatPollTimer = setInterval(() => loadGroupChatMessages(false), 2000);
         }
 
         function closeGroupChatRoom() {
@@ -3756,6 +3769,8 @@
             currentGroupChatOtherUsername = null;
             lastKnownReadBy = {};
             updateTypingIndicator([]);
+            const statusEl = document.getElementById('groupChatOnlineStatus');
+            if (statusEl) statusEl.innerHTML = '';
         }
 
         let lastGroupMsgAt = 0;
@@ -3779,6 +3794,115 @@
                 osc.stop(ctx.currentTime + 0.26);
             } catch (e) { /* المتصفح مانعش الصوت (autoplay policy) قبل أول تفاعل، مش مشكلة */ }
         }
+        function formatMsgTime(ts) {
+            return new Date(ts).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+        function buildGroupChatBubble(m, isMe) {
+            const bubble = document.createElement('div');
+            bubble.dataset.isMe = isMe ? '1' : '0';
+            bubble.dataset.createdAt = m.createdAt;
+            bubble.dataset.msgId = m.id || '';
+            bubble.style.cssText = `position:relative;max-width:78%;align-self:${isMe ? 'flex-end' : 'flex-start'};padding:10px 14px;border-radius:14px;background:${isMe ? 'var(--grad-bold)' : 'var(--bg-2)'};color:${isMe ? '#fff' : 'var(--text-1)'};font-size:13px;line-height:1.7;`;
+
+            const textSpan = document.createElement('span');
+            textSpan.textContent = m.text;
+            bubble.appendChild(textSpan);
+
+            const metaRow = document.createElement('div');
+            metaRow.style.cssText = `display:flex;gap:6px;align-items:center;margin-top:3px;font-size:10px;opacity:.75;${isMe ? 'justify-content:flex-end;' : ''}`;
+            const timeSpan = document.createElement('span');
+            timeSpan.textContent = formatMsgTime(m.createdAt);
+            metaRow.appendChild(timeSpan);
+            if (isMe) {
+                const tick = document.createElement('span');
+                tick.className = 'read-receipt-tick';
+                metaRow.appendChild(tick);
+            }
+            bubble.appendChild(metaRow);
+
+            const reactionsRow = document.createElement('div');
+            reactionsRow.className = 'msg-reactions-row';
+            reactionsRow.style.cssText = 'display:flex;gap:3px;margin-top:4px;flex-wrap:wrap;';
+            bubble.appendChild(reactionsRow);
+            renderMessageReactions(reactionsRow, m.reactions || {});
+
+            if (m.id) attachLongPressReaction(bubble, m.id);
+            return bubble;
+        }
+
+        function renderMessageReactions(container, reactionsMap) {
+            container.innerHTML = '';
+            const counts = {};
+            Object.values(reactionsMap).forEach(emoji => { counts[emoji] = (counts[emoji] || 0) + 1; });
+            Object.entries(counts).forEach(([emoji, count]) => {
+                const chip = document.createElement('span');
+                chip.style.cssText = 'background:rgba(0,0,0,0.15);border-radius:10px;padding:1px 6px;font-size:11px;';
+                chip.textContent = count > 1 ? `${emoji} ${count}` : emoji;
+                container.appendChild(chip);
+            });
+        }
+
+        // ضغطة مطولة (500ms) على أي رسالة بتفتح شريط إيموجيات سريع للرد عليها —
+        // زي واتساب. شغالة بالتاتش (موبايل) وبرضه بالماوس (اختبار من الديسكتوب).
+        function attachLongPressReaction(bubble, messageId) {
+            let pressTimer = null;
+            const start = () => {
+                pressTimer = setTimeout(() => showReactionPicker(bubble, messageId), 500);
+            };
+            const cancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+            bubble.addEventListener('touchstart', start, { passive: true });
+            bubble.addEventListener('touchend', cancel);
+            bubble.addEventListener('touchmove', cancel);
+            bubble.addEventListener('mousedown', start);
+            bubble.addEventListener('mouseup', cancel);
+            bubble.addEventListener('mouseleave', cancel);
+        }
+
+        function showReactionPicker(bubble, messageId) {
+            document.querySelectorAll('.reaction-picker').forEach(el => el.remove());
+            const picker = document.createElement('div');
+            picker.className = 'reaction-picker';
+            picker.style.cssText = `position:absolute;top:-40px;${bubble.dataset.isMe === '1' ? 'left:0;' : 'right:0;'}background:var(--bg-glass-heavy);border:1px solid var(--border);border-radius:20px;padding:6px 8px;display:flex;gap:6px;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.3);animation:floatIn .15s ease;`;
+            QUICK_REACTIONS.forEach(emoji => {
+                const btn = document.createElement('span');
+                btn.textContent = emoji;
+                btn.style.cssText = 'cursor:pointer;font-size:18px;transition:transform .15s;';
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    sendReaction(messageId, emoji);
+                    picker.remove();
+                };
+                picker.appendChild(btn);
+            });
+            bubble.appendChild(picker);
+            setTimeout(() => {
+                document.addEventListener('click', function closePicker(e) {
+                    if (!picker.contains(e.target)) { picker.remove(); document.removeEventListener('click', closePicker); }
+                });
+            }, 50);
+        }
+
+        async function sendReaction(messageId, emoji) {
+            if (!activeGroupChatId) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats/${activeGroupChatId}/messages/${messageId}/react`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ emoji })
+                });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+                const bubble = document.querySelector(`#groupChatMessages [data-msg-id="${messageId}"]`);
+                const row = bubble?.querySelector('.msg-reactions-row');
+                if (row) renderMessageReactions(row, data.reactions || {});
+            } catch (e) {
+                showToast('تعذر إضافة الرد', 'error');
+            }
+        }
+
         async function loadGroupChatMessages(isFirstLoad) {
             if (!activeGroupChatId) return;
             try {
@@ -3795,27 +3919,30 @@
                 msgs.forEach(m => {
                     const isMe = m.senderUsername === schoolUser?.username;
                     if (!isMe && !isFirstLoad) receivedNewFromOther = true;
-                    const bubble = document.createElement('div');
-                    bubble.dataset.isMe = isMe ? '1' : '0';
-                    bubble.dataset.createdAt = m.createdAt;
-                    bubble.style.cssText = `max-width:78%;align-self:${isMe ? 'flex-end' : 'flex-start'};padding:10px 14px;border-radius:14px;background:${isMe ? 'var(--grad-bold)' : 'var(--bg-2)'};color:${isMe ? '#fff' : 'var(--text-1)'};font-size:13px;line-height:1.7;`;
-                    const textSpan = document.createElement('span');
-                    textSpan.textContent = m.text;
-                    bubble.appendChild(textSpan);
+                    // لو الرسالة دي كانت optimistic (اتبعتت محليًا واستنينا تأكيد السيرفر)، امسح النسخة
+                    // المؤقتة واستبدلها بالنسخة الحقيقية بدل ما تتكرر على الشاشة.
                     if (isMe) {
-                        const tick = document.createElement('span');
-                        tick.className = 'read-receipt-tick';
-                        tick.style.cssText = 'display:block;font-size:10px;opacity:.75;margin-top:3px;text-align:left;';
-                        bubble.appendChild(tick);
+                        const optimisticEl = box.querySelector(`[data-optimistic-text="${CSS.escape(m.text)}"]`);
+                        if (optimisticEl) optimisticEl.remove();
                     }
-                    box.appendChild(bubble);
+                    box.appendChild(buildGroupChatBubble(m, isMe));
                     lastGroupMsgAt = Math.max(lastGroupMsgAt, m.createdAt || 0);
                 });
                 box.scrollTop = box.scrollHeight;
                 if (receivedNewFromOther) playGroupChatNotifySound();
                 updateReadReceiptTicks();
                 updateTypingIndicator(data.typingUsernames || []);
+                updateOnlineStatus(data.onlineUsernames || []);
             } catch (e) { /* هنحاول تاني في الـ poll الجاي */ }
+        }
+
+        function updateOnlineStatus(onlineUsernames) {
+            const el = document.getElementById('groupChatOnlineStatus');
+            if (!el || !currentGroupChatOtherUsername) return;
+            const isOnline = onlineUsernames.includes(currentGroupChatOtherUsername);
+            el.innerHTML = isOnline
+                ? '<span style="color:#34d399;">🟢 متصل الآن</span>'
+                : '<span style="color:var(--text-3);">⚪ غير متصل</span>';
         }
 
         let lastTypingSentAt = 0;
@@ -3835,7 +3962,7 @@
             const el = document.getElementById('groupChatTypingIndicator');
             if (!el) return;
             if (typingUsernames.length > 0) {
-                el.textContent = `${currentGroupChatOtherUsername || 'زميلك'} بيكتب الآن...`;
+                el.innerHTML = '<div class="typing-dots" style="padding:8px 12px;display:inline-flex;"><span></span><span></span><span></span></div>';
                 el.style.display = 'block';
             } else {
                 el.style.display = 'none';
@@ -3856,19 +3983,53 @@
             });
         }
 
+        async function clearGroupChat() {
+            if (!activeGroupChatId) return;
+            if (!confirm('هتمسح كل رسايل الغرفة دي نهائيًا — الإجراء ده مش هيتراجع. متأكد؟')) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats/${activeGroupChatId}/messages`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                document.getElementById('groupChatMessages').innerHTML = '';
+                lastGroupMsgAt = 0;
+                showToast('اتمسحت كل الرسايل', 'success');
+            } catch (e) {
+                showToast('تعذر مسح الشات', 'error');
+            }
+        }
+
         async function sendGroupChatMessage() {
             const input = document.getElementById('groupChatInput');
             const text = input.value.trim();
             if (!text || !activeGroupChatId) return;
             input.value = '';
+
+            // Optimistic UI: نضيف الرسالة على الشاشة فورًا من غير ما نستنى رد السيرفر —
+            // ده اللي بيخلي الإرسال حاسس إنه فوري. لما رد السيرفر يوصل من الـ poll الجاي،
+            // بنستبدلها بالنسخة الحقيقية (فيها الـ id وread receipts) عبر data-optimistic-text.
+            const box = document.getElementById('groupChatMessages');
+            const optimisticBubble = buildGroupChatBubble(
+                { text, createdAt: Date.now(), senderUsername: schoolUser?.username, reactions: {} },
+                true
+            );
+            optimisticBubble.dataset.optimisticText = text;
+            optimisticBubble.style.opacity = '0.6';
+            box.appendChild(optimisticBubble);
+            box.scrollTop = box.scrollHeight;
+
             try {
-                await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats/${activeGroupChatId}/messages`, {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats/${activeGroupChatId}/messages`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
                     body: JSON.stringify({ text })
                 });
-                loadGroupChatMessages(false);
+                if (!res.ok) throw new Error('failed');
+                await loadGroupChatMessages(false); // بيستبدل النسخة الـ optimistic بالحقيقية
             } catch (e) {
+                optimisticBubble.remove();
+                input.value = text; // نرجّع النص للمستخدم بدل ما يضيع لو الإرسال فشل
                 showToast('تعذر إرسال الرسالة', 'error');
             }
         }
