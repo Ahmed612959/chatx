@@ -1022,6 +1022,12 @@
                 <div id="adminMsgStatus" style="margin-top:10px;"></div>
             </div>
 
+            <div class="tool-section" id="adminPremiumPanelSection" style="display:none;">
+                <a href="/admin-premium.html" target="_blank" class="btn-calc" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:linear-gradient(120deg,#d4af37,#f0c869);color:#1a1400;">
+                    <i class="fas fa-crown"></i> لوحة تحكم Premium
+                </a>
+            </div>
+
             <div class="tool-section" id="adminInboxSection" style="display:none;">
                 <div class="tool-title"><i class="fas fa-inbox"></i> الرسايل الواردة من الطلاب</div>
                 <button class="btn-calc" style="margin-bottom:10px;background:var(--bg-2);color:var(--text-2);" onclick="loadAdminInbox()"><i class="fas fa-rotate"></i> تحديث</button>
@@ -1222,6 +1228,7 @@
                 <button class="close-modal" aria-label="إغلاق" onclick="closeModal('premiumHubModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="premium-hub-header">مميزات إضافية بيفعّلها الأدمن لحسابك واحدة واحدة. اللي مقفول لسه محتاج الأدمن يفعّله ليك.</div>
+            <button class="btn-calc" style="background:var(--bg-2);color:var(--accent);border:1px solid var(--border-accent);margin-bottom:14px;" onclick="openPremiumGuide()"><i class="fas fa-compass"></i> إزاي أستخدم مميزات Premium؟</button>
 
             <div class="premium-card">
                 <div class="premium-card-head">
@@ -1276,6 +1283,28 @@
                 <div class="premium-card-desc">كل دواء تفحصه بالكاميرا بيتحفظلك تلقائيًا في مكتبة شخصية ترجعلها وقت ما تحب.</div>
                 <button id="premium-drugs-action" class="btn-calc" style="display:none;" onclick="closeModal('premiumHubModal'); openDrugLibrary();">افتح مكتبتي</button>
                 <div id="premium-drugs-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
+            </div>
+
+            <div class="premium-card">
+                <div class="premium-card-head">
+                    <span class="premium-card-icon">🩺</span>
+                    <span class="premium-card-title">محاكي المواقف الإكلينيكية</span>
+                    <span id="premium-clinical-badge" class="premium-badge-locked">مقفول 🔒</span>
+                </div>
+                <div class="premium-card-desc">حالة مريض واقعية بتتفاعل معاها وتاخد قرارات إكلينيكية خطوة بخطوة، وفي الآخر بتاخد تقييم مفصل لقراراتك.</div>
+                <button id="premium-clinical-action" class="btn-calc" style="display:none;" onclick="closeModal('premiumHubModal'); openClinicalSimPicker();">ابدأ محاكاة جديدة</button>
+                <div id="premium-clinical-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
+            </div>
+
+            <div class="premium-card">
+                <div class="premium-card-head">
+                    <span class="premium-card-icon">🎙️</span>
+                    <span class="premium-card-title">ملخص صوتي للمحاضرات</span>
+                    <span id="premium-lecture-badge" class="premium-badge-locked">مقفول 🔒</span>
+                </div>
+                <div class="premium-card-desc">سجّل المحاضرة بصوتك من الموبايل، وهيتحول تلقائيًا لنص كامل بعدها لملخص منظم بالنقاط.</div>
+                <button id="premium-lecture-action" class="btn-calc" style="display:none;" onclick="closeModal('premiumHubModal'); openLectureRecorder();">سجّل محاضرة</button>
+                <div id="premium-lecture-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
             </div>
         </div>
     </div>
@@ -1342,6 +1371,63 @@
             <p style="font-size:11px;color:var(--text-2);margin-bottom:6px;">كل دواء فحصته بالكاميرا هيظهر هنا. دوس على أي صورة لتكبيرها — التفاصيل الكاملة تلاقيها في المحادثة اللي فحصت فيها الدواء.</p>
             <div class="drug-lib-grid" id="drugLibraryGrid"></div>
             <div id="drugLibraryEmpty" style="text-align:center;padding:30px 10px;color:var(--text-3);font-size:12px;display:none;">لسه معندكش أي أدوية محفوظة — افحص دواء بالكاميرا وهيتحفظ هنا تلقائيًا.</div>
+        </div>
+    </div>
+
+    <!-- محاكي المواقف الإكلينيكية — اختيار التخصص -->
+    <div class="modal-overlay" id="clinicalSimPickerModal">
+        <div class="modal" style="max-width:380px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-stethoscope"></i> اختار التخصص</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('clinicalSimPickerModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="font-size:11.5px;color:var(--text-2);margin-bottom:12px;">هيقدملك حالة مريض واقعية في التخصص اللي تختاره، وتاخد قرارات خطوة بخطوة.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <button class="btn-calc" style="background:var(--bg-2);color:var(--text-1);" onclick="startClinicalSim('باطنة')">🏥 باطنة</button>
+                <button class="btn-calc" style="background:var(--bg-2);color:var(--text-1);" onclick="startClinicalSim('جراحة')">🔪 جراحة</button>
+                <button class="btn-calc" style="background:var(--bg-2);color:var(--text-1);" onclick="startClinicalSim('طوارئ')">🚑 طوارئ</button>
+                <button class="btn-calc" style="background:var(--bg-2);color:var(--text-1);" onclick="startClinicalSim('أطفال')">🧒 أطفال</button>
+                <button class="btn-calc" style="background:var(--bg-2);color:var(--text-1);" onclick="startClinicalSim('نساء وتوليد')">🤰 نساء وتوليد</button>
+                <button class="btn-calc" onclick="startClinicalSim('عشوائي — اختار إنت أنسب تخصص ومستوى صعوبة')">🎲 عشوائي</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ملخص صوتي للمحاضرات -->
+    <div class="modal-overlay" id="lectureRecorderModal">
+        <div class="modal" style="max-width:380px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-microphone"></i> تسجيل محاضرة</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeLectureRecorder()"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="text-align:center;padding:10px 4px 6px;">
+                <div id="lectureRecIndicator" style="width:90px;height:90px;border-radius:50%;background:var(--bg-2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px;color:var(--text-3);transition:all .2s;">
+                    <i class="fas fa-microphone"></i>
+                </div>
+                <div id="lectureRecTimer" style="font-size:20px;font-weight:800;margin-bottom:4px;font-variant-numeric:tabular-nums;">00:00</div>
+                <div id="lectureRecStatus" style="font-size:12px;color:var(--text-3);margin-bottom:18px;">دوس تسجيل وابدأ سجّل صوت المحاضر</div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn-calc" id="lectureRecStartBtn" onclick="startLectureRecording()"><i class="fas fa-microphone"></i> ابدأ التسجيل</button>
+                    <button class="btn-calc" id="lectureRecStopBtn" style="display:none;background:var(--danger);" onclick="stopLectureRecording()"><i class="fas fa-stop"></i> وقف وحوّل لملخص</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مرشد استخدام Premium — جولة خطوة بخطوة، بتفتح تلقائي أول مرة الطالب يفتح الـ Hub،
+         ومتاحة دايمًا بعدها من زرار "إزاي أستخدم مميزات Premium؟" -->
+    <div class="modal-overlay" id="premiumGuideModal">
+        <div class="modal" style="max-width:380px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-compass"></i> دليل استخدام Premium</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('premiumGuideModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="premiumGuideStepBox" style="text-align:center;padding:6px 4px 16px;"></div>
+            <div style="display:flex;justify-content:center;gap:6px;margin-bottom:14px;" id="premiumGuideDots"></div>
+            <div style="display:flex;gap:8px;">
+                <button class="btn-calc" style="background:var(--bg-2);color:var(--text-2);flex:1;" id="premiumGuidePrevBtn" onclick="premiumGuideStep(-1)">السابق</button>
+                <button class="btn-calc" style="flex:1;" id="premiumGuideNextBtn" onclick="premiumGuideStep(1)">التالي</button>
+            </div>
         </div>
     </div>
 
@@ -1694,11 +1780,16 @@
             premium_mock_exams: { icon: '📝', title: 'امتحانات المحاكاة الشاملة', desc: 'امتحان محاكاة حقيقي من أكتر من فصل مع تقرير أداء مفصل وخطة مذاكرة بعده.' },
             premium_prompts: { icon: '⚡', title: 'مكتبة البرومبتس الذكية', desc: 'برومبتس جاهزة ومُختارة بعناية عشان تطلعلك أفضل نتيجة من المساعد في أي مهمة.' },
             premium_theme: { icon: '👑', title: 'تصميم Chat X الذهبي', desc: 'شكل مميز حصري بألوان ذهبية للمشتركين بس.' },
-            premium_drug_library: { icon: '💊', title: 'مكتبة الأدوية الشخصية', desc: 'كل دواء تفحصه بالكاميرا بيتحفظلك تلقائيًا في مكتبة شخصية ترجعلها وقت ما تحب.' }
+            premium_drug_library: { icon: '💊', title: 'مكتبة الأدوية الشخصية', desc: 'كل دواء تفحصه بالكاميرا بيتحفظلك تلقائيًا في مكتبة شخصية ترجعلها وقت ما تحب.' },
+            premium_clinical_sim: { icon: '🩺', title: 'محاكي المواقف الإكلينيكية', desc: 'حالة مريض واقعية بتتفاعل معاها وتاخد قرارات، وفي الآخر بتاخد تقييم لقراراتك.' },
+            premium_lecture_audio: { icon: '🎙️', title: 'ملخص صوتي للمحاضرات', desc: 'سجّل المحاضرة بصوتك، وهيتحول لنص وملخص منظم بالنقاط تلقائيًا.' }
         };
-        // الأدمن (role === 'admin' جاية من بيانات School X) عنده كل مميزات Premium تلقائيًا
+        // الأدمن (type === 'admin' جاية من بيانات School X) عنده كل مميزات Premium تلقائيًا
         // من غير ما يحتاج يفعّلها لنفسه — طبيعي إنه يقدر يجرب أي حاجة بيفعّلها للطلاب.
-        function hasPremium(key) { return schoolUser?.role === 'admin' || myPremiumFeatures.includes(key); }
+        // ⚠️ إصلاح: كانت بتتأكد من schoolUser.role (قيمة بتختلف — 'manager' غالبًا للأدمن
+        // الحقيقي، مش 'admin' دايمًا)، والصح إنها تتأكد من schoolUser.type اللي هو دايمًا
+        // 'admin' لأي حساب أدمن مهما كان الـ role الفرعي بتاعه.
+        function hasPremium(key) { return schoolUser?.type === 'admin' || myPremiumFeatures.includes(key); }
         let stats = JSON.parse(localStorage.getItem('sx_stats')) || { streak: 0, lastActiveDay: null, todayCount: 0 };
         let recognition = null;
         let isListening = false;
@@ -3664,6 +3755,8 @@
                     adminInboxSection.style.display = isAdmin ? 'block' : 'none';
                     if (isAdmin) loadAdminInbox();
                 }
+                const adminPremiumPanelSection = document.getElementById('adminPremiumPanelSection');
+                if (adminPremiumPanelSection) adminPremiumPanelSection.style.display = isAdmin ? 'block' : 'none';
             } else {
                 if (loggedOutBox && loggedInBox) {
                     loggedOutBox.style.display = 'block';
@@ -3674,6 +3767,8 @@
                 if (sbQuickLogoutBtn) sbQuickLogoutBtn.style.display = 'none';
                 if (contactAdminSection) contactAdminSection.style.display = 'none';
                 if (adminInboxSection) adminInboxSection.style.display = 'none';
+                const adminPremiumPanelSectionOff = document.getElementById('adminPremiumPanelSection');
+                if (adminPremiumPanelSectionOff) adminPremiumPanelSectionOff.style.display = 'none';
                 const leaderboardBtnOff = document.getElementById('leaderboardBtn');
                 const groupChatBtnOff = document.getElementById('groupChatBtn');
                 const pushNotifSectionOff = document.getElementById('pushNotifSection');
@@ -4532,7 +4627,8 @@
         // خريطة: مفتاح الميزة الكامل → اللاحقة المستخدمة في الـ ids جوه HTML (premium-<suffix>-...)
         const PREMIUM_UI_MAP = {
             premium_ai: 'ai', premium_mock_exams: 'mock', premium_prompts: 'prompts',
-            premium_theme: 'theme', premium_drug_library: 'drugs'
+            premium_theme: 'theme', premium_drug_library: 'drugs',
+            premium_clinical_sim: 'clinical', premium_lecture_audio: 'lecture'
         };
         function openPremiumHub() {
             Object.entries(PREMIUM_UI_MAP).forEach(([key, suffix]) => {
@@ -4546,6 +4642,76 @@
             });
             document.getElementById('premiumThemeCheckbox').checked = localStorage.getItem('sx_premium_theme_off') !== '1';
             openModal('premiumHubModal');
+            // أول مرة الطالب يفتح الـ Hub، نفتحله الجولة تلقائي بعد نص ثانية (بعد ما يشوف
+            // الشاشة نفسها الأول) — من غير ما نضايقه في المرات اللي بعد كده.
+            if (localStorage.getItem('sx_premium_guide_seen') !== '1') {
+                setTimeout(() => openPremiumGuide(), 500);
+            }
+        }
+
+        const PREMIUM_GUIDE_STEPS = [
+            {
+                icon: '👑', title: 'أهلاً بيك في Premium',
+                body: 'دي مميزات إضافية بيفعّلها الأدمن لحسابك واحدة واحدة حسب مجهودك ومستواك. اللي مقفول مش عيب فيك — بس محتاج تطلب من الأدمن يفعّله ليك، وهنشرحلك كل ميزة تعمل إيه بالظبط عشان تعرف تطلب الصح.'
+            },
+            {
+                icon: '🧠', title: 'الذكاء الاصطناعي المتقدم',
+                body: 'مفيش حاجة تعملها — لو مفعّلة، أي رسالة تبعتها بتتوجه تلقائيًا لموديل Cerebras (أسرع وأدق)، وحد الرسايل بتاعك بيزيد من 15 لـ 60 رسالة في الدقيقة.'
+            },
+            {
+                icon: '📝', title: 'امتحانات المحاكاة',
+                body: 'من الـ Hub دوس "ابدأ امتحان محاكاة" — هيجمّعلك أسئلة من أكتر من فصل زي امتحان حقيقي، وبعد ما تخلص هيديك تقرير أداء وخطة مذاكرة مبنية على نقط ضعفك.'
+            },
+            {
+                icon: '⚡', title: 'مكتبة البرومبتس',
+                body: 'دوس "افتح المكتبة" وهتلاقي برومبتس جاهزة ومُختارة (زي "لخصلي المحاضرة دي" أو "اعملي أسئلة مراجعة") — دوس على أي واحد وهيتحط جاهز في صندوق الكتابة تعدّله أو تبعته على طول.'
+            },
+            {
+                icon: '💊', title: 'مكتبة الأدوية الشخصية',
+                body: 'لما تفحص علبة دواء بالكاميرا (من أداة فحص الأدوية)، الفحص بيتحفظلك تلقائيًا هنا. دوس "افتح مكتبتي" في أي وقت تراجع كل الأدوية اللي فحصتها قبل كده من غير ما تدور في المحادثات.'
+            },
+            {
+                icon: '🩺', title: 'محاكي المواقف الإكلينيكية',
+                body: 'دوس "ابدأ محاكاة جديدة"، اختار التخصص (باطنة، جراحة، طوارئ...)، وهيقدملك حالة مريض واقعية. جاوب زي ما هتتصرف فعليًا خطوة بخطوة، والمحاكي هيكمل معاك الموقف وفي الآخر هيديك تقييم لقراراتك.'
+            },
+            {
+                icon: '🎙️', title: 'ملخص صوتي للمحاضرات',
+                body: 'دوس "سجّل محاضرة"، سجّل صوت المحاضر بموبايلك، ولما تخلص دوس إيقاف — هيتحول تلقائيًا لنص كامل، وبعدها لملخص منظم بالنقاط تقدر تراجع بيه بسرعة قبل الامتحان.'
+            },
+            {
+                icon: '👑', title: 'الشكل الذهبي',
+                body: 'لو مفعّلة، تقدر تشغّلها وتطفّيها براحتك من نفس صفحة Premium — فارق شكلي بس، مفيهاش أي تأثير على باقي المميزات.'
+            }
+        ];
+        let premiumGuideIndex = 0;
+        function openPremiumGuide() {
+            premiumGuideIndex = 0;
+            renderPremiumGuideStep();
+            openModal('premiumGuideModal');
+            localStorage.setItem('sx_premium_guide_seen', '1');
+        }
+        function renderPremiumGuideStep() {
+            const step = PREMIUM_GUIDE_STEPS[premiumGuideIndex];
+            const box = document.getElementById('premiumGuideStepBox');
+            box.innerHTML = `
+                <div style="font-size:44px;margin-bottom:10px;">${step.icon}</div>
+                <div style="font-weight:800;font-size:15px;margin-bottom:8px;">${step.title}</div>
+                <div style="font-size:12.5px;color:var(--text-2);line-height:1.8;">${step.body}</div>
+            `;
+            const dots = document.getElementById('premiumGuideDots');
+            dots.innerHTML = PREMIUM_GUIDE_STEPS.map((_, i) =>
+                `<span style="width:6px;height:6px;border-radius:50%;background:${i === premiumGuideIndex ? 'var(--accent)' : 'var(--border)'};transition:background .2s;"></span>`
+            ).join('');
+            document.getElementById('premiumGuidePrevBtn').style.visibility = premiumGuideIndex === 0 ? 'hidden' : 'visible';
+            document.getElementById('premiumGuideNextBtn').textContent = premiumGuideIndex === PREMIUM_GUIDE_STEPS.length - 1 ? 'تمام، فهمت!' : 'التالي';
+        }
+        function premiumGuideStep(direction) {
+            if (direction > 0 && premiumGuideIndex === PREMIUM_GUIDE_STEPS.length - 1) {
+                closeModal('premiumGuideModal');
+                return;
+            }
+            premiumGuideIndex = Math.max(0, Math.min(PREMIUM_GUIDE_STEPS.length - 1, premiumGuideIndex + direction));
+            renderPremiumGuideStep();
         }
 
         // بيحلل نتائج الطالب مجمّعة حسب اسم كل امتحان (زي "امتحان باطنة"، "امتحان جراحة")
@@ -4670,6 +4836,17 @@ ${schoolContext}`;
 الطالب ده مشترك في خطة Premium مفعّلة من الأدمن (متقولوش ده صراحة في كل رد، هو عارف أصلاً وسبق واتهنّى بيها) — بس فعليًا خليك أذكى وأعمق وأشمل معاه من وضعك المعتاد: قدّم شرح أدق وأشمل، اربط المعلومة بسياقات وأمثلة سريرية مفيدة، اقترح خطوات عملية جاهزة بدل الكلام العام، ولو السؤال فيه احتمالات متعددة غطّي أهمها بدل ما تكتفي بسؤاله يوضح. خليك دقيق علميًا ومنظم ومختصر رغم العمق، من غير حشو.`;
             }
             if (pendingQuizContext) extra += `\n\n${pendingQuizContext}`;
+            const currentChatForSim = chats.find(c => c.id === currentChatId);
+            if (currentChatForSim && currentChatForSim.clinicalSimSpecialty) {
+                extra += `
+
+المحادثة دي وضعها الخاص "محاكي مواقف إكلينيكية" — التخصص المختار: ${currentChatForSim.clinicalSimSpecialty}. اتصرف كمحرك محاكاة سريرية تفاعلي بالقواعد دي بالظبط:
+- اختلق حالة مريض واقعية ومفصّلة تناسب التخصص ده (الاسم، العمر، الشكوى الرئيسية، العلامات الحيوية، التاريخ المرضي المختصر) في أول رد بس.
+- بعد عرض الحالة، اسأل الطالب "إيه أول خطوة هتعملها؟" ومتكملش الحالة إلا لما يرد.
+- كل رد من الطالب، قيّم قراره بصراحة (صح/فيه خطر/ينفع أحسن)، وكمّل الحالة بناءً على قراره (يتحسن، يتدهور، أو يحصل تعقيد) — خليك واقعي، مش كل حاجة تمشي تمام.
+- بعد 4-6 تبادلات (أو لو الطالب قال "خلصنا"/"قيّمني")، اقفل المحاكاة بتقرير تقييم منظم: القرارات الصح، القرارات اللي كانت محتاجة تحسين، ودرجة تقديرية من 10.
+- ابدأ من غير أي مقدمة زيادة — اعرض الحالة على طول من أول رد.`;
+            }
             if (activeStudyChapterContext) {
                 extra += `\n\nالطالب حاليًا "مركّز" على مذاكرة الفصل ده بالذات من بنك المدرسة الحقيقي، فاستخدم محتواه الفعلي في كل شرح أو سؤال بدل معلومات عامة من عندك، وميجيبش حاجة من برا الفصل ده إلا لو الطالب سأل عن حاجة تانية صراحة:\n${activeStudyChapterContext}`;
             }
@@ -5353,7 +5530,129 @@ ${schoolContext}`;
         // الدواء بشكل حي. لو قرا كود، بيسيبه معروض فوق الشاشة وبيكمل يصور عادي. الطالب
         // بيلتقط صورة العلبة (يدويًا)، وبعدين بترسل الصورة + أي كود اتقرا كمرفق صورة عادي
         // لنفس مسار الشات اللي بيحلل الصور (zimage) مع سؤال جاهز مخصص لطالب تمريض متدرب.
-        const DRUG_SCAN_PROMPT = 'أنا طالب تمريض بتدرب في الصيدلية، ودي صورة لعلبة دواء أو محلول أو أمبولة. من فضلك حدد لي:\n1) اسم الدواء (العلمي والتجاري لو ظاهر في الصورة)\n2) الفئة الدوائية\n3) دواعي الاستعمال\n4) الجرعة الشائعة وطريقة الإعطاء\n5) أهم الأعراض الجانبية والتحذيرات\n6) ملاحظات مهمة للتمريض عند إعطاء الدواء\nاشرح بنقاط منظمة ومبسطة.';
+        const DRUG_SCAN_PROMPT = 'أنا طالب تمريض بتدرب في الصيدلية، ودي صورة لعلبة دواء أو محلول أو أمبولة. من فضلك حدد لي:\n1) اسم الدواء (العلمي والتجاري لو ظاهر في الصورة)\n2) الفئة الدوائية\n3) دواعي الاستعمال\n4) الجرعة الشائعة وطريقة الإعطاء\n5) أهم الأعراض الجانبية والتحذيرات\n6) ملاحظات مهمة للتمريض عند إعطاء الدواء\nاشرح بنقاط منظمة ومبسطة، وأضف في الآخر تنبيه واضح إن ده للمساعدة التعليمية بس ولازم تأكيد المشرف/الصيدلي قبل أي صرف أو إعطاء فعلي للدواء.';
+
+        // ====================== محاكي المواقف الإكلينيكية ======================
+        function openClinicalSimPicker() {
+            if (!hasPremium('premium_clinical_sim')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            openModal('clinicalSimPickerModal');
+        }
+        function startClinicalSim(specialty) {
+            closeModal('clinicalSimPickerModal');
+            const newChat = { id: 'chat_' + Date.now(), title: `🩺 محاكاة: ${specialty}`, messages: [], timestamp: Date.now(), clinicalSimSpecialty: specialty };
+            chats.unshift(newChat);
+            currentChatId = newChat.id;
+            saveData();
+            renderChatList();
+            renderChat(currentChatId);
+            if (window.innerWidth < 768) closeSidebar();
+            sendQuick('ابدأ المحاكاة');
+        }
+
+        // ====================== ملخص صوتي للمحاضرات ======================
+        let lectureMediaRecorder = null;
+        let lectureRecordedChunks = [];
+        let lectureRecTimerInterval = null;
+        let lectureRecSeconds = 0;
+        let lectureRecStream = null;
+
+        function openLectureRecorder() {
+            if (!hasPremium('premium_lecture_audio')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            lectureRecSeconds = 0;
+            document.getElementById('lectureRecTimer').textContent = '00:00';
+            document.getElementById('lectureRecStatus').textContent = 'دوس تسجيل وابدأ سجّل صوت المحاضر';
+            document.getElementById('lectureRecStartBtn').style.display = '';
+            document.getElementById('lectureRecStopBtn').style.display = 'none';
+            document.getElementById('lectureRecIndicator').style.cssText = 'width:90px;height:90px;border-radius:50%;background:var(--bg-2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px;color:var(--text-3);';
+            openModal('lectureRecorderModal');
+        }
+        function closeLectureRecorder() {
+            if (lectureMediaRecorder && lectureMediaRecorder.state !== 'inactive') {
+                lectureMediaRecorder.stop();
+            }
+            if (lectureRecStream) { lectureRecStream.getTracks().forEach(t => t.stop()); lectureRecStream = null; }
+            if (lectureRecTimerInterval) { clearInterval(lectureRecTimerInterval); lectureRecTimerInterval = null; }
+            closeModal('lectureRecorderModal');
+        }
+
+        async function startLectureRecording() {
+            try {
+                lectureRecStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (e) {
+                showToast('محتاجين إذن الميكروفون عشان تسجّل', 'error');
+                return;
+            }
+            lectureRecordedChunks = [];
+            // webm/opus مدعوم في كل متصفحات الموبايل الحديثة، وGroq Whisper بيقبله على طول
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
+            lectureMediaRecorder = new MediaRecorder(lectureRecStream, mimeType ? { mimeType } : undefined);
+            lectureMediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) lectureRecordedChunks.push(e.data); };
+            lectureMediaRecorder.start();
+
+            lectureRecSeconds = 0;
+            lectureRecTimerInterval = setInterval(() => {
+                lectureRecSeconds++;
+                const m = String(Math.floor(lectureRecSeconds / 60)).padStart(2, '0');
+                const s = String(lectureRecSeconds % 60).padStart(2, '0');
+                document.getElementById('lectureRecTimer').textContent = `${m}:${s}`;
+            }, 1000);
+
+            document.getElementById('lectureRecStartBtn').style.display = 'none';
+            document.getElementById('lectureRecStopBtn').style.display = '';
+            document.getElementById('lectureRecStatus').textContent = 'بيسجّل دلوقتي... قرّب الموبايل من المحاضر';
+            document.getElementById('lectureRecIndicator').style.cssText = 'width:90px;height:90px;border-radius:50%;background:rgba(239,68,68,.15);border:2px solid var(--danger);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px;color:var(--danger);animation:glowPulse 1.5s ease-in-out infinite;';
+        }
+
+        function stopLectureRecording() {
+            if (!lectureMediaRecorder || lectureMediaRecorder.state === 'inactive') return;
+            if (lectureRecTimerInterval) { clearInterval(lectureRecTimerInterval); lectureRecTimerInterval = null; }
+            document.getElementById('lectureRecStatus').textContent = 'بيجهّز التسجيل...';
+            document.getElementById('lectureRecStopBtn').disabled = true;
+
+            lectureMediaRecorder.onstop = async () => {
+                if (lectureRecStream) { lectureRecStream.getTracks().forEach(t => t.stop()); lectureRecStream = null; }
+                document.getElementById('lectureRecStopBtn').disabled = false;
+                const blob = new Blob(lectureRecordedChunks, { type: lectureMediaRecorder.mimeType || 'audio/webm' });
+                if (blob.size < 1000) {
+                    showToast('التسجيل قصير جدًا، جرب تاني', 'error');
+                    closeLectureRecorder();
+                    return;
+                }
+                closeLectureRecorder();
+                await transcribeAndSummarizeLecture(blob);
+            };
+            lectureMediaRecorder.stop();
+        }
+
+        async function transcribeAndSummarizeLecture(audioBlob) {
+            showToast('بيحوّل الصوت لنص، استنى شوية...', 'success');
+            try {
+                const form = new FormData();
+                form.append('audio', audioBlob, 'lecture.webm');
+                const res = await fetch(`${settings.backendUrl}/api/transcribe`, { method: 'POST', body: form });
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || 'فشل تحويل الصوت لنص');
+                }
+                const data = await res.json();
+                const transcript = (data.text || '').trim();
+                if (!transcript) {
+                    showToast('مفيش كلام واضح اتعرف من التسجيل', 'error');
+                    return;
+                }
+                // بنبدأ شات جديد فيه النص المستخرج كامل + طلب تلخيص، عشان الطالب يقدر
+                // يرجع لنص المحاضرة الكامل وقت ما يحب مش بس الملخص.
+                const newChat = { id: 'chat_' + Date.now(), title: '🎙️ ملخص محاضرة', messages: [], timestamp: Date.now() };
+                chats.unshift(newChat);
+                currentChatId = newChat.id;
+                saveData();
+                renderChatList();
+                renderChat(currentChatId);
+                sendQuick(`ده نص محاضرة سجّلته بصوتي وتحول لنص تلقائيًا، ممكن تلخصهولي في نقاط منظمة وواضحة (العناوين الرئيسية، أهم المعلومات، أي حاجة يبدو إنها مهمة للامتحان)؟\n\n--- نص المحاضرة ---\n${transcript}`);
+            } catch (e) {
+                showToast(e.message || 'حصل خطأ أثناء تحويل الصوت', 'error');
+            }
+        }
 
         function openDrugScanner() {
             drugScanCapturedImage = null;
