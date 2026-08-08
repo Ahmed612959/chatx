@@ -4034,6 +4034,10 @@
                 updateReadReceiptTicks();
                 updateTypingIndicator(data.typingUsernames || []);
                 updateOnlineStatus(data.onlineUsernames || []);
+                // مجرد إن الطالب فاتح غرفة المذاكرة (حتى لو مش بيكتب) نشاط حقيقي، ولازم يفضل
+                // "متصل" طول الوقت اللي هو موجود فيها — pingActivity نفسها بتحدد بحد أقصى مرة
+                // كل دقيقة، فمفيش مشكلة إننا ننادي عليها في كل poll (كل ثانيتين).
+                pingActivity();
             } catch (e) { /* هنحاول تاني في الـ poll الجاي */ }
             finally { isLoadingGroupMessages = false; }
         }
@@ -4129,6 +4133,7 @@
                 });
                 if (!res.ok) throw new Error('failed');
                 await loadGroupChatMessages(false); // بيستبدل النسخة الـ optimistic بالحقيقية
+                pingActivity(); // إرسال رسالة في الغرفة = نشاط حقيقي، لازم يحدّث حالة "متصل"
             } catch (e) {
                 optimisticBubble.remove();
                 input.value = text; // نرجّع النص للمستخدم بدل ما يضيع لو الإرسال فشل
@@ -4224,8 +4229,17 @@
                 }
                 statusEl.innerHTML = '<span style="color:var(--success)">تم تفعيل الإشعارات ✓</span>';
             } catch (e) {
-                statusEl.innerHTML = `<span style="color:var(--danger)">تعذر تفعيل الإشعارات — السبب الحقيقي: ${escapeHtml(e.message || String(e))}</span>`;
                 console.error('enablePushNotifications error:', e);
+                // "Registration failed - push service error" مش باج في الكود بتاعنا — ده قيد معروف
+                // في متصفحات مبنية على Chromium من غير مفاتيح Google الرسمية (Kiwi, Brave, بعض
+                // متصفحات الأندرويد المعدّلة)، فبتفشل PushManager.subscribe() جوه المتصفح نفسه
+                // مهما كان السيرفر والكود مظبوطين. بنوضحلها للطالب بدل ما يفضل يفتكرها مشكلة في التطبيق.
+                const isPushServiceIssue = /push service error|AbortError/i.test(e.message || e.name || '');
+                if (isPushServiceIssue) {
+                    statusEl.innerHTML = '<span style="color:var(--warning)">المتصفح ده مش بيدعم الإشعارات بشكل كامل (مشكلة معروفة في Kiwi/Brave وبعض متصفحات الأندرويد المعدّلة). جرب تفتح الموقع من Chrome أو Samsung Internet وفعّل الإشعارات من هناك.</span>';
+                } else {
+                    statusEl.innerHTML = `<span style="color:var(--danger)">تعذر تفعيل الإشعارات — السبب الحقيقي: ${escapeHtml(e.message || String(e))}</span>`;
+                }
             }
         }
 
