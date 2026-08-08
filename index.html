@@ -605,6 +605,46 @@
         .btn-calc.btn-secondary { background: var(--bg-2); color: var(--text-2); border: 1px solid var(--border); }
         .scan-status { font-size: 11.5px; color: var(--text-2); text-align: center; margin-top: 8px; line-height: 1.7; }
 
+        /* ====================== Premium ====================== */
+        body.premium-theme-on {
+            --accent: #d4af37; --accent-2: #f0c869; --accent-3: #b8860b;
+            --accent-glow: rgba(212, 175, 55, 0.35); --border-accent: rgba(212, 175, 55, 0.5);
+        }
+        .premium-card {
+            background: var(--bg-glass); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 14px; margin-bottom: 10px;
+        }
+        .premium-card.unlocked { border-color: var(--border-accent); }
+        .premium-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+        .premium-card-icon { font-size: 22px; }
+        .premium-card-title { font-weight: 700; font-size: 14px; flex: 1; }
+        .premium-badge-locked { font-size: 10.5px; color: var(--text-3); background: var(--bg-2); padding: 3px 8px; border-radius: 20px; }
+        .premium-badge-on { font-size: 10.5px; color: #0a0e1a; background: var(--grad-bold); padding: 3px 8px; border-radius: 20px; font-weight: 700; }
+        .premium-card-desc { font-size: 11.5px; color: var(--text-2); line-height: 1.7; margin-bottom: 10px; }
+        .premium-hub-header {
+            text-align: center; padding: 6px 0 16px; font-size: 12px; color: var(--text-2); line-height: 1.8;
+        }
+        .prompt-cat-title { font-size: 12px; font-weight: 700; color: var(--accent); margin: 14px 0 8px; }
+        .prompt-cat-title:first-child { margin-top: 0; }
+        .prompt-card {
+            background: var(--bg-glass); border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all .2s;
+        }
+        .prompt-card:active { transform: scale(0.98); background: var(--bg-2); }
+        .prompt-card-label { font-weight: 700; font-size: 12.5px; margin-bottom: 4px; }
+        .prompt-card-text { font-size: 11px; color: var(--text-2); line-height: 1.6; }
+        .mock-exam-chapter-list { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+        .mock-exam-chapter-chip {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 8px 12px; font-size: 12px;
+        }
+        .mock-exam-chapter-chip button { background: none; border: none; color: var(--danger); font-size: 14px; cursor: pointer; }
+        .drug-lib-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+        .drug-lib-item { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; position: relative; }
+        .drug-lib-item img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+        .drug-lib-item .date { position: absolute; bottom: 0; right: 0; left: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 9px; text-align: center; padding: 2px; }
+
         .toast-container { position: fixed; bottom: max(20px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: 8px; align-items: center; width: 90%; max-width: 380px; pointer-events: none; }
         .toast {
             padding: 12px 20px; background: var(--bg-glass-heavy); border: 1px solid var(--border);
@@ -770,6 +810,11 @@
                             <h4>فحص دواء</h4>
                             <p>بالكاميرا</p>
                         </div>
+                        <div class="quick-card" onclick="openPremiumHub()">
+                            <i class="fas fa-crown"></i>
+                            <h4>⭐ Premium</h4>
+                            <p>مميزاتك المفعّلة</p>
+                        </div>
                     </div>
                 </div>
                 
@@ -806,7 +851,7 @@
                         <option value="gemini">🌟 Gemini</option>
                         <option value="german-teacher">🇩🇪 معلم الألماني</option>
                         <option value="openrouter">🔀 OpenRouter</option>
-                        <option value="cerebras">🧠 Cerebras</option>
+                        <option value="cerebras" id="cerebrasModelOption">🧠 Cerebras</option>
                         <option value="mistral">🌬️ Mistral</option>
                         <option value="sambanova">🚀 SambaNova</option>
                         <option value="qwen">🐉 Qwen</option>
@@ -1169,6 +1214,137 @@
     <div class="toast-container" id="toastContainer"></div>
     <div id="duaOverlayContainer"></div>
 
+    <!-- Premium Hub -->
+    <div class="modal-overlay" id="premiumHubModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-crown"></i> Premium</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('premiumHubModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="premium-hub-header">مميزات إضافية بيفعّلها الأدمن لحسابك واحدة واحدة. اللي مقفول لسه محتاج الأدمن يفعّله ليك.</div>
+
+            <div class="premium-card">
+                <div class="premium-card-head">
+                    <span class="premium-card-icon">🧠</span>
+                    <span class="premium-card-title">الذكاء الاصطناعي المتقدم</span>
+                    <span id="premium-ai-badge" class="premium-badge-locked">مقفول 🔒</span>
+                </div>
+                <div class="premium-card-desc">بيوجهك تلقائي لموديل Cerebras (أسرع وأقوى)، مع ردود أذكى وأعمق، وحد رسايل أعلى بكتير من الوضع العادي — شغالة تلقائي في كل شات، مفيش حاجة تعملها.</div>
+            </div>
+
+            <div class="premium-card">
+                <div class="premium-card-head">
+                    <span class="premium-card-icon">📝</span>
+                    <span class="premium-card-title">امتحانات المحاكاة الشاملة</span>
+                    <span id="premium-mock-badge" class="premium-badge-locked">مقفول 🔒</span>
+                </div>
+                <div class="premium-card-desc">امتحان محاكاة حقيقي من أكتر من فصل مع تقرير أداء مفصل وخطة مذاكرة بعده.</div>
+                <button id="premium-mock-action" class="btn-calc" style="display:none;" onclick="closeModal('premiumHubModal'); openMockExamBuilder();">ابدأ امتحان محاكاة</button>
+                <div id="premium-mock-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
+            </div>
+
+            <div class="premium-card">
+                <div class="premium-card-head">
+                    <span class="premium-card-icon">⚡</span>
+                    <span class="premium-card-title">مكتبة البرومبتس الذكية</span>
+                    <span id="premium-prompts-badge" class="premium-badge-locked">مقفول 🔒</span>
+                </div>
+                <div class="premium-card-desc">برومبتس جاهزة ومُختارة بعناية عشان تطلعلك أفضل نتيجة من المساعد في أي مهمة.</div>
+                <button id="premium-prompts-action" class="btn-calc" style="display:none;" onclick="closeModal('premiumHubModal'); openPremiumPrompts();">افتح المكتبة</button>
+                <div id="premium-prompts-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
+            </div>
+
+            <div class="premium-card">
+                <div class="premium-card-head">
+                    <span class="premium-card-icon">👑</span>
+                    <span class="premium-card-title">تصميم Chat X الذهبي</span>
+                    <span id="premium-theme-badge" class="premium-badge-locked">مقفول 🔒</span>
+                </div>
+                <div class="premium-card-desc">شكل مميز حصري بألوان ذهبية للمشتركين بس.</div>
+                <label id="premium-theme-action" style="display:none;align-items:center;gap:8px;font-size:12px;cursor:pointer;">
+                    <input type="checkbox" id="premiumThemeCheckbox" onchange="togglePremiumTheme()"> فعّل الشكل الذهبي
+                </label>
+                <div id="premium-theme-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
+            </div>
+
+            <div class="premium-card">
+                <div class="premium-card-head">
+                    <span class="premium-card-icon">💊</span>
+                    <span class="premium-card-title">مكتبة الأدوية الشخصية</span>
+                    <span id="premium-drugs-badge" class="premium-badge-locked">مقفول 🔒</span>
+                </div>
+                <div class="premium-card-desc">كل دواء تفحصه بالكاميرا بيتحفظلك تلقائيًا في مكتبة شخصية ترجعلها وقت ما تحب.</div>
+                <button id="premium-drugs-action" class="btn-calc" style="display:none;" onclick="closeModal('premiumHubModal'); openDrugLibrary();">افتح مكتبتي</button>
+                <div id="premium-drugs-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مكتبة البرومبتس الذكية -->
+    <div class="modal-overlay" id="premiumPromptsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-bolt"></i> مكتبة البرومبتس الذكية</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('premiumPromptsModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;">دوس على أي برومبت عشان يتحط في مربع الكتابة — عدّل الحاجة اللي بين [قوسين] قبل ما تبعت.</p>
+            <div id="premiumPromptsList"></div>
+        </div>
+    </div>
+
+    <!-- بناء امتحان المحاكاة -->
+    <div class="modal-overlay" id="mockExamModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-file-pen"></i> امتحان محاكاة شامل</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('mockExamModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                ضيف فصل أو أكتر (حتى من مواد مختلفة) عشان يتجمعوا في امتحان واحد شامل، وهيديك في الآخر تقرير أداء مفصل.
+            </p>
+            <div>
+                <label style="font-size:12px;color:var(--text-2);">المادة</label>
+                <select class="tool-input" id="mockSubjectSelect" onchange="populateMockChapters()">
+                    <option value="">اختر المادة...</option>
+                </select>
+            </div>
+            <div style="margin-top:8px;">
+                <label style="font-size:12px;color:var(--text-2);">الفصل</label>
+                <select class="tool-input" id="mockChapterSelect"><option value="">اختر الفصل...</option></select>
+            </div>
+            <button class="btn-calc btn-secondary" style="margin-top:10px;" onclick="addChapterToMockExam()"><i class="fas fa-plus"></i> أضف الفصل للامتحان</button>
+
+            <div class="mock-exam-chapter-list" id="mockExamChapterListEl"></div>
+
+            <div style="display:flex;gap:8px;margin-top:6px;">
+                <div style="flex:1;">
+                    <label style="font-size:12px;color:var(--text-2);">عدد الأسئلة</label>
+                    <input type="number" class="tool-input" id="mockExamQuestionCount" value="30" min="10" max="100">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px;color:var(--text-2);">مدة الامتحان (دقيقة)</label>
+                    <input type="number" class="tool-input" id="mockExamDuration" value="45" min="10" max="180">
+                </div>
+            </div>
+
+            <button class="btn-calc" style="margin-top:12px;" onclick="startMockExam()"><i class="fas fa-play"></i> ابدأ الامتحان</button>
+            <div class="scan-status" id="mockExamStatus"></div>
+        </div>
+    </div>
+
+    <!-- مكتبة الأدوية الشخصية -->
+    <div class="modal-overlay" id="drugLibraryModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-prescription-bottle-medical"></i> مكتبتي الدوائية</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('drugLibraryModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="font-size:11px;color:var(--text-2);margin-bottom:6px;">كل دواء فحصته بالكاميرا هيظهر هنا. دوس على أي صورة لتكبيرها — التفاصيل الكاملة تلاقيها في المحادثة اللي فحصت فيها الدواء.</p>
+            <div class="drug-lib-grid" id="drugLibraryGrid"></div>
+            <div id="drugLibraryEmpty" style="text-align:center;padding:30px 10px;color:var(--text-3);font-size:12px;display:none;">لسه معندكش أي أدوية محفوظة — افحص دواء بالكاميرا وهيتحفظ هنا تلقائيًا.</div>
+        </div>
+    </div>
+
     <script>
         marked.setOptions({ breaks: true, gfm: true });
 
@@ -1509,6 +1685,20 @@
         let drugScannerActive = false;
         let drugScanDecodedCode = null;
         let drugScanCapturedImage = null; // { base64, mimeType }
+        // ====================== Premium ======================
+        // مصفوفة مفاتيح المميزات المفعّلة للطالب ده (بييجي من /api/me، مع نسخة محلية
+        // مؤقتة في localStorage عشان الواجهة متتلخبطش في اللحظة الأولى قبل أول fetch).
+        let myPremiumFeatures = JSON.parse(localStorage.getItem('sx_premium_features') || '[]');
+        const PREMIUM_LABELS = {
+            premium_ai: { icon: '🧠', title: 'الذكاء الاصطناعي المتقدم (Cerebras)', desc: 'بيوجهك تلقائي لموديل Cerebras مع ردود أذكى وأعمق، وحد رسايل أعلى بكتير من الوضع العادي.' },
+            premium_mock_exams: { icon: '📝', title: 'امتحانات المحاكاة الشاملة', desc: 'امتحان محاكاة حقيقي من أكتر من فصل مع تقرير أداء مفصل وخطة مذاكرة بعده.' },
+            premium_prompts: { icon: '⚡', title: 'مكتبة البرومبتس الذكية', desc: 'برومبتس جاهزة ومُختارة بعناية عشان تطلعلك أفضل نتيجة من المساعد في أي مهمة.' },
+            premium_theme: { icon: '👑', title: 'تصميم Chat X الذهبي', desc: 'شكل مميز حصري بألوان ذهبية للمشتركين بس.' },
+            premium_drug_library: { icon: '💊', title: 'مكتبة الأدوية الشخصية', desc: 'كل دواء تفحصه بالكاميرا بيتحفظلك تلقائيًا في مكتبة شخصية ترجعلها وقت ما تحب.' }
+        };
+        // الأدمن (role === 'admin' جاية من بيانات School X) عنده كل مميزات Premium تلقائيًا
+        // من غير ما يحتاج يفعّلها لنفسه — طبيعي إنه يقدر يجرب أي حاجة بيفعّلها للطلاب.
+        function hasPremium(key) { return schoolUser?.role === 'admin' || myPremiumFeatures.includes(key); }
         let stats = JSON.parse(localStorage.getItem('sx_stats')) || { streak: 0, lastActiveDay: null, todayCount: 0 };
         let recognition = null;
         let isListening = false;
@@ -1540,6 +1730,7 @@
                 }, 900);
             }
             populateBankSubjects();
+            applyPremiumGatesUI(); // نطبّق الحالة المتخزنة محليًا فورًا، وfetchSchoolProfile هيحدّثها لو اتغيرت
 
             if (!localStorage.getItem('sx_onboarded')) {
                 openModal('onboardingModal');
@@ -2127,10 +2318,12 @@
             const now = Date.now();
             if (now - lastSendTime < 600) return;
 
-            // Rate limit: حد أقصى 15 رسالة في الدقيقة الواحدة — بيحمي من إساءة استخدام الـ API
-            // (وبالتالي تكلفة فلوس حقيقية على المطور) لو حد حاول يبعت رسايل بشكل آلي أو مكثف.
+            // Rate limit: حد أقصى 15 رسالة في الدقيقة الواحدة (60 لمشتركي premium_ai) — بيحمي
+            // من إساءة استخدام الـ API (وبالتالي تكلفة فلوس حقيقية على المطور) لو حد حاول
+            // يبعت رسايل بشكل آلي أو مكثف، من غير ما يضايق مشترك بريميوم بيستخدم عادي.
             recentSendTimestamps = recentSendTimestamps.filter(t => now - t < 60000);
-            if (recentSendTimestamps.length >= 15) {
+            const maxMsgsPerMinute = hasPremium('premium_ai') ? 60 : 15;
+            if (recentSendTimestamps.length >= maxMsgsPerMinute) {
                 showToast('استنى شوية، بتبعت رسايل كتير بسرعة — جرب تاني بعد دقيقة', 'error');
                 return;
             }
@@ -2202,6 +2395,17 @@
             const fallbackText = lastUserMsg ? lastUserMsg.content : '';
             const hasImage = !!(lastUserMsg && lastUserMsg.image && lastUserMsg.image.base64);
 
+            // premium_ai: Cerebras هو "الموديل المميز" — أي طالب مفعّل الميزة دي بيتوجه له
+            // مباشرة (بدل أي اختيار تاني في القايمة)، إلا لو الرسالة فيها صورة (Cerebras
+            // نصي بس)، وبعدين الشرط اللي تحت بيتكفل بتحويلها لموديل بيدعم الصور تلقائي.
+            if (hasPremium('premium_ai') && !hasImage) {
+                model = 'cerebras';
+            } else if (model === 'cerebras' && !hasPremium('premium_ai')) {
+                // حماية إضافية: لو اتحط 'cerebras' في القيمة بأي طريقة (اختيار قديم متخزّن،
+                // تلاعب في القايمة من الـ devtools، إلخ) وهو مش مستحق الميزة، نرجعه لتلقائي.
+                model = 'auto';
+            }
+
             // Groq/OpenRouter/Cerebras/Mistral/Qwen are text-only — if the user attached a photo,
             // routing to them would silently ignore it. Force a vision-capable model instead
             // so an attached image always actually gets looked at.
@@ -2268,24 +2472,20 @@
                                 await streamOpenRouter(chat.messages, abortController.signal);
                             } catch (openrouterError) {
                                 if (openrouterError.name === 'AbortError') throw openrouterError;
+                                // Cerebras اتشال من سلسلة الـ auto العادية عمدًا — موديل Premium بس
+                                // (مشتركين premium_ai بياخدوه مباشرة فوق قبل ما نوصل هنا أصلاً).
                                 try {
-                                    source = 'cerebras';
-                                    await streamCerebras(chat.messages, abortController.signal);
-                                } catch (cerebrasError) {
-                                    if (cerebrasError.name === 'AbortError') throw cerebrasError;
+                                    source = 'mistral';
+                                    await streamMistral(chat.messages, abortController.signal);
+                                } catch (mistralError) {
+                                    if (mistralError.name === 'AbortError') throw mistralError;
                                     try {
-                                        source = 'mistral';
-                                        await streamMistral(chat.messages, abortController.signal);
-                                    } catch (mistralError) {
-                                        if (mistralError.name === 'AbortError') throw mistralError;
-                                        try {
-                                            source = 'sambanova';
-                                            await streamSambanova(chat.messages, abortController.signal);
-                                        } catch (sambanovaError) {
-                                            if (sambanovaError.name === 'AbortError') throw sambanovaError;
-                                            source = 'qwen';
-                                            await streamQwen(chat.messages, abortController.signal);
-                                        }
+                                        source = 'sambanova';
+                                        await streamSambanova(chat.messages, abortController.signal);
+                                    } catch (sambanovaError) {
+                                        if (sambanovaError.name === 'AbortError') throw sambanovaError;
+                                        source = 'qwen';
+                                        await streamQwen(chat.messages, abortController.signal);
                                     }
                                 }
                             }
@@ -4262,8 +4462,90 @@
                 schoolContextFetchedAt = Date.now();
                 localStorage.setItem('sx_school_context', schoolContext);
                 localStorage.setItem('sx_school_context_at', String(schoolContextFetchedAt));
-                if (data.type === 'student') checkUpcomingHomeworkAlert(data.pendingHomework || []);
+                if (data.type === 'student') {
+                    checkUpcomingHomeworkAlert(data.pendingHomework || []);
+                    handlePremiumFeaturesUpdate(data.profile?.premiumFeatures || []);
+                }
             } catch (e) { /* السيرفر مش متاح دلوقتي، هنستخدم آخر نسخة متخزنة */ }
+        }
+
+        // ====================== Premium: تتبّع المميزات المفعّلة وتهنئة الطالب لما ميزة جديدة تتفتحله ======================
+        function handlePremiumFeaturesUpdate(newFeatures) {
+            const previouslyKnown = new Set(myPremiumFeatures);
+            const justUnlocked = newFeatures.filter(f => !previouslyKnown.has(f) && PREMIUM_LABELS[f]);
+            myPremiumFeatures = newFeatures;
+            localStorage.setItem('sx_premium_features', JSON.stringify(myPremiumFeatures));
+            applyPremiumGatesUI();
+            justUnlocked.forEach(key => announcePremiumUnlock(key));
+        }
+
+        // بيوري/يخفي أي عنصر جوه data-premium-feature حسب استحقاق الطالب، وبيفعّل ثيم
+        // البريميوم الذهبي لو الميزة دي مفعّلة (والطالب مسيبش الثيم متقفل يدويًا من الإعدادات).
+        function applyPremiumGatesUI() {
+            document.querySelectorAll('[data-premium-feature]').forEach(el => {
+                const key = el.dataset.premiumFeature;
+                el.classList.toggle('premium-locked', !hasPremium(key));
+            });
+            const themeManuallyOff = localStorage.getItem('sx_premium_theme_off') === '1';
+            document.body.classList.toggle('premium-theme-on', hasPremium('premium_theme') && !themeManuallyOff);
+
+            // Cerebras: موديل Premium بس — نخفيه من القايمة تمامًا لو الطالب مش مستحقه، وأي
+            // اختيار قديم متخزّن ليه (من قبل ما نقفله) بنرجعه لـ "تلقائي" بدل ما يفضل عالق عليه.
+            const cerebrasOpt = document.getElementById('cerebrasModelOption');
+            const entitled = hasPremium('premium_ai');
+            if (cerebrasOpt) cerebrasOpt.style.display = entitled ? '' : 'none';
+            const modelSelect = document.getElementById('modelSelect');
+            if (modelSelect && modelSelect.value === 'cerebras' && !entitled) {
+                modelSelect.value = 'auto';
+                saveModelChoice();
+            }
+        }
+
+        // بيبعت رسالة "تهنئة" في الشات الحالي زي أي رسالة من Chat X عادية، باللهجة المصرية،
+        // بدل نداء AI فعلي — عشان تبقى موثوقة ومضمونة 100% ومتعتمدش على تفسير الموديل.
+        function announcePremiumUnlock(key) {
+            const info = PREMIUM_LABELS[key];
+            if (!info) return;
+            const chat = chats.find(c => c.id === currentChatId) || chats[0];
+            if (!chat) return;
+            const msg = {
+                role: 'bot',
+                content: `🎉 **مبروك يا بطل!**\nالأدمن دلوقتي فعّلّك ميزة بريميوم جديدة:\n\n### ${info.icon} ${info.title}\n${info.desc}\n\nجرّبها وقولّي رأيك فيها، وأي وقت تحب تعرف تفاصيل أكتر اسألني براحتك 🙌`,
+                source: 'local', timestamp: Date.now(), id: `msg-${Date.now()}-premium-${key}`
+            };
+            chat.messages.push(msg);
+            if (chat.id === currentChatId) {
+                appendMessageToDOM(msg);
+                document.getElementById('welcomeScreen').style.display = 'none';
+            }
+            saveData();
+            showToast(`اتفتحلك: ${info.icon} ${info.title}`, 'success');
+        }
+
+        function togglePremiumTheme() {
+            const isOff = localStorage.getItem('sx_premium_theme_off') === '1';
+            if (isOff) localStorage.removeItem('sx_premium_theme_off');
+            else localStorage.setItem('sx_premium_theme_off', '1');
+            applyPremiumGatesUI();
+        }
+
+        // خريطة: مفتاح الميزة الكامل → اللاحقة المستخدمة في الـ ids جوه HTML (premium-<suffix>-...)
+        const PREMIUM_UI_MAP = {
+            premium_ai: 'ai', premium_mock_exams: 'mock', premium_prompts: 'prompts',
+            premium_theme: 'theme', premium_drug_library: 'drugs'
+        };
+        function openPremiumHub() {
+            Object.entries(PREMIUM_UI_MAP).forEach(([key, suffix]) => {
+                const unlocked = hasPremium(key);
+                const badge = document.getElementById(`premium-${suffix}-badge`);
+                if (badge) { badge.textContent = unlocked ? 'مفعّل ✓' : 'مقفول 🔒'; badge.className = unlocked ? 'premium-badge-on' : 'premium-badge-locked'; }
+                const action = document.getElementById(`premium-${suffix}-action`);
+                const lockNote = document.getElementById(`premium-${suffix}-locknote`);
+                if (action) action.style.display = unlocked ? '' : 'none';
+                if (lockNote) lockNote.style.display = unlocked ? 'none' : 'block';
+            });
+            document.getElementById('premiumThemeCheckbox').checked = localStorage.getItem('sx_premium_theme_off') !== '1';
+            openModal('premiumHubModal');
         }
 
         // بيحلل نتائج الطالب مجمّعة حسب اسم كل امتحان (زي "امتحان باطنة"، "امتحان جراحة")
@@ -4382,6 +4664,11 @@ ${schoolContext}`;
             extra += `
 
 لو الطالب طلب منك تعمل له اختبار أو تجيب أسئلة من بنك معين، متختلقش أسئلة من عندك — قوله يفتح "🧰 الأدوات" (زرار الآلة الحاسبة) ويختار "بنك الأسئلة" ويحدد المادة والفصل ونوع الأسئلة وعددها، وهيطلعله اختبار حقيقي من بنك المدرسة الفعلي، وبعد ما يجاوب عليه ويبعتلك إجاباته هتصححها له وتشرحله غلطه.`;
+            if (hasPremium('premium_ai')) {
+                extra += `
+
+الطالب ده مشترك في خطة Premium مفعّلة من الأدمن (متقولوش ده صراحة في كل رد، هو عارف أصلاً وسبق واتهنّى بيها) — بس فعليًا خليك أذكى وأعمق وأشمل معاه من وضعك المعتاد: قدّم شرح أدق وأشمل، اربط المعلومة بسياقات وأمثلة سريرية مفيدة، اقترح خطوات عملية جاهزة بدل الكلام العام، ولو السؤال فيه احتمالات متعددة غطّي أهمها بدل ما تكتفي بسؤاله يوضح. خليك دقيق علميًا ومنظم ومختصر رغم العمق، من غير حشو.`;
+            }
             if (pendingQuizContext) extra += `\n\n${pendingQuizContext}`;
             if (activeStudyChapterContext) {
                 extra += `\n\nالطالب حاليًا "مركّز" على مذاكرة الفصل ده بالذات من بنك المدرسة الحقيقي، فاستخدم محتواه الفعلي في كل شرح أو سؤال بدل معلومات عامة من عندك، وميجيبش حاجة من برا الفصل ده إلا لو الطالب سأل عن حاجة تانية صراحة:\n${activeStudyChapterContext}`;
@@ -4491,7 +4778,9 @@ ${schoolContext}`;
             } catch (e) { return null; }
         }
 
-        let activeQuiz = null; // {chapterName, questions:[{type, text, options?, correct, completion?}]}
+        let activeQuiz = null; // {chapterName, questions:[{type, text, options?, correct, completion?}], isMockExam?, timers?}
+        let mockExamChapters = []; // {cacheKey, subjectName, chapterName} — "عربية" الفصول المضافة لامتحان المحاكاة قبل ما يبدأ
+        let mockExamTimers = []; // setTimeout ids لتنبيهات وقت امتحان المحاكاة، بنمسحهم لو الامتحان اتصحح قبل الوقت
         let pendingQuizContext = ''; // بيتحط في الـ system prompt مرة واحدة بعد التصحيح عشان الـ AI يشرح الأخطاء
         let activeStudyChapterContext = ''; // محتوى الفصل اللي الطالب "مركّز" عليه دلوقتي
         let activeStudyChapterName = '';
@@ -4619,7 +4908,23 @@ ${schoolContext}`;
             });
 
             const total = activeQuiz.questions.length;
-            pendingQuizContext = `نتيجة تصحيح اختبار "${activeQuiz.chapterName}": ${correctCount} من ${total}.\nتفاصيل التصحيح (استخدمها عشان تشرح للطالب أخطاءه فقط بأسلوب تعليمي مبسط، ومتكررش كل التفاصيل لو مش لازم):\n${details.join('\n')}`;
+            if (activeQuiz.isMockExam) {
+                // تقرير أداء شامل: نجمع عدد الأسئلة المجاوَبة لكل فصل على حدة (مش رقم إجمالي بس)
+                // عشان الموديل يقدر يحدد نقط الضعف الحقيقية ويبني خطة مذاكرة عليها.
+                // correctCount/details اتحسبوا بالفعل في الحلقة فوق — هنا بس بنجمع توزيع الأسئلة.
+                const perChapter = {};
+                Object.keys(answerMap).forEach(qNumStr => {
+                    const q = activeQuiz.questions[parseInt(qNumStr) - 1];
+                    if (!q) return;
+                    const key = q.sourceChapter || activeQuiz.chapterName;
+                    perChapter[key] = (perChapter[key] || 0) + 1;
+                });
+                const breakdownLines = Object.entries(perChapter).map(([ch, n]) => `- ${ch}: ${n} سؤال`);
+                pendingQuizContext = `نتيجة "امتحان محاكاة شامل": ${correctCount} من ${total} (${Math.round(correctCount / total * 100)}%).\nتوزيع الأسئلة على الفصول:\n${breakdownLines.join('\n')}\n\nتفاصيل كل سؤال (الأرقام دي مرتبطة بترتيب الأسئلة في الامتحان):\n${details.join('\n')}\n\nمطلوب منك دلوقتي: اكتب "تقرير امتحان محاكاة" منظم فيه: (1) الدرجة الكلية والنسبة المئوية، (2) أداء الطالب في كل فصل على حدة (كويس/متوسط/ضعيف) بناءً على أخطاءه الموزعة عليهم، (3) أهم ٢-٣ نقط ضعف حقيقية ظاهرة من الأخطاء، (4) خطة مذاكرة عملية ومختصرة للأيام الجاية تركز على النقط دي بالذات. خليك متحمس ومشجع بس صريح وواقعي.`;
+            } else {
+                pendingQuizContext = `نتيجة تصحيح اختبار "${activeQuiz.chapterName}": ${correctCount} من ${total}.\nتفاصيل التصحيح (استخدمها عشان تشرح للطالب أخطاءه فقط بأسلوب تعليمي مبسط، ومتكررش كل التفاصيل لو مش لازم):\n${details.join('\n')}`;
+            }
+            if (activeQuiz.isMockExam) { mockExamTimers.forEach(id => clearTimeout(id)); mockExamTimers = []; }
             activeQuiz = null; // خلصنا الاختبار ده
         }
 
@@ -4663,6 +4968,245 @@ ${schoolContext}`;
             const status = document.getElementById('bankFocusStatus');
             if (status) status.innerHTML = 'اتلغى التركيز';
             showToast('اتلغى تركيز المساعد على الفصل', 'success');
+        }
+
+        // ====================== Premium: مكتبة البرومبتس الذكية ======================
+        const PREMIUM_PROMPTS = [
+            { cat: 'مذاكرة', label: 'اشرحلي بالتشبيه', text: 'اشرحلي [الموضوع] بطريقة مبسطة جدًا باستخدام تشبيه من الحياة اليومية، وبعدها اديني مثال سريري واقعي عليه.' },
+            { cat: 'مذاكرة', label: 'خريطة ذهنية نصية', text: 'اعملي خريطة ذهنية نصية (تسلسل هرمي بالنقط) لموضوع [الموضوع]، تجمع فيها كل الأفكار الفرعية والعلاقة بينها.' },
+            { cat: 'مذاكرة', label: 'قارن بين حاجتين', text: 'اعملي جدول مقارنة تفصيلي بين [الحاجة الأولى] و[الحاجة التانية] من ناحية الأسباب والأعراض والعلاج والفرق الأساسي بينهم.' },
+            { cat: 'امتحانات', label: 'أسئلة تركيز أخير', text: 'أنا هدخل امتحان في [المادة] بعد كام ساعة، اديني ٥ أسئلة سريعة على أكتر نقط بيتكرر ذكرها في امتحانات المادة دي، وصححلي بعد ما أجاوب.' },
+            { cat: 'امتحانات', label: 'فخاخ الأسئلة الشائعة', text: 'إيه أكتر ٥ أخطاء شائعة بيقع فيها طلاب التمريض وقت الإجابة على أسئلة [الموضوع]؟ وضحلي ليه بالظبط بيغلطوا فيها.' },
+            { cat: 'سريري', label: 'خطة رعاية تمريضية', text: 'اكتبلي خطة رعاية تمريضية (Nursing Care Plan) كاملة لمريض حالته [الحالة]، شاملة nursing diagnosis وgoals وinterventions وevaluation.' },
+            { cat: 'سريري', label: 'خطوات إجراء عملي', text: 'اديني خطوات إجراء [اسم الإجراء] بالترتيب الصح خطوة خطوة، وأهم نقطة أمان وسلامة (safety) في كل خطوة.' },
+            { cat: 'أدوية', label: 'ملخص دوا كامل', text: 'اديني ملخص شامل عن دواء [اسم الدواء]: الفئة، الآلية، الجرعة، أهم التداخلات الدوائية، والـ nursing considerations المهمة.' },
+            { cat: 'مهارات عملية', label: 'تحضير لتقديم كيس (Case)', text: 'هقدم case presentation عن مريض بحالة [الحالة]، اديني تقسيم منظم للعرض (تاريخ مرضي، فحص، تشخيص، خطة علاج) وأهم الأسئلة المتوقعة من الدكتور.' },
+            { cat: 'لغة', label: 'مصطلحات طبية بالعربي والإنجليزي', text: 'اديني أهم ١٠ مصطلحات طبية خاصة بموضوع [الموضوع] بالإنجليزي مع نطقها والمعنى بالعربي البسيط.' }
+        ];
+        function openPremiumPrompts() {
+            const list = document.getElementById('premiumPromptsList');
+            if (!list.dataset.filled) {
+                list.dataset.filled = '1';
+                let html = '', lastCat = '';
+                PREMIUM_PROMPTS.forEach((p, i) => {
+                    if (p.cat !== lastCat) { html += `<div class="prompt-cat-title">${escapeHtml(p.cat)}</div>`; lastCat = p.cat; }
+                    html += `<div class="prompt-card" onclick="usePromptTemplate(${i})"><div class="prompt-card-label">${escapeHtml(p.label)}</div><div class="prompt-card-text">${escapeHtml(p.text)}</div></div>`;
+                });
+                list.innerHTML = html;
+            }
+            openModal('premiumPromptsModal');
+        }
+        function usePromptTemplate(i) {
+            const p = PREMIUM_PROMPTS[i];
+            if (!p) return;
+            const input = document.getElementById('messageInput');
+            input.value = p.text;
+            autoResize(input);
+            updateCharCount();
+            closeModal('premiumPromptsModal');
+            input.focus();
+            // نحدد أول جزء بين قوسين [...] عشان يبقى سهل عليه يعدله بسرعة قبل ما يبعت
+            const match = p.text.match(/\[[^\]]+\]/);
+            if (match) input.setSelectionRange(match.index, match.index + match[0].length);
+            showToast('اتحط البرومبت — عدّل الجزء المحدد وابعت', 'success');
+        }
+
+        // ====================== Premium: امتحان محاكاة شامل (كذا فصل مع بعض + تقرير أداء) ======================
+        function openMockExamBuilder() {
+            if (!hasPremium('premium_mock_exams')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            populateMockSubjects();
+            renderMockExamChapterList();
+            document.getElementById('mockExamStatus').innerHTML = '';
+            openModal('mockExamModal');
+        }
+
+        function populateMockSubjects() {
+            const sel = document.getElementById('mockSubjectSelect');
+            if (sel.dataset.filled) return;
+            sel.dataset.filled = '1';
+            BANK_CATALOG.forEach((s, i) => {
+                const opt = document.createElement('option');
+                opt.value = i; opt.textContent = s.subject;
+                sel.appendChild(opt);
+            });
+        }
+
+        // بتعمل نفس حاجة populateBankChapters بالظبط بس على selects منفصلة خاصة بامتحان
+        // المحاكاة، عشان اختيار الطالب هنا ميتلخبطش مع اختيار الاختبار العادي (فصل واحد).
+        async function populateMockChapters() {
+            const subjIdx = document.getElementById('mockSubjectSelect').value;
+            const chapSel = document.getElementById('mockChapterSelect');
+            chapSel.innerHTML = '<option value="">جاري التحميل...</option>';
+            if (subjIdx === '') { chapSel.innerHTML = '<option value="">اختر الفصل...</option>'; return; }
+            const subj = BANK_CATALOG[subjIdx];
+            const apiUrl = FIXED_SCHOOL_API_URL;
+            chapSel.innerHTML = '';
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = ''; defaultOpt.textContent = 'اختر الفصل...';
+            chapSel.appendChild(defaultOpt);
+            for (const id of subj.ids) {
+                const file = `${subj.prefix}${id}.js`;
+                const varName = `${subj.prefix}${id}`;
+                const cacheKey = varName;
+                let data = bankChaptersCache[cacheKey];
+                if (!data) {
+                    data = await fetchBankFile(apiUrl, file, varName);
+                    if (data) bankChaptersCache[cacheKey] = data;
+                }
+                const opt = document.createElement('option');
+                opt.value = cacheKey;
+                opt.textContent = data ? (data.name || file) : `${file} (تعذر التحميل)`;
+                opt.dataset.subjectName = subj.subject;
+                if (!data) opt.disabled = true;
+                chapSel.appendChild(opt);
+            }
+        }
+
+        function addChapterToMockExam() {
+            const chapSel = document.getElementById('mockChapterSelect');
+            const cacheKey = chapSel.value;
+            const status = document.getElementById('mockExamStatus');
+            if (!cacheKey) { status.innerHTML = '<span style="color:var(--danger)">اختر الفصل الأول</span>'; return; }
+            if (mockExamChapters.some(c => c.cacheKey === cacheKey)) { status.innerHTML = '<span style="color:var(--warning)">الفصل ده مضاف بالفعل</span>'; return; }
+            const data = bankChaptersCache[cacheKey];
+            if (!data) { status.innerHTML = '<span style="color:var(--danger)">تعذر تحميل بيانات الفصل</span>'; return; }
+            const subjectName = chapSel.selectedOptions[0]?.dataset.subjectName || '';
+            mockExamChapters.push({ cacheKey, subjectName, chapterName: data.name });
+            status.innerHTML = '';
+            renderMockExamChapterList();
+        }
+
+        function removeMockExamChapter(cacheKey) {
+            mockExamChapters = mockExamChapters.filter(c => c.cacheKey !== cacheKey);
+            renderMockExamChapterList();
+        }
+
+        function renderMockExamChapterList() {
+            const el = document.getElementById('mockExamChapterListEl');
+            if (!mockExamChapters.length) {
+                el.innerHTML = '<div style="font-size:11px;color:var(--text-3);text-align:center;">لسه معملتش أي فصل للامتحان</div>';
+                return;
+            }
+            el.innerHTML = mockExamChapters.map(c => `
+                <div class="mock-exam-chapter-chip">
+                    <span>${escapeHtml(c.subjectName)} — ${escapeHtml(c.chapterName)}</span>
+                    <button onclick="removeMockExamChapter('${c.cacheKey.replace(/'/g, "\\'")}')"><i class="fas fa-times"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function startMockExam() {
+            if (!hasPremium('premium_mock_exams')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            const status = document.getElementById('mockExamStatus');
+            if (mockExamChapters.length < 1) { status.innerHTML = '<span style="color:var(--danger)">ضيف فصل واحد على الأقل</span>'; return; }
+            const countRaw = parseInt(document.getElementById('mockExamQuestionCount').value);
+            const count = (!countRaw || countRaw <= 0) ? 30 : Math.min(countRaw, 100);
+            const durationRaw = parseInt(document.getElementById('mockExamDuration').value);
+            const duration = (!durationRaw || durationRaw <= 0) ? 45 : Math.min(durationRaw, 180);
+
+            // بنجمع كل أنواع الأسئلة المتاحة من كل الفصول المختارة (مش نوع معين — امتحان شامل حقيقي)
+            let pool = [];
+            mockExamChapters.forEach(({ cacheKey, subjectName, chapterName }) => {
+                const data = bankChaptersCache[cacheKey];
+                if (!data) return;
+                ['mcq', 'truefalse', 'complete'].forEach(t => {
+                    const arr = Array.isArray(data[t]) ? data[t] : [];
+                    arr.forEach(item => pool.push({ type: t, ...item, sourceSubject: subjectName, sourceChapter: chapterName }));
+                });
+            });
+            if (!pool.length) { status.innerHTML = '<span style="color:var(--danger)">مفيش أسئلة كفاية في الفصول دي</span>'; return; }
+
+            const picked = shuffleArray(pool).slice(0, Math.min(count, pool.length));
+            mockExamTimers.forEach(id => clearTimeout(id)); // نلغي أي مؤقتات امتحان سابق لسه شغالة
+            mockExamTimers = [];
+            activeQuiz = { chapterName: 'امتحان محاكاة شامل', questions: picked, isMockExam: true, durationMinutes: duration };
+
+            let msg = `📝 **امتحان محاكاة شامل** (${picked.length} سؤال، ${duration} دقيقة)\n`;
+            msg += `الفصول: ${mockExamChapters.map(c => c.chapterName).join(' • ')}\n\n`;
+            picked.forEach((q, i) => {
+                if (q.type === 'mcq') {
+                    msg += `**${i + 1}. [اختيار من متعدد] ${q.text}**\n`;
+                    (q.options || []).forEach(o => { msg += `${o}\n`; });
+                } else if (q.type === 'truefalse') {
+                    msg += `**${i + 1}. [صح / خطأ] ${q.text}**\n`;
+                } else if (q.type === 'complete') {
+                    msg += `**${i + 1}. [إكمال] ${q.text}**\n`;
+                }
+                msg += '\n';
+            });
+            msg += `---\n⏰ عندك ${duration} دقيقة. لما تخلص، اكتبلي إجاباتك سطر لكل سؤال بالشكل ده:\n`;
+            msg += `\`1: B\` (لو اختيار من متعدد)\n\`2: صح\` أو \`2: خطأ\`\n\`3: الكلمة الناقصة\`\n\nوهبعتلك تقرير أداء شامل بعد التصحيح.`;
+
+            const chat = chats.find(c => c.id === currentChatId);
+            if (chat) {
+                const botMsg = { role: 'bot', content: msg, source: 'local', timestamp: Date.now(), id: `msg-${Date.now()}-mockexam` };
+                chat.messages.push(botMsg);
+                appendMessageToDOM(botMsg);
+                saveData();
+            }
+
+            // تنبيهات وقت الامتحان: قبل النهاية بـ ٥ دقايق، وعند انتهاء الوقت تمامًا. بنتأكد
+            // وقت التنفيذ إن نفس الامتحان لسه نشط (مش اتصحح أو اتلغى) قبل ما نبعت التنبيه.
+            const scheduleReminder = (minutesFromNow, text) => {
+                if (minutesFromNow <= 0) return;
+                const id = setTimeout(() => {
+                    const c = chats.find(c => c.id === currentChatId);
+                    if (!c || !activeQuiz || !activeQuiz.isMockExam) return;
+                    const reminderMsg = { role: 'bot', content: text, source: 'local', timestamp: Date.now(), id: `msg-${Date.now()}-mockreminder` };
+                    c.messages.push(reminderMsg);
+                    if (c.id === currentChatId) appendMessageToDOM(reminderMsg);
+                    saveData();
+                }, minutesFromNow * 60000);
+                mockExamTimers.push(id);
+            };
+            if (duration > 5) scheduleReminder(duration - 5, '⏰ باقي ٥ دقايق بس على وقت الامتحان — ابدأ تجهّز إجاباتك.');
+            scheduleReminder(duration, '⏰ خلص وقت الامتحان! ابعتلي إجاباتك دلوقتي زي ما هي عشان أصححها.');
+
+            closeModal('mockExamModal');
+            mockExamChapters = [];
+            showToast('بدأ امتحان المحاكاة — جاوب في الشات', 'success');
+        }
+
+        // ====================== Premium: مكتبة الأدوية الشخصية ======================
+        let drugLibrary = JSON.parse(localStorage.getItem('sx_drug_library') || '[]');
+        function saveDrugToLibrary(dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+                const maxDim = 240;
+                let w = img.width, h = img.height;
+                if (Math.max(w, h) > maxDim) {
+                    const scale = maxDim / Math.max(w, h);
+                    w = Math.round(w * scale); h = Math.round(h * scale);
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                const thumb = canvas.toDataURL('image/jpeg', 0.7);
+                drugLibrary.unshift({ thumb, timestamp: Date.now() });
+                drugLibrary = drugLibrary.slice(0, 60); // حد أقصى معقول عشان مساحة localStorage متخلصش
+                try { localStorage.setItem('sx_drug_library', JSON.stringify(drugLibrary)); } catch (e) { /* المساحة خلصت، هنتجاهل بهدوء */ }
+            };
+            img.src = dataUrl;
+        }
+        function openDrugLibrary() {
+            if (!hasPremium('premium_drug_library')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            const grid = document.getElementById('drugLibraryGrid');
+            const empty = document.getElementById('drugLibraryEmpty');
+            if (!drugLibrary.length) { grid.innerHTML = ''; empty.style.display = 'block'; }
+            else {
+                empty.style.display = 'none';
+                grid.innerHTML = drugLibrary.map((d, i) => `
+                    <div class="drug-lib-item" onclick="viewDrugLibItem(${i})">
+                        <img src="${d.thumb}" alt="دواء محفوظ" loading="lazy">
+                        <div class="date">${new Date(d.timestamp).toLocaleDateString('ar-EG')}</div>
+                    </div>
+                `).join('');
+            }
+            openModal('drugLibraryModal');
+        }
+        function viewDrugLibItem(i) {
+            const d = drugLibrary[i];
+            if (d) window.open(d.thumb, '_blank');
         }
 
 
@@ -4921,6 +5465,11 @@ ${schoolContext}`;
             let promptText = DRUG_SCAN_PROMPT;
             if (drugScanDecodedCode) {
                 promptText += `\n\nكود الباركود/الكيوركود اللي اتقرا من العلبة: ${drugScanDecodedCode}`;
+            }
+
+            // مكتبة الأدوية الشخصية (Premium): بنحفظ ثمبنيل الصورة قبل ما نصفّر drugScanCapturedImage
+            if (hasPremium('premium_drug_library')) {
+                saveDrugToLibrary(`data:${drugScanCapturedImage.mimeType};base64,${drugScanCapturedImage.base64}`);
             }
 
             pendingAttachment = {
