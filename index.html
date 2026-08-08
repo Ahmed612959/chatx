@@ -39,6 +39,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <!-- Firebase (لإشعارات البوش) — لازم تحط بيانات مشروعك في FIREBASE_CONFIG جوه السكريبت الرئيسي -->
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
@@ -579,6 +580,31 @@
         }
         .calc-result.show { display: block; }
 
+        /* ====================== فحص الدواء بالكاميرا ====================== */
+        .scan-view {
+            position: relative; width: 100%; aspect-ratio: 3/4; max-height: 60vh; background: #000;
+            border-radius: 14px; overflow: hidden; border: 1px solid var(--border);
+        }
+        .scan-view video { width: 100%; height: 100%; object-fit: cover; }
+        .scan-view canvas { display: none; }
+        .scan-hint {
+            position: absolute; bottom: 0; right: 0; left: 0; padding: 10px 12px;
+            background: linear-gradient(to top, rgba(0,0,0,.75), transparent);
+            color: #fff; font-size: 11.5px; text-align: center; pointer-events: none;
+        }
+        .scan-code-badge {
+            position: absolute; top: 10px; right: 10px; left: 10px; padding: 8px 10px;
+            background: rgba(16,185,129,.92); color: #fff; border-radius: 9px; font-size: 12px;
+            font-weight: 700; text-align: center; display: none;
+        }
+        .scan-code-badge.show { display: block; }
+        .scan-preview-wrap { position: relative; width: 100%; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+        .scan-preview-wrap img { width: 100%; display: block; }
+        .scan-btn-row { display: flex; gap: 8px; margin-top: 10px; }
+        .scan-btn-row .btn-calc { margin-top: 0; }
+        .btn-calc.btn-secondary { background: var(--bg-2); color: var(--text-2); border: 1px solid var(--border); }
+        .scan-status { font-size: 11.5px; color: var(--text-2); text-align: center; margin-top: 8px; line-height: 1.7; }
+
         .toast-container { position: fixed; bottom: max(20px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: 8px; align-items: center; width: 90%; max-width: 380px; pointer-events: none; }
         .toast {
             padding: 12px 20px; background: var(--bg-glass-heavy); border: 1px solid var(--border);
@@ -738,6 +764,11 @@
                             <i class="fas fa-calculator"></i>
                             <h4>أدوات</h4>
                             <p>حاسبات علمية</p>
+                        </div>
+                        <div class="quick-card" onclick="openDrugScanner()">
+                            <i class="fas fa-pills"></i>
+                            <h4>فحص دواء</h4>
+                            <p>بالكاميرا</p>
                         </div>
                     </div>
                 </div>
@@ -1093,6 +1124,45 @@
                     <div id="bankFocusStatus" style="margin-top:8px;font-size:12px;"></div>
                 </div>
             </div>
+            <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-pills"></i> فحص دواء بالكاميرا (تدريب الصيدلية)</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    وجّه الكاميرا على علبة الدواء أو المحلول أو الأمبولة — هيحاول يقرا الباركود/الكيوركود ويصور العلبة، وبعدين المساعد يقولك اسم الدواء ودواعي استعماله وطريقة إعطائه.
+                </p>
+                <button class="btn-calc" onclick="closeModal('toolsModal'); openDrugScanner();"><i class="fas fa-camera"></i> افتح الكاميرا</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drug Scanner Modal: فحص دواء بالكاميرا -->
+    <div class="modal-overlay" id="drugScanModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-pills"></i> فحص دواء بالكاميرا</div>
+                <button class="close-modal" aria-label="إغلاق نافذة فحص الدواء" onclick="closeDrugScanner()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div id="drugScanLiveWrap">
+                <div class="scan-view" id="drugScannerView">
+                    <div class="scan-code-badge" id="drugScanCodeBadge"></div>
+                    <div class="scan-hint">وجّه الكاميرا على الباركود أو اسم الدواء على العلبة</div>
+                </div>
+                <div class="scan-btn-row">
+                    <button class="btn-calc" onclick="captureDrugPhoto()"><i class="fas fa-camera"></i> التقط صورة العلبة</button>
+                </div>
+                <div class="scan-status" id="drugScanStatus">جارٍ تشغيل الكاميرا...</div>
+            </div>
+
+            <div id="drugScanPreviewWrap" style="display:none;">
+                <div class="scan-preview-wrap">
+                    <img id="drugScanPreviewImg" alt="صورة العلبة الملتقطة">
+                </div>
+                <div class="scan-btn-row">
+                    <button class="btn-calc btn-secondary" onclick="retryDrugScan()"><i class="fas fa-rotate-left"></i> إعادة المحاولة</button>
+                    <button class="btn-calc" onclick="confirmDrugScan()"><i class="fas fa-check"></i> تحديد الدواء</button>
+                </div>
+                <div class="scan-status" id="drugScanConfirmStatus"></div>
+            </div>
         </div>
     </div>
 
@@ -1434,6 +1504,11 @@
         let lastSendTime = 0;
         let recentSendTimestamps = []; // للـ rate limiting: تايم ستامب كل رسالة اتبعتت في آخر دقيقة
         let pendingAttachment = null;
+        // فحص الدواء بالكاميرا: نسخة الماسح الحالية، آخر كود متقروء، والصورة الملتقطة قبل التأكيد
+        let drugScannerInstance = null;
+        let drugScannerActive = false;
+        let drugScanDecodedCode = null;
+        let drugScanCapturedImage = null; // { base64, mimeType }
         let stats = JSON.parse(localStorage.getItem('sx_stats')) || { streak: 0, lastActiveDay: null, todayCount: 0 };
         let recognition = null;
         let isListening = false;
@@ -1474,6 +1549,13 @@
 
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
+            }
+
+            // لو الطالب سبق ووافق على الإشعارات في جلسة قبل كده، لازم نعيد تسجيل هاندلر
+            // الفوجراوند (onMessage) من جديد كل مرة يفتح فيها الصفحة — لأنه بيعيش في ذاكرة
+            // الصفحة بس ومش بيفضل محفوظ بعد الريفريش، حتى لو الموافقة والتوكن نفسهم متسجلين.
+            if (schoolToken && window.Notification && Notification.permission === 'granted') {
+                enablePushNotifications();
             }
         };
 
@@ -3865,7 +3947,15 @@
             document.querySelectorAll('.reaction-picker').forEach(el => el.remove());
             const picker = document.createElement('div');
             picker.className = 'reaction-picker';
-            picker.style.cssText = `position:absolute;top:-40px;${bubble.dataset.isMe === '1' ? 'left:0;' : 'right:0;'}background:var(--bg-glass-heavy);border:1px solid var(--border);border-radius:20px;padding:6px 8px;display:flex;gap:6px;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.3);animation:floatIn .15s ease;`;
+            // لو الرسالة قريبة من أعلى صندوق الشات (زي أول رسالة)، مفيش مساحة كفاية فوقها
+            // تعرض فيها القائمة (position:absolute بيتقص برا الـ overflow:auto فيختفي تمامًا)،
+            // فنعرضها تحت الرسالة بدل فوقها في الحالة دي.
+            const scrollBox = document.getElementById('groupChatMessages');
+            const bubbleRect = bubble.getBoundingClientRect();
+            const boxRect = scrollBox ? scrollBox.getBoundingClientRect() : { top: 0 };
+            const showBelow = (bubbleRect.top - boxRect.top) < 46;
+            const vertical = showBelow ? 'top:calc(100% + 6px);' : 'top:-40px;';
+            picker.style.cssText = `position:absolute;${vertical}${bubble.dataset.isMe === '1' ? 'left:0;' : 'right:0;'}background:var(--bg-glass-heavy);border:1px solid var(--border);border-radius:20px;padding:6px 8px;display:flex;gap:6px;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.3);animation:floatIn .15s ease;`;
             QUICK_REACTIONS.forEach(emoji => {
                 const btn = document.createElement('span');
                 btn.textContent = emoji;
@@ -3903,8 +3993,14 @@
             }
         }
 
+        // بيمنع تشغيل أكتر من نداء لـ loadGroupChatMessages في نفس الوقت. من غيرها، لو الـ
+        // poll التلقائي (كل 2 ثانية) اشتغل في نفس لحظة نداء تاني (زي اللي بيحصل فورًا بعد
+        // إرسال رسالة)، الاتنين ممكن يجيبوا نفس الرسالة من السيرفر ويضيفوها كل واحد لوحده —
+        // وده اللي كان بيخلي الرسالة تظهر مكررة على الشاشة.
+        let isLoadingGroupMessages = false;
         async function loadGroupChatMessages(isFirstLoad) {
-            if (!activeGroupChatId) return;
+            if (!activeGroupChatId || isLoadingGroupMessages) return;
+            isLoadingGroupMessages = true;
             try {
                 const since = isFirstLoad ? 0 : lastGroupMsgAt;
                 const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats/${activeGroupChatId}/messages?since=${since}`, {
@@ -3917,6 +4013,11 @@
                 const box = document.getElementById('groupChatMessages');
                 let receivedNewFromOther = false;
                 msgs.forEach(m => {
+                    // حماية إضافية: لو الرسالة دي (بنفس الـ id) موجودة على الشاشة أصلاً، متتضافش تاني.
+                    if (m.id && box.querySelector(`[data-msg-id="${CSS.escape(String(m.id))}"]`)) {
+                        lastGroupMsgAt = Math.max(lastGroupMsgAt, m.createdAt || 0);
+                        return;
+                    }
                     const isMe = m.senderUsername === schoolUser?.username;
                     if (!isMe && !isFirstLoad) receivedNewFromOther = true;
                     // لو الرسالة دي كانت optimistic (اتبعتت محليًا واستنينا تأكيد السيرفر)، امسح النسخة
@@ -3934,6 +4035,7 @@
                 updateTypingIndicator(data.typingUsernames || []);
                 updateOnlineStatus(data.onlineUsernames || []);
             } catch (e) { /* هنحاول تاني في الـ poll الجاي */ }
+            finally { isLoadingGroupMessages = false; }
         }
 
         function updateOnlineStatus(onlineUsernames) {
@@ -4046,6 +4148,42 @@
         };
         const FIREBASE_VAPID_KEY = "BKnW1R_cQxU4fuDX3iJiC9UFU0i4vlagq_Kd2HJq-1E4_ILfb9RW-NH2Muevv6KjGZZ0ZEvQAAVLKQDmXxVvePM";
 
+        // إشعارات الفوجراوند: Service Worker (sw.js → onBackgroundMessage) بيتصرف بس لما التاب
+        // مقفول/في الخلفية تمامًا. لكن لو الطالب فاتح التطبيق فعلاً بس مش داخل غرفة المذاكرة
+        // المحددة اللي جاتله فيها رسالة (زي ما اتوصف: "برة غرفة المذاكرة")، المتصفح بيوجّه
+        // الرسالة لـ onMessage هنا بدل الـ service worker — ولو معندناش الهاندلر ده، الرسالة
+        // بتتجاهل بصمت من غير أي إشعار. الدالة دي بتضيف الهاندلر المفقود ده.
+        let foregroundPushListenerRegistered = false;
+        function registerForegroundPushListener(messaging) {
+            if (foregroundPushListenerRegistered) return;
+            foregroundPushListenerRegistered = true;
+            messaging.onMessage((payload) => {
+                const isReaction = payload.data?.type === 'reaction';
+                const title = payload.notification?.title || payload.data?.title
+                    || (isReaction ? 'ريأكشن جديد' : 'رسالة جديدة من زميلك');
+                const body = payload.notification?.body || payload.data?.body || '';
+                const chatId = payload.data?.chatId || null;
+
+                // لو هو أصلاً فاتح نفس غرفة المذاكرة دي دلوقتي، الـ polling هيجيبها له عادي
+                // من غير ما نزعجه بإشعار مكرر لحاجة شايفها قدامه أصلاً.
+                const roomModal = document.getElementById('groupChatRoomModal');
+                const alreadyInThisRoom = chatId && chatId === activeGroupChatId && roomModal && roomModal.classList.contains('active');
+                if (alreadyInThisRoom) return;
+
+                playGroupChatNotifySound();
+                if (window.Notification && Notification.permission === 'granted') {
+                    const notif = new Notification(title, { body, icon: '/icons/favicon-32.png' });
+                    notif.onclick = () => {
+                        window.focus();
+                        if (chatId) openGroupChatRoom(chatId, payload.data?.senderName || '', payload.data?.senderUsername || '');
+                        notif.close();
+                    };
+                } else {
+                    showToast(body ? `${title}: ${body}` : title, 'success');
+                }
+            });
+        }
+
         async function enablePushNotifications() {
             const statusEl = document.getElementById('pushNotifStatus');
             if (!FIREBASE_CONFIG.apiKey) {
@@ -4070,6 +4208,7 @@
                 }
                 if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
                 const messaging = firebase.messaging();
+                registerForegroundPushListener(messaging);
                 const reg = await navigator.serviceWorker.register('/sw.js');
                 const token = await messaging.getToken({ vapidKey: FIREBASE_VAPID_KEY, serviceWorkerRegistration: reg });
                 if (!token) throw new Error('لم يتم الحصول على توكن FCM من المتصفح (getToken رجع فاضي)');
@@ -4651,6 +4790,144 @@ ${schoolContext}`;
             });
         }
 
+        // ====================== فحص الدواء بالكاميرا ======================
+        // بيفتح الكاميرا (html5-qrcode) ويحاول يقرا أي باركود/كيوركود/DataMatrix على علبة
+        // الدواء بشكل حي. لو قرا كود، بيسيبه معروض فوق الشاشة وبيكمل يصور عادي. الطالب
+        // بيلتقط صورة العلبة (يدويًا)، وبعدين بترسل الصورة + أي كود اتقرا كمرفق صورة عادي
+        // لنفس مسار الشات اللي بيحلل الصور (zimage) مع سؤال جاهز مخصص لطالب تمريض متدرب.
+        const DRUG_SCAN_PROMPT = 'أنا طالب تمريض بتدرب في الصيدلية، ودي صورة لعلبة دواء أو محلول أو أمبولة. من فضلك حدد لي:\n1) اسم الدواء (العلمي والتجاري لو ظاهر في الصورة)\n2) الفئة الدوائية\n3) دواعي الاستعمال\n4) الجرعة الشائعة وطريقة الإعطاء\n5) أهم الأعراض الجانبية والتحذيرات\n6) ملاحظات مهمة للتمريض عند إعطاء الدواء\nاشرح بنقاط منظمة ومبسطة.';
+
+        function openDrugScanner() {
+            drugScanCapturedImage = null;
+            drugScanDecodedCode = null;
+            document.getElementById('drugScanLiveWrap').style.display = 'block';
+            document.getElementById('drugScanPreviewWrap').style.display = 'none';
+            document.getElementById('drugScanCodeBadge').classList.remove('show');
+            document.getElementById('drugScanConfirmStatus').textContent = '';
+            openModal('drugScanModal');
+            startDrugScanner();
+        }
+
+        function closeDrugScanner() {
+            stopDrugScanner();
+            closeModal('drugScanModal');
+        }
+
+        function startDrugScanner() {
+            const statusEl = document.getElementById('drugScanStatus');
+            if (!window.Html5Qrcode) {
+                statusEl.textContent = 'تعذر تحميل مكتبة قراءة الباركود — لسه ممكن تلتقط الصورة يدويًا وهيتم تحليلها.';
+                return;
+            }
+            try {
+                drugScannerInstance = new Html5Qrcode('drugScannerView', {
+                    formatsToSupport: [
+                        Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.EAN_13,
+                        Html5QrcodeSupportedFormats.EAN_8, Html5QrcodeSupportedFormats.CODE_128,
+                        Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.DATA_MATRIX,
+                        Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E
+                    ],
+                    verbose: false
+                });
+                drugScannerInstance.start(
+                    { facingMode: 'environment' },
+                    { fps: 10, qrbox: { width: 230, height: 230 } },
+                    (decodedText) => {
+                        drugScanDecodedCode = decodedText;
+                        const badge = document.getElementById('drugScanCodeBadge');
+                        badge.textContent = `✓ تم قراءة كود: ${decodedText.slice(0, 40)}`;
+                        badge.classList.add('show');
+                    },
+                    () => { /* بيتنادى باستمرار وقت الفشل الطبيعي في القراءة — نتجاهله */ }
+                ).then(() => {
+                    drugScannerActive = true;
+                    statusEl.textContent = 'الكاميرا شغالة — لما الكود يتقرا هيظهر فوق. اضغط "التقط صورة" في أي وقت.';
+                }).catch(() => {
+                    statusEl.textContent = 'تعذر فتح الكاميرا. تأكد إنك سمحت للموقع بالوصول للكاميرا، أو جرب من متصفح تاني.';
+                });
+            } catch (e) {
+                statusEl.textContent = 'تعذر تشغيل الماسح. لسه ممكن تلتقط الصورة يدويًا.';
+            }
+        }
+
+        function stopDrugScanner() {
+            if (drugScannerInstance && drugScannerActive) {
+                drugScannerInstance.stop().then(() => drugScannerInstance.clear()).catch(() => {});
+            }
+            drugScannerActive = false;
+            drugScannerInstance = null;
+        }
+
+        // بياخد فريم من فيديو الكاميرا الحالي (اللي المكتبة نفسها حاطاه جوه drugScannerView)
+        // ويحوله لصورة JPEG مضغوطة، بنفس منطق الأبعاد/الجودة المستخدم في رفع الصور العادي.
+        function captureDrugPhoto() {
+            const container = document.getElementById('drugScannerView');
+            const video = container ? container.querySelector('video') : null;
+            if (!video || !video.videoWidth) {
+                showToast('الكاميرا لسه بتفتح، استنى ثانية وحاول تاني', 'error');
+                return;
+            }
+            const maxDim = 1600;
+            let width = video.videoWidth, height = video.videoHeight;
+            if (Math.max(width, height) > maxDim) {
+                const scale = maxDim / Math.max(width, height);
+                width = Math.round(width * scale);
+                height = Math.round(height * scale);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            canvas.getContext('2d').drawImage(video, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            drugScanCapturedImage = { base64: dataUrl.split(',')[1], mimeType: 'image/jpeg' };
+
+            stopDrugScanner();
+            document.getElementById('drugScanPreviewImg').src = dataUrl;
+            document.getElementById('drugScanLiveWrap').style.display = 'none';
+            document.getElementById('drugScanPreviewWrap').style.display = 'block';
+            document.getElementById('drugScanConfirmStatus').textContent = drugScanDecodedCode
+                ? `تم قراءة كود من العلبة: ${drugScanDecodedCode.slice(0, 60)}`
+                : 'ملقيش كود مقروء — مش مشكلة، المساعد هيحاول يتعرف على الدواء من شكل العلبة والاسم المكتوب عليها.';
+        }
+
+        function retryDrugScan() {
+            drugScanCapturedImage = null;
+            drugScanDecodedCode = null;
+            document.getElementById('drugScanCodeBadge').classList.remove('show');
+            document.getElementById('drugScanLiveWrap').style.display = 'block';
+            document.getElementById('drugScanPreviewWrap').style.display = 'none';
+            startDrugScanner();
+        }
+
+        // بيقفل المودال، ويحط الصورة الملتقطة كمرفق عادي (زي أي صورة مرفقة يدويًا) مع
+        // سؤال جاهز، وبعدين يبعت الرسالة على نفس مسار sendMessage — فهيتوجه تلقائيًا
+        // لموديل تحليل الصور (zimage) لأن فيه صورة مرفقة.
+        function confirmDrugScan() {
+            if (!drugScanCapturedImage) { showToast('التقط صورة العلبة الأول', 'error'); return; }
+
+            let promptText = DRUG_SCAN_PROMPT;
+            if (drugScanDecodedCode) {
+                promptText += `\n\nكود الباركود/الكيوركود اللي اتقرا من العلبة: ${drugScanDecodedCode}`;
+            }
+
+            pendingAttachment = {
+                name: 'drug-scan.jpg',
+                base64: drugScanCapturedImage.base64,
+                mimeType: drugScanCapturedImage.mimeType,
+                processing: false
+            };
+            showAttachmentChip();
+
+            const input = document.getElementById('messageInput');
+            input.value = promptText;
+            autoResize(input);
+            updateCharCount();
+
+            closeModal('drugScanModal');
+            drugScanCapturedImage = null;
+            drugScanDecodedCode = null;
+            sendMessage();
+        }
+
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -4815,6 +5092,7 @@ ${schoolContext}`;
 
         window.onclick = (e) => {
             if (e.target.classList.contains('modal-overlay')) {
+                if (e.target.id === 'drugScanModal') stopDrugScanner();
                 e.target.classList.remove('active');
             }
         };
