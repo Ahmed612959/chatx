@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>لوحة تفعيل Premium | School X</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+    :root {
+        --bg: #0a0e1a; --bg-2: #131827; --bg-glass: rgba(19, 24, 39, 0.75); --bg-3: #1a2032;
+        --accent: #6366f1; --accent-2: #8b5cf6;
+        --gold: #d4af37; --gold-2: #f0c869;
+        --text-1: #f1f5f9; --text-2: #94a3b8; --text-3: #64748b;
+        --border: rgba(255, 255, 255, 0.08);
+        --success: #10b981; --danger: #ef4444;
+        --radius: 16px; --radius-sm: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text-1);
+        min-height: 100vh; display: flex; flex-direction: column;
+    }
+    /* ====================== شاشة تسجيل الدخول ====================== */
+    #loginScreen {
+        flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    .login-card {
+        background: var(--bg-glass); border: 1px solid var(--border); border-radius: var(--radius);
+        padding: 32px 26px; width: 100%; max-width: 360px; text-align: center;
+    }
+    .login-crown { font-size: 34px; margin-bottom: 6px; }
+    .login-card h1 { font-size: 18px; margin-bottom: 4px; }
+    .login-card p { font-size: 12.5px; color: var(--text-2); margin-bottom: 22px; }
+    .field { text-align: right; margin-bottom: 12px; }
+    .field label { font-size: 11.5px; color: var(--text-2); display: block; margin-bottom: 5px; }
+    .field input {
+        width: 100%; padding: 11px 13px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+        background: var(--bg-3); color: var(--text-1); font-family: inherit; font-size: 14px;
+    }
+    .field input:focus { outline: none; border-color: var(--gold); }
+    .btn {
+        width: 100%; padding: 12px; border: none; border-radius: var(--radius-sm);
+        background: linear-gradient(120deg, var(--gold), var(--gold-2)); color: #1a1400;
+        font-family: inherit; font-weight: 800; font-size: 14px; cursor: pointer; margin-top: 6px;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-plain {
+        background: var(--bg-3); color: var(--text-2); border: 1px solid var(--border);
+        font-weight: 600; font-size: 12.5px; width: auto; padding: 8px 14px;
+    }
+    .error-box {
+        background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.35); color: #fca5a5;
+        border-radius: var(--radius-sm); padding: 9px 12px; font-size: 12px; margin-top: 14px; text-align: right;
+    }
+
+    /* ====================== الشاشة الرئيسية ====================== */
+    #mainScreen { display: none; flex: 1; flex-direction: column; }
+    header {
+        display: flex; align-items: center; justify-content: space-between; padding: 14px 18px;
+        border-bottom: 1px solid var(--border); background: var(--bg-2); position: sticky; top: 0; z-index: 5;
+    }
+    header .title { font-weight: 800; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+    header .who { font-size: 11.5px; color: var(--text-2); }
+
+    .wrap { max-width: 720px; width: 100%; margin: 0 auto; padding: 16px; flex: 1; }
+
+    .search-row { position: relative; margin-bottom: 14px; }
+    .search-row i { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-3); }
+    #searchInput {
+        width: 100%; padding: 12px 40px 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+        background: var(--bg-glass); color: var(--text-1); font-family: inherit; font-size: 14px;
+    }
+    #searchInput:focus { outline: none; border-color: var(--accent); }
+
+    #studentList { display: flex; flex-direction: column; gap: 8px; }
+    .student-row {
+        display: flex; align-items: center; gap: 12px; background: var(--bg-glass); border: 1px solid var(--border);
+        border-radius: var(--radius-sm); padding: 12px 14px; cursor: pointer; transition: border-color .15s;
+    }
+    .student-row:hover, .student-row:active { border-color: var(--accent); }
+    .student-avatar {
+        width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex-shrink: 0;
+    }
+    .student-info { flex: 1; min-width: 0; }
+    .student-name { font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .student-meta { font-size: 11px; color: var(--text-3); }
+    .premium-count {
+        font-size: 10.5px; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; white-space: nowrap;
+        background: var(--bg-3); color: var(--text-3);
+    }
+    .premium-count.active { background: linear-gradient(120deg, var(--gold), var(--gold-2)); color: #1a1400; font-weight: 700; }
+
+    #emptyState, #loadingState { text-align: center; padding: 50px 20px; color: var(--text-3); font-size: 13px; }
+    #loadingState i { font-size: 22px; display: block; margin-bottom: 10px; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ====================== لوحة تعديل الطالب (Bottom Sheet) ====================== */
+    #editOverlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: flex-end;
+        justify-content: center; z-index: 50;
+    }
+    #editOverlay.active { display: flex; }
+    #editSheet {
+        background: var(--bg-2); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
+        max-height: 88vh; overflow-y: auto; padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+        animation: slideUp .2s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .sheet-handle { width: 40px; height: 4px; background: var(--border); border-radius: 4px; margin: 0 auto 14px; }
+    .sheet-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .sheet-avatar {
+        width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px; flex-shrink: 0;
+    }
+    .sheet-head .name { font-weight: 800; font-size: 15.5px; }
+    .sheet-head .code { font-size: 11.5px; color: var(--text-3); }
+    .close-sheet {
+        margin-right: auto; background: var(--bg-3); border: none; color: var(--text-2); width: 30px; height: 30px;
+        border-radius: 50%; cursor: pointer; font-size: 13px;
+    }
+
+    .feature-card {
+        display: flex; align-items: flex-start; gap: 12px; background: var(--bg-glass); border: 1px solid var(--border);
+        border-radius: var(--radius-sm); padding: 13px; margin-bottom: 9px; cursor: pointer;
+    }
+    .feature-card.checked { border-color: var(--gold); background: rgba(212,175,55,.08); }
+    .feature-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .feature-body { flex: 1; }
+    .feature-title { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+    .feature-desc { font-size: 11px; color: var(--text-2); line-height: 1.6; }
+    .feature-switch {
+        width: 42px; height: 24px; border-radius: 20px; background: var(--bg-3); position: relative; flex-shrink: 0;
+        margin-top: 2px; transition: background .15s;
+    }
+    .feature-card.checked .feature-switch { background: linear-gradient(120deg, var(--gold), var(--gold-2)); }
+    .feature-switch::after {
+        content: ''; position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 50%;
+        background: #fff; transition: transform .15s;
+    }
+    .feature-card.checked .feature-switch::after { transform: translateX(-18px); }
+
+    .save-row { display: flex; gap: 8px; margin-top: 16px; }
+    .save-row .btn { margin-top: 0; }
+    #saveStatus { font-size: 12px; text-align: center; margin-top: 10px; min-height: 16px; }
+
+    .toast {
+        position: fixed; bottom: max(20px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+        background: var(--bg-3); border: 1px solid var(--border); color: var(--text-1); padding: 11px 18px;
+        border-radius: 30px; font-size: 13px; z-index: 100; display: none; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    }
+    .toast.show { display: block; animation: slideUp .2s ease; }
+    .toast.success { border-color: var(--success); }
+    .toast.error { border-color: var(--danger); }
+</style>
+</head>
+<body>
+
+    <!-- تسجيل الدخول -->
+    <div id="loginScreen">
+        <div class="login-card">
+            <div class="login-crown">👑</div>
+            <h1>لوحة تفعيل Premium</h1>
+            <p>سجّل دخولك بحساب الأدمن بتاعك في School X</p>
+            <div class="field">
+                <label>اسم المستخدم</label>
+                <input type="text" id="loginUsername" autocomplete="username">
+            </div>
+            <div class="field">
+                <label>كلمة المرور</label>
+                <input type="password" id="loginPassword" autocomplete="current-password">
+            </div>
+            <button class="btn" id="loginBtn" onclick="doLogin()">دخول</button>
+            <div id="loginError" class="error-box" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- الشاشة الرئيسية -->
+    <div id="mainScreen">
+        <header>
+            <div class="title">👑 لوحة تفعيل Premium</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span class="who" id="whoAmI"></span>
+                <button class="btn btn-plain" onclick="doLogout()">خروج</button>
+            </div>
+        </header>
+        <div class="wrap">
+            <div class="search-row">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="دور باسم الطالب أو اليوزرنيم أو كود الطالب..." oninput="renderStudentList()">
+            </div>
+            <div id="loadingState"><i class="fas fa-spinner"></i>جاري تحميل الطلاب...</div>
+            <div id="emptyState" style="display:none;">مفيش طلاب مطابقين للبحث</div>
+            <div id="studentList"></div>
+        </div>
+    </div>
+
+    <!-- تعديل مميزات طالب -->
+    <div id="editOverlay" onclick="if(event.target===this) closeEditSheet()">
+        <div id="editSheet">
+            <div class="sheet-handle"></div>
+            <div class="sheet-head">
+                <div class="sheet-avatar" id="sheetAvatar"></div>
+                <div>
+                    <div class="name" id="sheetName"></div>
+                    <div class="code" id="sheetCode"></div>
+                </div>
+                <button class="close-sheet" onclick="closeEditSheet()"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="featureCards"></div>
+            <div class="save-row">
+                <button class="btn" id="saveBtn" onclick="savePremium()">حفظ التغييرات</button>
+            </div>
+            <div id="saveStatus"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+<script>
+    const API = 'https://schoolx-eta.vercel.app';
+    const TOKEN_KEY = 'sx_admin_panel_token';
+    const USER_KEY = 'sx_admin_panel_user';
+
+    // نفس مفاتيح المميزات المستخدمة في تطبيق الطالب — لازم تفضل متطابقة مع index.html
+    const FEATURES = [
+        { key: 'premium_ai', icon: '🧠', title: 'الذكاء الاصطناعي المتقدم (Cerebras)', desc: 'يوجّه الطالب لموديل Cerebras تلقائيًا + حد رسايل أعلى بكتير.' },
+        { key: 'premium_mock_exams', icon: '📝', title: 'امتحانات المحاكاة الشاملة', desc: 'امتحان محاكاة من أكتر من فصل مع تقرير أداء مفصل.' },
+        { key: 'premium_prompts', icon: '⚡', title: 'مكتبة البرومبتس الذكية', desc: 'برومبتس جاهزة ومُختارة لأفضل نتيجة في كل مهمة.' },
+        { key: 'premium_theme', icon: '👑', title: 'تصميم Chat X الذهبي', desc: 'شكل مميز حصري بألوان ذهبية.' },
+        { key: 'premium_drug_library', icon: '💊', title: 'مكتبة الأدوية الشخصية', desc: 'حفظ تلقائي لكل دواء يفحصه الطالب بالكاميرا.' }
+    ];
+
+    let token = localStorage.getItem(TOKEN_KEY) || '';
+    let allStudents = [];
+    let activeStudent = null; // الطالب المفتوح دلوقتي في شيت التعديل
+    let pendingFeatures = new Set();
+
+    function showToast(msg, type) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'toast show ' + (type || '');
+        setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    async function apiFetch(path, options = {}) {
+        const res = await fetch(API + path, {
+            ...options,
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...(options.headers || {}) }
+        });
+        if (res.status === 401 || res.status === 403) {
+            doLogout();
+            throw new Error('الجلسة منتهية، سجّل دخول تاني');
+        }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'حصل خطأ');
+        return data;
+    }
+
+    async function doLogin() {
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const errBox = document.getElementById('loginError');
+        const btn = document.getElementById('loginBtn');
+        errBox.style.display = 'none';
+        if (!username || !password) { errBox.textContent = 'اكتب اسم المستخدم وكلمة المرور'; errBox.style.display = 'block'; return; }
+        btn.disabled = true; btn.textContent = 'جاري الدخول...';
+        try {
+            const res = await fetch(API + '/api/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'بيانات غير صحيحة');
+            if (data.user.type !== 'admin') throw new Error('الحساب ده مش حساب أدمن — اللوحة دي للأدمن بس');
+            token = data.token;
+            localStorage.setItem(TOKEN_KEY, token);
+            localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+            enterMainScreen(data.user);
+        } catch (e) {
+            errBox.textContent = e.message;
+            errBox.style.display = 'block';
+        } finally {
+            btn.disabled = false; btn.textContent = 'دخول';
+        }
+    }
+
+    function doLogout() {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        token = '';
+        document.getElementById('mainScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+    }
+
+    function enterMainScreen(user) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainScreen').style.display = 'flex';
+        document.getElementById('whoAmI').textContent = user.fullName || user.username;
+        loadStudents();
+    }
+
+    async function loadStudents() {
+        document.getElementById('loadingState').style.display = 'block';
+        document.getElementById('studentList').innerHTML = '';
+        document.getElementById('emptyState').style.display = 'none';
+        try {
+            allStudents = await apiFetch('/api/admin/students');
+            renderStudentList();
+        } catch (e) {
+            showToast(e.message, 'error');
+        } finally {
+            document.getElementById('loadingState').style.display = 'none';
+        }
+    }
+
+    function renderStudentList() {
+        const q = document.getElementById('searchInput').value.trim().toLowerCase();
+        const filtered = !q ? allStudents : allStudents.filter(s =>
+            (s.fullName || '').toLowerCase().includes(q) ||
+            (s.username || '').toLowerCase().includes(q) ||
+            (s.studentCode || '').toLowerCase().includes(q)
+        );
+        const list = document.getElementById('studentList');
+        document.getElementById('emptyState').style.display = filtered.length ? 'none' : 'block';
+        list.innerHTML = filtered.slice(0, 200).map(s => {
+            const count = (s.premiumFeatures || []).length;
+            const initial = (s.fullName || s.username || '?').trim().charAt(0);
+            return `
+                <div class="student-row" onclick='openEditSheet(${JSON.stringify(s.studentCode)})'>
+                    <div class="student-avatar">${initial}</div>
+                    <div class="student-info">
+                        <div class="student-name">${escapeHtml(s.fullName || s.username)}</div>
+                        <div class="student-meta">@${escapeHtml(s.username)} · ${escapeHtml(s.studentCode || '')}</div>
+                    </div>
+                    <div class="premium-count ${count ? 'active' : ''}">${count ? count + ' مميزة مفعّلة' : 'من غير Premium'}</div>
+                </div>`;
+        }).join('');
+    }
+
+    function escapeHtml(str) {
+        const d = document.createElement('div');
+        d.textContent = str == null ? '' : String(str);
+        return d.innerHTML;
+    }
+
+    function openEditSheet(studentCode) {
+        const s = allStudents.find(x => x.studentCode === studentCode);
+        if (!s) return;
+        activeStudent = s;
+        pendingFeatures = new Set(s.premiumFeatures || []);
+        document.getElementById('sheetAvatar').textContent = (s.fullName || s.username || '?').trim().charAt(0);
+        document.getElementById('sheetName').textContent = s.fullName || s.username;
+        document.getElementById('sheetCode').textContent = '@' + s.username + ' · ' + (s.studentCode || '');
+        document.getElementById('saveStatus').textContent = '';
+        renderFeatureCards();
+        document.getElementById('editOverlay').classList.add('active');
+    }
+
+    function closeEditSheet() {
+        document.getElementById('editOverlay').classList.remove('active');
+        activeStudent = null;
+    }
+
+    function renderFeatureCards() {
+        const el = document.getElementById('featureCards');
+        el.innerHTML = FEATURES.map(f => `
+            <div class="feature-card ${pendingFeatures.has(f.key) ? 'checked' : ''}" onclick="toggleFeature('${f.key}')">
+                <div class="feature-icon">${f.icon}</div>
+                <div class="feature-body">
+                    <div class="feature-title">${escapeHtml(f.title)}</div>
+                    <div class="feature-desc">${escapeHtml(f.desc)}</div>
+                </div>
+                <div class="feature-switch"></div>
+            </div>
+        `).join('');
+    }
+
+    function toggleFeature(key) {
+        if (pendingFeatures.has(key)) pendingFeatures.delete(key);
+        else pendingFeatures.add(key);
+        renderFeatureCards();
+    }
+
+    async function savePremium() {
+        if (!activeStudent) return;
+        const btn = document.getElementById('saveBtn');
+        const status = document.getElementById('saveStatus');
+        btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+        status.textContent = '';
+        try {
+            const data = await apiFetch(`/api/admin/students/${encodeURIComponent(activeStudent.studentCode)}/premium`, {
+                method: 'PATCH',
+                body: JSON.stringify({ premiumFeatures: Array.from(pendingFeatures) })
+            });
+            // نحدّث النسخة المحلية عشان القايمة الرئيسية تتحدث فورًا من غير ما نعمل fetch كامل تاني
+            const idx = allStudents.findIndex(s => s.studentCode === activeStudent.studentCode);
+            if (idx !== -1) allStudents[idx].premiumFeatures = data.student.premiumFeatures;
+            renderStudentList();
+            status.innerHTML = '<span style="color:var(--success)">اتحفظ ✓</span>';
+            showToast(`تم تحديث مميزات ${activeStudent.fullName || activeStudent.username}`, 'success');
+            setTimeout(closeEditSheet, 700);
+        } catch (e) {
+            status.innerHTML = `<span style="color:var(--danger)">${escapeHtml(e.message)}</span>`;
+        } finally {
+            btn.disabled = false; btn.textContent = 'حفظ التغييرات';
+        }
+    }
+
+    // دخول تلقائي لو فيه توكن محفوظ من قبل
+    (function init() {
+        const savedUser = localStorage.getItem(USER_KEY);
+        if (token && savedUser) {
+            try { enterMainScreen(JSON.parse(savedUser)); }
+            catch (e) { doLogout(); }
+        }
+    })();
+
+    document.getElementById('loginPassword').addEventListener('keydown', e => {
+        if (e.key === 'Enter') doLogin();
+    });
+</script>
+</body>
+</html>
