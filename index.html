@@ -637,6 +637,66 @@
         /* ====================== الفيديو المتفرّع (محاكاة قرارات) ====================== */
         @keyframes simPulse { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.15); opacity: 1; } }
         @keyframes simGlow { 0%, 100% { box-shadow: 0 0 18px 0 var(--sim-glow, rgba(99,102,241,.35)); } 50% { box-shadow: 0 0 34px 6px var(--sim-glow, rgba(99,102,241,.35)); } }
+
+        /* مسرح المشهد — خلفية موضوعية بتتغيّر حسب نوع الغرفة (طوارئ/عمليات/عناية مركزة/عادي)
+           وأفاتارات الشخصيات الحاضرة في المشهد. كله CSS/إيموجي بحت (زي ما اتفقنا "بالبرمجة"،
+           مفيش صور أو فيديوهات حقيقية مستخدمة). */
+        .sim-stage {
+            position: relative; height: 110px; border-radius: var(--radius); overflow: hidden;
+            margin-bottom: 12px; border: 1px solid var(--border);
+        }
+        .sim-stage-bg {
+            position: absolute; inset: 0; transition: background 0.6s ease;
+            background: linear-gradient(160deg, #1e293b, #0f172a);
+        }
+        .sim-stage-bg::before {
+            content: ''; position: absolute; inset: 0; opacity: .5;
+            background-image: radial-gradient(circle at 20% 30%, rgba(255,255,255,.06) 0, transparent 40%),
+                               radial-gradient(circle at 80% 70%, rgba(255,255,255,.05) 0, transparent 40%);
+        }
+        /* غرفة العمليات: تدرج أخضر معقّم + خطوط إضاءة كشّاف علوي */
+        .sim-stage-bg.room-or {
+            background: linear-gradient(160deg, #052e2b, #013330);
+        }
+        .sim-stage-bg.room-or::after {
+            content: ''; position: absolute; top: 0; left: 50%; width: 140px; height: 140px;
+            transform: translateX(-50%); border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,.18), transparent 70%);
+        }
+        /* الطوارئ: تدرج أحمر متوتر خفيف */
+        .sim-stage-bg.room-er { background: linear-gradient(160deg, #3b0d0d, #1a0505); }
+        /* العناية المركزة: تدرج أزرق بارد */
+        .sim-stage-bg.room-icu { background: linear-gradient(160deg, #0c1e3e, #060f22); }
+        /* غرفة أطفال: تدرج أدفى وألوان أهدى */
+        .sim-stage-bg.room-peds { background: linear-gradient(160deg, #2e1a3e, #170d22); }
+        /* عيادة/جناح عادي */
+        .sim-stage-bg.room-ward { background: linear-gradient(160deg, #1e293b, #0f172a); }
+
+        .sim-stage-characters {
+            position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center;
+            gap: 22px; padding-bottom: 8px;
+        }
+        .sim-char {
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+            animation: floatIn .4s ease; transition: transform .3s;
+        }
+        .sim-char-avatar {
+            width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; background: rgba(255,255,255,.08); border: 1.5px solid rgba(255,255,255,.15);
+            backdrop-filter: blur(2px);
+        }
+        .sim-char.speaking .sim-char-avatar {
+            border-color: var(--accent); box-shadow: 0 0 12px 2px var(--accent-glow, rgba(99,102,241,.5));
+            animation: simPulse 0.9s ease-in-out infinite;
+        }
+        .sim-char-label { font-size: 9px; color: rgba(255,255,255,.75); font-weight: 700; }
+
+        .sim-speaker-tag {
+            display: inline-block; font-size: 10.5px; font-weight: 800; color: var(--accent);
+            background: var(--accent-glow, rgba(99,102,241,.15)); padding: 2px 10px; border-radius: 10px;
+            margin-bottom: 6px;
+        }
+
         .sim-monitor {
             border-radius: var(--radius); padding: 20px 16px; text-align: center; margin-bottom: 12px;
             background: linear-gradient(160deg, var(--bg-2), var(--bg));
@@ -1460,7 +1520,87 @@
         </div>
     </div>
 
-    <!-- الفيديو المتفرّع — قائمة السيناريوهات -->
+    <!-- استوديو الحالات — 3 طرق لإضافة سيناريو جديد للفيديو المتفرّع -->
+    <div class="modal-overlay" id="scenarioStudioModal">
+        <div class="modal" style="max-width:380px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-clapperboard"></i> استوديو الحالات</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('scenarioStudioModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="font-size:11.5px;color:var(--text-2);margin-bottom:12px;">أضف حالة جديدة للفيديو المتفرّع بأي طريقة من دول — هتفضل موجودة لكل الطلاب بعد كده.</p>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button class="btn-calc" style="background:var(--bg-2);color:var(--text-1);justify-content:flex-start;padding:14px;" onclick="openCustomScenarioForm()">
+                    <i class="fas fa-pen" style="width:20px;"></i> ✍️ أضف حالة بنفسك (اكتب وصفها)
+                </button>
+                <button class="btn-calc" style="background:var(--bg-2);color:var(--text-1);justify-content:flex-start;padding:14px;" onclick="openCustomScenarioForm(true)">
+                    <i class="fas fa-robot" style="width:20px;"></i> 🤖 خلّي الذكاء الاصطناعي يولّد حالة كاملة
+                </button>
+                <button class="btn-calc" style="background:var(--bg-2);color:var(--text-1);justify-content:flex-start;padding:14px;" onclick="openBankScenarioPicker()">
+                    <i class="fas fa-book" style="width:20px;"></i> 📚 استخرج من بنك أسئلة المواقف
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- فورم إضافة حالة (بيدوي أو AI عشوائي حسب aiRandom) -->
+    <div class="modal-overlay" id="customScenarioFormModal">
+        <div class="modal" style="max-width:380px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-file-medical"></i> <span id="customScenarioFormTitle">حالة جديدة</span></div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('customScenarioFormModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <div>
+                    <label style="font-size:12px;color:var(--text-2);">التخصص</label>
+                    <select class="tool-input" id="scenarioFormSpecialty">
+                        <option value="باطنة">باطنة</option>
+                        <option value="جراحة">جراحة</option>
+                        <option value="طوارئ">طوارئ</option>
+                        <option value="أطفال">أطفال</option>
+                        <option value="نساء وتوليد">نساء وتوليد</option>
+                        <option value="عناية مركزة">عناية مركزة</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:12px;color:var(--text-2);">مستوى الصعوبة</label>
+                    <select class="tool-input" id="scenarioFormDifficulty">
+                        <option value="سهل">سهل</option>
+                        <option value="متوسط" selected>متوسط</option>
+                        <option value="صعب">صعب</option>
+                    </select>
+                </div>
+                <div id="scenarioFormDescWrap">
+                    <label style="font-size:12px;color:var(--text-2);">وصف الحالة (إيه اللي بيحصل، والقرارات المهمة اللي عايز الطالب يواجهها)</label>
+                    <textarea class="tool-input" id="scenarioFormDesc" rows="5" placeholder="مثال: مريضة عمرها 45 سنة داخلة بضيق تنفس مفاجئ وتاريخ ربو، وعايز الطالب ياخد قرار سريع في أول دقيقتين..."></textarea>
+                </div>
+                <button class="btn-calc" id="scenarioFormSubmitBtn" onclick="submitCustomScenarioForm()"><i class="fas fa-wand-magic-sparkles"></i> ولّد الحالة</button>
+                <div id="scenarioFormStatus" style="font-size:12px;text-align:center;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- استخراج من بنك أسئلة المواقف -->
+    <div class="modal-overlay" id="bankScenarioPickerModal">
+        <div class="modal" style="max-width:380px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-book"></i> استخرج من بنك الأسئلة</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('bankScenarioPickerModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div>
+                <label style="font-size:12px;color:var(--text-2);">المادة</label>
+                <select class="tool-input" id="bankScenarioSubjectSelect" onchange="populateBankScenarioChapters()">
+                    <option value="">اختر المادة...</option>
+                </select>
+            </div>
+            <div style="margin-top:8px;">
+                <label style="font-size:12px;color:var(--text-2);">الفصل</label>
+                <select class="tool-input" id="bankScenarioChapterSelect" onchange="loadBankScenarioQuestions()"><option value="">اختر الفصل...</option></select>
+            </div>
+            <div id="bankScenarioQuestionsList" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;"></div>
+            <div id="bankScenarioStatus" style="font-size:12px;text-align:center;margin-top:8px;"></div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="videoSimListModal">
         <div class="modal">
             <div class="modal-header">
@@ -1468,6 +1608,7 @@
                 <button class="close-modal" aria-label="إغلاق" onclick="closeModal('videoSimListModal')"><i class="fas fa-times"></i></button>
             </div>
             <p style="font-size:11.5px;color:var(--text-2);margin-bottom:12px;">اختار حالة، وهتلاقي مشهد سريري حي بمونيتور وصوت. قراراتك بتغيّر مسار الحالة وتوصلك لنهاية مختلفة كل مرة.</p>
+            <button class="btn-calc" style="background:var(--bg-2);color:var(--accent);border:1px solid var(--border-accent);margin-bottom:12px;" onclick="closeModal('videoSimListModal'); openModal('scenarioStudioModal');"><i class="fas fa-plus"></i> أضف حالة جديدة</button>
             <div id="videoSimListWrap"></div>
         </div>
     </div>
@@ -1480,6 +1621,11 @@
                 <button class="close-modal" aria-label="إغلاق" onclick="exitVideoSim()"><i class="fas fa-times"></i></button>
             </div>
 
+            <div id="simStage" class="sim-stage">
+                <div id="simStageBg" class="sim-stage-bg"></div>
+                <div id="simStageCharacters" class="sim-stage-characters"></div>
+            </div>
+
             <div id="simMonitor" class="sim-monitor sim-mood-normal">
                 <div class="sim-monitor-wave"><i class="fas fa-heart-pulse"></i></div>
                 <div class="sim-vitals">
@@ -1490,6 +1636,7 @@
             </div>
 
             <div class="sim-narration-box">
+                <div id="simSpeakerTag" class="sim-speaker-tag" style="display:none;"></div>
                 <div id="simNarration" class="sim-narration-text">...</div>
                 <button id="simSkipBtn" class="btn-calc btn-secondary" style="margin-top:8px;font-size:11.5px;padding:8px;" onclick="skipSimNarration()"><i class="fas fa-forward"></i> تخطي الصوت</button>
             </div>
@@ -1708,6 +1855,20 @@
         // speechSynthesis if the API route is unreachable or returns an error. Clicking
         // the same button again (or another speak button) stops playback first, so only
         // one message speaks at a time.
+        // Helper مشترك: بيجرب الصوت الطبيعي الجديد الأول (Microsoft Edge Neural)، ولو فشل
+        // يرجع تلقائي لـ /api/tts القديم (Google Translate) — مستخدم في كل مكان بيولّد
+        // صوت في التطبيق (زرار الاستماع، تحميل MP3، محاكي المواقف) عشان الترقية تتطبق
+        // في كل حتة مرة واحدة بدل ما تتكرر.
+        async function fetchTtsAudioBlob(text) {
+            try {
+                const res = await fetch('/api/tts-neural', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, gender: 'female' }) });
+                if (res.ok) return await res.blob();
+            } catch (err) { /* هنجرب القديم */ }
+            const res = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, lang: 'ar' }) });
+            if (!res.ok) throw new Error('tts-request-failed');
+            return await res.blob();
+        }
+
         async function speakText(text, btn) {
             const wasThisBtn = currentSpeakBtn === btn;
             stopSpeaking();
@@ -1726,16 +1887,8 @@
             btn.classList.add('speaking');
 
             try {
-                const res = await fetch('/api/tts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: plain, lang: 'ar' })
-                });
+                const blob = await fetchTtsAudioBlob(plain);
                 if (myToken !== speakToken) return; // stopped/replaced while we were waiting
-                if (!res.ok) throw new Error('tts-request-failed');
-
-                const blob = await res.blob();
-                if (myToken !== speakToken) return;
 
                 const url = URL.createObjectURL(blob);
                 const audio = new Audio(url);
@@ -1770,13 +1923,7 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             btn.disabled = true;
             try {
-                const res = await fetch('/api/tts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: plain, lang: 'ar' })
-                });
-                if (!res.ok) throw new Error('tts-request-failed');
-                const blob = await res.blob();
+                const blob = await fetchTtsAudioBlob(plain);
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -5728,29 +5875,48 @@ ${r.pathSummary}
         let currentVideoSim = null;   // { scenario, nodeId, path: [{nodeId, choiceText}, ...] }
         let currentSimAudio = null;
         let simSpeakToken = 0;
+        let customScenariosCache = null; // null = لسه معملناش fetch، array = اتحمّلت
 
         function scenarioEndingCount(scenario) { return Object.values(scenario.nodes).filter(n => n.ending).length; }
 
-        function openVideoSimList() {
+        // بيرجّع كل السيناريوهات (الجاهزة + اللي اتضافت بالاستوديو)، ويحمّل المخصصة من
+        // السيرفر أول مرة بس (مش كل فتحة قائمة) عشان السرعة.
+        async function getAllScenarios() {
+            if (customScenariosCache === null) {
+                try {
+                    const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/scenarios`, { headers: { 'Authorization': `Bearer ${schoolToken}` } });
+                    const data = res.ok ? await res.json() : { scenarios: [] };
+                    customScenariosCache = data.scenarios || [];
+                } catch (e) { customScenariosCache = []; }
+            }
+            return [...VIDEO_SCENARIOS, ...customScenariosCache];
+        }
+        function findScenarioById(id) {
+            return [...VIDEO_SCENARIOS, ...(customScenariosCache || [])].find(s => s.id === id);
+        }
+
+        async function openVideoSimList() {
             if (!hasPremium('premium_video_sim')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
             const seen = JSON.parse(localStorage.getItem('sx_video_sim_endings') || '{}');
             const wrap = document.getElementById('videoSimListWrap');
-            wrap.innerHTML = VIDEO_SCENARIOS.map(s => {
+            wrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>';
+            const all = await getAllScenarios();
+            openModal('videoSimListModal');
+            wrap.innerHTML = all.map(s => {
                 const discovered = (seen[s.id] || []).length;
                 return `<div class="premium-card" style="cursor:pointer;" onclick="startVideoSim('${s.id}')">
                     <div class="premium-card-head">
                         <span class="premium-card-icon">${s.icon}</span>
-                        <span class="premium-card-title">${s.title}</span>
+                        <span class="premium-card-title">${s.title}${s.custom ? ' <span style="font-size:10px;color:var(--accent);">(مضافة)</span>' : ''}</span>
                     </div>
                     <div class="premium-card-desc">${s.specialty} · صعوبة ${s.difficulty}</div>
                     <div style="font-size:11px;color:var(--text-3);">نهايات مكتشفة: ${discovered}/${scenarioEndingCount(s)}</div>
                 </div>`;
             }).join('');
-            openModal('videoSimListModal');
         }
 
         function startVideoSim(scenarioId) {
-            const scenario = VIDEO_SCENARIOS.find(s => s.id === scenarioId);
+            const scenario = findScenarioById(scenarioId);
             if (!scenario) return;
             currentVideoSim = { scenario, nodeId: scenario.startNode, path: [] };
             closeModal('videoSimListModal');
@@ -5759,11 +5925,177 @@ ${r.pathSummary}
             renderSimNode();
         }
 
+        // ====================== استوديو الحالات ======================
+        let scenarioFormAiRandom = false;
+        function openCustomScenarioForm(aiRandom) {
+            if (!hasPremium('premium_video_sim')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            scenarioFormAiRandom = Boolean(aiRandom);
+            closeModal('scenarioStudioModal');
+            document.getElementById('customScenarioFormTitle').textContent = scenarioFormAiRandom ? 'توليد حالة عشوائية' : 'أضف حالة بنفسك';
+            document.getElementById('scenarioFormDescWrap').style.display = scenarioFormAiRandom ? 'none' : 'block';
+            document.getElementById('scenarioFormDesc').value = '';
+            document.getElementById('scenarioFormStatus').textContent = '';
+            openModal('customScenarioFormModal');
+        }
+
+        async function submitCustomScenarioForm() {
+            const specialty = document.getElementById('scenarioFormSpecialty').value;
+            const difficulty = document.getElementById('scenarioFormDifficulty').value;
+            const desc = document.getElementById('scenarioFormDesc').value.trim();
+            if (!scenarioFormAiRandom && !desc) {
+                document.getElementById('scenarioFormStatus').innerHTML = '<span style="color:var(--danger)">اكتب وصف الحالة الأول</span>';
+                return;
+            }
+            const seedPrompt = scenarioFormAiRandom
+                ? `ولّد حالة إكلينيكية واقعية ومناسبة تعليميًا لطالب تمريض في تخصص ${specialty}، من غير أي قيود تانية — اختار إنت أنسب موقف.`
+                : desc;
+            closeModal('customScenarioFormModal');
+            await generateAndSaveScenario(seedPrompt, specialty, difficulty, scenarioFormAiRandom ? 'ai_random' : 'custom');
+        }
+
+        // ====================== استخراج من بنك أسئلة المواقف ======================
+        function openBankScenarioPicker() {
+            if (!hasPremium('premium_video_sim')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            closeModal('scenarioStudioModal');
+            const sel = document.getElementById('bankScenarioSubjectSelect');
+            if (!sel.dataset.filled) {
+                sel.dataset.filled = '1';
+                BANK_CATALOG.forEach((s, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = i; opt.textContent = s.subject;
+                    sel.appendChild(opt);
+                });
+            }
+            document.getElementById('bankScenarioQuestionsList').innerHTML = '';
+            document.getElementById('bankScenarioStatus').textContent = '';
+            openModal('bankScenarioPickerModal');
+        }
+
+        async function populateBankScenarioChapters() {
+            const subjIdx = document.getElementById('bankScenarioSubjectSelect').value;
+            const chapSel = document.getElementById('bankScenarioChapterSelect');
+            document.getElementById('bankScenarioQuestionsList').innerHTML = '';
+            if (subjIdx === '') { chapSel.innerHTML = '<option value="">اختر الفصل...</option>'; return; }
+            const subj = BANK_CATALOG[subjIdx];
+            const apiUrl = FIXED_SCHOOL_API_URL;
+            chapSel.innerHTML = '<option value="">اختر الفصل...</option>';
+            for (const id of subj.ids) {
+                const file = `${subj.prefix}${id}.js`;
+                const varName = `${subj.prefix}${id}`;
+                const cacheKey = varName;
+                let data = bankChaptersCache[cacheKey];
+                if (!data) {
+                    data = await fetchBankFile(apiUrl, file, varName);
+                    if (data) bankChaptersCache[cacheKey] = data;
+                }
+                const opt = document.createElement('option');
+                opt.value = cacheKey;
+                opt.textContent = data ? (data.name || file) : `${file} (تعذر التحميل)`;
+                if (!data || !Array.isArray(data.situations) || !data.situations.length) opt.disabled = true;
+                chapSel.appendChild(opt);
+            }
+        }
+
+        function loadBankScenarioQuestions() {
+            const cacheKey = document.getElementById('bankScenarioChapterSelect').value;
+            const listEl = document.getElementById('bankScenarioQuestionsList');
+            if (!cacheKey) { listEl.innerHTML = ''; return; }
+            const data = bankChaptersCache[cacheKey];
+            const situations = (data && Array.isArray(data.situations)) ? data.situations : [];
+            if (!situations.length) {
+                listEl.innerHTML = '<div style="font-size:12px;color:var(--text-3);text-align:center;padding:12px;">مفيش أسئلة مواقف في الفصل ده</div>';
+                return;
+            }
+            listEl.innerHTML = situations.map((q, i) =>
+                `<button class="btn-calc" style="background:var(--bg-2);color:var(--text-1);text-align:right;justify-content:flex-start;font-size:12px;line-height:1.6;height:auto;padding:10px 12px;" onclick="pickBankScenarioQuestion(${i}, '${cacheKey}')">${(q.text || '').slice(0, 140)}</button>`
+            ).join('');
+        }
+
+        async function pickBankScenarioQuestion(index, cacheKey) {
+            const data = bankChaptersCache[cacheKey];
+            const q = data?.situations?.[index];
+            if (!q) return;
+            closeModal('bankScenarioPickerModal');
+            const seedPrompt = `حوّل سؤال الموقف الحقيقي ده من بنك الأسئلة لسيناريو تفاعلي متفرّع كامل بنفس المضمون الطبي بتاعه:\n"${q.text}"${q.answer ? `\n(الإجابة النموذجية الأصلية للسؤال، استخدمها كمرجع لتحديد مين القرار الصح: ${q.answer})` : ''}`;
+            await generateAndSaveScenario(seedPrompt, data.name || 'عام', 'متوسط', 'question_bank');
+        }
+
+        // ====================== المولّد المشترك (بيخدم الطرق التلاتة) ======================
+        async function generateAndSaveScenario(seedPrompt, specialty, difficulty, source) {
+            showToast('بيولّد الحالة بالذكاء الاصطناعي، استنى شوية...', 'success');
+            try {
+                const res = await fetch(`${settings.backendUrl}/api/generate-scenario`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ seedPrompt, specialty, difficulty })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.scenario) throw new Error(data.error || 'فشل توليد الحالة');
+
+                const saveRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/scenarios`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ ...data.scenario, source })
+                });
+                if (!saveRes.ok) throw new Error('اتولّدت الحالة بس تعذر حفظها');
+
+                // نحدّث الكاش المحلي فورًا بالحالة الجديدة (بدل ما نصفّره ونضطر ننتظر إعادة
+                // تحميل من السيرفر) عشان startVideoSim يلاقيها ويشغّلها على طول من غير تأخير.
+                if (!Array.isArray(customScenariosCache)) customScenariosCache = [];
+                customScenariosCache.push({ ...data.scenario, custom: true });
+                showToast('الحالة جاهزة!', 'success');
+                startVideoSim(data.scenario.id);
+            } catch (e) {
+                showToast(e.message || 'حصل خطأ أثناء توليد الحالة', 'error');
+            }
+        }
+
+
+        // بيحدد شكل "غرفة" المسرح حسب تخصص الحالة — تخمين بسيط بالكلمات المفتاحية، مش
+        // بيانات صريحة لكل سيناريو (عشان يشتغل مع الحالات الجاهزة والمولّدة كلها من غير
+        // ما نحتاج نعدّل بياناتها).
+        function getRoomClassForSpecialty(specialty) {
+            const s = (specialty || '').toLowerCase();
+            if (s.includes('جراح') || s.includes('عمليات')) return 'room-or';
+            if (s.includes('طوارئ')) return 'room-er';
+            if (s.includes('عناية') || s.includes('مركزة')) return 'room-icu';
+            if (s.includes('أطفال') || s.includes('اطفال')) return 'room-peds';
+            return 'room-ward';
+        }
+        const SIM_ROOM_LABELS = {
+            'room-or': '🔪 غرفة العمليات', 'room-er': '🚑 قسم الطوارئ', 'room-icu': '🫁 العناية المركزة',
+            'room-peds': '🧒 جناح الأطفال', 'room-ward': '🏥 الجناح الداخلي'
+        };
+        function renderSimStage(scenario, node) {
+            const roomClass = getRoomClassForSpecialty(scenario.specialty);
+            const bg = document.getElementById('simStageBg');
+            bg.className = 'sim-stage-bg ' + roomClass;
+
+            const tag = document.getElementById('simSpeakerTag');
+            tag.textContent = SIM_ROOM_LABELS[roomClass] || '';
+            tag.style.display = 'inline-block';
+
+            // شخصيات ثابتة (المريض / أنت كممرض مناوب / الطبيب المسؤول) — بتوهج الأفاتار
+            // المناسب حسب خطورة اللحظة (mood العقدة الحالية) عشان يحس إنه "مشهد حي".
+            const chars = [
+                { icon: '🧑‍⚕️', label: 'أنت (الممرض)', active: node.mood === 'normal' },
+                { icon: '🧑‍🦱', label: 'المريض', active: node.mood === 'critical' },
+                { icon: '🩺', label: 'الطبيب', active: node.mood === 'tense' }
+            ];
+            document.getElementById('simStageCharacters').innerHTML = chars.map(c => `
+                <div class="sim-char ${c.active ? 'speaking' : ''}">
+                    <div class="sim-char-avatar">${c.icon}</div>
+                    <div class="sim-char-label">${c.label}</div>
+                </div>
+            `).join('');
+        }
+
         function renderSimNode() {
             const { scenario, nodeId } = currentVideoSim;
             const node = scenario.nodes[nodeId];
             document.getElementById('simTitle').innerHTML = `<i class="fas fa-clapperboard"></i> ${scenario.title}`;
             document.getElementById('simNarration').textContent = node.narration;
+            renderSimStage(scenario, node);
             const monitor = document.getElementById('simMonitor');
             monitor.className = 'sim-monitor sim-mood-' + node.mood;
             document.getElementById('simHr').textContent = node.vitals.hr;
@@ -5778,14 +6110,15 @@ ${r.pathSummary}
             speakSimNarration(node.narration);
         }
 
+        // 3 طبقات صوت بالترتيب: (1) الصوت الطبيعي الجديد /api/tts-neural (Microsoft Edge
+        // Neural)، ولو فشل لأي سبب — (2) /api/tts القديم (Google Translate)، ولو فشل برضه —
+        // (3) صوت المتصفح المدمج (speechSynthesis) كملاذ أخير عشان التجربة متتقطعش خالص.
         async function speakSimNarration(text) {
             const myToken = ++simSpeakToken;
             if (currentSimAudio) { currentSimAudio.pause(); currentSimAudio = null; }
+
             try {
-                const res = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, lang: 'ar' }) });
-                if (myToken !== simSpeakToken) return;
-                if (!res.ok) throw new Error('tts-request-failed');
-                const blob = await res.blob();
+                const blob = await fetchTtsAudioBlob(text);
                 if (myToken !== simSpeakToken) return;
                 const url = URL.createObjectURL(blob);
                 const audio = new Audio(url);
@@ -5794,9 +6127,21 @@ ${r.pathSummary}
                 audio.onended = done;
                 audio.onerror = done;
                 await audio.play();
-            } catch (err) {
-                if (myToken === simSpeakToken) revealSimNode(); // مفيش صوت متاح؟ نكمل بالنص بس من غير ما نوقّف التجربة
-            }
+                return;
+            } catch (err) { /* هنجرب صوت المتصفح كملاذ أخير */ }
+
+            try {
+                if ('speechSynthesis' in window) {
+                    const utter = new SpeechSynthesisUtterance(text);
+                    utter.lang = 'ar-EG';
+                    utter.onend = () => { if (myToken === simSpeakToken) revealSimNode(); };
+                    utter.onerror = () => { if (myToken === simSpeakToken) revealSimNode(); };
+                    window.speechSynthesis.speak(utter);
+                    return;
+                }
+            } catch (err) { /* هنكمل بالنص بس */ }
+
+            if (myToken === simSpeakToken) revealSimNode(); // مفيش صوت متاح خالص؟ نكمل بالنص بس من غير ما نوقّف التجربة
         }
 
         function skipSimNarration() {
