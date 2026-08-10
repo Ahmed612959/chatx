@@ -1944,7 +1944,7 @@
         async function fetchTtsAudioBlob(text) {
             if (hasPremium('premium_voice')) {
                 try {
-                    const res = await fetch('/api/tts-elevenlabs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+                    const res = await fetch('/api/tts-gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
                     if (res.ok) return await res.blob();
                 } catch (err) { /* هنكمل للسلسلة العادية */ }
             }
