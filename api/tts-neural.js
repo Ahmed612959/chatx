@@ -26,6 +26,32 @@ function escapeSsml(text) {
     .replace(/'/g, '&apos;');
 }
 
+// بيبني SSML أغنى بدل بلوك نص واحد مسطّح:
+// - بيقسّم الكلام لجمل (على . ! ؟ ?) ويحطها في <s> منفصلة — ده بيخلي محرك النطق
+//   يحسب التنغيم الصحيح لكل جملة لوحدها (نبرة نازلة آخر الجملة) بدل ما يتعامل مع
+//   الفقرة كلها كجملة واحدة طويلة فيها تنغيم مسطّح.
+// - <break> متغيّر الطول بين الجمل: وقفة أطول بعد علامات النهاية (تنفّس طبيعي)،
+//   ووقفة أقصر بعد الفواصل جوه نفس الجملة (بدل ما ينطق الفاصلة كأنها آخر الجملة).
+// - <prosody rate/pitch> بسيطة تكسر الرتابة الآلية من غير ما توصل لحد المبالغة.
+// ملحوظة صراحة: أصوات ar-EG معندهاش دعم لـ mstts:express-as (أساليب التعبير زي
+// "cheerful"/"sad") على عكس أصوات إنجليزي/صيني معينة — الدعم ده مش موجود لأي صوت
+// عربي حاليًا على Azure، فمش بنستخدمه هنا عشان ميتجاهلش بصمت.
+function buildSsml(text, voice, ssmlGender) {
+  const sentences = text
+    .split(/(?<=[.!?؟])\s+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const body = (sentences.length ? sentences : [text]).map((sentence, i) => {
+    // فاصلة جوه الجملة نفسها → وقفة قصيرة بعدها (150ms) بدل ما تتقرا بسرعة روبوتية
+    const withCommaBreaks = escapeSsml(sentence).replace(/،/g, '،<break time="150ms"/>');
+    const isLast = i === sentences.length - 1;
+    return `<s>${withCommaBreaks}</s>` + (isLast ? '' : `<break time="380ms"/>`);
+  }).join('');
+
+  return `<speak version='1.0' xml:lang='ar-EG'><voice xml:lang='ar-EG' xml:gender='${ssmlGender}' name='${voice}'><prosody rate='-4%' pitch='+1%'>${body}</prosody></voice></speak>`;
+}
+
 export default async function handler(request, response) {
   try {
     if (request.method !== 'POST') {
@@ -47,7 +73,7 @@ export default async function handler(request, response) {
     const voice = VOICE_MAP[genderKey];
     const ssmlGender = GENDER_MAP[genderKey];
 
-    const ssml = `<speak version='1.0' xml:lang='ar-EG'><voice xml:lang='ar-EG' xml:gender='${ssmlGender}' name='${voice}'>${escapeSsml(cleanText)}</voice></speak>`;
+    const ssml = buildSsml(cleanText, voice, ssmlGender);
 
     let upstream;
     try {
