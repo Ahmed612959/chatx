@@ -17,9 +17,9 @@ export default async function handler(request) {
     const rl = checkRateLimit(request, { limit: 8, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
-    const SAMBANOVA_API_KEY = process.env.SAMBANOVA_API_KEY;
-    if (!SAMBANOVA_API_KEY) {
-      return new Response(JSON.stringify({ error: 'SAMBANOVA_API_KEY غير مضبوط في Environment Variables' }), {
+    const GROQ_API_KEY = process.env.GROQ_API_KEY;
+    if (!GROQ_API_KEY) {
+      return new Response(JSON.stringify({ error: 'GROQ_API_KEY غير مضبوط في Environment Variables' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -72,14 +72,14 @@ export default async function handler(request) {
 
     let upstream;
     try {
-      upstream = await fetch('https://api.sambanova.ai/v1/chat/completions', {
+      upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SAMBANOVA_API_KEY}`
+          'Authorization': `Bearer ${GROQ_API_KEY}`
         },
         body: JSON.stringify({
-          model: 'Meta-Llama-3.3-70B-Instruct',
+          model: 'openai/gpt-oss-120b',
           messages: [
             { role: 'system', content: schemaInstructions },
             { role: 'user', content: userInstruction }
