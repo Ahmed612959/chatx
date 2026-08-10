@@ -1474,6 +1474,16 @@
                 <button id="premium-videosim-action" class="btn-calc" style="display:none;" onclick="closeModal('premiumHubModal'); openVideoSimList();">ابدأ مشهد جديد</button>
                 <div id="premium-videosim-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
             </div>
+
+            <div class="premium-card">
+                <div class="premium-card-head">
+                    <span class="premium-card-icon">🎧</span>
+                    <span class="premium-card-title">صوت واقعي فائق</span>
+                    <span id="premium-voice-badge" class="premium-badge-locked">مقفول 🔒</span>
+                </div>
+                <div class="premium-card-desc">ترقية تلقائية لأعلى جودة صوت متاحة (ElevenLabs) في كل مكان بيتكلم في التطبيق — قراءة الردود، محاكي المواقف، تحميل الملخصات الصوتية. مفيش حاجة تعملها، بتشتغل من نفسها.</div>
+                <div id="premium-voice-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
+            </div>
         </div>
     </div>
 
@@ -1926,7 +1936,18 @@
         // يرجع تلقائي لـ /api/tts القديم (Google Translate) — مستخدم في كل مكان بيولّد
         // صوت في التطبيق (زرار الاستماع، تحميل MP3، محاكي المواقف) عشان الترقية تتطبق
         // في كل حتة مرة واحدة بدل ما تتكرر.
+        // Helper مشترك لكل مكان بيولّد صوت في التطبيق. المشتركين Premium (premium_voice)
+        // بياخدوا ElevenLabs الأول (أعلى واقعية متاحة)، ولو فشل لأي سبب (كوتة خلصت، مفتاح
+        // غلط...) بيرجعوا تلقائي لنفس سلسلة الأمان اللي المستخدم العادي بياخدها من الأساس:
+        // Azure Neural ← Google Translate ← صوت المتصفح. المستخدم العادي مبيكلمش ElevenLabs
+        // خالص، يبدأ من Azure على طول — زي ما كان الوضع بالظبط قبل كده.
         async function fetchTtsAudioBlob(text) {
+            if (hasPremium('premium_voice')) {
+                try {
+                    const res = await fetch('/api/tts-elevenlabs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+                    if (res.ok) return await res.blob();
+                } catch (err) { /* هنكمل للسلسلة العادية */ }
+            }
             try {
                 const res = await fetch('/api/tts-neural', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, gender: 'female' }) });
                 if (res.ok) return await res.blob();
@@ -4946,7 +4967,7 @@
             premium_ai: 'ai', premium_mock_exams: 'mock', premium_prompts: 'prompts',
             premium_theme: 'theme', premium_drug_library: 'drugs',
             premium_clinical_sim: 'clinical', premium_lecture_audio: 'lecture',
-            premium_video_sim: 'videosim'
+            premium_video_sim: 'videosim', premium_voice: 'voice'
         };
         function openPremiumHub() {
             Object.entries(PREMIUM_UI_MAP).forEach(([key, suffix]) => {
@@ -4999,6 +5020,10 @@
             {
                 icon: '🎬', title: 'الفيديو المتفرّع',
                 body: 'دوس "ابدأ مشهد جديد"، اختار الحالة، وهتلاقي مشهد سريري بمونيتور وصوت بيوصفلك الموقف. كل ما تختار قرار، الحالة بتتفرّع لمسار مختلف — ممكن توصل لنهاية ممتازة أو نهاية حرجة حسب قراراتك. بعد ما توصل لنهاية، دوس "قيّم قراراتي" عشان الذكاء الاصطناعي يحللّك مسارك بالتفصيل، وجرّب تاني عشان تكتشف باقي النهايات.'
+            },
+            {
+                icon: '🎧', title: 'صوت واقعي فائق',
+                body: 'مفيش زرار تدوسه — لو مفعّلة، أي صوت في التطبيق (قراءة الردود، محاكي المواقف، الملخصات الصوتية) بيتحول تلقائيًا لأعلى جودة صوت متاحة، تحس إنه شخص حقيقي بيتكلم مش صوت آلي.'
             },
             {
                 icon: '👑', title: 'الشكل الذهبي',
