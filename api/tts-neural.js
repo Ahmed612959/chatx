@@ -1,21 +1,30 @@
-// Runs as a standard Node.js serverless function (not edge) — the underlying Microsoft
-// Edge TTS protocol needs a real WebSocket client with custom headers, which isn't
-// reliably available in Vercel's Edge (V8 isolate) runtime.
+// Runs as a standard Node.js serverless function (not edge) — بسيطة كفاية إنها تشتغل
+// على أي runtime، لكن سايبينها Node زي ما كانت أصلاً عشان الفرونت إند مش محتاج أي تعديل.
 //
-// ⚠️ ملاحظة صراحة: ده صوت "Microsoft Edge Neural TTS" — بروتوكول غير رسمي متعاكس هندسيًا
-// (reverse-engineered)، مش API رسمي من مايكروسوفت. بيشتغل من غير أي مفتاح ومجاني تمامًا،
-// وجودته طبيعية جدًا وأعلى بمراحل من صوت Google Translate القديم، لكن بما إنه غير رسمي:
-// لو مايكروسوفت غيّرت البروتوكول يوم، الـ endpoint ده ممكن يفشل فجأة. عشان كده الفرونت
-// إند (index-11.html) لازم يجرب الـ endpoint ده الأول، وعند أي فشل يرجع تلقائيًا لـ
-// /api/tts (Google Translate) وبعدها لصوت المتصفح نفسه (speechSynthesis) — 3 طبقات أمان.
-import { EdgeTTS } from 'edge-tts-universal';
+// صوت "Azure AI Speech" الرسمي من مايكروسوفت (نفس كتالوج الأصوات اللي edge-tts-universal
+// كان بياخده بشكل غير رسمي، لكن دلوقتي عبر API رسمي ومستقر بمفتاح اشتراك حقيقي).
+// الفترة المجانية: 500 ألف حرف/شهر متجددة (F0 tier). لو المفتاح أو الـ region غلط، أو
+// الكوتة خلصت، بنرجّع 502 واضح والفرونت إند (index-11.html) بيرجع تلقائيًا لـ /api/tts
+// (Google Translate) وبعدها لصوت المتصفح — نفس 3 طبقات الأمان زي الأول.
 
-// أصوات عربية مصرية طبيعية بجنس ذكر/أنثى — لو الطالب مش محدد، بنستخدم الأنثى كافتراضي
-// (نفس الصوت المستخدم في محاكي المواقف حاليًا).
 const VOICE_MAP = {
   female: 'ar-EG-SalmaNeural',
   male: 'ar-EG-ShakirNeural'
 };
+
+const GENDER_MAP = {
+  female: 'Female',
+  male: 'Male'
+};
+
+function escapeSsml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
 
 export default async function handler(request, response) {
   try {
@@ -23,22 +32,50 @@ export default async function handler(request, response) {
       return response.status(405).json({ error: 'Method not allowed' });
     }
 
+    const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY;
+    const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION || 'northeurope';
+    if (!AZURE_SPEECH_KEY) {
+      return response.status(500).json({ error: 'AZURE_SPEECH_KEY غير مضبوط في Environment Variables' });
+    }
+
     const { text, gender } = request.body || {};
     const cleanText = (text || '').toString().trim().slice(0, 2000);
     if (!cleanText) {
       return response.status(400).json({ error: 'لا يوجد نص لتحويله لصوت' });
     }
-    const voice = VOICE_MAP[gender] || VOICE_MAP.female;
+    const genderKey = VOICE_MAP[gender] ? gender : 'female';
+    const voice = VOICE_MAP[genderKey];
+    const ssmlGender = GENDER_MAP[genderKey];
 
-    const tts = new EdgeTTS(cleanText, voice, { rate: '0%', pitch: '0Hz', volume: '0%' });
-    const result = await tts.synthesize();
+    const ssml = `<speak version='1.0' xml:lang='ar-EG'><voice xml:lang='ar-EG' xml:gender='${ssmlGender}' name='${voice}'>${escapeSsml(cleanText)}</voice></speak>`;
 
-    // مكتبات edge-tts المختلفة بترجع الصوت بأشكال شوية مختلفة حسب النسخة (audio مباشر،
-    // أو audio.buffer) — بنغطي الاحتمالين عشان الكود ميبوظش لو النسخة اتحدّثت.
-    const audioBuffer = result?.audio?.buffer
-      ? Buffer.from(result.audio.buffer)
-      : Buffer.from(result?.audio || result);
+    let upstream;
+    try {
+      upstream = await fetch(`https://${AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+        method: 'POST',
+        headers: {
+          'Ocp-Apim-Subscription-Key': AZURE_SPEECH_KEY,
+          'Content-Type': 'application/ssml+xml',
+          'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
+          'User-Agent': 'chatx-tts-neural'
+        },
+        body: ssml
+      });
+    } catch (err) {
+      return response.status(502).json({ error: 'تعذر الوصول لخدمة Azure Speech', detail: String(err).slice(0, 200) });
+    }
 
+    if (!upstream.ok) {
+      const detail = await upstream.text().catch(() => '');
+      // 401/403 غالبًا مفتاح غلط أو region غلط، 429 كوتة الشهر خلصت
+      return response.status(upstream.status === 429 ? 502 : upstream.status).json({
+        error: 'تعذر توليد الصوت الطبيعي',
+        detail: detail.slice(0, 200)
+      });
+    }
+
+    const arrayBuffer = await upstream.arrayBuffer();
+    const audioBuffer = Buffer.from(arrayBuffer);
     if (!audioBuffer || !audioBuffer.length) {
       throw new Error('empty-audio-response');
     }
@@ -47,8 +84,6 @@ export default async function handler(request, response) {
     response.setHeader('Cache-Control', 'no-cache');
     return response.status(200).send(audioBuffer);
   } catch (err) {
-    // بنرجّع 502 واضح بدل ما نكسر الطلب — الفرونت إند هيلقط الفشل ده ويرجع لـ /api/tts
-    // تلقائيًا زي ما هو متوقع، فمفيش تجربة مستخدم بتتقطع حتى لو الـ endpoint ده وقع.
     return response.status(502).json({ error: 'تعذر توليد الصوت الطبيعي', detail: String(err).slice(0, 200) });
   }
 }
