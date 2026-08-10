@@ -17,9 +17,9 @@ export default async function handler(request) {
     const rl = checkRateLimit(request, { limit: 8, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY غير مضبوط في Environment Variables' }), {
+    const SAMBANOVA_API_KEY = process.env.SAMBANOVA_API_KEY;
+    if (!SAMBANOVA_API_KEY) {
+      return new Response(JSON.stringify({ error: 'SAMBANOVA_API_KEY غير مضبوط في Environment Variables' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -72,12 +72,20 @@ export default async function handler(request) {
 
     let upstream;
     try {
-      upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      upstream = await fetch('https://api.sambanova.ai/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SAMBANOVA_API_KEY}`
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `${schemaInstructions}\n\n${userInstruction}` }] }],
-          generationConfig: { temperature: 0.9, responseMimeType: 'application/json' }
+          model: 'Meta-Llama-3.3-70B-Instruct',
+          messages: [
+            { role: 'system', content: schemaInstructions },
+            { role: 'user', content: userInstruction }
+          ],
+          temperature: 0.9,
+          response_format: { type: 'json_object' }
         })
       });
     } catch (err) {
@@ -93,7 +101,7 @@ export default async function handler(request) {
     }
 
     const upstreamData = await upstream.json();
-    const rawText = upstreamData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const rawText = upstreamData?.choices?.[0]?.message?.content || '';
 
     let scenario;
     try {
