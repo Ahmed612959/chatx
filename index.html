@@ -6063,9 +6063,41 @@ ${r.pathSummary}
             }).join('');
         }
 
+        // بيرقّع أي عقدة ناقصها بيانات أساسية (حصل مع حالات مولّدة بالذكاء الاصطناعي فاتها
+        // "vitals" أو "mood" في عقدة معينة جوه الشجرة) — بدل ما التطبيق يتجمد على شاشة
+        // فاضية لما يوصل لعقدة زي دي. عقدة مش نهاية وناقصها "choices" بنحوّلها لنهاية آمنة
+        // (quality: good) بدل ما تكسر التجربة تمامًا.
+        function normalizeScenarioClient(scenario) {
+            const moods = ['normal', 'tense', 'critical'];
+            const qualities = ['excellent', 'good', 'risky', 'critical'];
+            const vDefaults = {
+                normal: { hr: 88, spo2: 97, bp: '120/80' },
+                tense: { hr: 108, spo2: 93, bp: '105/70' },
+                critical: { hr: 130, spo2: 85, bp: '85/55' }
+            };
+            Object.values(scenario.nodes || {}).forEach(node => {
+                if (!moods.includes(node.mood)) node.mood = 'normal';
+                const d = vDefaults[node.mood];
+                if (!node.vitals || typeof node.vitals !== 'object') node.vitals = { ...d };
+                else {
+                    if (typeof node.vitals.hr !== 'number') node.vitals.hr = d.hr;
+                    if (typeof node.vitals.spo2 !== 'number') node.vitals.spo2 = d.spo2;
+                    if (!node.vitals.bp) node.vitals.bp = d.bp;
+                }
+                if (node.ending) {
+                    if (!qualities.includes(node.quality)) node.quality = 'good';
+                } else if (!Array.isArray(node.choices) || !node.choices.length) {
+                    node.ending = true;
+                    node.quality = qualities.includes(node.quality) ? node.quality : 'good';
+                }
+            });
+            return scenario;
+        }
+
         function startVideoSim(scenarioId) {
             const scenario = findScenarioById(scenarioId);
             if (!scenario) return;
+            normalizeScenarioClient(scenario);
             currentVideoSim = { scenario, nodeId: scenario.startNode, path: [] };
             closeModal('videoSimListModal');
             openModal('videoSimPlayerModal');
@@ -6265,23 +6297,31 @@ ${r.pathSummary}
             fadeEls.forEach(el => el.classList.add('sim-scene-fading'));
 
             setTimeout(() => {
-                document.getElementById('simTitle').innerHTML = `<i class="fas fa-clapperboard"></i> ${scenario.title}`;
-                document.getElementById('simNarration').textContent = node.narration;
-                renderSimStage(scenario, node);
-                const monitor = document.getElementById('simMonitor');
-                monitor.className = 'sim-monitor sim-mood-' + node.mood;
-                document.getElementById('simHr').textContent = node.vitals.hr;
-                document.getElementById('simSpo2').textContent = node.vitals.spo2;
-                document.getElementById('simBp').textContent = node.vitals.bp;
-                startSimEcg(node.mood);
+                try {
+                    document.getElementById('simTitle').innerHTML = `<i class="fas fa-clapperboard"></i> ${scenario.title}`;
+                    document.getElementById('simNarration').textContent = node.narration;
+                    renderSimStage(scenario, node);
+                    const monitor = document.getElementById('simMonitor');
+                    monitor.className = 'sim-monitor sim-mood-' + node.mood;
+                    document.getElementById('simHr').textContent = node.vitals.hr;
+                    document.getElementById('simSpo2').textContent = node.vitals.spo2;
+                    document.getElementById('simBp').textContent = node.vitals.bp;
+                    startSimEcg(node.mood);
 
-                document.getElementById('simChoicesWrap').style.display = 'none';
-                document.getElementById('simChoicesWrap').innerHTML = '';
-                document.getElementById('simEndingWrap').style.display = 'none';
-                document.getElementById('simSkipBtn').style.display = '';
+                    document.getElementById('simChoicesWrap').style.display = 'none';
+                    document.getElementById('simChoicesWrap').innerHTML = '';
+                    document.getElementById('simEndingWrap').style.display = 'none';
+                    document.getElementById('simSkipBtn').style.display = '';
 
-                fadeEls.forEach(el => el.classList.remove('sim-scene-fading'));
-                speakSimNarration(node.narration);
+                    fadeEls.forEach(el => el.classList.remove('sim-scene-fading'));
+                    speakSimNarration(node.narration);
+                } catch (err) {
+                    // آخر خط دفاع: أي مشكلة غير متوقعة في بيانات العقدة متسيبش المشهد
+                    // عالق فاضي — بنرجّع كل حاجة تبان ونطلع بدل ما نجمّد التجربة.
+                    fadeEls.forEach(el => el.classList.remove('sim-scene-fading'));
+                    showToast('حصلت مشكلة في بيانات الحالة دي — جرب حالة تانية', 'error');
+                    exitVideoSim();
+                }
             }, 220);
         }
 
@@ -6340,7 +6380,14 @@ ${r.pathSummary}
 
         function pickSimChoice(i) {
             const node = currentVideoSim.scenario.nodes[currentVideoSim.nodeId];
-            const choice = node.choices[i];
+            const choice = node.choices?.[i];
+            // خط دفاع أخير: لو الاختيار ده بيشاور على عقدة مش موجودة أصلاً في الشجرة
+            // (رابط مكسور من توليد ناقص)، منكسرش — نطلع برسالة واضحة بدل تجمّد صامت.
+            if (!choice || !choice.next || !currentVideoSim.scenario.nodes[choice.next]) {
+                showToast('حصلت مشكلة في مسار الحالة دي — جرب حالة تانية', 'error');
+                exitVideoSim();
+                return;
+            }
             currentVideoSim.path.push({ nodeId: currentVideoSim.nodeId, choiceText: choice.text });
             currentVideoSim.nodeId = choice.next;
             renderSimNode();
