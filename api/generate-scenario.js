@@ -103,6 +103,52 @@ export default async function handler(request) {
     const upstreamData = await upstream.json();
     const rawText = upstreamData?.choices?.[0]?.message?.content || '';
 
+    // ====================== تحقق + ترقيع كامل لكل عقدة في الشجرة ======================
+    // الفحص السطحي القديم كان بيتأكد بس إن startNode موجودة — يعني لو الموديل نسي "vitals"
+    // أو "choices" في عقدة تانية جوه الشجرة (بعيدة عن البداية)، كانت بتعدي وتتحفظ عادي
+    // وبعدين تكسر التطبيق فعليًا لما الطالب يوصلها أثناء اللعب. دلوقتي:
+    // - الحاجات البسيطة الناقصة (mood/vitals/quality) بترقّع تلقائي بقيم افتراضية معقولة.
+    // - المشاكل اللي مش آمن نصلّحها لوحدنا (رابط next بيشاور على عقدة مش موجودة، عقدة
+    //   مش نهاية ومفيهاش اختيارات خالص) بترفض الحالة كلها وتطلب توليد تاني، بدل ما نبعت
+    //   شجرة مكسورة للفرونت إند.
+    function normalizeAndValidateScenario(scenario) {
+      const moods = ['normal', 'tense', 'critical'];
+      const qualities = ['excellent', 'good', 'risky', 'critical'];
+      const vDefaults = {
+        normal: { hr: 88, spo2: 97, bp: '120/80' },
+        tense: { hr: 108, spo2: 93, bp: '105/70' },
+        critical: { hr: 130, spo2: 85, bp: '85/55' }
+      };
+      const nodeIds = Object.keys(scenario.nodes || {});
+      for (const id of nodeIds) {
+        const node = scenario.nodes[id];
+        if (!node || typeof node !== 'object') return `عقدة "${id}" فاسدة`;
+        if (!node.narration || typeof node.narration !== 'string') return `عقدة "${id}" من غير سرد (narration)`;
+
+        if (!moods.includes(node.mood)) node.mood = 'normal';
+        const d = vDefaults[node.mood];
+        if (!node.vitals || typeof node.vitals !== 'object') node.vitals = { ...d };
+        else {
+          if (typeof node.vitals.hr !== 'number') node.vitals.hr = d.hr;
+          if (typeof node.vitals.spo2 !== 'number') node.vitals.spo2 = d.spo2;
+          if (!node.vitals.bp) node.vitals.bp = d.bp;
+        }
+
+        if (node.ending) {
+          if (!qualities.includes(node.quality)) node.quality = 'good';
+        } else {
+          if (!Array.isArray(node.choices) || !node.choices.length) {
+            return `عقدة "${id}" مش نهاية ومفيهاش اختيارات`;
+          }
+          for (const choice of node.choices) {
+            if (!choice || !choice.text || !choice.next) return `عقدة "${id}" فيها اختيار ناقص بيانات`;
+            if (!nodeIds.includes(choice.next)) return `عقدة "${id}" بتشاور على عقدة "${choice.next}" مش موجودة في الشجرة`;
+          }
+        }
+      }
+      return null; // null = الشجرة سليمة
+    }
+
     let scenario;
     try {
       scenario = JSON.parse(rawText);
@@ -113,8 +159,8 @@ export default async function handler(request) {
       });
     }
 
-    // تحقق سطحي سريع إن الشكل الأساسي موجود قبل ما نرجّعه — مش تحقق كامل لكل قاعدة،
-    // بس كفاية نلتقط لو الموديل رجّع حاجة ناقصة جوهريًا بدل ما نبعتها ناقصة للفرونت إند.
+    // تحقق سطحي سريع إن الشكل الأساسي موجود قبل ما نكمل — لسه محتاجين ده كخطوة أولى
+    // قبل الفحص التفصيلي اللي بيمشي على كل عقدة في الشجرة.
     if (!scenario || typeof scenario !== 'object' || !scenario.nodes || !scenario.startNode || !scenario.nodes[scenario.startNode]) {
       return new Response(JSON.stringify({ error: 'الحالة المولّدة ناقصة أجزاء أساسية، جرب تاني' }), {
         status: 502,
@@ -122,6 +168,14 @@ export default async function handler(request) {
       });
     }
     if (!scenario.id) scenario.id = 'custom_' + Date.now();
+
+    const validationError = normalizeAndValidateScenario(scenario);
+    if (validationError) {
+      return new Response(JSON.stringify({ error: `الحالة المولّدة فيها مشكلة (${validationError}) — جرب تاني`, detail: validationError }), {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     return new Response(JSON.stringify({ scenario }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
