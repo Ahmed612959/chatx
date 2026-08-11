@@ -283,7 +283,7 @@
         .action-btn:active { transform: translateY(0) scale(0.94); }
 
         .chat-container {
-            flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px; scroll-behavior: smooth;
+            flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px; scroll-behavior: auto;
             display: flex; flex-direction: column; gap: 16px;
         }
         .chat-container::-webkit-scrollbar { width: 4px; }
@@ -3969,13 +3969,22 @@
         // كان سبب في التهزهز)، بنستخدم علم "scheduled" بسيط: لو فيه scroll مجدول بالفعل،
         // منجدولش واحد تاني فوقه، ونستنى الـ requestAnimationFrame يظبط التوقيت مع دورة
         // رسم المتصفح نفسها (أنعم بكتير من setTimeout عشوائي).
+        // السبب الحقيقي للتهزهز: chat-container كان فيه scroll-behavior: smooth في الـ CSS.
+        // ده معناه إن أي مرة نغيّر فيها scrollTop برمجيًا (زي هنا، كل تيك من الـ typewriter
+        // كل 18ms تقريبًا)، المتصفح كان بيبدأ أنيميشن "smooth scroll" جديد للهدف الجديد —
+        // لكن قبل ما الأنيميشن يخلص، بييجي تيك تاني بهدف أعلى، فيتلغي ويبدأ من جديد... وهكذا
+        // عشرات المرات في الثانية. النتيجة البصرية: الشات بيهتز/يرتعش لأنه بيحاول يلحق هدف
+        // بيتحرك باستمرار بمنحنى حركة (easing) بدل ما ينط للمكان الصح على طول.
+        // الحل الجذري: شلنا scroll-behavior:smooth من الـ CSS خالص (خليناها auto)، وهنا كمان
+        // بنستخدم scrollTo({behavior:'auto'}) صراحةً بدل تعيين scrollTop مباشرة، عشان الكود
+        // يفضل يشتغل صح حتى لو حد ضاف smooth-scroll تاني في مكان تاني من الصفحة مستقبلاً.
         let scrollScheduled = false;
         function scrollToBottom() {
             if (scrollScheduled) return;
             scrollScheduled = true;
             requestAnimationFrame(() => {
                 const container = document.getElementById('chatContainer');
-                container.scrollTop = container.scrollHeight;
+                container.scrollTo({ top: container.scrollHeight, behavior: 'auto' });
                 scrollScheduled = false;
             });
         }
