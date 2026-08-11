@@ -1935,34 +1935,56 @@
         // Helper مشترك: بيجرب الصوت الطبيعي الجديد الأول (Microsoft Edge Neural)، ولو فشل
         // يرجع تلقائي لـ /api/tts القديم (Google Translate) — مستخدم في كل مكان بيولّد
         // صوت في التطبيق (زرار الاستماع، تحميل MP3، محاكي المواقف) عشان الترقية تتطبق
-        // في كل حتة مرة واحدة بدل ما تتكرر.
-        // Helper مشترك لكل مكان بيولّد صوت في التطبيق. المشتركين Premium (premium_voice)
-        // بياخدوا ElevenLabs الأول (أعلى واقعية متاحة)، ولو فشل لأي سبب (كوتة خلصت، مفتاح
-        // غلط...) بيرجعوا تلقائي لنفس سلسلة الأمان اللي المستخدم العادي بياخدها من الأساس:
-        // Azure Neural ← Google Translate ← صوت المتصفح. المستخدم العادي مبيكلمش ElevenLabs
-        // خالص، يبدأ من Azure على طول — زي ما كان الوضع بالظبط قبل كده.
+        // ====================================================================================
+        // Helper مركزي واحد لكل صوت في التطبيق كله — بيتنادى من 3 أماكن:
+        //   1) speakText()          → زرار "استمع" تحت أي رسالة في المحادثة العادية
+        //   2) downloadAsAudio()    → زرار تحميل رد كـ ملف MP3/WAV
+        //   3) speakSimNarration()  → سرد المشهد في محاكي المواقف الإكلينيكية (الفيديو المتفرّع)
+        // بما إن التلاتة بينادوا نفس الدالة دي، أي تحسين أو تغيير في جودة الصوت بيتطبق في
+        // كل مكان في التطبيق مرة واحدة — مفيش داعي نكرر نفس المنطق في 3 أماكن مختلفة.
+        //
+        // ترتيب المحاولات (fallback chain) — كل طبقة بتتجرب وبترجع أول ما توفر النتيجة:
+        //   الطالب Premium (premium_voice مفعّلة)?
+        //     └─(1) Gemini TTS  → أعلى جودة متاحة حاليًا، نفس GEMINI_API_KEY المستخدم في
+        //           باقي الشات (مفيش مفتاح إضافي ولا فوترة منفصلة). لو فشلت لأي سبب
+        //           (خطأ مؤقت من جوجل، الموديل رافض الطلب...) بننزل للطبقة اللي بعدها.
+        //   كل المستخدمين (Premium وعادي) بيوصلوا هنا لو الطبقة اللي فوق مش موجودة/فشلت:
+        //     └─(2) Azure Neural TTS (/api/tts-neural) → صوت رسمي واقعي كويس، محتاج
+        //           AZURE_SPEECH_KEY. لو مش متحط أو فشل، ننزل للطبقة الأخيرة.
+        //     └─(3) Google Translate TTS (/api/tts) → أقل جودة (صوت آلي واضح لكن مش طبيعي)
+        //           لكنه مضمون الشغل دايمًا من غير أي مفتاح API خالص، فهو "شبكة الأمان"
+        //           النهائية اللي التطبيق بيرجعلها لو كل حاجة تانية فشلت.
+        //
+        // ملاحظة مهمة: المستخدم العادي (مش Premium) بيتخطى الطبقة (1) تمامًا ومبيكلمش
+        // Gemini خالص لصوت — بيبدأ مباشرة من (2)، فتجربته متأثرتش ولا اتغيّرت بأي شكل.
+        // ====================================================================================
         async function fetchTtsAudioBlob(text) {
             if (hasPremium('premium_voice')) {
                 try {
                     const res = await fetch('/api/tts-gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
                     if (res.ok) return await res.blob();
-                } catch (err) { /* هنكمل للسلسلة العادية */ }
+                } catch (err) { /* الطبقة (1) فشلت — نكمل عادي للطبقة (2)، من غير ما نوقف المستخدم */ }
             }
             try {
                 const res = await fetch('/api/tts-neural', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, gender: 'female' }) });
                 if (res.ok) return await res.blob();
-            } catch (err) { /* هنجرب القديم */ }
+            } catch (err) { /* الطبقة (2) فشلت — نكمل للطبقة (3) الأخيرة والمضمونة */ }
             const res = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, lang: 'ar' }) });
-            if (!res.ok) throw new Error('tts-request-failed');
+            if (!res.ok) throw new Error('tts-request-failed'); // الطبقة (3) نفسها فشلت — هنا بس نستسلم فعليًا
             return await res.blob();
         }
 
+        // بتتنادى لما المستخدم يدوس زرار "استمع" (🔊) تحت أي رسالة رد من الذكاء الاصطناعي
+        // في المحادثة العادية. بتنضّف النص من رموز الماركداون الأول (عشان الصوت ميقولش
+        // "نجمة نجمة" أو يقرا رموز التنسيق)، وبعدين تستخدم fetchTtsAudioBlob فوق عشان
+        // تجيب الصوت الفعلي (سواء Gemini للمشتركين أو السلسلة العادية للباقي).
         async function speakText(text, btn) {
             const wasThisBtn = currentSpeakBtn === btn;
             stopSpeaking();
             if (wasThisBtn) return;
 
             const plain = (text || '')
+
                 .replace(/```[\s\S]*?```/g, ' ')
                 .replace(/[*_#>`~\-]/g, ' ')
                 .replace(/\s+/g, ' ')
@@ -3119,47 +3141,79 @@
             return out;
         }
 
+        // مسؤولة عن "تأثير الكتابة الحية" (النص بيظهر حرف حرف زي حد بيكتب دلوقتي) بدون ما
+        // يسبب تهزهز أو تعليق في الردود الطويلة. المشكلة اللي كانت موجودة قبل كده: كل الرد
+        // كان بيتعاد تفسيره كماركداون Markdown وبيتستبدل الـ HTML بالكامل جوه الفقاعة كل
+        // 18 مللي ثانية — يعني في رد طويل (3000 حرف مثلاً)، كان بيحصل آلاف عمليات إعادة رسم
+        // لنفس المحتوى المتراكم، وده اللي بيسبب التهزهز والبطء اللي حسّيت بيه.
+        //
+        // الحل: فصلنا حاجتين كانوا متلزّقين في بعض:
+        //   1) "ظهور النص" (fast tick, كل 18ms) — ده رخيص جدًا، مجرد إضافة نص خام (textContent)
+        //      من غير أي تحليل ماركداون أو استبدال HTML، فمفيش أي تكلفة إعادة رسم حقيقية.
+        //   2) "تحديث التنسيق" (Markdown → HTML: عناوين، بولد، جداول...) — ده الجزء المكلف،
+        //      وبقى بيحصل كل 120ms بس (تقريبًا 8 مرات في الثانية) بدل 55 مرة في الثانية،
+        //      وهي سرعة كفاية إن العين مش هتحس بفرق في التنسيق، لكن التكلفة الحسابية الكلية
+        //      بتقل بمقدار كبير جدًا (المحتوى بيتقرأ ماركداون مرات أقل بكتير طول الرد).
         function createTypewriterQueue(msgDiv, botMsg, signal) {
-            let buffer = '';
-            let displayed = '';
-            let timer = null;
+            let buffer = '';       // النص اللي وصل من الـ API ولسه ماتعرضش للمستخدم
+            let displayed = '';    // النص اللي ظاهر فعليًا على الشاشة دلوقتي
+            let revealTimer = null;      // تايمر ظهور النص (سريع، كل 18ms)
+            let formatTimer = null;      // تايمر تحديث التنسيق (أبطأ، كل 120ms)
+            let needsFormatUpdate = false; // فيه نص جديد اتضاف من آخر مرة اتعمل فيها تنسيق؟
             const bubbleDiv = msgDiv.querySelector('.msg-bubble');
 
-            function reveal() {
-                if (signal.aborted || buffer.length === 0) { stop(); return; }
-                // Reveal a small fixed chunk per tick, but speed up if the buffer is backing up
-                // (e.g. the API sent a big chunk at once) so we never lag far behind the real content.
+            // بيضيف النص الجديد كنص خام بس (من غير ماركداون) — ده اللي بيدّي إحساس السرعة
+            // والسلاسة من غير أي تكلفة إعادة رسم حقيقية، لأن textContent مش بيعمل parsing
+            // ولا يبني عناصر HTML جديدة.
+            function revealTick() {
+                if (signal.aborted || buffer.length === 0) { stopReveal(); return; }
+                // بنكشف جزء متغيّر الحجم حسب حجم الكلام المتراكم — لو الـ API بعت جزء كبير
+                // دفعة واحدة، بنسرّع الكشف عشان منتأخرش عن المحتوى الحقيقي.
                 const step = Math.max(2, Math.ceil(buffer.length / 30));
                 displayed += buffer.slice(0, step);
                 buffer = buffer.slice(step);
                 botMsg.content = displayed;
-                bubbleDiv.innerHTML = marked.parse(displayed);
-                wrapTables(bubbleDiv);
+                bubbleDiv.textContent = displayed; // رخيص جدًا — مفيش reflow تقيل هنا
+                needsFormatUpdate = true;
                 scrollToBottom();
             }
 
-            function start() {
-                if (!timer) timer = setInterval(reveal, 18);
+            // بيحوّل النص المتراكم لماركداون منسّق فعليًا (عناوين، جداول، كود...) — العملية
+            // المكلفة اللي بقت بتحصل أبطأ بكتير دلوقتي.
+            function formatTick() {
+                if (!needsFormatUpdate) return;
+                needsFormatUpdate = false;
+                bubbleDiv.innerHTML = marked.parse(displayed);
+                wrapTables(bubbleDiv);
             }
 
-            function stop() {
-                if (timer) { clearInterval(timer); timer = null; }
+            function startReveal() {
+                if (!revealTimer) revealTimer = setInterval(revealTick, 18);
+                if (!formatTimer) formatTimer = setInterval(formatTick, 120);
+            }
+
+            function stopReveal() {
+                if (revealTimer) { clearInterval(revealTimer); revealTimer = null; }
+                if (formatTimer) { clearInterval(formatTimer); formatTimer = null; }
             }
 
             return {
                 push(chunk) {
                     buffer += chunk;
-                    start();
+                    startReveal();
                 },
                 async flush() {
+                    // نستنى لحد ما كل النص المتبقي في الـ buffer يظهر بالكامل...
                     while (buffer.length > 0 && !signal.aborted) {
                         await sleep(18, signal);
                     }
-                    stop();
+                    stopReveal();
                     displayed += buffer;
                     buffer = '';
                     if (signal.aborted) displayed = cleanupTruncatedMarkdown(displayed);
                     botMsg.content = displayed;
+                    // ...وفي الآخر بنعمل تنسيق نهائي واحد كامل ومضمون 100% (مش هيفضل أي جزء
+                    // من الرد من غير تنسيق حتى لو الـ formatTimer الأخير ماكانش لسه نفّذ).
                     bubbleDiv.innerHTML = marked.parse(displayed);
                     wrapTables(bubbleDiv);
                     return displayed;
@@ -3910,9 +3964,20 @@
             }
         }
 
+        // بدل ما نعمل setTimeout جديد كل مرة بتتنادى (كان بيحصل مع كل تحديث نص، يعني عشرات
+        // الـ timeouts المتراكمة فوق بعض في الثانية الواحدة أثناء الكتابة الحية — ده كمان
+        // كان سبب في التهزهز)، بنستخدم علم "scheduled" بسيط: لو فيه scroll مجدول بالفعل،
+        // منجدولش واحد تاني فوقه، ونستنى الـ requestAnimationFrame يظبط التوقيت مع دورة
+        // رسم المتصفح نفسها (أنعم بكتير من setTimeout عشوائي).
+        let scrollScheduled = false;
         function scrollToBottom() {
-            const container = document.getElementById('chatContainer');
-            setTimeout(() => container.scrollTop = container.scrollHeight, 50);
+            if (scrollScheduled) return;
+            scrollScheduled = true;
+            requestAnimationFrame(() => {
+                const container = document.getElementById('chatContainer');
+                container.scrollTop = container.scrollHeight;
+                scrollScheduled = false;
+            });
         }
 
         function copyToClipboard(text) {
