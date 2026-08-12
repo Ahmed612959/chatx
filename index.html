@@ -1481,7 +1481,7 @@
                     <span class="premium-card-title">صوت واقعي فائق</span>
                     <span id="premium-voice-badge" class="premium-badge-locked">مقفول 🔒</span>
                 </div>
-                <div class="premium-card-desc">ترقية تلقائية لأعلى جودة صوت متاحة (ElevenLabs) في كل مكان بيتكلم في التطبيق — قراءة الردود، محاكي المواقف، تحميل الملخصات الصوتية. مفيش حاجة تعملها، بتشتغل من نفسها.</div>
+                <div class="premium-card-desc">ترقية تلقائية لأعلى جودة صوت متاحة (Gemini) في كل مكان بيتكلم في التطبيق — قراءة الردود، محاكي المواقف، تحميل الملخصات الصوتية. مفيش حاجة تعملها، بتشتغل من نفسها.</div>
                 <div id="premium-voice-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
             </div>
         </div>
@@ -1963,7 +1963,18 @@
                 try {
                     const res = await fetch('/api/tts-gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
                     if (res.ok) return await res.blob();
-                } catch (err) { /* الطبقة (1) فشلت — نكمل عادي للطبقة (2)، من غير ما نوقف المستخدم */ }
+                    // الطبقة (1) رجّعت خطأ من السيرفر (مش استثناء شبكة) — ده أكتر سبب شائع
+                    // لصوت Gemini اللي "مبيجيش خالص" مع إن الميزة مفعّلة: مفتاح API غلط/منتهي،
+                    // أو الموديل رافض الطلب، أو الكوتة خلصت. كنا بنتجاهل التفاصيل دي بصمت
+                    // قبل كده فمفيش طريقة تعرف السبب الحقيقي — دلوقتي بتتسجل في الـ console.
+                    try {
+                        const errBody = await res.clone().json().catch(() => null);
+                        console.error('Gemini TTS فشل:', res.status, errBody || (await res.text().catch(() => '')));
+                    } catch (logErr) { console.error('Gemini TTS فشل بحالة:', res.status); }
+                } catch (err) {
+                    console.error('Gemini TTS: تعذر الوصول للـ endpoint خالص', err);
+                    /* الطبقة (1) فشلت — نكمل عادي للطبقة (2)، من غير ما نوقف المستخدم */
+                }
             }
             try {
                 const res = await fetch('/api/tts-neural', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, gender: 'female' }) });
@@ -3141,6 +3152,28 @@
             return out;
         }
 
+        // بتفصل النص لجزء "مستقر" آمن نعمله format دلوقتي، وجزء "معلّق" (آخر سطر لسه
+        // بيتكتب ومكملش) بنسيبه من غير format لحد ما يخلص. من غيرها، صف جدول ناقص زي
+        // "| اسم المريض | ال" كان بيتفسّر كـ Markdown ناقص فيبان نص خام مكسور (رموز |
+        // طايرة برا شكل الجدول) لحظة ما formatTick بيشتغل عليه، وده اللي كان بيحس المستخدم
+        // إن الجدول "بيخرج عن الكادر" أثناء الكتابة. أي سطر آخر يبدأ بـ | أو # أو فاصلة كود
+        // ```  مفتوحة بنستناه يخلص (سطر جديد يوصل) قبل ما نحوّله HTML.
+        function splitStableMarkdown(text) {
+            if (!text) return { stable: '', pending: '' };
+            const lastNewline = text.lastIndexOf('\n');
+            const lastLine = lastNewline === -1 ? text : text.slice(lastNewline + 1);
+            const trimmed = lastLine.trim();
+            const looksUnstable = trimmed.startsWith('|') || /^#{1,6}\s*$/.test(trimmed) ||
+                (trimmed.startsWith('```') && (text.match(/```/g) || []).length % 2 !== 0);
+            if (looksUnstable && lastNewline !== -1) {
+                return { stable: text.slice(0, lastNewline), pending: lastLine };
+            }
+            if (looksUnstable && lastNewline === -1) {
+                return { stable: '', pending: text };
+            }
+            return { stable: text, pending: '' };
+        }
+
         // مسؤولة عن "تأثير الكتابة الحية" (النص بيظهر حرف حرف زي حد بيكتب دلوقتي) بدون ما
         // يسبب تهزهز أو تعليق في الردود الطويلة. المشكلة اللي كانت موجودة قبل كده: كل الرد
         // كان بيتعاد تفسيره كماركداون Markdown وبيتستبدل الـ HTML بالكامل جوه الفقاعة كل
@@ -3165,11 +3198,15 @@
             // بيضيف النص الجديد كنص خام بس (من غير ماركداون) — ده اللي بيدّي إحساس السرعة
             // والسلاسة من غير أي تكلفة إعادة رسم حقيقية، لأن textContent مش بيعمل parsing
             // ولا يبني عناصر HTML جديدة.
+            // ملاحظة: لو buffer فيه كمية كبيرة متراكمة (يعني الـ API بعت أسرع من عرضنا)،
+            // بنكشفها كلها فورًا من غير أي تقطيع مصطنع — زي كلود وشات جي بي تي بالظبط:
+            // السرعة الفعلية = سرعة وصول النص من السيرفر، مش سرعة ثابتة بطيئة إحنا حاطينها.
+            // التقطيع الناعم (حرف حرف) بيتطبق بس لو النص الجديد قليل (وصل قطعة صغيرة من
+            // الـ API)، عشان يفضل إحساس "الكتابة الحية" من غير ما يبطّئ الردود الطويلة.
+            const REVEAL_INSTANT_THRESHOLD = 24; // buffer أكبر من كده = يتكشف فورًا كله
             function revealTick() {
                 if (signal.aborted || buffer.length === 0) { stopReveal(); return; }
-                // بنكشف جزء متغيّر الحجم حسب حجم الكلام المتراكم — لو الـ API بعت جزء كبير
-                // دفعة واحدة، بنسرّع الكشف عشان منتأخرش عن المحتوى الحقيقي.
-                const step = Math.max(2, Math.ceil(buffer.length / 30));
+                const step = buffer.length > REVEAL_INSTANT_THRESHOLD ? buffer.length : Math.max(2, Math.ceil(buffer.length / 4));
                 displayed += buffer.slice(0, step);
                 buffer = buffer.slice(step);
                 botMsg.content = displayed;
@@ -3179,17 +3216,22 @@
             }
 
             // بيحوّل النص المتراكم لماركداون منسّق فعليًا (عناوين، جداول، كود...) — العملية
-            // المكلفة اللي بقت بتحصل أبطأ بكتير دلوقتي.
+            // المكلفة اللي بقت بتحصل أبطأ بكتير دلوقتي. بنفرمت الجزء "المستقر" بس (splitStableMarkdown)
+            // ونسيب آخر سطر لسه بيتكتب (زي صف جدول ناقص) كنص خام معلّق تحت — كده الجدول
+            // مش بيبان مكسور وهو لسه بيتبني، وبيتحوّل لجدول فعلي أول ما الصف يكتمل.
             function formatTick() {
                 if (!needsFormatUpdate) return;
                 needsFormatUpdate = false;
-                bubbleDiv.innerHTML = marked.parse(displayed);
+                const { stable, pending } = splitStableMarkdown(displayed);
+                let html = marked.parse(stable);
+                if (pending) html += `<p style="opacity:.75">${pending.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`;
+                bubbleDiv.innerHTML = html;
                 wrapTables(bubbleDiv);
             }
 
             function startReveal() {
                 if (!revealTimer) revealTimer = setInterval(revealTick, 18);
-                if (!formatTimer) formatTimer = setInterval(formatTick, 120);
+                if (!formatTimer) formatTimer = setInterval(formatTick, 90);
             }
 
             function stopReveal() {
