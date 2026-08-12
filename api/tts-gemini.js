@@ -38,7 +38,11 @@ export default async function handler(request) {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
     }
 
-    const rl = checkRateLimit(request, { limit: 15, windowMs: 60_000 });
+    // الحد كان 15 طلب/دقيقة، وده قليل جدًا فعليًا: مشهد واحد من الحالة المتفرّعة لوحده
+    // بيولّد 5-10 نداءات TTS ورا بعض (كل عقدة بتتقرأ بصوت)، غير أي ردود شات عادية
+    // المستخدم طالب سماعها. رفعناه لرقم مريح لطالب واحد نشط من غير ما نفتح الباب
+    // للاستغلال الكامل.
+    const rl = checkRateLimit(request, { limit: 40, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -58,21 +62,43 @@ export default async function handler(request) {
       return new Response(JSON.stringify({ error: 'لا يوجد نص لتحويله لصوت' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    let upstream;
-    try {
-      upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-tts-preview:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `اقرأ النص التالي بصوت طبيعي وواضح: ${text}` }] }],
-          generationConfig: {
-            responseModalities: ['AUDIO'],
-            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE_NAME } } }
-          }
-        })
-      });
-    } catch (err) {
+    // بيبعت طلب واحد فعلي لـ Gemini، بترجع {upstream, networkError}
+    async function callGemini() {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-tts-preview:generateContent?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `اقرأ النص التالي بصوت طبيعي وواضح: ${text}` }] }],
+            generationConfig: {
+              responseModalities: ['AUDIO'],
+              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE_NAME } } }
+            }
+          })
+        });
+        return { upstream: res, networkError: null };
+      } catch (err) {
+        return { upstream: null, networkError: err };
+      }
+    }
+
+    // ====================================================================================
+    // gemini-3.1-flash-tts-preview لسه موديل preview فعليًا (مش متوقف)، وده معناه إنه
+    // أحيانًا بيرجّع 429/503 مؤقتة من عند جوجل نفسها بسبب ضغط مؤقت على الموديل، مش بالضرورة
+    // مشكلة حقيقية أو تخطي فعلي للحصة. من غير إعادة محاولة، أي هزة مؤقتة كانت بترجع فشل
+    // كامل للمستخدم على طول. دلوقتي بنجرب تاني تلقائيًا (لمرة واحدة بعد تأخير بسيط) قبل
+    // ما نستسلم ونرجّع خطأ فعلي.
+    let upstream, networkError;
+    ({ upstream, networkError } = await callGemini());
+    if (networkError) {
       return new Response(JSON.stringify({ error: 'تعذر الوصول لخدمة Gemini TTS' }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (!upstream.ok && (upstream.status === 429 || upstream.status === 503)) {
+      await new Promise(r => setTimeout(r, 600));
+      ({ upstream, networkError } = await callGemini());
+      if (networkError) {
+        return new Response(JSON.stringify({ error: 'تعذر الوصول لخدمة Gemini TTS' }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+      }
     }
 
     if (!upstream.ok) {
