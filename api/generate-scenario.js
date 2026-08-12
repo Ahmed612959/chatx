@@ -66,6 +66,8 @@ function attemptJsonRepair(text) {
 // بيتأكد إن السيناريو فيه كل الأجزاء الأساسية اللي مشغّل الفيديو محتاجها عشان يشتغل —
 // مش تحقق كامل لكل قاعدة فنية، بس كفاية نلتقط أي نقص جوهري قبل ما نبعته للفرونت إند
 // ونخلّي التجربة تتكسر هناك بدل ما نمسكها هنا بوضوح.
+const VALID_QUALITIES = ['excellent', 'good', 'risky', 'critical'];
+
 function validateScenarioShape(scenario) {
   if (!scenario || typeof scenario !== 'object') return 'الناتج مش كائن JSON خالص';
   if (!scenario.nodes || typeof scenario.nodes !== 'object') return 'مفيش nodes في الناتج';
@@ -74,6 +76,33 @@ function validateScenarioShape(scenario) {
   if (nodeIds.length < 3) return 'شجرة القرارات صغيرة جدًا (أقل من 3 عقد)';
   const hasEnding = nodeIds.some(id => scenario.nodes[id]?.ending);
   if (!hasEnding) return 'مفيش أي عقدة نهاية (ending) في الشجرة كلها';
+
+  // ====================================================================================
+  // تحقق إضافي مهم جدًا: كل "choice.next" لازم يشاور على عقدة موجودة فعلاً جوه nodes.
+  // من غير التحقق ده، سيناريو فيه رابط مكسور (غالبًا آخر مستوى قبل النهاية، لأنه أبعد
+  // نقطة في الشجرة واحتمال قطع التوليد قبلها بيزيد) كان بيعدّي من هنا سليم ظاهريًا،
+  // وبعدين الطالب لما يوصله ويدوس عليه (pickSimChoice في الفرونت إند) كان بيتفاجئ إنه
+  // بيطلع بره الحالة كلها فجأة. دلوقتي أي رابط مكسور بيتمسك هنا على طول، فيتحسب "فشل"
+  // ويتعمله إعادة محاولة (أو محاولة مبسّطة) بدل ما يوصل للطالب وهو مكسور.
+  // ====================================================================================
+  for (const id of nodeIds) {
+    const node = scenario.nodes[id];
+    if (!node || typeof node !== 'object') return `عقدة "${id}" مش كائن سليم`;
+    if (node.ending) {
+      if (!VALID_QUALITIES.includes(node.quality)) return `عقدة النهاية "${id}" مفيهاش quality صالحة`;
+    } else {
+      if (!Array.isArray(node.choices) || node.choices.length < 2) return `عقدة "${id}" مفيهاش choices كفاية`;
+      for (const choice of node.choices) {
+        if (!choice || typeof choice.text !== 'string' || !choice.text.trim()) {
+          return `فيه اختيار جوه عقدة "${id}" مفيهوش نص`;
+        }
+        if (!choice.next || !scenario.nodes[choice.next]) {
+          return `اختيار جوه عقدة "${id}" بيشاور على عقدة غير موجودة ("${choice.next}")`;
+        }
+      }
+    }
+  }
+
   return null; // null = كل حاجة سليمة
 }
 
@@ -126,7 +155,7 @@ function buildSchemaInstructions({ simplified = false } = {}) {
 async function requestScenarioFromGemini(apiKey, schemaInstructions, userInstruction) {
   let upstream;
   try {
-    upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash:generateContent?key=${apiKey}`, {
+    upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
