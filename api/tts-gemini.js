@@ -7,6 +7,54 @@
 import { WebSocket } from 'ws';
 import crypto from 'crypto';
 
+// السبب الحقيقي اللي كان بيخلي صوت Gemini يشتغل بس في الردود القصيرة: الدالة دي شغالة
+// كـ Vercel Serverless Function، وليها مهلة تنفيذ افتراضية قصيرة (10 ثانية على خطة
+// Hobby). توليد صوت لنص طويل عند Gemini بياخد وقت أطول من نص قصير، فكان بيضرب المهلة
+// دي ويتقفل بالقوة (504) قبل ما يخلص — الطلب يفشل كـ "خطأ شبكة" في المتصفح، فالتطبيق
+// كان بينزل تلقائي لطبقة الصوت الاحتياطية (Azure/Google) من غير ما المستخدم يعرف السبب،
+// وحاسس إن "صوت Gemini مش شغال" مع النصوص الطويلة. الحل الجذري خطوتين:
+//   ١) نرفع مهلة الفنكشن دي صراحة لحد ٦٠ ثانية (أقصى حد مسموح حتى على خطة Vercel
+//      المجانية Hobby).
+//   ٢) نقسّم أي نص طويل لقطع صغيرة عند حدود الجمل ونولّد صوت كل قطعة بالتوازي، بدل
+//      طلب واحد ضخم بياخد وقت طويل متراكم — فكل قطعة بترجع بسرعة، والنتيجة توصل
+//      أسرع بكتير حتى لو النص كله كان طويل جدًا.
+export const config = { maxDuration: 60 };
+
+const GEMINI_CHUNK_CHAR_LIMIT = 600; // حجم القطعة الواحدة اللي بتتبعت لـ Gemini
+const GEMINI_CALL_TIMEOUT_MS = 25000; // مهلة كل قطعة لوحدها، عشان قطعة واحدة عالقة متوقفش كل الطلب
+
+// بيقسّم النص الطويل لقطع عند حدود الجمل (نقطة/علامة استفهام/تعجب أو سطر جديد) بدل
+// القطع العشوائي في نص الكلمة، عشان الصوت الناتج يفضل طبيعي ومفيش وقفة غريبة نص كلمة.
+function splitTextIntoChunks(text, maxLen) {
+  if (text.length <= maxLen) return [text];
+  const sentences = text.split(/(?<=[.!?؟،\n])\s+/);
+  const chunks = [];
+  let current = '';
+  for (const sentence of sentences) {
+    if (sentence.length > maxLen) {
+      // جملة واحدة أطول من الحد (نادر) — نقسمها بالعافية عند أقرب مسافة
+      if (current) { chunks.push(current); current = ''; }
+      let rest = sentence;
+      while (rest.length > maxLen) {
+        let cut = rest.lastIndexOf(' ', maxLen);
+        if (cut <= 0) cut = maxLen;
+        chunks.push(rest.slice(0, cut));
+        rest = rest.slice(cut).trim();
+      }
+      if (rest) current = rest;
+      continue;
+    }
+    if ((current + ' ' + sentence).trim().length > maxLen) {
+      if (current) chunks.push(current);
+      current = sentence;
+    } else {
+      current = (current ? current + ' ' : '') + sentence;
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks.filter(c => c.trim().length > 0);
+}
+
 // ====================================================================================
 // نظام صوت بمرحلتين، شفاف تمامًا للطالب:
 //   المرحلة 1: Gemini TTS (الأساسي، جودة عالية) — بمحاولتين لو حصل ضغط مؤقت من جوجل.
@@ -65,12 +113,17 @@ function escapeSsml(str) {
 }
 
 // -------------------------- المرحلة 1: Gemini TTS --------------------------
-async function tryGeminiTts(text, apiKey) {
+// بترجع الصوت الخام (PCM) وسرعة العينة، مش ملف WAV كامل — عشان لو النص اتقسّم لقطع
+// نقدر نلزّق كل قطع الـ PCM مع بعض ونبني هيدر WAV واحد بس في الآخر لملف صوت متصل.
+async function tryGeminiTtsChunk(text, apiKey) {
   async function callGemini() {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), GEMINI_CALL_TIMEOUT_MS);
     try {
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-tts-preview:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           contents: [{ parts: [{ text: `اقرأ النص التالي بصوت طبيعي وواضح: ${text}` }] }],
           generationConfig: {
@@ -82,6 +135,8 @@ async function tryGeminiTts(text, apiKey) {
       return { upstream: res, networkError: null };
     } catch (err) {
       return { upstream: null, networkError: err };
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
@@ -101,8 +156,23 @@ async function tryGeminiTts(text, apiKey) {
   const rateMatch = /rate=(\d+)/.exec(part.mimeType || '');
   const sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 24000;
   const pcmBytes = Buffer.from(part.data, 'base64');
-  const wavHeader = buildWavHeader({ dataLength: pcmBytes.length, sampleRate });
-  return { buffer: Buffer.concat([wavHeader, pcmBytes]), contentType: 'audio/wav' };
+  return { pcmBytes, sampleRate };
+}
+
+// بيقسّم النص الطويل لقطع (لو محتاج) ويولّد صوت كل قطعة بالتوازي عند Gemini، وبعدين
+// يلزّق كل الـ PCM بالترتيب الصح ويبني ملف WAV واحد متصل. لو أي قطعة فشلت، الكل يعتبر
+// فاشل (بيرجع null) عشان الطالب مايسمعش صوت مقطوع في نص الكلام — وقتها هانديلر التاني
+// بينزل تلقائي لطبقة Edge TTS الاحتياطية على *النص الكامل*.
+async function tryGeminiTts(text, apiKey) {
+  const chunks = splitTextIntoChunks(text, GEMINI_CHUNK_CHAR_LIMIT);
+  const results = await Promise.all(chunks.map(chunk => tryGeminiTtsChunk(chunk, apiKey)));
+  if (results.some(r => !r)) return null;
+
+  const sampleRate = results[0].sampleRate;
+  const pcmBuffers = results.map(r => r.pcmBytes);
+  const combinedPcm = Buffer.concat(pcmBuffers);
+  const wavHeader = buildWavHeader({ dataLength: combinedPcm.length, sampleRate });
+  return { buffer: Buffer.concat([wavHeader, combinedPcm]), contentType: 'audio/wav' };
 }
 
 // -------------------------- المرحلة 2: Edge TTS (احتياطي) --------------------------
@@ -190,7 +260,9 @@ export default async function handler(req, res) {
     const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-    const text = (body.text || '').toString().trim().slice(0, 4000);
+    // كان محدود بـ 4000 حرف زمان — رفعناه لـ 8000 دلوقتي لأن التقسيم لقطع فوق خلّى
+    // النص الطويل يتعالج بسرعة وأمان بدل ما يضرب مهلة التنفيذ.
+    const text = (body.text || '').toString().trim().slice(0, 8000);
     if (!text) {
       return res.status(400).json({ error: 'لا يوجد نص لتحويله لصوت' });
     }
