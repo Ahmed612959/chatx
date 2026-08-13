@@ -988,7 +988,7 @@
                     <div class="sug-chip" onclick="sendQuick('اشرح ببساطة')">اشرح</div>
                 </div>
                 <div class="input-wrapper">
-                    <button class="attach-btn" aria-label="إرفاق ملف" onclick="document.getElementById('fileInput').click()">
+                    <button class="attach-btn" aria-label="إرفاق ملف أو مهارة" onclick="openAttachMenu()">
                         <i class="fas fa-paperclip"></i>
                     </button>
                     <input type="file" id="fileInput" hidden accept=".txt,.md,.jpg,.jpeg,.png,.pdf" onchange="handleFileUpload(event)">
@@ -1420,6 +1420,17 @@
 
             <div class="premium-card">
                 <div class="premium-card-head">
+                    <span class="premium-card-icon">🧩</span>
+                    <span class="premium-card-title">مهارات مخصصة (Skills)</span>
+                    <span id="premium-skills-badge" class="premium-badge-locked">مقفول 🔒</span>
+                </div>
+                <div class="premium-card-desc">اعمل "مهارات" خاصة بيك — تعليمات ثابتة (اكتبها إنت أو ارفعها كملف نصي) — والمساعد يلتزم بيها ويستخدمها تلقائي في ردوده وقت ما تكون مناسبة، بالظبط زي مهارات Claude.</div>
+                <button id="premium-skills-action" class="btn-calc" style="display:none;" onclick="closeModal('premiumHubModal'); openPremiumSkills();">إدارة المهارات</button>
+                <div id="premium-skills-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
+            </div>
+
+            <div class="premium-card">
+                <div class="premium-card-head">
                     <span class="premium-card-icon">👑</span>
                     <span class="premium-card-title">تصميم Chat X الذهبي</span>
                     <span id="premium-theme-badge" class="premium-badge-locked">مقفول 🔒</span>
@@ -1496,6 +1507,68 @@
             </div>
             <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;">دوس على أي برومبت عشان يتحط في مربع الكتابة — عدّل الحاجة اللي بين [قوسين] قبل ما تبعت.</p>
             <div id="premiumPromptsList"></div>
+        </div>
+    </div>
+
+    <!-- مهارات مخصصة (Skills) -->
+    <div class="modal-overlay" id="premiumSkillsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-puzzle-piece"></i> مهارات مخصصة</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('premiumSkillsModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;">المهارة = تعليمات ثابتة تكتبها مرة واحدة (أسلوب رد معين، قالب جاهز، أو معرفة متخصصة)، وأي مهارة "مفعّلة" هنا بيلتزم بيها المساعد تلقائي في كل رد جديد من غير ما تكررها. المهارات كلها متخزنة على جهازك بس.</p>
+            <button class="btn-calc" style="margin-bottom:12px;" onclick="openSkillEditor(null)"><i class="fas fa-plus"></i> مهارة جديدة</button>
+            <div id="premiumSkillsList"></div>
+        </div>
+    </div>
+
+    <!-- محرر مهارة (إضافة/تعديل) -->
+    <div class="modal-overlay" id="skillEditorModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-pen"></i> <span id="skillEditorTitle">مهارة جديدة</span></div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('skillEditorModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <input type="hidden" id="skillEditorId">
+            <label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;">اسم المهارة</label>
+            <input type="text" id="skillNameInput" placeholder="مثال: أسلوب تلخيص المحاضرات بتاعي" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg-2);color:var(--text-1);margin-bottom:12px;box-sizing:border-box;">
+            <label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;">التعليمات (إيه المفروض المساعد يعمله بالظبط لما المهارة دي تكون مفعّلة)</label>
+            <textarea id="skillInstructionsInput" placeholder="مثال: لما ألخصلك أي محتوى، استخدم نقط قصيرة، وابدأ كل نقطة بإيموجي مناسب، وحط في الآخر خلاصة سطر واحد..." rows="6" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg-2);color:var(--text-1);margin-bottom:10px;box-sizing:border-box;resize:vertical;"></textarea>
+            <label style="font-size:11px;color:var(--text-2);display:block;margin-bottom:10px;">
+                أو ارفع ملف نصي (.txt أو .md) وهيتحط محتواه في خانة التعليمات تلقائي:
+                <input type="file" id="skillFileInput" accept=".txt,.md" onchange="handleSkillFileUpload(event)" style="display:block;margin-top:6px;">
+            </label>
+            <button class="btn-calc" onclick="saveSkill()"><i class="fas fa-check"></i> حفظ المهارة</button>
+        </div>
+    </div>
+
+    <!-- قائمة زرار الإرفاق (ملف / مهارة) -->
+    <div class="modal-overlay" id="attachMenuModal">
+        <div class="modal" style="max-width:320px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-paperclip"></i> إرفاق</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('attachMenuModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <button class="btn-calc" style="margin-bottom:10px;text-align:right;justify-content:flex-start;" onclick="closeModal('attachMenuModal'); document.getElementById('fileInput').click();">
+                <i class="fas fa-file-arrow-up"></i> ارفع ملف (صورة / PDF / نص)
+            </button>
+            <button class="btn-calc" style="text-align:right;justify-content:flex-start;" onclick="openSkillPicker()">
+                <i class="fas fa-puzzle-piece"></i> استخدم مهارة (Skill)
+            </button>
+        </div>
+    </div>
+
+    <!-- اختيار مهارة (مجلد Skills) لإدراجها في المحادثة كـ /اسم-المهارة -->
+    <div class="modal-overlay" id="skillPickerModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-folder-open"></i> اختر مهارة</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('skillPickerModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;">دوس على مهارة عشان تتحط في مربع الكتابة كـ <code>/اسم-المهارة</code> — المساعد هيلتزم بتعليماتها في الرد على الرسالة دي.</p>
+            <div id="skillPickerList"></div>
+            <button class="btn-calc" style="margin-top:12px;background:var(--bg-2);color:var(--accent);border:1px solid var(--border-accent);" onclick="closeModal('skillPickerModal'); openPremiumSkills();"><i class="fas fa-plus"></i> إدارة / إضافة مهارات</button>
         </div>
     </div>
 
@@ -2144,7 +2217,8 @@
             premium_theme: { icon: '👑', title: 'تصميم Chat X الذهبي', desc: 'شكل مميز حصري بألوان ذهبية للمشتركين بس.' },
             premium_drug_library: { icon: '💊', title: 'مكتبة الأدوية الشخصية', desc: 'كل دواء تفحصه بالكاميرا بيتحفظلك تلقائيًا في مكتبة شخصية ترجعلها وقت ما تحب.' },
             premium_clinical_sim: { icon: '🩺', title: 'محاكي المواقف الإكلينيكية', desc: 'حالة مريض واقعية بتتفاعل معاها وتاخد قرارات، وفي الآخر بتاخد تقييم لقراراتك.' },
-            premium_lecture_audio: { icon: '🎙️', title: 'ملخص صوتي للمحاضرات', desc: 'سجّل المحاضرة بصوتك، وهيتحول لنص وملخص منظم بالنقاط تلقائيًا.' }
+            premium_lecture_audio: { icon: '🎙️', title: 'ملخص صوتي للمحاضرات', desc: 'سجّل المحاضرة بصوتك، وهيتحول لنص وملخص منظم بالنقاط تلقائيًا.' },
+            premium_skills: { icon: '🧩', title: 'مهارات مخصصة (Skills)', desc: 'اعمل مهارات خاصة بيك (تعليمات ثابتة يلتزم بيها المساعد)، وهو يستخدمها تلقائي في ردوده وقت ما تكون مناسبة.' }
         };
         // الأدمن (type === 'admin' جاية من بيانات School X) عنده كل مميزات Premium تلقائيًا
         // من غير ما يحتاج يفعّلها لنفسه — طبيعي إنه يقدر يجرب أي حاجة بيفعّلها للطلاب.
@@ -2800,6 +2874,11 @@
                 text = text ? `${text}\n\n${framed}` : framed;
             }
 
+            // لو الرسالة فيها تاج "/اسم-مهارة" (اتحط من قائمة اختيار المهارات جوه زرار
+            // الإرفاق)، نجيب تعليمات المهارة دي ونحطها كسياق خاص بالرد على الرسالة دي
+            // بس — بيتصفّر تاني بعد كل رد عشان مايفضلش يأثر على الرسايل اللي بعده.
+            pendingSkillContext = buildSkillTagContext(text);
+
             // Cancel any ongoing request
             if (abortController) {
                 abortController.abort();
@@ -2836,6 +2915,7 @@
             tryGradeActiveQuiz(text);
             await runGeneration(chat);
             pendingQuizContext = '';
+            pendingSkillContext = '';
         }
 
         // Calls the selected AI provider (with auto-fallback chain) for the given chat and
@@ -3198,15 +3278,18 @@
             // بيضيف النص الجديد كنص خام بس (من غير ماركداون) — ده اللي بيدّي إحساس السرعة
             // والسلاسة من غير أي تكلفة إعادة رسم حقيقية، لأن textContent مش بيعمل parsing
             // ولا يبني عناصر HTML جديدة.
-            // ملاحظة: لو buffer فيه كمية كبيرة متراكمة (يعني الـ API بعت أسرع من عرضنا)،
-            // بنكشفها كلها فورًا من غير أي تقطيع مصطنع — زي كلود وشات جي بي تي بالظبط:
-            // السرعة الفعلية = سرعة وصول النص من السيرفر، مش سرعة ثابتة بطيئة إحنا حاطينها.
-            // التقطيع الناعم (حرف حرف) بيتطبق بس لو النص الجديد قليل (وصل قطعة صغيرة من
-            // الـ API)، عشان يفضل إحساس "الكتابة الحية" من غير ما يبطّئ الردود الطويلة.
-            const REVEAL_INSTANT_THRESHOLD = 24; // buffer أكبر من كده = يتكشف فورًا كله
+            // ده كان سبب الإحساس بـ"سريع لحد ما يخلص فجأة": لو الـ API (خصوصًا Gemini،
+            // بيبعت في كتل كبيرة مش حرف حرف زي Groq) بعت أكتر من 24 حرف مرة واحدة،
+            // كنا بنكشفها *كلها فورًا* في تِك واحد (buffer.length كامل) — فكان الرد
+            // بيظهر كلمة كلمة بسلاسة في الأول، وبعدين فجأة نص الرد كله بيطق على الشاشة
+            // مرة واحدة، وده اللي حاسس إنه "مزعج". دلوقتي السرعة بتتدرّج مع حجم الكمية
+            // المتراكمة (backlog) بس بحد أقصى واضح للعين — أي قطعة كبيرة بتتحرك على
+            // الشاشة على شكل حروف متتالية سريعة، مش دفعة واحدة، بغض النظر عن حجمها.
+            const REVEAL_MIN_STEP = 2;
+            const REVEAL_MAX_STEP = 10; // أقصى عدد حروف تتكشف في التِك الواحد، حتى لو الباكلوج ضخم
             function revealTick() {
                 if (signal.aborted || buffer.length === 0) { stopReveal(); return; }
-                const step = buffer.length > REVEAL_INSTANT_THRESHOLD ? buffer.length : Math.max(2, Math.ceil(buffer.length / 4));
+                const step = Math.min(REVEAL_MAX_STEP, Math.max(REVEAL_MIN_STEP, Math.ceil(buffer.length / 10)));
                 displayed += buffer.slice(0, step);
                 buffer = buffer.slice(step);
                 botMsg.content = displayed;
@@ -3214,6 +3297,7 @@
                 needsFormatUpdate = true;
                 scrollToBottom();
             }
+
 
             // بيحوّل النص المتراكم لماركداون منسّق فعليًا (عناوين، جداول، كود...) — العملية
             // المكلفة اللي بقت بتحصل أبطأ بكتير دلوقتي. بنفرمت الجزء "المستقر" بس (splitStableMarkdown)
@@ -3266,19 +3350,41 @@
         // Retry مع exponential backoff — بيحاول تاني بس على فشل شبكة حقيقي (انقطاع نت، تايم أوت)
         // أو 5xx من السيرفر (مشكلة مؤقتة عند المزود). ميحاولش تاني على 4xx (زي 400 كوتة خلصت،
         // أو 401 مفتاح غلط) لأن ده خطأ ثابت مش هيتغير بإعادة المحاولة، وهيضيع وقت وياخد نفس الرفض.
-        async function fetchWithRetry(url, options, maxRetries = 2) {
+        // كان maxRetries = 2 (يعني 3 محاولات) على *كل* مزود لوحده قبل ما ننزل للمزود
+        // التالي في سلسلة "auto" — لو مزود معين واقع أو بطيء، الطالب كان بينتظر 3
+        // محاولات كاملة (بينهم مهلة 500ms/1000ms) عليه لوحده قبل حتى ما نجرب مزود
+        // تاني شغال، وده كان بيدي إحساس إن البوت "بطيء وضعيف". دلوقتي محاولة واحدة
+        // إعادة بس (يعني محاولتين إجمالي) — لو المزود لسه واقع، ننزل بسرعة للمزود
+        // التالي بدل ما نضيّع وقت في إعادة محاولة نفس المزود العالق.
+        // مهلة لكل محاولة اتصال لوحدها (مش للطلب كله) — لو مزود عالق وماردش خالص (لا
+        // نجاح ولا فشل صريح، الشبكة واقفة عنده)، كنا بننتظره من غير حد أقصى لحد ما
+        // المتصفح نفسه يقفل الاتصال بعد وقت طويل جدًا. دلوقتي بعد 12 ثانية بدون رد
+        // نعتبرها فشلت وننزل فورًا للمزود التالي، بدل ما الطالب يحس إن البوت "واقف".
+        const PROVIDER_ATTEMPT_TIMEOUT_MS = 12000;
+        async function fetchWithRetry(url, options, maxRetries = 1) {
             let lastErr;
             for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                const attemptController = new AbortController();
+                const onOuterAbort = () => attemptController.abort();
+                const outerSignal = options.signal;
+                if (outerSignal) {
+                    if (outerSignal.aborted) attemptController.abort();
+                    else outerSignal.addEventListener('abort', onOuterAbort, { once: true });
+                }
+                const timeoutId = setTimeout(() => attemptController.abort(), PROVIDER_ATTEMPT_TIMEOUT_MS);
                 try {
-                    const res = await fetch(url, options);
+                    const res = await fetch(url, { ...options, signal: attemptController.signal });
                     if (res.ok || res.status < 500) return res; // نجح، أو فشل بشكل ثابت (4xx) — مفيش داعي نكرر
                     lastErr = new Error(`Server error ${res.status}`);
                 } catch (err) {
-                    if (err.name === 'AbortError') throw err; // المستخدم ألغى بنفسه، مش خطأ نكرر بسببه
-                    lastErr = err;
+                    if (outerSignal && outerSignal.aborted) { const abortErr = new Error('Aborted'); abortErr.name = 'AbortError'; throw abortErr; } // المستخدم ألغى بنفسه
+                    lastErr = (err.name === 'AbortError') ? new Error('Provider timeout') : err; // مهلتنا إحنا، مش إلغاء المستخدم — نكمل للمحاولة/المزود التالي
+                } finally {
+                    clearTimeout(timeoutId);
+                    if (outerSignal) outerSignal.removeEventListener('abort', onOuterAbort);
                 }
                 if (attempt < maxRetries) {
-                    const delay = 500 * Math.pow(2, attempt); // 500ms, 1000ms, 2000ms...
+                    const delay = 300 * Math.pow(2, attempt); // 300ms, 600ms...
                     await new Promise(r => setTimeout(r, delay));
                 }
             }
@@ -5083,7 +5189,7 @@
             premium_ai: 'ai', premium_mock_exams: 'mock', premium_prompts: 'prompts',
             premium_theme: 'theme', premium_drug_library: 'drugs',
             premium_clinical_sim: 'clinical', premium_lecture_audio: 'lecture',
-            premium_video_sim: 'videosim', premium_voice: 'voice'
+            premium_video_sim: 'videosim', premium_voice: 'voice', premium_skills: 'skills'
         };
         function openPremiumHub() {
             Object.entries(PREMIUM_UI_MAP).forEach(([key, suffix]) => {
@@ -5298,6 +5404,8 @@ ${schoolContext}`;
 
 الطالب ده مشترك في خطة Premium مفعّلة من الأدمن (متقولوش ده صراحة في كل رد، هو عارف أصلاً وسبق واتهنّى بيها) — بس فعليًا خليك أذكى وأعمق وأشمل معاه من وضعك المعتاد: قدّم شرح أدق وأشمل، اربط المعلومة بسياقات وأمثلة سريرية مفيدة، اقترح خطوات عملية جاهزة بدل الكلام العام، ولو السؤال فيه احتمالات متعددة غطّي أهمها بدل ما تكتفي بسؤاله يوضح. خليك دقيق علميًا ومنظم ومختصر رغم العمق، من غير حشو.`;
             }
+            extra += getActiveSkillsPromptBlock();
+            if (pendingSkillContext) extra += `\n\n${pendingSkillContext}`;
             if (pendingQuizContext) extra += `\n\n${pendingQuizContext}`;
             const currentChatForSim = chats.find(c => c.id === currentChatId);
             if (currentChatForSim && currentChatForSim.clinicalSimSpecialty) {
@@ -5432,6 +5540,7 @@ ${r.pathSummary}
         let mockExamChapters = []; // {cacheKey, subjectName, chapterName} — "عربية" الفصول المضافة لامتحان المحاكاة قبل ما يبدأ
         let mockExamTimers = []; // setTimeout ids لتنبيهات وقت امتحان المحاكاة، بنمسحهم لو الامتحان اتصحح قبل الوقت
         let pendingQuizContext = ''; // بيتحط في الـ system prompt مرة واحدة بعد التصحيح عشان الـ AI يشرح الأخطاء
+        let pendingSkillContext = ''; // بيتحط مرة واحدة لما الطالب يختار مهارة بالـ / من زرار الإرفاق
         let activeStudyChapterContext = ''; // محتوى الفصل اللي الطالب "مركّز" عليه دلوقتي
         let activeStudyChapterName = '';
 
@@ -5622,16 +5731,125 @@ ${r.pathSummary}
 
         // ====================== Premium: مكتبة البرومبتس الذكية ======================
         const PREMIUM_PROMPTS = [
+            // ===== مذاكرة =====
             { cat: 'مذاكرة', label: 'اشرحلي بالتشبيه', text: 'اشرحلي [الموضوع] بطريقة مبسطة جدًا باستخدام تشبيه من الحياة اليومية، وبعدها اديني مثال سريري واقعي عليه.' },
             { cat: 'مذاكرة', label: 'خريطة ذهنية نصية', text: 'اعملي خريطة ذهنية نصية (تسلسل هرمي بالنقط) لموضوع [الموضوع]، تجمع فيها كل الأفكار الفرعية والعلاقة بينها.' },
             { cat: 'مذاكرة', label: 'قارن بين حاجتين', text: 'اعملي جدول مقارنة تفصيلي بين [الحاجة الأولى] و[الحاجة التانية] من ناحية الأسباب والأعراض والعلاج والفرق الأساسي بينهم.' },
+            { cat: 'مذاكرة', label: 'ملخص من محاضرة طويلة', text: 'هبعتلك محتوى محاضرة [الموضوع] كامل، لخصهولي في نقط مرتبة حسب الأهمية، وحط تحت كل نقطة سطر واحد يشرحها ببساطة.' },
+            { cat: 'مذاكرة', label: 'اسألني زي الامتحان', text: 'اسألني سؤال سؤال عن [الموضوع] زي ما هيجيلي في الامتحان بالظبط، واستنى إجابتي قبل ما تنتقل للسؤال اللي بعده وصححلي فورًا.' },
+            { cat: 'مذاكرة', label: 'اشرح بالعكس', text: 'ابدأ من النتيجة أو المضاعفات بتاعة [الحالة/المرض]، وارجعلي خطوة خطوة لحد السبب الأصلي، عشان أفهم الترابط.' },
+            { cat: 'مذاكرة', label: 'جدول مذاكرة أسبوعي', text: 'اعملي جدول مذاكرة أسبوعي لمادة [المادة] موزّع على [عدد] أيام، آخد بالي فيه من وقت المحاضرات والراحة، وحدد أولوية كل موضوع.' },
+            { cat: 'مذاكرة', label: 'اختصر بالاختصارات', text: 'اديني طريقة تذكر (mnemonic) أو اختصار بالحروف يساعدني أفتكر [الموضوع] بسهولة وقت الامتحان.' },
+            { cat: 'مذاكرة', label: 'اشرحلي زي إني في أول سنة', text: 'اشرحلي [الموضوع] من الصفر تمامًا، زي إني ماخدتش أي خلفية عنه قبل كده، وابدأ بأبسط تعريف ممكن.' },
+            { cat: 'مذاكرة', label: 'لخص في جملة واحدة', text: 'لخصلي كل نقطة من نقط [الموضوع] في جملة واحدة بس قصيرة وواضحة، عشان أراجعها بسرعة قبل الامتحان.' },
+
+            // ===== امتحانات =====
             { cat: 'امتحانات', label: 'أسئلة تركيز أخير', text: 'أنا هدخل امتحان في [المادة] بعد كام ساعة، اديني ٥ أسئلة سريعة على أكتر نقط بيتكرر ذكرها في امتحانات المادة دي، وصححلي بعد ما أجاوب.' },
             { cat: 'امتحانات', label: 'فخاخ الأسئلة الشائعة', text: 'إيه أكتر ٥ أخطاء شائعة بيقع فيها طلاب التمريض وقت الإجابة على أسئلة [الموضوع]؟ وضحلي ليه بالظبط بيغلطوا فيها.' },
+            { cat: 'امتحانات', label: 'اختبار MCQ سريع', text: 'اعملي اختبار من ١٠ أسئلة اختيار من متعدد على موضوع [الموضوع]، وبعد ما أجاوب عليهم كلهم اديني النتيجة وشرح لكل إجابة غلط.' },
+            { cat: 'امتحانات', label: 'سؤال مقالي وتقييمه', text: 'اديني سؤال مقالي (Essay) زي أسئلة امتحان [المادة]، وبعد ما أكتب إجابتي قيّمها زي ما المصحح هيعمل بالظبط وقولي هعدي بيها كام.' },
+            { cat: 'امتحانات', label: 'تجهيز ليوم قبل الامتحان', text: 'حطلي خطة مراجعة ليوم واحد قبل امتحان [المادة]، مقسّمة بالساعة، تركز بس على أهم النقط اللي المفروض ماتفوتنيش.' },
+            { cat: 'امتحانات', label: 'أسئلة NCLEX-style', text: 'اديني ٥ أسئلة بستايل NCLEX (اختيار من متعدد سريري) عن [الموضوع]، وبعد إجابتي اشرحلي المنطق الإكلينيكي وراء الإجابة الصح.' },
+            { cat: 'امتحانات', label: 'ترتيب أولويات (Priority)', text: 'اديني سؤال "ترتيب الأولويات" (زي إيه أول إجراء تعمله) في حالة [الحالة]، وبعد ما أرتب اشرحلي ليه الترتيب ده هو الصح.' },
+            { cat: 'امتحانات', label: 'تحليل سؤال معقد', text: 'ده نص سؤال امتحان معقد وطويل: [الصق السؤال هنا]. ساعدني أحلله خطوة خطوة عشان أوصل للإجابة الصح من غير ما أستعجل.' },
+            { cat: 'امتحانات', label: 'مراجعة قبل الفاينال', text: 'اعملي خطة مراجعة شاملة لمادة [المادة] كلها قبل الفاينال، تجمع فيها أهم المواضيع اللي شكلها هتيجي بقوة، مرتبة حسب الأولوية.' },
+            { cat: 'امتحانات', label: 'تدريب على الوقت', text: 'اديني ٥ أسئلة متنوعة عن [الموضوع] وحطلي مؤقّت افتراضي دقيقة لكل سؤال، وقولي بعدين هل سرعتي في التفكير كانت مناسبة ولا لأ.' },
+
+            // ===== سريري =====
             { cat: 'سريري', label: 'خطة رعاية تمريضية', text: 'اكتبلي خطة رعاية تمريضية (Nursing Care Plan) كاملة لمريض حالته [الحالة]، شاملة nursing diagnosis وgoals وinterventions وevaluation.' },
             { cat: 'سريري', label: 'خطوات إجراء عملي', text: 'اديني خطوات إجراء [اسم الإجراء] بالترتيب الصح خطوة خطوة، وأهم نقطة أمان وسلامة (safety) في كل خطوة.' },
+            { cat: 'سريري', label: 'قراءة العلامات الحيوية', text: 'العلامات الحيوية لمريضي كانت [القيم]، فسّرلي إيه اللي طبيعي وإيه اللي مش طبيعي، وإيه أول حاجة المفروض أعملها لو فيه خطر.' },
+            { cat: 'سريري', label: 'تشخيص تمريضي مناسب', text: 'المريض عنده [الأعراض/الحالة]، اديني أكتر ٣ تشخيصات تمريضية (Nursing Diagnosis) مناسبة له مرتبة حسب الأولوية، مع سبب اختيار كل واحدة.' },
+            { cat: 'سريري', label: 'تفسير نتيجة تحليل', text: 'نتيجة تحليل [اسم التحليل] بتاعت المريض كانت [القيمة]، اشرحلي المعنى الإكلينيكي وإيه اللي المفروض أراقبه أو أبلغ عنه.' },
+            { cat: 'سريري', label: 'قراءة رسم القلب ECG', text: 'اشرحلي إزاي أقرأ رسم قلب (ECG) بشكل منظم خطوة بخطوة، وإيه علامات [نوع اضطراب معين] بالتحديد لو ظهرت فيه.' },
+            { cat: 'سريري', label: 'خطوات التعامل مع طوارئ', text: 'لو المريض حصله فجأة [الموقف الطارئ]، اديني الخطوات المفروض أعملها بالترتيب من ثانية واحدة، وإيه أهم حاجة متعملهاش.' },
+            { cat: 'سريري', label: 'تقييم شامل للمريض (Assessment)', text: 'ساعدني أعمل head-to-toe assessment كامل لمريض حالته [الحالة]، ووضحلي إيه اللي المفروض أركز عليه أكتر بسبب حالته دي.' },
+            { cat: 'سريري', label: 'مقارنة بين تشخيصين متشابهين', text: 'إزاي أفرّق سريريًا بين [الحالة الأولى] و[الحالة التانية]؟ الاتنين أعراضهم متشابهة وعايز أعرف علامات التفريق الدقيقة.' },
+            { cat: 'سريري', label: 'التعامل مع مضاعفات', text: 'إيه أهم المضاعفات المحتملة لحالة [الحالة/الإجراء]، وإزاي أراقب المريض عشان أكتشفها بدري قبل ما تتفاقم؟' },
+
+            // ===== أدوية =====
             { cat: 'أدوية', label: 'ملخص دوا كامل', text: 'اديني ملخص شامل عن دواء [اسم الدواء]: الفئة، الآلية، الجرعة، أهم التداخلات الدوائية، والـ nursing considerations المهمة.' },
+            { cat: 'أدوية', label: 'مقارنة بين دوائين', text: 'قارن لي بين [الدواء الأول] و[الدواء التاني] من ناحية الآلية والاستخدام والفرق الجوهري بينهم، عشان أفرق بينهم في الامتحان.' },
+            { cat: 'أدوية', label: 'الآثار الجانبية الخطيرة', text: 'إيه أخطر الآثار الجانبية لدواء [اسم الدواء] اللي المفروض أراقبها في المريض فورًا وأبلغ عنها لو ظهرت؟' },
+            { cat: 'أدوية', label: 'حساب الجرعة', text: 'ساعدني أحسب الجرعة الصح لدواء [اسم الدواء] لمريض وزنه [الوزن]، ووريني خطوات الحساب كاملة عشان أفهم الطريقة مش بس الرقم.' },
+            { cat: 'أدوية', label: 'قبل ما أدّي الدوا', text: 'إيه أهم ٥ حاجات المفروض أتأكد منها قبل ما أدّي دواء [اسم الدواء] للمريض (checks قبل الإعطاء)؟' },
+            { cat: 'أدوية', label: 'أدوية فئة معينة', text: 'اديني قائمة بأهم أدوية فئة [اسم الفئة الدوائية] مع أهم فرق واحد بين كل دوا والتاني في الفئة دي.' },
+            { cat: 'أدوية', label: 'تداخلات دوائية خطيرة', text: 'المريض بياخد [الدواء الأول] و[الدواء التاني] مع بعض، فيه تداخل دوائي خطير بينهم؟ ولو فيه، إزاي أتصرف كممرض؟' },
+            { cat: 'أدوية', label: 'دوا في حالات خاصة', text: 'هل دواء [اسم الدواء] آمن لمريض عنده [حالة خاصة زي الحمل/الفشل الكلوي]؟ اشرحلي السبب والاحتياطات المطلوبة.' },
+            { cat: 'أدوية', label: 'طرق الإعطاء المختلفة', text: 'اشرحلي الفرق بين إعطاء دواء [اسم الدواء] بطريقة [IV/IM/PO...]، ومميزات وعيوب كل طريقة في الحالة دي.' },
+            { cat: 'أدوية', label: 'التسمم الدوائي وعلاجه', text: 'إيه علامات جرعة زيادة (Overdose/Toxicity) من دواء [اسم الدواء]، وإيه الترياق أو التدخل المطلوب فورًا؟' },
+
+            // ===== مهارات عملية =====
             { cat: 'مهارات عملية', label: 'تحضير لتقديم كيس (Case)', text: 'هقدم case presentation عن مريض بحالة [الحالة]، اديني تقسيم منظم للعرض (تاريخ مرضي، فحص، تشخيص، خطة علاج) وأهم الأسئلة المتوقعة من الدكتور.' },
-            { cat: 'لغة', label: 'مصطلحات طبية بالعربي والإنجليزي', text: 'اديني أهم ١٠ مصطلحات طبية خاصة بموضوع [الموضوع] بالإنجليزي مع نطقها والمعنى بالعربي البسيط.' }
+            { cat: 'مهارات عملية', label: 'خطوات مهارة عملية بالتفصيل', text: 'اشرحلي مهارة [اسم المهارة، زي تركيب كانيولا أو قسطرة] خطوة بخطوة زي ما هينفذها في السكيل لاب بالظبط، مع نقط الأمان.' },
+            { cat: 'مهارات عملية', label: 'تحضير للامتحان العملي (OSCE)', text: 'هدخل امتحان عملي (OSCE) على مهارة [اسم المهارة]، اديني الخطوات اللي المفروض ألتزم بيها وإيه أكتر حاجة بتفصّل الطلاب فيها.' },
+            { cat: 'مهارات عملية', label: 'أدوات ومستلزمات إجراء', text: 'إيه كل الأدوات والمستلزمات اللي محتاجها قبل ما أبدأ إجراء [اسم الإجراء]، عشان أجهزها كلها الأول من غير ما أفوّت حاجة.' },
+            { cat: 'مهارات عملية', label: 'كيف أتعامل مع مريض قلقان', text: 'المريض قلقان جدًا وخايف من إجراء [اسم الإجراء]، اديني كلام أقوله له عشان أطمّنه وأشرحله بأسلوب بسيط قبل ما أبدأ.' },
+            { cat: 'مهارات عملية', label: 'خطأ حصل أثناء إجراء', text: 'حصل [وصف الموقف/الخطأ] أثناء إجراء [اسم الإجراء]، إيه الخطوة الصح اللي المفروض أعملها دلوقتي فورًا؟' },
+            { cat: 'مهارات عملية', label: 'تجهيز غرفة/سرير المريض', text: 'اديني checklist لتجهيز [غرفة العمليات/سرير المريض] قبل استقبال حالة [الحالة]، عشان مافيش حاجة تفوتني.' },
+            { cat: 'مهارات عملية', label: 'تعقيم ومنع العدوى', text: 'إيه خطوات التعقيم الصح ومنع العدوى المطلوبة أثناء تنفيذ [اسم الإجراء]، وإيه أكتر غلطة شائعة بتحصل فيها؟' },
+            { cat: 'مهارات عملية', label: 'تدريب سؤال وجواب على مهارة', text: 'اسألني أسئلة سريعة عن خطوات مهارة [اسم المهارة] زي ما الدكتور هيسألني في الامتحان الشفوي، وصححلي أول بأول.' },
+            { cat: 'مهارات عملية', label: 'الفرق بين طريقتين لنفس الإجراء', text: 'إيه الفرق بين طريقة [الطريقة الأولى] و[الطريقة التانية] لتنفيذ [اسم الإجراء]، ومتى بستخدم كل واحدة فيهم؟' },
+
+            // ===== لغة =====
+            { cat: 'لغة', label: 'مصطلحات طبية بالعربي والإنجليزي', text: 'اديني أهم ١٠ مصطلحات طبية خاصة بموضوع [الموضوع] بالإنجليزي مع نطقها والمعنى بالعربي البسيط.' },
+            { cat: 'لغة', label: 'فك تحليل مصطلح مركب', text: 'المصطلح ده [اكتب المصطلح] مركب من أكتر من جزء، فكّهولي جزء جزء (prefix/root/suffix) واشرحلي معنى كل جزء عشان أفهمه من جذوره.' },
+            { cat: 'لغة', label: 'اختصارات طبية شائعة', text: 'اديني قائمة بأكتر الاختصارات الطبية استخدامًا في قسم [اسم القسم، زي ICU أو ER] مع المعنى الكامل بالإنجليزي والعربي.' },
+            { cat: 'لغة', label: 'ترجمة تقرير طبي', text: 'ده تقرير/ملاحظة طبية بالإنجليزي: [الصق النص]. ترجملي المعنى بالعربي المبسط وفسّر أي مصطلح صعب فيه.' },
+            { cat: 'لغة', label: 'الفرق بين مصطلحين متشابهين', text: 'إيه الفرق بالظبط بين [مصطلح أول] و[مصطلح تاني]؟ بيتلخبطوا مع بعض كتير وعايز أفهم الفرق الدقيق بينهم.' },
+            { cat: 'لغة', label: 'جملة إنجليزي للتواصل مع مريض', text: 'اديني جمل إنجليزي بسيطة وشائعة أقولها لمريض متكلمش عربي وأنا بعمل معاه [الإجراء/الموقف].' },
+            { cat: 'لغة', label: 'تدريب نطق مصطلحات', text: 'اديني ٥ مصطلحات طبية صعبة النطق في موضوع [الموضوع]، واكتب النطق الصوتي لكل واحد بالعربي عشان أتمرن عليه.' },
+            { cat: 'لغة', label: 'كتابة ملاحظة تمريضية بالإنجليزي', text: 'ساعدني أكتب nursing note بالإنجليزي بصيغة احترافية عن الموقف ده: [وصف الموقف]، بنفس الأسلوب المستخدم في التقارير الطبية.' },
+            { cat: 'لغة', label: 'قاموس مصطلحات قسم كامل', text: 'اعملي قاموس مصغّر بأهم ١٥ مصطلح لازم أعرفهم قبل ما أبدأ تدريب في قسم [اسم القسم]، مرتبين حسب الأهمية.' },
+            { cat: 'لغة', label: 'فهم سؤال بالإنجليزي معقد', text: 'مش فاهم السؤال ده بالإنجليزي كويس: [الصق السؤال]، اشرحلي المطلوب بالظبط بالعربي المبسط من غير ما تجاوب عني.' },
+
+            // ===== تمريض الطوارئ =====
+            { cat: 'تمريض الطوارئ', label: 'أولويات في حالة طوارئ', text: 'مريض دخل الطوارئ بحالة [وصف الحالة]، رتبلي أولويات التعامل معاه من أول ثانية باستخدام مبدأ ABCDE بالتفصيل.' },
+            { cat: 'تمريض الطوارئ', label: 'خطوات الإنعاش القلبي الرئوي', text: 'اشرحلي خطوات CPR كاملة بالترتيب الصح حسب أحدث الإرشادات، ووضحلي الفرق لو المريض بالغ أو طفل.' },
+            { cat: 'تمريض الطوارئ', label: 'Triage وتصنيف الحالات', text: 'إزاي أصنّف حالة [وصف الحالة] في نظام الفرز (Triage) في الطوارئ، وإيه اللون/الأولوية المفروض تاخدها؟' },
+            { cat: 'تمريض الطوارئ', label: 'التعامل مع نزيف حاد', text: 'المريض عنده نزيف حاد من [مكان النزيف]، إيه الخطوات الفورية اللي المفروض أعملها لوقف النزيف واستقرار حالته؟' },
+            { cat: 'تمريض الطوارئ', label: 'التعامل مع تسمم أو جرعة زيادة', text: 'مريض جاله جرعة زيادة أو تسمم من [المادة]، إيه أول تدخل تمريضي والخطوات اللي المفروض أتابعها؟' },
+            { cat: 'تمريض الطوارئ', label: 'التعامل مع صدمة (Shock)', text: 'المريض عنده علامات [نوع الصدمة]، اشرحلي إزاي أتعرف عليها بدري وإيه التدخلات التمريضية الفورية المطلوبة.' },
+            { cat: 'تمريض الطوارئ', label: 'حالة تنفسية حرجة', text: 'مريض بيعاني من ضيق تنفس حاد بسبب [السبب]، إيه الخطوات اللي المفروض أعملها فورًا قبل وصول الطبيب؟' },
+            { cat: 'تمريض الطوارئ', label: 'إصابات وكسور', text: 'إزاي أتعامل تمريضيًا مع مريض عنده [نوع إصابة/كسر] لحد ما ينقل لقسم متخصص، وإيه اللي متمنوعش أعمله؟' },
+            { cat: 'تمريض الطوارئ', label: 'حالة تشنجات (Seizure)', text: 'المريض بيعمل تشنجات دلوقتي قدامي، إيه الخطوات المفروض أعملها لحمايته لحد ما التشنج يخلص؟' },
+            { cat: 'تمريض الطوارئ', label: 'تجهيز عربة الطوارئ', text: 'اديني قائمة بمحتويات عربة الطوارئ (Crash Cart) الأساسية ودور كل قسم فيها وقت الحالات الحرجة.' },
+
+            // ===== رعاية الأطفال والولادة =====
+            { cat: 'رعاية الأطفال والولادة', label: 'تقييم علامات حيوية لطفل', text: 'اشرحلي المعدل الطبيعي للعلامات الحيوية لطفل عمره [العمر]، وإيه اللي يعتبر غير طبيعي ومحتاج تنبيه فوري.' },
+            { cat: 'رعاية الأطفال والولادة', label: 'حساب جرعة دوا للأطفال', text: 'ساعدني أحسب جرعة دواء [اسم الدواء] المناسبة لطفل وزنه [الوزن]، ووريني طريقة الحساب كاملة خطوة بخطوة.' },
+            { cat: 'رعاية الأطفال والولادة', label: 'التعامل مع طفل خايف من الإجراء', text: 'الطفل خايف جدًا من [الإجراء]، اديني أسلوب تواصل مناسب لعمره عشان أهدّيه وأخلّيه يتعاون من غير ترويع.' },
+            { cat: 'رعاية الأطفال والولادة', label: 'رعاية ما بعد الولادة', text: 'اديني أهم نقط الرعاية التمريضية للأم في أول ٢٤ ساعة بعد الولادة، وإيه علامات الخطر اللي المفروض أراقبها.' },
+            { cat: 'رعاية الأطفال والولادة', label: 'رعاية المولود حديث الولادة', text: 'إيه أهم فحوصات وتقييمات المولود حديث الولادة (Newborn Assessment) في أول ساعات بعد الولادة؟' },
+            { cat: 'رعاية الأطفال والولادة', label: 'مراحل نمو الطفل', text: 'إيه العلامات التنموية الطبيعية (Milestones) المتوقعة لطفل عمره [العمر]، وإيه اللي لو اتأخر يعتبر مؤشر خطر؟' },
+            { cat: 'رعاية الأطفال والولادة', label: 'تثقيف الأم الجديدة', text: 'حضّرلي نقط تثقيف صحي بسيطة أقولها لأم جديدة عن [موضوع، زي الرضاعة الطبيعية أو العناية بالسرة].' },
+            { cat: 'رعاية الأطفال والولادة', label: 'مضاعفات الحمل', text: 'إيه علامات الخطر اللي المفروض أراقبها عند حامل عندها [حالة، زي تسمم الحمل]، وإيه دوري التمريضي في متابعتها؟' },
+            { cat: 'رعاية الأطفال والولادة', label: 'التطعيمات حسب العمر', text: 'اديني جدول التطعيمات المفروضة لطفل عمره [العمر]، وإيه الآثار الجانبية الطبيعية اللي أطمّن الأهل بيها.' },
+            { cat: 'رعاية الأطفال والولادة', label: 'أمراض الأطفال الشائعة', text: 'اشرحلي أهم أعراض وعلامات [مرض شائع عند الأطفال] وإزاي تختلف الرعاية التمريضية له عن حالة نفسها عند الكبار.' },
+
+            // ===== التواصل والتوثيق =====
+            { cat: 'التواصل والتوثيق', label: 'كتابة تقرير تمريضي', text: 'ساعدني أكتب تقرير تمريضي (Nursing Report) منظم عن نوبتي اليوم، هقولك التفاصيل وأنت رتبها بالصيغة الاحترافية الصح.' },
+            { cat: 'التواصل والتوثيق', label: 'تسليم مناوبة (Handover)', text: 'حضّرلي طريقة تسليم مناوبة منظمة (زي SBAR) عن مريض حالته [الحالة]، عشان أوصّل المعلومة كاملة وواضحة للزميلة الجاية.' },
+            { cat: 'التواصل والتوثيق', label: 'التعامل مع أهل قلقانين', text: 'أهل المريض قلقانين وبيسألوا أسئلة كتير عن حالته، اديني أسلوب أرد بيه بهدوء ووضوح من غير ما أطلع بره حدود دوري.' },
+            { cat: 'التواصل والتوثيق', label: 'توصيل خبر صعب بأسلوب مناسب', text: 'محتاج أوصّل معلومة صعبة/حساسة للمريض أو أهله عن [الموقف]، اديني أسلوب تواصل تمريضي مناسب ومتعاطف.' },
+            { cat: 'التواصل والتوثيق', label: 'توثيق موقف حرج قانونيًا', text: 'حصل [وصف الموقف] وعايز أوثقه صح في ملف المريض بطريقة دقيقة ومهنية تحميني قانونيًا وتوضح اللي حصل بالظبط.' },
+            { cat: 'التواصل والتوثيق', label: 'التعامل مع مريض غاضب', text: 'المريض غاضب وبيتكلم بعصبية معايا، اديني طريقة أتعامل بيها معاه وأهدّي الموقف من غير ما أفقد احترافيتي.' },
+            { cat: 'التواصل والتوثيق', label: 'أسئلة تقييم نفسي/اجتماعي', text: 'اديني أسئلة مناسبة أسألها للمريض عشان أعمل تقييم نفسي واجتماعي بسيط ضمن التقييم الشامل بتاعه.' },
+            { cat: 'التواصل والتوثيق', label: 'صياغة خطة تثقيف صحي', text: 'ساعدني أجهز خطة تثقيف صحي (Health Education) للمريض عن [الموضوع] قبل خروجه من المستشفى.' },
+            { cat: 'التواصل والتوثيق', label: 'التواصل مع فريق طبي', text: 'محتاج أبلّغ الطبيب المسؤول عن تغيّر مفاجئ في حالة المريض ([الوصف])، اديني الصيغة الصح والمختصرة لتوصيل المعلومة بسرعة ووضوح.' },
+            { cat: 'التواصل والتوثيق', label: 'أخلاقيات وحدود مهنية', text: 'حصل معايا موقف [وصف الموقف الأخلاقي/المهني]، إيه الصح إني أعمله من ناحية أخلاقيات المهنة وحدود دوري كممرض؟' },
+
+            // ===== تنظيم المذاكرة والتحفيز =====
+            { cat: 'تنظيم المذاكرة والتحفيز', label: 'خطة مذاكرة شاملة للفصل', text: 'عندي [عدد] مواد الفصل ده، ساعدني أوزّعهم على أيام الأسبوع بشكل متوازن بدون ما أحرق نفسي أو أتأخر في مادة.' },
+            { cat: 'تنظيم المذاكرة والتحفيز', label: 'إني مركزش وقت المذاكرة', text: 'بلاقي صعوبة إني أركز وقت المذاكرة وبتشتت بسرعة، اديني نصايح عملية تناسب طبيعة مذاكرة مادة زي [المادة].' },
+            { cat: 'تنظيم المذاكرة والتحفيز', label: 'حافز قبل امتحان صعب', text: 'حاسس بضغط وقلق قبل امتحان [المادة]، اديني كلام تحفيزي بسيط وواقعي يساعدني أهدى وأركز في المذاكرة.' },
+            { cat: 'تنظيم المذاكرة والتحفيز', label: 'تقسيم موضوع كبير لأجزاء', text: 'موضوع [الموضوع] كبير جدًا وحاسس إني تايه فيه، ساعدني أقسّمه لأجزاء صغيرة أقدر أذاكرها واحدة واحدة بالترتيب المنطقي.' },
+            { cat: 'تنظيم المذاكرة والتحفيز', label: 'مراجعة سريعة قبل النوم', text: 'اديني ملخص سريع جدًا (٥ نقط بس) لموضوع [الموضوع] أقدر أراجعه قبل النوم في ٥ دقايق.' },
+            { cat: 'تنظيم المذاكرة والتحفيز', label: 'تنظيم وقت التدريب العملي والمذاكرة', text: 'عندي تدريب عملي في المستشفى وكمان محتاج أذاكر لامتحان [المادة]، ساعدني أنظم وقتي بين الاتنين من غير ما حاجة تتأثر.' },
+            { cat: 'تنظيم المذاكرة والتحفيز', label: 'التعامل مع الإرهاق الدراسي', text: 'حاسس بإرهاق شديد من كتر المذاكرة والتدريب العملي، اديني نصايح عملية أقدر أطبقها من غير ما أقصّر في التزاماتي.' },
+            { cat: 'تنظيم المذاكرة والتحفيز', label: 'مقارنة طرق المذاكرة', text: 'إيه أنسب طريقة مذاكرة (فلاش كاردز، تلخيص، شرح لنفسي بصوت عالي...) لموضوع عملي/تطبيقي زي [الموضوع]؟' },
+            { cat: 'تنظيم المذاكرة والتحفيز', label: 'خطة تعويض مذاكرة فايتة', text: 'فاتني مذاكرة [عدد] محاضرات في مادة [المادة]، ساعدني أحط خطة واقعية أعوّض بيها من غير ما أضغط على نفسي أكتر من اللازم.' },
+            { cat: 'تنظيم المذاكرة والتحفيز', label: 'تحديد أولويات وقت الامتحانات', text: 'عندي كذا امتحان قريب من بعض ([المواد])، ساعدني أحدد إيه المادة اللي المفروض أبدأ بيها الأول وليه.' }
         ];
         function openPremiumPrompts() {
             const list = document.getElementById('premiumPromptsList');
@@ -5659,6 +5877,175 @@ ${r.pathSummary}
             const match = p.text.match(/\[[^\]]+\]/);
             if (match) input.setSelectionRange(match.index, match.index + match[0].length);
             showToast('اتحط البرومبت — عدّل الجزء المحدد وابعت', 'success');
+        }
+
+        // ====================== Premium: مهارات مخصصة (Skills) ======================
+        // فكرة الميزة: نفس فكرة "Skills" في Claude — تعليمات ثابتة مخزّنة بأسماء ووصف،
+        // وأي مهارة "مفعّلة" (active) بتتحط تلقائي جوه الـ system prompt في كل رسالة
+        // جديدة، فالمساعد يلتزم بيها من غير ما الطالب يكررها كل مرة. كل حاجة متخزنة
+        // محليًا على جهاز الطالب بس (localStorage) — مفيش سيرفر لازم نضيفه عشان الميزة دي.
+        function getCustomSkills() {
+            try { return JSON.parse(localStorage.getItem('sx_custom_skills') || '[]'); }
+            catch (e) { return []; }
+        }
+        function saveCustomSkills(skills) {
+            localStorage.setItem('sx_custom_skills', JSON.stringify(skills));
+        }
+        function openPremiumSkills() {
+            renderSkillsList();
+            openModal('premiumSkillsModal');
+        }
+        function renderSkillsList() {
+            const skills = getCustomSkills();
+            const list = document.getElementById('premiumSkillsList');
+            if (skills.length === 0) {
+                list.innerHTML = '<div style="text-align:center;color:var(--text-3);font-size:12px;padding:20px 0;">لسه معملتش أي مهارة. دوس "مهارة جديدة" عشان تبدأ.</div>';
+                return;
+            }
+            list.innerHTML = skills.map(s => `
+                <div class="prompt-card" style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+                    <div style="flex:1;min-width:0;cursor:pointer;" onclick="openSkillEditor('${s.id}')">
+                        <div class="prompt-card-label">${escapeHtml(s.name)}</div>
+                        <div class="prompt-card-text">${escapeHtml((s.instructions || '').slice(0, 90))}${(s.instructions || '').length > 90 ? '…' : ''}</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
+                        <label style="cursor:pointer;" title="${s.active ? 'مفعّلة' : 'متوقفة'}">
+                            <input type="checkbox" ${s.active ? 'checked' : ''} onchange="toggleSkillActive('${s.id}')">
+                        </label>
+                        <button style="background:none;border:none;color:var(--danger,#e5484d);cursor:pointer;font-size:14px;" title="حذف" onclick="deleteSkill('${s.id}')"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        function openSkillEditor(id) {
+            document.getElementById('skillEditorId').value = id || '';
+            if (id) {
+                const skill = getCustomSkills().find(s => s.id === id);
+                document.getElementById('skillEditorTitle').textContent = 'تعديل المهارة';
+                document.getElementById('skillNameInput').value = skill ? skill.name : '';
+                document.getElementById('skillInstructionsInput').value = skill ? skill.instructions : '';
+            } else {
+                document.getElementById('skillEditorTitle').textContent = 'مهارة جديدة';
+                document.getElementById('skillNameInput').value = '';
+                document.getElementById('skillInstructionsInput').value = '';
+            }
+            document.getElementById('skillFileInput').value = '';
+            openModal('skillEditorModal');
+        }
+        // بيقرا أي ملف .txt/.md ترفعه ويحط محتواه في خانة التعليمات مباشرة — مفيد لو
+        // الطالب عنده ملف تعليمات جاهز (زي قالب تلخيص أو أسلوب رد اتفق عليه) وعايز
+        // يرفعه بدل ما يلزق النص يدوي.
+        function handleSkillFileUpload(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            if (file.size > 200 * 1024) { showToast('الملف كبير أوي (حد أقصى 200KB)', 'error'); return; }
+            const reader = new FileReader();
+            reader.onload = () => {
+                document.getElementById('skillInstructionsInput').value = String(reader.result || '').slice(0, 6000);
+                showToast('اتحط محتوى الملف في خانة التعليمات', 'success');
+            };
+            reader.onerror = () => showToast('تعذر قراءة الملف', 'error');
+            reader.readAsText(file, 'utf-8');
+        }
+        function saveSkill() {
+            const id = document.getElementById('skillEditorId').value;
+            const name = document.getElementById('skillNameInput').value.trim();
+            const instructions = document.getElementById('skillInstructionsInput').value.trim().slice(0, 6000);
+            if (!name || !instructions) { showToast('لازم تكتب اسم وتعليمات للمهارة', 'error'); return; }
+            let skills = getCustomSkills();
+            if (id) {
+                skills = skills.map(s => s.id === id ? { ...s, name, instructions } : s);
+            } else {
+                // حد أقصى 12 مهارة عشان الـ system prompt مايتضخمش ويأثر على جودة وسرعة الرد
+                if (skills.length >= 12) { showToast('وصلت لأقصى عدد مهارات (12) — احذف مهارة قديمة الأول', 'error'); return; }
+                skills.push({ id: `skill-${Date.now()}`, name, instructions, active: true, createdAt: Date.now() });
+            }
+            saveCustomSkills(skills);
+            closeModal('skillEditorModal');
+            renderSkillsList();
+            showToast('اتحفظت المهارة ✓', 'success');
+        }
+        function toggleSkillActive(id) {
+            const skills = getCustomSkills().map(s => s.id === id ? { ...s, active: !s.active } : s);
+            saveCustomSkills(skills);
+            renderSkillsList();
+        }
+        function deleteSkill(id) {
+            if (!confirm('تحذف المهارة دي؟')) return;
+            saveCustomSkills(getCustomSkills().filter(s => s.id !== id));
+            renderSkillsList();
+            showToast('اتحذفت المهارة', 'success');
+        }
+        // بيرجع النص اللي بيتضاف جوه الـ system prompt لكل المهارات المفعّلة — بيتنادى من
+        // getSystemPrompt() لو الطالب معاه ميزة premium_skills. لو مفيش مهارات مفعّلة
+        // بيرجع نص فاضي (يعني مفيش تأثير خالص على الردود العادية).
+        function getActiveSkillsPromptBlock() {
+            if (!hasPremium('premium_skills')) return '';
+            const active = getCustomSkills().filter(s => s.active);
+            if (active.length === 0) return '';
+            return `
+
+الطالب عنده "مهارات مخصصة" مفعّلة (تعليمات ثابتة اتفق هو عليها بنفسه) — التزم بيها بدقة في أي رد مرتبط بموضوعها، من غير ما تذكر للطالب إنك "قريت مهارة" أو حاجة تقنية زي كده، فقط اتصرف بمقتضاها بشكل طبيعي:
+${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`;
+        }
+
+        // ====================== زرار الإرفاق: ملف أو مهارة (Skill) ======================
+        function openAttachMenu() {
+            openModal('attachMenuModal');
+        }
+        // بيحول اسم المهارة لـ "سلاج" آمن يظهر بعد الـ / في مربع الكتابة (فراغات تبقى
+        // شرطة، وأي حاجة غريبة تتشال) — نفس السلاج ده بيتستخدم بعدين للتعرف على المهارة
+        // وقت الإرسال حتى لو الطالب عدّل حروف كبيرة/صغيرة أو مسافات حوالين الجزء ده.
+        function slugifySkillName(name) {
+            return (name || '').trim().replace(/\s+/g, '-');
+        }
+        function openSkillPicker() {
+            if (!hasPremium('premium_skills')) {
+                closeModal('attachMenuModal');
+                showToast('ميزة المهارات محتاجة تفعيل من الأدمن', 'error');
+                return;
+            }
+            const skills = getCustomSkills();
+            const list = document.getElementById('skillPickerList');
+            if (skills.length === 0) {
+                list.innerHTML = '<div style="text-align:center;color:var(--text-3);font-size:12px;padding:16px 0;">لسه معملتش أي مهارة. دوس "إدارة / إضافة مهارات" تحت وابدأ.</div>';
+            } else {
+                list.innerHTML = skills.map(s => `
+                    <div class="prompt-card" onclick="insertSkillTag('${s.id}')">
+                        <div class="prompt-card-label"><i class="fas fa-puzzle-piece" style="margin-left:6px;opacity:.7;"></i>${escapeHtml(s.name)}</div>
+                        <div class="prompt-card-text">${escapeHtml((s.instructions || '').slice(0, 80))}${(s.instructions || '').length > 80 ? '…' : ''}</div>
+                    </div>
+                `).join('');
+            }
+            closeModal('attachMenuModal');
+            openModal('skillPickerModal');
+        }
+        // بيحط "/اسم-المهارة" في مربع الكتابة (في أول الرسالة) ويسيب مكان الكتابة بعده،
+        // عشان الطالب يكمل يكتب سؤاله بعد التاج مباشرة.
+        function insertSkillTag(id) {
+            const skill = getCustomSkills().find(s => s.id === id);
+            if (!skill) return;
+            const input = document.getElementById('messageInput');
+            const tag = `/${slugifySkillName(skill.name)} `;
+            const already = input.value.trim();
+            input.value = already ? `${tag}${already}` : tag;
+            autoResize(input);
+            updateCharCount();
+            closeModal('skillPickerModal');
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
+        // بيدوّر في نص الرسالة على "/اسم-مهارة" في الأول وبيرجع سياق التعليمات المرتبط
+        // بيها لو لاقاها، عشان تتضاف لـ system prompt الرد ده بس. مش بيشيل التاج من
+        // نص الرسالة (بيفضل ظاهر للطالب في المحادثة كتذكير إنه استخدم المهارة دي).
+        function buildSkillTagContext(text) {
+            if (!hasPremium('premium_skills')) return '';
+            const match = /^\/(\S+)/.exec((text || '').trim());
+            if (!match) return '';
+            const tagSlug = match[1];
+            const skill = getCustomSkills().find(s => slugifySkillName(s.name) === tagSlug);
+            if (!skill) return '';
+            return `الطالب استخدم مهارة "${skill.name}" صراحة على الرسالة دي (اختارها بنفسه من قائمة المهارات) — التزم بالتعليمات دي بدقة كاملة في ردك على الرسالة دي تحديدًا:\n${skill.instructions}`;
         }
 
         // ====================== Premium: امتحان محاكاة شامل (كذا فصل مع بعض + تقرير أداء) ======================
