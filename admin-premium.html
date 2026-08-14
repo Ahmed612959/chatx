@@ -17,10 +17,23 @@
         --success: #10b981; --danger: #ef4444;
         --radius: 16px; --radius-sm: 10px;
     }
+    /* الوضع النهاري — نفس متغيرات الألوان اللي في التطبيق الرئيسي عشان يبقى شكل موحّد */
+    body.light {
+        --bg: #f8fafc; --bg-2: #ffffff; --bg-glass: rgba(255, 255, 255, 0.85); --bg-3: #f1f5f9;
+        --accent: #4f46e5; --accent-2: #7c3aed;
+        --gold: #b8860b; --gold-2: #d4af37;
+        --text-1: #0f172a; --text-2: #475569; --text-3: #94a3b8;
+        --border: rgba(0, 0, 0, 0.08);
+        --success: #059669; --danger: #dc2626;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
         font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text-1);
         min-height: 100vh; display: flex; flex-direction: column;
+        transition: background .2s ease, color .2s ease;
+    }
+    #themeToggleFloating {
+        position: fixed; top: 14px; left: 14px; z-index: 50;
     }
     /* ====================== شاشة تسجيل الدخول ====================== */
     #loginScreen {
@@ -55,6 +68,9 @@
         background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.35); color: #fca5a5;
         border-radius: var(--radius-sm); padding: 9px 12px; font-size: 12px; margin-top: 14px; text-align: right;
     }
+    /* لون النص الفاتح (#fca5a5) بيبقى واضح على خلفية غامقة بس، في الوضع النهاري
+       الخلفية بيضا فبنستخدم أحمر غامق بدل الفاتح عشان التباين يفضل واضح. */
+    body.light .error-box { color: #b91c1c; }
 
     /* ====================== الشاشة الرئيسية ====================== */
     #mainScreen { display: none; flex: 1; flex-direction: column; }
@@ -158,6 +174,7 @@
 </style>
 </head>
 <body>
+    <button id="themeToggleFloating" class="btn-plain" style="width:34px;height:34px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;" aria-label="تبديل الوضع الليلي والنهاري" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i></button>
 
     <!-- تسجيل الدخول -->
     <div id="loginScreen">
@@ -238,6 +255,28 @@
         { key: 'premium_voice', icon: '🎧', title: 'صوت واقعي فائق (ElevenLabs)', desc: 'ترقية تلقائية لأعلى جودة صوت في كل مكان في التطبيق — من غير أي إعداد إضافي من الطالب.' },
         { key: 'premium_skills', icon: '🧩', title: 'مهارات مخصصة (Skills)', desc: 'الطالب يقدر يعمل/يرفع مهارات (تعليمات ثابتة) والمساعد يستخدمها تلقائي في ردوده.' }
     ];
+
+    // ====================== الوضع الليلي / النهاري ======================
+    // بنستخدم نفس مفتاح التخزين اللي بيستخدمه التطبيق الرئيسي (sx_settings.theme) عشان
+    // لو الأدمن نفسه طالب برضه وفاتح التطبيق الرئيسي، الاختيار يفضل موحّد بين الاتنين.
+    const THEME_KEY = 'sx_admin_theme';
+    function getPreferredTheme() {
+        const saved = localStorage.getItem(THEME_KEY);
+        if (saved === 'light' || saved === 'dark') return saved;
+        const systemLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+        return systemLight ? 'light' : 'dark';
+    }
+    function applyTheme(theme) {
+        document.body.classList.toggle('light', theme === 'light');
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.className = theme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+    function toggleTheme() {
+        const next = document.body.classList.contains('light') ? 'dark' : 'light';
+        localStorage.setItem(THEME_KEY, next);
+        applyTheme(next);
+    }
+    applyTheme(getPreferredTheme());
 
     let token = localStorage.getItem(TOKEN_KEY) || '';
     let allStudents = [];
