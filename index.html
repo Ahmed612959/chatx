@@ -8502,7 +8502,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         // سؤال جاهز، وبعدين يبعت الرسالة على نفس مسار sendMessage — فهيتوجه تلقائيًا
         // لموديل تحليل الصور (zimage) لأن فيه صورة مرفقة.
         function confirmDrugScan() {
-            if (!drugScanCapturedImage) { showToast('التقط صورة العلبة الأول', 'error'); return; }
+            if (!drugScanCapturedImage) { showToast('التقط صورة العلبة لأول', 'error'); return; }
 
             let promptText = DRUG_SCAN_PROMPT;
             if (drugScanDecodedCode) {
@@ -8704,4 +8704,3 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
     </script>
 </body>
     </html>
-w
