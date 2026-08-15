@@ -1055,6 +1055,12 @@
             background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: .2s; }
         .dua-close:hover { background: rgba(255,255,255,.2); }
     </style>
+    <!-- Puter.js: طبقة صوت وسيطة مجانية بتوفر نفس نماذج Gemini TTS (ومزودين تانيين) بلا
+         مفتاح API وبلا حصة استخدام محدودة — مستخدمة كخطوة بديلة لو مفتاح Gemini بتاعنا
+         احنا خلصت حصته اليومية (3 طلبات/دقيقة، 15/يوم على الخطة المجانية). راجع
+         fetchTtsAudioBlob() تحت. تحميلها بـ defer عشان متبطئش أول ظهور للصفحة، وهي
+         مطلوبة بس وقت الاستماع فعليًا (مش وقت تحميل الصفحة). -->
+    <script src="https://js.puter.com/v2/" defer></script>
 </head>
 <body>
     <noscript>
@@ -2325,23 +2331,47 @@
         //
         // ترتيب المحاولات (fallback chain) — كل طبقة بتتجرب وبترجع أول ما توفر النتيجة:
         //   الطالب Premium (premium_voice مفعّلة)?
-        //     └─(1) Gemini TTS  → أعلى جودة متاحة حاليًا، نفس GEMINI_API_KEY المستخدم في
-        //           باقي الشات (مفيش مفتاح إضافي ولا فوترة منفصلة). لو فشلت لأي سبب
-        //           (خطأ مؤقت من جوجل، الموديل رافض الطلب...) بننزل للطبقة اللي بعدها.
-        //   كل المستخدمين (Premium وعادي) بيوصلوا هنا لو الطبقة اللي فوق مش موجودة/فشلت:
-        //     └─(2) Azure Neural TTS (/api/tts-neural) → صوت رسمي واقعي كويس، محتاج
+        //     └─(1) Gemini TTS المباشر (/api/tts-gemini بمفتاحنا احنا) → أعلى جودة، لكن
+        //           حصته محدودة جدًا على الخطة المجانية (3 طلبات/دقيقة، 15/يوم لكل
+        //           الموقع). بنطلبه بوضع geminiOnly عشان نعرف فورًا لو فشل بدل ما ننتظر
+        //           السيرفر يجرب صوت احتياطي إحنا مش هنستخدمه أصلاً.
+        //     └─(2) نفس صوت Gemini بس عن طريق Puter.js (مكتبة مجانية بلا مفتاح ولا حصة،
+        //           شغالة من المتصفح مباشرة) → لو مفتاحنا احنا خلصت حصته، لسه فيه فرصة
+        //           نسمع "نفس" صوت Gemini بالظبط من غير ما نضطر ننزل لصوت أقل جودة.
+        //   كل المستخدمين (Premium وعادي) بيوصلوا هنا لو الطبقتين اللي فوق مش موجودين/فشلوا:
+        //     └─(3) Azure Neural TTS (/api/tts-neural) → صوت رسمي واقعي كويس، محتاج
         //           AZURE_SPEECH_KEY. لو مش متحط أو فشل، ننزل للطبقة الأخيرة.
-        //     └─(3) Google Translate TTS (/api/tts) → أقل جودة (صوت آلي واضح لكن مش طبيعي)
+        //     └─(4) Google Translate TTS (/api/tts) → أقل جودة (صوت آلي واضح لكن مش طبيعي)
         //           لكنه مضمون الشغل دايمًا من غير أي مفتاح API خالص، فهو "شبكة الأمان"
         //           النهائية اللي التطبيق بيرجعلها لو كل حاجة تانية فشلت.
         //
-        // ملاحظة مهمة: المستخدم العادي (مش Premium) بيتخطى الطبقة (1) تمامًا ومبيكلمش
-        // Gemini خالص لصوت — بيبدأ مباشرة من (2)، فتجربته متأثرتش ولا اتغيّرت بأي شكل.
+        // ملاحظة مهمة: المستخدم العادي (مش Premium) بيتخطى الطبقتين (1) و(2) تمامًا
+        // ومبيكلمش Gemini/Puter خالص لصوت — بيبدأ مباشرة من (3)، فتجربته متأثرتش ولا اتغيّرت بأي شكل.
         // ====================================================================================
+        const PUTER_TTS_TIMEOUT_MS = 20000;
+        // بتجرب توليد نفس صوت Gemini عن طريق Puter.js (طرف تالت مجاني، مش جوجل مباشرة).
+        // بترجع Blob لو نجحت، أو null لو المكتبة مش متحمّلة أو الطلب فشل/طوّل، عشان
+        // السلسلة تكمل عادي لطبقة Azure/Google من غير ما توقف المستخدم.
+        async function tryPuterGeminiTts(text) {
+            if (!(window.puter && window.puter.ai && typeof window.puter.ai.txt2speech === 'function')) return null;
+            try {
+                const audio = await Promise.race([
+                    window.puter.ai.txt2speech(text, { provider: 'gemini', model: 'gemini-3.1-flash-tts-preview', voice: 'Kore' }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Puter TTS timeout')), PUTER_TTS_TIMEOUT_MS))
+                ]);
+                if (!audio || !audio.src) return null;
+                const res = await fetch(audio.src);
+                if (!res.ok) return null;
+                return await res.blob();
+            } catch (err) {
+                console.error('Puter Gemini TTS فشل:', err);
+                return null;
+            }
+        }
         async function fetchTtsAudioBlob(text) {
             if (hasPremium('premium_voice')) {
                 try {
-                    const res = await fetch('/api/tts-gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+                    const res = await fetch('/api/tts-gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, geminiOnly: true }) });
                     if (res.ok) return await res.blob();
                     // الطبقة (1) رجّعت خطأ من السيرفر (مش استثناء شبكة) — ده أكتر سبب شائع
                     // لصوت Gemini اللي "مبيجيش خالص" مع إن الميزة مفعّلة: مفتاح API غلط/منتهي،
@@ -2349,19 +2379,23 @@
                     // قبل كده فمفيش طريقة تعرف السبب الحقيقي — دلوقتي بتتسجل في الـ console.
                     try {
                         const errBody = await res.clone().json().catch(() => null);
-                        console.error('Gemini TTS فشل:', res.status, errBody || (await res.text().catch(() => '')));
-                    } catch (logErr) { console.error('Gemini TTS فشل بحالة:', res.status); }
+                        console.error('Gemini TTS المباشر فشل:', res.status, errBody || (await res.text().catch(() => '')));
+                    } catch (logErr) { console.error('Gemini TTS المباشر فشل بحالة:', res.status); }
                 } catch (err) {
                     console.error('Gemini TTS: تعذر الوصول للـ endpoint خالص', err);
-                    /* الطبقة (1) فشلت — نكمل عادي للطبقة (2)، من غير ما نوقف المستخدم */
+                    /* الطبقة (1) فشلت — نكمل عادي للطبقة (2) */
                 }
+
+                // الطبقة (2): نفس صوت Gemini عن طريق Puter.js المجانية
+                const puterBlob = await tryPuterGeminiTts(text);
+                if (puterBlob) return puterBlob;
             }
             try {
                 const res = await fetch('/api/tts-neural', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, gender: 'female' }) });
                 if (res.ok) return await res.blob();
-            } catch (err) { /* الطبقة (2) فشلت — نكمل للطبقة (3) الأخيرة والمضمونة */ }
+            } catch (err) { /* الطبقة (3) فشلت — نكمل للطبقة (4) الأخيرة والمضمونة */ }
             const res = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, lang: 'ar' }) });
-            if (!res.ok) throw new Error('tts-request-failed'); // الطبقة (3) نفسها فشلت — هنا بس نستسلم فعليًا
+            if (!res.ok) throw new Error('tts-request-failed'); // الطبقة (4) نفسها فشلت — هنا بس نستسلم فعليًا
             return await res.blob();
         }
 
