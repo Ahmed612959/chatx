@@ -7,21 +7,28 @@
 import { WebSocket } from 'ws';
 import crypto from 'crypto';
 
-// السبب الحقيقي اللي كان بيخلي صوت Gemini يشتغل بس في الردود القصيرة: الدالة دي شغالة
-// كـ Vercel Serverless Function، وليها مهلة تنفيذ افتراضية قصيرة (10 ثانية على خطة
-// Hobby). توليد صوت لنص طويل عند Gemini بياخد وقت أطول من نص قصير، فكان بيضرب المهلة
-// دي ويتقفل بالقوة (504) قبل ما يخلص — الطلب يفشل كـ "خطأ شبكة" في المتصفح، فالتطبيق
-// كان بينزل تلقائي لطبقة الصوت الاحتياطية (Azure/Google) من غير ما المستخدم يعرف السبب،
-// وحاسس إن "صوت Gemini مش شغال" مع النصوص الطويلة. الحل الجذري خطوتين:
-//   ١) نرفع مهلة الفنكشن دي صراحة لحد ٦٠ ثانية (أقصى حد مسموح حتى على خطة Vercel
-//      المجانية Hobby).
-//   ٢) نقسّم أي نص طويل لقطع صغيرة عند حدود الجمل ونولّد صوت كل قطعة بالتوازي، بدل
-//      طلب واحد ضخم بياخد وقت طويل متراكم — فكل قطعة بترجع بسرعة، والنتيجة توصل
-//      أسرع بكتير حتى لو النص كله كان طويل جدًا.
+// السبب الحقيقي اللي كان بيخلي صوت Gemini "بيشتغل مرة ومرة لأ" مش تايم آوت بس — لقيته
+// بعد ما راجعت حصة الاستخدام الرسمية من جوجل: نموذج Gemini TTS Preview على الخطة
+// المجانية محدود بـ **3 طلبات في الدقيقة، و15 طلب بس في اليوم كله**، والحصة دي بتتقسم
+// على *كل طلاب الموقع مع بعض* (مربوطة بمفتاح الـ API الواحد، مش لكل طالب لوحده). يعني
+// أول 15 محاولة ناجحة في اليوم بس هي اللي هتشتغل، وأي حاجة بعدها هترجع 429 (تخطي
+// الحصة) مهما كان الكود مظبوط — ده مش حاجة نقدر "نصلحها" بالكود لوحده، لكن نقدر:
+//   ١) نقلل استهلاك الحصة القليلة دي قد ما نقدر (قطع أقل = طلبات أقل لكل رسالة).
+//   ٢) نبعت القطع بالتتابع (مش بالتوازي زي قبل كده) عشان معدل الـ 3/دقيقة ميتخطاش
+//      فورًا من نفس الرسالة الواحدة.
+//   ٣) نحترم أي مهلة انتظار (Retry-After) جوجل نفسها بترجعها في رد الـ 429.
+//   ٤) الحل النهائي الفعلي: فعّل الفوترة (Billing) على مشروع Google AI Studio بتاعك
+//      ("Tier 1" أو أعلى) من https://aistudio.google.com — ده بيرفع الحصة لمئات
+//      الطلبات في الدقيقة بدل الـ 3 دول، وهو الحاجة الوحيدة اللي بتحل المشكلة من
+//      جذورها فعليًا لو الموقع بيستخدمه أكتر من طالب. لو الفوترة مفعّلة عندك بالفعل
+//      ولسه بتشوف 429 بحصة "3"، ده تقرير موثّق من مطورين تانيين إن فيه فجوة تفعيل من
+//      جوجل نفسها لنموذج الـ TTS تحديدًا حتى مع الفوترة — الحل وقتها تفتح تذكرة دعم مع
+//      جوجل AI Studio (Send feedback) وتوضح المشكلة دي بالظبط.
 export const config = { maxDuration: 60 };
 
-const GEMINI_CHUNK_CHAR_LIMIT = 600; // حجم القطعة الواحدة اللي بتتبعت لـ Gemini
-const GEMINI_CALL_TIMEOUT_MS = 25000; // مهلة كل قطعة لوحدها، عشان قطعة واحدة عالقة متوقفش كل الطلب
+const GEMINI_CHUNK_CHAR_LIMIT = 3000; // كبّرناها من 600 لـ 3000 عشان نقلل عدد الطلبات لأقصى درجة (رسايل عادية = طلب واحد بس)
+const GEMINI_CALL_TIMEOUT_MS = 25000; // مهلة كل طلب لوحده، عشان طلب واحد عالق متوقفش كل حاجة
+const GEMINI_MAX_CHUNKS_PER_MESSAGE = 4; // سقف أمان: رسالة واحدة مش لازم تاكل كل حصة اليوم لوحدها
 
 // بيقسّم النص الطويل لقطع عند حدود الجمل (نقطة/علامة استفهام/تعجب أو سطر جديد) بدل
 // القطع العشوائي في نص الكلمة، عشان الصوت الناتج يفضل طبيعي ومفيش وقفة غريبة نص كلمة.
@@ -88,6 +95,13 @@ function checkLocalRateLimit(ip) {
   return entry.count <= limit;
 }
 
+// لما نكتشف إن حصة Gemini اليومية/الدقيقة خلصت، بنسجّل الوقت ده في متغيّر على مستوى
+// الملف (best-effort بس — مش مضمون يفضل موجود بين كل الطلبات لو فيه أكتر من نسخة
+// سيرفرلس شغالة، لكن بيوفّر وقت طلاب تانيين لو نفس النسخة اتنادت تاني بسرعة) ونتجاهل
+// Gemini تمامًا لمدة قصيرة بعدها بدل ما نضيّع 25 ثانية في محاولة هتفشل أكيد.
+let geminiQuotaExhaustedUntil = 0;
+const QUOTA_COOLDOWN_MS = 45_000;
+
 function buildWavHeader({ dataLength, sampleRate = 24000, channels = 1, bitsPerSample = 16 }) {
   const blockAlign = channels * (bitsPerSample / 8);
   const byteRate = sampleRate * blockAlign;
@@ -115,6 +129,9 @@ function escapeSsml(str) {
 // -------------------------- المرحلة 1: Gemini TTS --------------------------
 // بترجع الصوت الخام (PCM) وسرعة العينة، مش ملف WAV كامل — عشان لو النص اتقسّم لقطع
 // نقدر نلزّق كل قطع الـ PCM مع بعض ونبني هيدر WAV واحد بس في الآخر لملف صوت متصل.
+// بترجع { pcmBytes, sampleRate } لو نجحت، أو { quotaExhausted: true } لو السبب تحديدًا
+// إنّ الحصة اليومية/الدقيقة خلصت (429) — الفرق مهم عشان المتصل يقرر يوقف باقي القطع
+// فورًا بدل ما يكرر محاولات هيفشلوا برضه أكيد ويضيّع وقت المستخدم من غير فايدة.
 async function tryGeminiTtsChunk(text, apiKey) {
   async function callGemini() {
     const controller = new AbortController();
@@ -142,8 +159,21 @@ async function tryGeminiTtsChunk(text, apiKey) {
 
   let { upstream, networkError } = await callGemini();
   if (networkError) return null;
+
   if (!upstream.ok && (upstream.status === 429 || upstream.status === 503)) {
-    await new Promise(r => setTimeout(r, 600));
+    // لو جوجل رجّعت مهلة انتظار صريحة (Retry-After) نحترمها بدل ما نخمّن رقم؛ لو لأ
+    // ننتظر ثانيتين (أطول شوية من قبل) عشان الحصة الضيقة دي (3 طلبات/دقيقة) محتاجة
+    // وقت أطول بين المحاولات من الضغط العادي.
+    const retryAfterHeader = upstream.headers?.get?.('retry-after');
+    const retryAfterMs = retryAfterHeader ? Math.min(parseInt(retryAfterHeader, 10) * 1000 || 0, 20000) : 2000;
+    const bodyText = await upstream.text().catch(() => '');
+    const isQuotaExhausted = upstream.status === 429 && /quota|RESOURCE_EXHAUSTED/i.test(bodyText);
+    if (isQuotaExhausted) {
+      // خلصت الحصة اليومية/الدقيقة فعلاً — إعادة المحاولة الفورية مش هتنفع، الأفضل
+      // نبلّغ المتصل فورًا وننزل لصوت Edge الاحتياطي بدل ما نستنى في الفاضي.
+      return { quotaExhausted: true };
+    }
+    await new Promise(r => setTimeout(r, retryAfterMs));
     ({ upstream, networkError } = await callGemini());
     if (networkError) return null;
   }
@@ -159,14 +189,24 @@ async function tryGeminiTtsChunk(text, apiKey) {
   return { pcmBytes, sampleRate };
 }
 
-// بيقسّم النص الطويل لقطع (لو محتاج) ويولّد صوت كل قطعة بالتوازي عند Gemini، وبعدين
-// يلزّق كل الـ PCM بالترتيب الصح ويبني ملف WAV واحد متصل. لو أي قطعة فشلت، الكل يعتبر
-// فاشل (بيرجع null) عشان الطالب مايسمعش صوت مقطوع في نص الكلام — وقتها هانديلر التاني
-// بينزل تلقائي لطبقة Edge TTS الاحتياطية على *النص الكامل*.
+// بيقسّم النص الطويل لقطع (لو محتاج) ويولّد صوت كل قطعة بالتتابع (مش بالتوازي) عند
+// Gemini — التتابع هنا مقصود: الحصة المجانية 3 طلبات/دقيقة بس، فبعت كل القطع مرة واحدة
+// كان بيضرب الحصة فورًا من نفس الرسالة. لو أي قطعة رجعت "الحصة خلصت"، بنوقف فورًا
+// ونرجّع null عشان الهاندلر التاني ينزل على طبقة Edge TTS الاحتياطية على *النص كامل*
+// (بدل ما نكمل نحاول في قطع هتفشل أكيد برضه ونضيّع وقت المستخدم).
 async function tryGeminiTts(text, apiKey) {
-  const chunks = splitTextIntoChunks(text, GEMINI_CHUNK_CHAR_LIMIT);
-  const results = await Promise.all(chunks.map(chunk => tryGeminiTtsChunk(chunk, apiKey)));
-  if (results.some(r => !r)) return null;
+  const chunks = splitTextIntoChunks(text, GEMINI_CHUNK_CHAR_LIMIT).slice(0, GEMINI_MAX_CHUNKS_PER_MESSAGE);
+  const results = [];
+  for (const chunk of chunks) {
+    const result = await tryGeminiTtsChunk(chunk, apiKey);
+    if (!result) return null;
+    if (result.quotaExhausted) {
+      geminiQuotaExhaustedUntil = Date.now() + QUOTA_COOLDOWN_MS;
+      return null;
+    }
+    results.push(result);
+  }
+  if (results.length === 0) return null;
 
   const sampleRate = results[0].sampleRate;
   const pcmBuffers = results.map(r => r.pcmBytes);
@@ -266,19 +306,35 @@ export default async function handler(req, res) {
     if (!text) {
       return res.status(400).json({ error: 'لا يوجد نص لتحويله لصوت' });
     }
+    // لو الطلب جاي بـ geminiOnly:true، معناها المتصل (الفرونت إند) بيريد يعرف تحديدًا
+    // هل مفتاح Gemini بتاعنا احنا شغال ولا لأ، عشان يقرر بنفسه ينزل بعدها لطبقة Puter.js
+    // (نفس صوت Gemini، بس مجاني بلا حصة) قبل ما يوصل لصوت Edge الاحتياطي الأخير. في
+    // الوضع ده منعملش أي fallback داخلي هنا خالص — إما ينجح Gemini أو نرجّع خطأ واضح.
+    const geminiOnly = body.geminiOnly === true;
 
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     const underLocalLimit = checkLocalRateLimit(ip);
+    const geminiOnCooldown = Date.now() < geminiQuotaExhaustedUntil;
 
     let result = null;
-    if (GEMINI_API_KEY && underLocalLimit) {
+    let engineUsed = 'none';
+    if (GEMINI_API_KEY && underLocalLimit && !geminiOnCooldown) {
       result = await tryGeminiTts(text, GEMINI_API_KEY);
+      if (result) engineUsed = 'gemini';
+    }
+
+    if (!result && geminiOnly) {
+      return res.status(503).json({
+        error: 'Gemini TTS مش متاح دلوقتي',
+        reason: geminiOnCooldown ? 'quota_cooldown' : (!GEMINI_API_KEY ? 'no_api_key' : (!underLocalLimit ? 'local_rate_limit' : 'upstream_failed'))
+      });
     }
 
     if (!result) {
       try {
         const edgeAudio = await synthesizeWithEdgeTts(text);
         result = { buffer: edgeAudio, contentType: 'audio/mpeg' };
+        engineUsed = 'edge';
       } catch (edgeErr) {
         return res.status(502).json({ error: 'تعذر توليد الصوت من Gemini ومن الخدمة الاحتياطية معًا', detail: String(edgeErr) });
       }
@@ -286,6 +342,9 @@ export default async function handler(req, res) {
 
     res.setHeader('Content-Type', result.contentType);
     res.setHeader('Cache-Control', 'no-cache');
+    // هيدر تشخيصي بس (مش بيأثر على الصوت) — يساعدك تعرف من الـ Network tab في
+    // المتصفح هل الصوت اللي وصل ده فعلاً من Gemini ولا من الاحتياطي، وليه.
+    res.setHeader('X-TTS-Engine', engineUsed);
     return res.status(200).send(result.buffer);
   } catch (err) {
     return res.status(500).json({ error: 'خطأ غير متوقع في السيرفر', detail: String(err) });
