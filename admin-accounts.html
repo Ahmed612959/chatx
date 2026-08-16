@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>لوحة الحسابات المرتبطة | School X</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+    :root {
+        --bg: #0a0e1a; --bg-2: #131827; --bg-glass: rgba(19, 24, 39, 0.75); --bg-3: #1a2032;
+        --accent: #6366f1; --accent-2: #8b5cf6;
+        --gold: #d4af37; --gold-2: #f0c869;
+        --text-1: #f1f5f9; --text-2: #94a3b8; --text-3: #64748b;
+        --border: rgba(255, 255, 255, 0.08);
+        --success: #10b981; --danger: #ef4444; --warn: #f59e0b;
+        --radius: 16px; --radius-sm: 10px;
+    }
+    body.light {
+        --bg: #f8fafc; --bg-2: #ffffff; --bg-glass: rgba(255, 255, 255, 0.85); --bg-3: #f1f5f9;
+        --accent: #4f46e5; --accent-2: #7c3aed;
+        --gold: #b8860b; --gold-2: #d4af37;
+        --text-1: #0f172a; --text-2: #475569; --text-3: #94a3b8;
+        --border: rgba(0, 0, 0, 0.08);
+        --success: #059669; --danger: #dc2626; --warn: #b45309;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text-1);
+        min-height: 100vh; display: flex; flex-direction: column;
+        transition: background .2s ease, color .2s ease;
+    }
+    #themeToggleFloating { position: fixed; top: 14px; left: 14px; z-index: 50; }
+
+    /* ====================== شاشة تسجيل الدخول ====================== */
+    #loginScreen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .login-card {
+        background: var(--bg-glass); border: 1px solid var(--border); border-radius: var(--radius);
+        padding: 32px 26px; width: 100%; max-width: 360px; text-align: center;
+    }
+    .login-crown { font-size: 34px; margin-bottom: 6px; }
+    .login-card h1 { font-size: 18px; margin-bottom: 4px; }
+    .login-card p { font-size: 12.5px; color: var(--text-2); margin-bottom: 22px; }
+    .field { text-align: right; margin-bottom: 12px; }
+    .field label { font-size: 11.5px; color: var(--text-2); display: block; margin-bottom: 5px; }
+    .field input {
+        width: 100%; padding: 11px 13px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+        background: var(--bg-3); color: var(--text-1); font-family: inherit; font-size: 14px;
+    }
+    .field input:focus { outline: none; border-color: var(--gold); }
+    .btn {
+        width: 100%; padding: 12px; border: none; border-radius: var(--radius-sm);
+        background: linear-gradient(120deg, var(--gold), var(--gold-2)); color: #1a1400;
+        font-family: inherit; font-weight: 800; font-size: 14px; cursor: pointer; margin-top: 6px;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-plain {
+        background: var(--bg-3); color: var(--text-2); border: 1px solid var(--border);
+        font-weight: 600; font-size: 12.5px; width: auto; padding: 8px 14px;
+    }
+    .btn-danger { background: linear-gradient(120deg, #ef4444, #f87171); color: #fff; }
+    .btn-success { background: linear-gradient(120deg, var(--success), #34d399); color: #052e1c; }
+    .error-box {
+        background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.35); color: #fca5a5;
+        border-radius: var(--radius-sm); padding: 9px 12px; font-size: 12px; margin-top: 14px; text-align: right;
+    }
+    body.light .error-box { color: #b91c1c; }
+
+    /* ====================== الشاشة الرئيسية ====================== */
+    #mainScreen { display: none; flex: 1; flex-direction: column; }
+    header {
+        display: flex; align-items: center; justify-content: space-between; padding: 14px 18px;
+        border-bottom: 1px solid var(--border); background: var(--bg-2); position: sticky; top: 0; z-index: 5;
+    }
+    header .title { font-weight: 800; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+    header .who { font-size: 11.5px; color: var(--text-2); }
+
+    .wrap { max-width: 760px; width: 100%; margin: 0 auto; padding: 16px; flex: 1; }
+
+    /* ملخص سريع فوق القايمة */
+    .summary-row { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 2px; }
+    .summary-card {
+        flex: 1; min-width: 92px; background: var(--bg-glass); border: 1px solid var(--border);
+        border-radius: var(--radius-sm); padding: 10px 12px; text-align: center;
+    }
+    .summary-card .num { font-size: 18px; font-weight: 800; }
+    .summary-card .lbl { font-size: 10.5px; color: var(--text-3); margin-top: 2px; }
+    .summary-card.online .num { color: var(--success); }
+
+    .search-row { position: relative; margin-bottom: 14px; }
+    .search-row i { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-3); }
+    #searchInput {
+        width: 100%; padding: 12px 40px 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+        background: var(--bg-glass); color: var(--text-1); font-family: inherit; font-size: 14px;
+    }
+    #searchInput:focus { outline: none; border-color: var(--accent); }
+
+    .filter-row { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; }
+    .filter-chip {
+        flex-shrink: 0; padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border);
+        background: var(--bg-glass); color: var(--text-2); font-size: 12px; font-weight: 600; cursor: pointer;
+        font-family: inherit;
+    }
+    .filter-chip.active { background: var(--accent); color: #fff; border-color: transparent; }
+
+    #studentList { display: flex; flex-direction: column; gap: 8px; }
+    .student-row {
+        display: flex; align-items: center; gap: 12px; background: var(--bg-glass); border: 1px solid var(--border);
+        border-radius: var(--radius-sm); padding: 12px 14px; cursor: pointer; transition: border-color .15s;
+    }
+    .student-row:hover, .student-row:active { border-color: var(--accent); }
+    .student-row.is-suspended { border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.06); }
+    .avatar-wrap { position: relative; flex-shrink: 0; }
+    .student-avatar {
+        width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px;
+    }
+    .online-dot {
+        position: absolute; bottom: -1px; left: -1px; width: 12px; height: 12px; border-radius: 50%;
+        background: var(--text-3); border: 2px solid var(--bg-2);
+    }
+    .online-dot.on { background: var(--success); }
+    .student-info { flex: 1; min-width: 0; }
+    .student-name { font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .student-meta { font-size: 11px; color: var(--text-3); }
+    .student-status-line { font-size: 10.5px; margin-top: 2px; color: var(--text-3); }
+    .student-status-line.online-now { color: var(--success); font-weight: 700; }
+    .student-status-line.suspended-line { color: var(--danger); font-weight: 700; }
+    .badges-col { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+    .mini-badge {
+        font-size: 10px; padding: 3px 8px; border-radius: 20px; white-space: nowrap;
+        background: var(--bg-3); color: var(--text-3);
+    }
+    .mini-badge.gold { background: linear-gradient(120deg, var(--gold), var(--gold-2)); color: #1a1400; font-weight: 700; }
+    .mini-badge.danger { background: rgba(239,68,68,.15); color: var(--danger); font-weight: 700; }
+
+    #emptyState, #loadingState { text-align: center; padding: 50px 20px; color: var(--text-3); font-size: 13px; }
+    #loadingState i { font-size: 22px; display: block; margin-bottom: 10px; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ====================== شيت تعديل الطالب ====================== */
+    #editOverlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: flex-end;
+        justify-content: center; z-index: 50;
+    }
+    #editOverlay.active { display: flex; }
+    #editSheet {
+        background: var(--bg-2); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
+        max-height: 92vh; overflow-y: auto; padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+        animation: slideUp .2s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .sheet-handle { width: 40px; height: 4px; background: var(--border); border-radius: 4px; margin: 0 auto 14px; }
+    .sheet-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .sheet-avatar {
+        width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px; flex-shrink: 0;
+    }
+    .sheet-head .name { font-weight: 800; font-size: 15.5px; }
+    .sheet-head .code { font-size: 11.5px; color: var(--text-3); }
+    .close-sheet {
+        margin-right: auto; background: var(--bg-3); border: none; color: var(--text-2); width: 30px; height: 30px;
+        border-radius: 50%; cursor: pointer; font-size: 13px;
+    }
+    .sheet-status-line { font-size: 12px; color: var(--text-2); margin-bottom: 16px; padding: 10px 12px; background: var(--bg-3); border-radius: var(--radius-sm); }
+    .sheet-status-line.online-now { color: var(--success); }
+    .sheet-status-line b { color: var(--text-1); }
+
+    .stat-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    .stat-box { flex: 1; background: var(--bg-3); border-radius: var(--radius-sm); padding: 10px; text-align: center; }
+    .stat-box .n { font-size: 17px; font-weight: 800; }
+    .stat-box .l { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+
+    .section-title { font-size: 12.5px; font-weight: 800; color: var(--text-2); margin: 18px 0 10px; display: flex; align-items: center; gap: 6px; }
+
+    .feature-card {
+        display: flex; align-items: flex-start; gap: 12px; background: var(--bg-glass); border: 1px solid var(--border);
+        border-radius: var(--radius-sm); padding: 13px; margin-bottom: 9px; cursor: pointer;
+    }
+    .feature-card.checked { border-color: var(--gold); background: rgba(212,175,55,.08); }
+    .feature-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .feature-body { flex: 1; }
+    .feature-title { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+    .feature-desc { font-size: 11px; color: var(--text-2); line-height: 1.6; }
+    .feature-switch {
+        width: 42px; height: 24px; border-radius: 20px; background: var(--bg-3); position: relative; flex-shrink: 0;
+        margin-top: 2px; transition: background .15s;
+    }
+    .feature-card.checked .feature-switch { background: linear-gradient(120deg, var(--gold), var(--gold-2)); }
+    .feature-switch::after {
+        content: ''; position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 50%;
+        background: #fff; transition: transform .15s;
+    }
+    .feature-card.checked .feature-switch::after { transform: translateX(-18px); }
+
+    /* إيقاف الحساب */
+    .suspend-box {
+        background: var(--bg-glass); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px;
+    }
+    .suspend-box.currently-suspended { border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.06); }
+    .duration-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 10px 0; }
+    .duration-chip {
+        padding: 9px 4px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-3);
+        color: var(--text-1); font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; text-align: center;
+    }
+    .duration-chip.active { background: var(--accent); color: #fff; border-color: transparent; }
+    .field input[type="datetime-local"] { color-scheme: dark; }
+    body.light .field input[type="datetime-local"] { color-scheme: light; }
+
+    .save-row { display: flex; gap: 8px; margin-top: 16px; }
+    .save-row .btn { margin-top: 0; }
+    #saveStatus { font-size: 12px; text-align: center; margin-top: 10px; min-height: 16px; }
+
+    .toast {
+        position: fixed; bottom: max(20px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+        background: var(--bg-3); border: 1px solid var(--border); color: var(--text-1); padding: 11px 18px;
+        border-radius: 30px; font-size: 13px; z-index: 100; display: none; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    }
+    .toast.show { display: block; animation: slideUp .2s ease; }
+    .toast.success { border-color: var(--success); }
+    .toast.error { border-color: var(--danger); }
+</style>
+</head>
+<body>
+    <button id="themeToggleFloating" class="btn-plain" style="width:34px;height:34px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;" aria-label="تبديل الوضع الليلي والنهاري" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i></button>
+
+    <!-- تسجيل الدخول -->
+    <div id="loginScreen">
+        <div class="login-card">
+            <div class="login-crown">🛡️</div>
+            <h1>لوحة الحسابات المرتبطة</h1>
+            <p>سجّل دخولك بحساب الأدمن بتاعك في School X</p>
+            <div class="field">
+                <label>اسم المستخدم</label>
+                <input type="text" id="loginUsername" autocomplete="username">
+            </div>
+            <div class="field">
+                <label>كلمة المرور</label>
+                <input type="password" id="loginPassword" autocomplete="current-password">
+            </div>
+            <button class="btn" id="loginBtn" onclick="doLogin()">دخول</button>
+            <div id="loginError" class="error-box" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- الشاشة الرئيسية -->
+    <div id="mainScreen">
+        <header>
+            <div class="title">🛡️ الحسابات المرتبطة</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span class="who" id="whoAmI"></span>
+                <button class="btn btn-plain" onclick="doLogout()">خروج</button>
+            </div>
+        </header>
+        <div class="wrap">
+            <div class="summary-row" id="summaryRow"></div>
+
+            <div class="search-row">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="دور باسم الطالب أو اليوزرنيم أو كود الطالب..." oninput="renderStudentList()">
+            </div>
+
+            <div class="filter-row">
+                <button class="filter-chip active" data-filter="all" onclick="setFilter('all')">الكل</button>
+                <button class="filter-chip" data-filter="online" onclick="setFilter('online')">متصل دلوقتي</button>
+                <button class="filter-chip" data-filter="premium" onclick="setFilter('premium')">Premium</button>
+                <button class="filter-chip" data-filter="suspended" onclick="setFilter('suspended')">موقوف</button>
+            </div>
+
+            <div id="loadingState"><i class="fas fa-spinner"></i>جاري تحميل الحسابات...</div>
+            <div id="emptyState" style="display:none;">مفيش حسابات مطابقة</div>
+            <div id="studentList"></div>
+        </div>
+    </div>
+
+    <!-- تعديل حساب طالب -->
+    <div id="editOverlay" onclick="if(event.target===this) closeEditSheet()">
+        <div id="editSheet">
+            <div class="sheet-handle"></div>
+            <div class="sheet-head">
+                <div class="sheet-avatar" id="sheetAvatar"></div>
+                <div>
+                    <div class="name" id="sheetName"></div>
+                    <div class="code" id="sheetCode"></div>
+                </div>
+                <button class="close-sheet" onclick="closeEditSheet()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="sheet-status-line" id="sheetStatusLine"></div>
+
+            <div class="stat-row">
+                <div class="stat-box"><div class="n" id="statQuestions">0</div><div class="l">سؤال إجمالي</div></div>
+                <div class="stat-box"><div class="n" id="statMessages">0</div><div class="l">رسالة إجمالية</div></div>
+            </div>
+
+            <div class="section-title"><i class="fas fa-crown" style="color:var(--gold);"></i> مميزات Premium</div>
+            <div id="featureCards"></div>
+
+            <div class="section-title"><i class="fas fa-ban" style="color:var(--danger);"></i> إيقاف الحساب</div>
+            <div class="suspend-box" id="suspendBox">
+                <div id="suspendCurrentInfo" style="font-size:12px;color:var(--text-2);margin-bottom:10px;"></div>
+                <div class="duration-grid" id="durationGrid">
+                    <button class="duration-chip" data-hours="1" onclick="pickDuration(1)">ساعة</button>
+                    <button class="duration-chip" data-hours="6" onclick="pickDuration(6)">6 ساعات</button>
+                    <button class="duration-chip" data-hours="24" onclick="pickDuration(24)">يوم</button>
+                    <button class="duration-chip" data-hours="72" onclick="pickDuration(72)">3 أيام</button>
+                    <button class="duration-chip" data-hours="168" onclick="pickDuration(168)">أسبوع</button>
+                    <button class="duration-chip" data-hours="custom" onclick="pickDuration('custom')">تاريخ محدد</button>
+                </div>
+                <div class="field" id="customDateField" style="display:none;">
+                    <label>يرجع تلقائيًا في</label>
+                    <input type="datetime-local" id="customDateInput">
+                </div>
+                <div class="field">
+                    <label>سبب الإيقاف (اختياري)</label>
+                    <input type="text" id="suspendReasonInput" placeholder="مثلاً: مخالفة قواعد غرفة المذاكرة">
+                </div>
+                <button class="btn btn-danger" id="suspendBtn" onclick="applySuspend()">إيقاف الحساب</button>
+                <button class="btn btn-success" id="unsuspendBtn" style="display:none;" onclick="applyUnsuspend()">إرجاع الحساب دلوقتي</button>
+            </div>
+
+            <div class="save-row">
+                <button class="btn" id="saveBtn" onclick="savePremium()">حفظ مميزات Premium</button>
+            </div>
+            <div id="saveStatus"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+<script>
+    const API = 'https://schoolx-eta.vercel.app';
+    const TOKEN_KEY = 'sx_admin_panel_token';
+    const USER_KEY = 'sx_admin_panel_user';
+
+    // نفس مفاتيح المميزات المستخدمة في تطبيق الطالب — لازم تفضل متطابقة مع index.html و admin-premium.html
+    const FEATURES = [
+        { key: 'premium_ai', icon: '🧠', title: 'الذكاء الاصطناعي المتقدم (Cerebras)', desc: 'يوجّه الطالب لموديل Cerebras تلقائيًا + حد رسايل أعلى بكتير.' },
+        { key: 'premium_mock_exams', icon: '📝', title: 'امتحانات المحاكاة الشاملة', desc: 'امتحان محاكاة من أكتر من فصل مع تقرير أداء مفصل.' },
+        { key: 'premium_prompts', icon: '⚡', title: 'مكتبة البرومبتس الذكية', desc: 'برومبتس جاهزة ومُختارة لأفضل نتيجة في كل مهمة.' },
+        { key: 'premium_theme', icon: '👑', title: 'تصميم Chat X الذهبي', desc: 'شكل مميز حصري بألوان ذهبية.' },
+        { key: 'premium_drug_library', icon: '💊', title: 'مكتبة الأدوية الشخصية', desc: 'حفظ تلقائي لكل دواء يفحصه الطالب بالكاميرا.' },
+        { key: 'premium_clinical_sim', icon: '🩺', title: 'محاكي المواقف الإكلينيكية', desc: 'حالة مريض تفاعلية بتقييم لقرارات الطالب في الآخر.' },
+        { key: 'premium_lecture_audio', icon: '🎙️', title: 'ملخص صوتي للمحاضرات', desc: 'تسجيل صوتي يتحول لنص كامل ثم ملخص منظم بالنقاط.' },
+        { key: 'premium_video_sim', icon: '🎬', title: 'الفيديو المتفرّع (محاكاة قرارات)', desc: 'مشهد سريري تفاعلي بمشاهد وصوت — الطالب يختار قرارات فتتفرّع الحالة لنهايات مختلفة.' },
+        { key: 'premium_voice', icon: '🎧', title: 'صوت واقعي فائق (ElevenLabs)', desc: 'ترقية تلقائية لأعلى جودة صوت في كل مكان في التطبيق — من غير أي إعداد إضافي من الطالب.' },
+        { key: 'premium_skills', icon: '🧩', title: 'مهارات مخصصة (Skills)', desc: 'الطالب يقدر يعمل/يرفع مهارات (تعليمات ثابتة) والمساعد يستخدمها تلقائي في ردوده.' }
+    ];
+
+    // ====================== الوضع الليلي / النهاري ======================
+    const THEME_KEY = 'sx_admin_theme';
+    function getPreferredTheme() {
+        const saved = localStorage.getItem(THEME_KEY);
+        if (saved === 'light' || saved === 'dark') return saved;
+        const systemLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+        return systemLight ? 'light' : 'dark';
+    }
+    function applyTheme(theme) {
+        document.body.classList.toggle('light', theme === 'light');
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.className = theme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+    function toggleTheme() {
+        const next = document.body.classList.contains('light') ? 'dark' : 'light';
+        localStorage.setItem(THEME_KEY, next);
+        applyTheme(next);
+    }
+    applyTheme(getPreferredTheme());
+
+    let token = localStorage.getItem(TOKEN_KEY) || '';
+    let allStudents = [];
+    let activeStudent = null;
+    let pendingFeatures = new Set();
+    let currentFilter = 'all';
+    let pendingSuspendHours = null; // رقم الساعات المختارة، أو 'custom'
+    let refreshTimer = null;
+
+    function showToast(msg, type) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'toast show ' + (type || '');
+        setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    async function apiFetch(path, options = {}) {
+        const res = await fetch(API + path, {
+            ...options,
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...(options.headers || {}) }
+        });
+        if (res.status === 401 || res.status === 403) {
+            doLogout();
+            throw new Error('الجلسة منتهية، سجّل دخول تاني');
+        }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'حصل خطأ');
+        return data;
+    }
+
+    async function doLogin() {
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const errBox = document.getElementById('loginError');
+        const btn = document.getElementById('loginBtn');
+        errBox.style.display = 'none';
+        if (!username || !password) { errBox.textContent = 'اكتب اسم المستخدم وكلمة المرور'; errBox.style.display = 'block'; return; }
+        btn.disabled = true; btn.textContent = 'جاري الدخول...';
+        try {
+            const res = await fetch(API + '/api/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'بيانات غير صحيحة');
+            if (data.user.type !== 'admin') throw new Error('الحساب ده مش حساب أدمن — اللوحة دي للأدمن بس');
+            token = data.token;
+            localStorage.setItem(TOKEN_KEY, token);
+            localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+            enterMainScreen(data.user);
+        } catch (e) {
+            errBox.textContent = e.message;
+            errBox.style.display = 'block';
+        } finally {
+            btn.disabled = false; btn.textContent = 'دخول';
+        }
+    }
+
+    function doLogout() {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        token = '';
+        if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+        document.getElementById('mainScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+    }
+
+    function enterMainScreen(user) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainScreen').style.display = 'flex';
+        document.getElementById('whoAmI').textContent = user.fullName || user.username;
+        loadStudents();
+        // تحديث تلقائي كل 30 ثانية عشان حالة "متصل الآن" تفضل واقعية من غير ما الأدمن يعمل رفريش يدوي
+        if (refreshTimer) clearInterval(refreshTimer);
+        refreshTimer = setInterval(() => loadStudents(true), 30000);
+    }
+
+    async function loadStudents(silent) {
+        if (!silent) {
+            document.getElementById('loadingState').style.display = 'block';
+            document.getElementById('studentList').innerHTML = '';
+            document.getElementById('emptyState').style.display = 'none';
+        }
+        try {
+            const data = await apiFetch('/api/admin/students-overview');
+            allStudents = data.students || [];
+            renderSummary();
+            renderStudentList();
+        } catch (e) {
+            if (!silent) showToast(e.message, 'error');
+        } finally {
+            document.getElementById('loadingState').style.display = 'none';
+        }
+    }
+
+    function renderSummary() {
+        const total = allStudents.length;
+        const online = allStudents.filter(s => s.online).length;
+        const premium = allStudents.filter(s => (s.premiumFeatures || []).length > 0).length;
+        const suspended = allStudents.filter(s => s.suspended).length;
+        document.getElementById('summaryRow').innerHTML = `
+            <div class="summary-card"><div class="num">${total}</div><div class="lbl">إجمالي الحسابات</div></div>
+            <div class="summary-card online"><div class="num">${online}</div><div class="lbl">متصل دلوقتي</div></div>
+            <div class="summary-card"><div class="num">${premium}</div><div class="lbl">Premium</div></div>
+            <div class="summary-card"><div class="num">${suspended}</div><div class="lbl">موقوف</div></div>
+        `;
+    }
+
+    function setFilter(f) {
+        currentFilter = f;
+        document.querySelectorAll('.filter-chip').forEach(el => el.classList.toggle('active', el.dataset.filter === f));
+        renderStudentList();
+    }
+
+    // بترجع نص عربي بشري لآخر ظهور: "متصل الآن" / "من 5 دقايق" / "من 3 ساعات" / "من يومين"...
+    function formatLastSeen(s) {
+        if (s.online) return { text: 'متصل الآن', cls: 'online-now' };
+        if (!s.lastSeen) return { text: 'لسه مسجّلش أي نشاط', cls: '' };
+        const diffMs = Date.now() - new Date(s.lastSeen).getTime();
+        const mins = Math.floor(diffMs / 60000);
+        if (mins < 1) return { text: 'من لحظات', cls: '' };
+        if (mins < 60) return { text: `من ${mins} دقيقة`, cls: '' };
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return { text: `من ${hours} ساعة`, cls: '' };
+        const days = Math.floor(hours / 24);
+        if (days < 30) return { text: `من ${days} يوم`, cls: '' };
+        return { text: 'من فترة طويلة', cls: '' };
+    }
+
+    function renderStudentList() {
+        const q = document.getElementById('searchInput').value.trim().toLowerCase();
+        let filtered = allStudents.filter(s =>
+            !q ||
+            (s.fullName || '').toLowerCase().includes(q) ||
+            (s.username || '').toLowerCase().includes(q) ||
+            (s.studentCode || '').toLowerCase().includes(q)
+        );
+        if (currentFilter === 'online') filtered = filtered.filter(s => s.online);
+        else if (currentFilter === 'premium') filtered = filtered.filter(s => (s.premiumFeatures || []).length > 0);
+        else if (currentFilter === 'suspended') filtered = filtered.filter(s => s.suspended);
+
+        const list = document.getElementById('studentList');
+        document.getElementById('emptyState').style.display = filtered.length ? 'none' : 'block';
+        list.innerHTML = filtered.slice(0, 300).map(s => {
+            const count = (s.premiumFeatures || []).length;
+            const initial = (s.fullName || s.username || '?').trim().charAt(0);
+            const status = formatLastSeen(s);
+            return `
+                <div class="student-row ${s.suspended ? 'is-suspended' : ''}" onclick='openEditSheet(${JSON.stringify(s.studentCode)})'>
+                    <div class="avatar-wrap">
+                        <div class="student-avatar">${initial}</div>
+                        <div class="online-dot ${s.online ? 'on' : ''}"></div>
+                    </div>
+                    <div class="student-info">
+                        <div class="student-name">${escapeHtml(s.fullName || s.username)}</div>
+                        <div class="student-meta">@${escapeHtml(s.username)} · ${escapeHtml(s.studentCode || '')}</div>
+                        <div class="student-status-line ${status.cls} ${s.suspended ? 'suspended-line' : ''}">
+                            ${s.suspended ? '<i class="fas fa-ban"></i> موقوف مؤقتًا' : status.text}
+                        </div>
+                    </div>
+                    <div class="badges-col">
+                        <div class="mini-badge">${s.totalQuestions || 0} سؤال</div>
+                        <div class="mini-badge ${count ? 'gold' : ''}">${count ? count + ' مميزة' : 'من غير Premium'}</div>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    function escapeHtml(str) {
+        const d = document.createElement('div');
+        d.textContent = str == null ? '' : String(str);
+        return d.innerHTML;
+    }
+
+    function openEditSheet(studentCode) {
+        const s = allStudents.find(x => x.studentCode === studentCode);
+        if (!s) return;
+        activeStudent = s;
+        pendingFeatures = new Set(s.premiumFeatures || []);
+        pendingSuspendHours = null;
+        document.getElementById('sheetAvatar').textContent = (s.fullName || s.username || '?').trim().charAt(0);
+        document.getElementById('sheetName').textContent = s.fullName || s.username;
+        document.getElementById('sheetCode').textContent = '@' + s.username + ' · ' + (s.studentCode || '');
+
+        const status = formatLastSeen(s);
+        const statusLine = document.getElementById('sheetStatusLine');
+        statusLine.className = 'sheet-status-line' + (status.cls === 'online-now' ? ' online-now' : '');
+        statusLine.innerHTML = s.suspended
+            ? `<i class="fas fa-ban" style="color:var(--danger);"></i> الحساب موقوف حاليًا (هيرجع تلقائيًا ${s.suspendedUntil ? new Date(s.suspendedUntil).toLocaleString('ar-EG') : ''})`
+            : (status.cls === 'online-now' ? '<i class="fas fa-circle" style="font-size:8px;"></i> ' : '<i class="fas fa-clock"></i> ') + `<b>${status.text}</b>`;
+
+        document.getElementById('statQuestions').textContent = s.totalQuestions || 0;
+        document.getElementById('statMessages').textContent = s.totalMessages || 0;
+
+        document.getElementById('saveStatus').textContent = '';
+        renderFeatureCards();
+        renderSuspendBox();
+        document.getElementById('editOverlay').classList.add('active');
+    }
+
+    function closeEditSheet() {
+        document.getElementById('editOverlay').classList.remove('active');
+        activeStudent = null;
+    }
+
+    function renderFeatureCards() {
+        const el = document.getElementById('featureCards');
+        el.innerHTML = FEATURES.map(f => `
+            <div class="feature-card ${pendingFeatures.has(f.key) ? 'checked' : ''}" onclick="toggleFeature('${f.key}')">
+                <div class="feature-icon">${f.icon}</div>
+                <div class="feature-body">
+                    <div class="feature-title">${escapeHtml(f.title)}</div>
+                    <div class="feature-desc">${escapeHtml(f.desc)}</div>
+                </div>
+                <div class="feature-switch"></div>
+            </div>
+        `).join('');
+    }
+
+    function toggleFeature(key) {
+        if (pendingFeatures.has(key)) pendingFeatures.delete(key);
+        else pendingFeatures.add(key);
+        renderFeatureCards();
+    }
+
+    function renderSuspendBox() {
+        const box = document.getElementById('suspendBox');
+        const isSuspended = !!activeStudent.suspended;
+        box.classList.toggle('currently-suspended', isSuspended);
+        document.getElementById('suspendCurrentInfo').innerHTML = isSuspended
+            ? `<b style="color:var(--danger)">موقوف حاليًا</b>${activeStudent.suspendedUntil ? ' — هيرجع تلقائيًا يوم ' + new Date(activeStudent.suspendedUntil).toLocaleString('ar-EG') : ''}${activeStudent.suspendedReason ? '<br>السبب: ' + escapeHtml(activeStudent.suspendedReason) : ''}`
+            : 'الحساب شغال عادي دلوقتي، مش موقوف.';
+        document.getElementById('suspendReasonInput').value = activeStudent.suspendedReason || '';
+        document.getElementById('unsuspendBtn').style.display = isSuspended ? 'block' : 'none';
+        document.getElementById('suspendBtn').textContent = isSuspended ? 'تحديث مدة الإيقاف' : 'إيقاف الحساب';
+        document.querySelectorAll('.duration-chip').forEach(el => el.classList.remove('active'));
+        document.getElementById('customDateField').style.display = 'none';
+        pendingSuspendHours = null;
+    }
+
+    function pickDuration(hours) {
+        pendingSuspendHours = hours;
+        document.querySelectorAll('.duration-chip').forEach(el => {
+            el.classList.toggle('active', String(el.dataset.hours) === String(hours));
+        });
+        document.getElementById('customDateField').style.display = hours === 'custom' ? 'block' : 'none';
+    }
+
+    async function applySuspend() {
+        if (!activeStudent) return;
+        let until;
+        if (pendingSuspendHours === 'custom') {
+            const val = document.getElementById('customDateInput').value;
+            if (!val) { showToast('اختار تاريخ الرجوع الأول', 'error'); return; }
+            until = new Date(val);
+        } else if (typeof pendingSuspendHours === 'number') {
+            until = new Date(Date.now() + pendingSuspendHours * 3600 * 1000);
+        } else {
+            showToast('اختار مدة الإيقاف الأول', 'error');
+            return;
+        }
+        const reason = document.getElementById('suspendReasonInput').value.trim();
+        const btn = document.getElementById('suspendBtn');
+        btn.disabled = true;
+        try {
+            const data = await apiFetch(`/api/admin/students/${encodeURIComponent(activeStudent.studentCode)}/suspend`, {
+                method: 'PATCH',
+                body: JSON.stringify({ suspendedUntil: until.toISOString(), suspendedReason: reason })
+            });
+            applyLocalSuspendUpdate(data.student);
+            showToast(`تم إيقاف حساب ${activeStudent.fullName || activeStudent.username}`, 'success');
+            renderSuspendBox();
+        } catch (e) {
+            showToast(e.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function applyUnsuspend() {
+        if (!activeStudent) return;
+        const btn = document.getElementById('unsuspendBtn');
+        btn.disabled = true;
+        try {
+            const data = await apiFetch(`/api/admin/students/${encodeURIComponent(activeStudent.studentCode)}/suspend`, {
+                method: 'PATCH',
+                body: JSON.stringify({ suspendedUntil: null })
+            });
+            applyLocalSuspendUpdate(data.student);
+            showToast(`تم إرجاع حساب ${activeStudent.fullName || activeStudent.username}`, 'success');
+            renderSuspendBox();
+        } catch (e) {
+            showToast(e.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function applyLocalSuspendUpdate(updatedStudent) {
+        activeStudent.suspendedUntil = updatedStudent.suspendedUntil;
+        activeStudent.suspendedReason = updatedStudent.suspendedReason;
+        activeStudent.suspended = !!(updatedStudent.suspendedUntil && new Date(updatedStudent.suspendedUntil) > new Date());
+        const idx = allStudents.findIndex(s => s.studentCode === activeStudent.studentCode);
+        if (idx !== -1) allStudents[idx] = { ...allStudents[idx], ...activeStudent };
+        renderSummary();
+        renderStudentList();
+    }
+
+    async function savePremium() {
+        if (!activeStudent) return;
+        const btn = document.getElementById('saveBtn');
+        const status = document.getElementById('saveStatus');
+        btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+        status.textContent = '';
+        try {
+            const data = await apiFetch(`/api/admin/students/${encodeURIComponent(activeStudent.studentCode)}/premium`, {
+                method: 'PATCH',
+                body: JSON.stringify({ premiumFeatures: Array.from(pendingFeatures) })
+            });
+            const idx = allStudents.findIndex(s => s.studentCode === activeStudent.studentCode);
+            if (idx !== -1) allStudents[idx].premiumFeatures = data.student.premiumFeatures;
+            renderSummary();
+            renderStudentList();
+            status.innerHTML = '<span style="color:var(--success)">اتحفظ ✓</span>';
+            showToast(`تم تحديث مميزات ${activeStudent.fullName || activeStudent.username}`, 'success');
+        } catch (e) {
+            status.innerHTML = `<span style="color:var(--danger)">${escapeHtml(e.message)}</span>`;
+        } finally {
+            btn.disabled = false; btn.textContent = 'حفظ مميزات Premium';
+        }
+    }
+
+    // دخول تلقائي لو فيه توكن محفوظ من قبل
+    (function init() {
+        const savedUser = localStorage.getItem(USER_KEY);
+        if (token && savedUser) {
+            try { enterMainScreen(JSON.parse(savedUser)); }
+            catch (e) { doLogout(); }
+        }
+    })();
+
+    document.getElementById('loginPassword').addEventListener('keydown', e => {
+        if (e.key === 'Enter') doLogin();
+    });
+</script>
+</body>
+</html>
