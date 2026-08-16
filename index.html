@@ -1139,6 +1139,7 @@
                     <button class="action-btn" aria-label="تصدير المحادثة كملف PDF" onclick="exportPDF()"><i class="fas fa-file-pdf"></i></button>
                     <button class="action-btn" aria-label="تبديل الوضع الليلي والنهاري" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i></button>
                     <button class="action-btn" aria-label="القسم الديني" onclick="openReligionSection()"><i class="fas fa-mosque"></i></button>
+                    <button class="action-btn" aria-label="مميزات Premium" onclick="openPremiumHub()"><i class="fas fa-crown"></i></button>
                     <button class="action-btn" aria-label="فتح الأدوات" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
                 </div>
             </div>
@@ -2212,7 +2213,7 @@
                 speakBtn.title = 'سماع الرد';
                 speakBtn.setAttribute('aria-label', 'سماع الرد');
                 speakBtn.innerHTML = '<i class="fas fa-volume-high"></i>';
-                speakBtn.addEventListener('click', () => speakText(msg.content, speakBtn));
+                speakBtn.addEventListener('click', () => speakText(msg, speakBtn));
                 actionsDiv.appendChild(speakBtn);
 
                 const downloadBtn = document.createElement('button');
@@ -2351,6 +2352,53 @@
         // ملاحظة مهمة: المستخدم العادي (مش Premium) بيتخطى الطبقتين (1) و(2) تمامًا
         // ومبيكلمش Gemini/Puter خالص لصوت — بيبدأ مباشرة من (3)، فتجربته متأثرتش ولا اتغيّرت بأي شكل.
         // ====================================================================================
+        // ====================================================================================
+        // Prefetch cache: بمجرد ما رد البوت يخلص كتابة (finalizeBotMessage)، بنبدأ نجيب
+        // الصوت بتاعه فورًا في الخلفية من غير ما ننتظر الطالب يدوس زرار "استمع" أصلاً.
+        // لما الطالب يدوس الزرار بعد كده، الصوت غالبًا يكون خلص تحميل بالفعل فيشتغل
+        // فورًا من الكاش (Blob) من غير أي وقت تحميل ظاهر — الصوت لسه هو نفسه (Neural/Gemini
+        // الطبيعي زي ما هو، مفيش أي تغيير في المصدر أو الجودة)، بس بقى بيتحمّل بدري.
+        // الكاش مربوط بـ msg.id، وبيتصفّى تلقائيًا لو الطلب فشل عشان محاولة يدوية بعدين
+        // (زرار الاستماع نفسه) تقدر تتصرف عادي من غير ما تفضل عالقة على فشل قديم.
+        // ====================================================================================
+        const ttsPrefetchCache = new Map(); // msg.id -> Promise<Blob>
+
+        function stripMarkdownForSpeech(text) {
+            return (text || '')
+                .replace(/```[\s\S]*?```/g, ' ')
+                .replace(/[*_#>`~\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        // بترجع Promise<Blob> — من الكاش لو موجود ولسه شغال، أو بتبدأ طلب جديد وتسجّله
+        // في الكاش عشان أي حد تاني (الزرار نفسه، أو تحميل مستقبلي) يستخدم نفس النتيجة
+        // بدل ما يطلب الصوت مرتين لنفس الرسالة.
+        function getCachedOrFetchTts(msgId, plainText) {
+            if (msgId && ttsPrefetchCache.has(msgId)) {
+                return ttsPrefetchCache.get(msgId);
+            }
+            const promise = fetchTtsAudioBlob(plainText);
+            if (msgId) {
+                ttsPrefetchCache.set(msgId, promise);
+                // فشل الطلب؟ نشيله من الكاش عشان محاولة تانية (يدوية أو تلقائية) تقدر تعيد المحاولة
+                // بدل ما تفضل واقفة على نفس الخطأ القديم للأبد.
+                promise.catch(() => { if (ttsPrefetchCache.get(msgId) === promise) ttsPrefetchCache.delete(msgId); });
+            }
+            return promise;
+        }
+
+        // بتتنادى تلقائيًا لما رد البوت يخلص (مش لما الطالب يدوس زرار) — بتجيب الصوت في
+        // الخلفية بصمت من غير ما تأثر على أي حاجة تانية في الشاشة، وبتتجاهل تمامًا لو
+        // فشلت (هتتعاد المحاولة عادي لما الطالب يدوس الزرار بنفسه).
+        function prefetchTtsAudio(msg) {
+            if (!msg || msg.role !== 'bot' || !msg.id || !msg.content) return;
+            if (ttsPrefetchCache.has(msg.id)) return;
+            const plain = stripMarkdownForSpeech(msg.content);
+            if (!plain) return;
+            getCachedOrFetchTts(msg.id, plain).catch(() => {}); // بصمت — الزرار هو اللي هيبلّغ المستخدم لو فشل فعليًا
+        }
+
         const PUTER_TTS_TIMEOUT_MS = 20000;
         // بتجرب توليد نفس صوت Gemini عن طريق Puter.js (طرف تالت مجاني، مش جوجل مباشرة).
         // بترجع Blob لو نجحت، أو null لو المكتبة مش متحمّلة أو الطلب فشل/طوّل، عشان
@@ -2406,17 +2454,18 @@
         // في المحادثة العادية. بتنضّف النص من رموز الماركداون الأول (عشان الصوت ميقولش
         // "نجمة نجمة" أو يقرا رموز التنسيق)، وبعدين تستخدم fetchTtsAudioBlob فوق عشان
         // تجيب الصوت الفعلي (سواء Gemini للمشتركين أو السلسلة العادية للباقي).
-        async function speakText(text, btn) {
+        async function speakText(msgOrText, btn) {
+            // بيقبل الرسالة كاملة (عشان نستخدم msg.id مع كاش الـ prefetch) أو نص عادي
+            // (توافقًا مع أي استدعاء قديم كان بيبعت نص مباشر).
+            const isMsgObject = msgOrText && typeof msgOrText === 'object';
+            const text = isMsgObject ? msgOrText.content : msgOrText;
+            const msgId = isMsgObject ? msgOrText.id : null;
+
             const wasThisBtn = currentSpeakBtn === btn;
             stopSpeaking();
             if (wasThisBtn) return;
 
-            const plain = (text || '')
-
-                .replace(/```[\s\S]*?```/g, ' ')
-                .replace(/[*_#>`~\-]/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim();
+            const plain = stripMarkdownForSpeech(text);
             if (!plain) { showToast('لا يوجد نص لقراءته', 'error'); return; }
 
             const myToken = ++speakToken;
@@ -2425,7 +2474,10 @@
             btn.classList.add('speaking');
 
             try {
-                const blob = await fetchTtsAudioBlob(plain);
+                // لو الصوت اتحمّل بالفعل في الخلفية (prefetchTtsAudio) وقت ما الرد كان
+                // بيتكتب، الـ Promise هنا يكون خلص أو قرب يخلص، فالتشغيل بيحس إنه "فوري"
+                // من غير أي تحميل ظاهر للطالب.
+                const blob = await getCachedOrFetchTts(msgId, plain);
                 if (myToken !== speakToken) return; // stopped/replaced while we were waiting
 
                 const url = URL.createObjectURL(blob);
@@ -3469,7 +3521,7 @@
                 wrapTables(bubbleDiv);
                 botMsg.content = displayed;
                 scrollToBottom();
-                await sleep(12, signal);
+                await sleep(30, signal);
             }
             if (signal.aborted) {
                 displayed = cleanupTruncatedMarkdown(displayed);
@@ -4498,6 +4550,9 @@
             buildMsgActionButtons(botMsg, actionsDiv, true);
             syncRegenerateButtons(chats.find(c => c.id === currentChatId));
             renderMotivationalRow(msgDiv);
+            // نبدأ نحمّل صوت الرد ده في الخلفية دلوقتي، قبل ما الطالب يدوس زرار "استمع"
+            // أصلاً — لو دوسه بعد كده، الصوت غالبًا يكون جاهز فيشتغل فورًا من غير تحميل.
+            prefetchTtsAudio(botMsg);
         }
 
         function appendMessageToDOM(msg, scroll = true) {
@@ -4593,13 +4648,28 @@
             const lastNewline = text.lastIndexOf('\n');
             const lastLine = lastNewline === -1 ? text : text.slice(lastNewline + 1);
             const trimmed = lastLine.trim();
-            const looksUnstable = trimmed.startsWith('|') || /^#{1,6}\s*$/.test(trimmed) ||
+            const looksUnstableLine = trimmed.startsWith('|') || /^#{1,6}\s*$/.test(trimmed) ||
                 (trimmed.startsWith('```') && (text.match(/```/g) || []).length % 2 !== 0);
-            if (looksUnstable && lastNewline !== -1) {
+            if (looksUnstableLine && lastNewline !== -1) {
                 return { stable: text.slice(0, lastNewline), pending: lastLine };
             }
-            if (looksUnstable && lastNewline === -1) {
+            if (looksUnstableLine && lastNewline === -1) {
                 return { stable: '', pending: text };
+            }
+            // كمان: علامة تنسيق جزئية لسه ماتقفلتش (** بولد، أو ` كود سطري) في آخر جزء
+            // من النص. من غيرها، كلمة بتتحول بولد أو مونوسبيس فجأة لحظة ما العلامة
+            // المقابلة توصل، وده اللي بيبان كـ"قفزة"/تهزهز في شكل الرد أثناء الكتابة.
+            // بنفحص آخر 80 حرف بس (كفاية لأي علامة مفتوحة حديثة، ومش مكلف حسابيًا).
+            const tailStart = Math.max(0, text.length - 80);
+            const tail = text.slice(tailStart);
+            const dblStarOpen = (tail.match(/\*\*/g) || []).length % 2 !== 0;
+            const backtickOpen = !dblStarOpen && (tail.match(/`/g) || []).length % 2 !== 0;
+            if (dblStarOpen || backtickOpen) {
+                const marker = dblStarOpen ? tail.lastIndexOf('**') : tail.lastIndexOf('`');
+                const cutAt = tailStart + marker;
+                if (cutAt > 0) {
+                    return { stable: text.slice(0, cutAt), pending: text.slice(cutAt) };
+                }
             }
             return { stable: text, pending: '' };
         }
@@ -4635,8 +4705,11 @@
             // مرة واحدة، وده اللي حاسس إنه "مزعج". دلوقتي السرعة بتتدرّج مع حجم الكمية
             // المتراكمة (backlog) بس بحد أقصى واضح للعين — أي قطعة كبيرة بتتحرك على
             // الشاشة على شكل حروف متتالية سريعة، مش دفعة واحدة، بغض النظر عن حجمها.
-            const REVEAL_MIN_STEP = 2;
-            const REVEAL_MAX_STEP = 10; // أقصى عدد حروف تتكشف في التِك الواحد، حتى لو الباكلوج ضخم
+            // السرعة كانت 18ms/تِك وحتى 10 حروف في التِك الواحد (ممكن توصل لحوالي 550
+            // حرف/الثانية في الردود الطويلة) — حسّها المستخدم "سريعة جدًا". قللناها هنا
+            // لسرعة كتابة أهدأ وأوضح للعين (حد أقصى تقريبي حوالي 115 حرف/الثانية).
+            const REVEAL_MIN_STEP = 1;
+            const REVEAL_MAX_STEP = 4; // أقصى عدد حروف تتكشف في التِك الواحد، حتى لو الباكلوج ضخم
             function revealTick() {
                 if (signal.aborted || buffer.length === 0) { stopReveal(); return; }
                 const step = Math.min(REVEAL_MAX_STEP, Math.max(REVEAL_MIN_STEP, Math.ceil(buffer.length / 10)));
@@ -4664,8 +4737,8 @@
             }
 
             function startReveal() {
-                if (!revealTimer) revealTimer = setInterval(revealTick, 18);
-                if (!formatTimer) formatTimer = setInterval(formatTick, 90);
+                if (!revealTimer) revealTimer = setInterval(revealTick, 35);
+                if (!formatTimer) formatTimer = setInterval(formatTick, 140);
             }
 
             function stopReveal() {
