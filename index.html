@@ -6331,10 +6331,13 @@
 
         // رفع الملف على R2 بـ XMLHttpRequest بدل fetch — عشان fetch مالوش دعم موثوق
         // لتتبع نسبة تقدم الرفع (upload progress) في كل المتصفحات، وxhr.upload.onprogress بييجي جاهز.
-        function uploadFileWithProgress(url, file, onProgress) {
+        function uploadFileWithProgress(url, file, onProgress, contentType) {
             return new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open('PUT', url);
+                // لازم نبعت نفس الـ Content-Type بالظبط اللي السيرفر وقّعه في الرابط،
+                // وإلا التوقيع (signature) هيفشل ويرجع خطأ.
+                if (contentType) xhr.setRequestHeader('Content-Type', contentType);
                 xhr.upload.onprogress = (e) => {
                     if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
                 };
@@ -6378,13 +6381,13 @@
                     body: JSON.stringify({ fileName: file.name, grade, subject })
                 });
                 if (!urlRes.ok) throw new Error('تعذر تجهيز رابط الرفع');
-                const { path, uploadUrl, publicUrl } = await urlRes.json();
+                const { path, uploadUrl, publicUrl, contentType } = await urlRes.json();
 
-                // 2. ارفع الملف مباشرة على R2 مع تتبع نسبة التقدم
+                // 2. ارفع الملف مباشرة على R2 مع تتبع نسبة التقدم (وبنفس الـ Content-Type اللي السيرفر وقّعه)
                 await uploadFileWithProgress(uploadUrl, file, (pct) => {
                     bar.style.width = pct + '%';
                     progText.textContent = `جارٍ الرفع... ${pct}%`;
-                });
+                }, contentType);
 
                 progText.textContent = 'جارٍ حفظ البيانات...';
 
