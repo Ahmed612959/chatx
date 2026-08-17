@@ -1202,6 +1202,7 @@
                     <button class="action-btn" aria-label="تبديل الوضع الليلي والنهاري" onclick="toggleTheme(event)"><i class="fas fa-moon" id="themeIcon"></i></button>
                     <button class="action-btn" aria-label="القسم الديني" onclick="openReligionSection()"><i class="fas fa-mosque"></i></button>
                     <button class="action-btn" aria-label="مميزات Premium" onclick="openPremiumHub()"><i class="fas fa-crown"></i></button>
+                    <button class="action-btn" aria-label="المكتبة المشتركة" onclick="openModal('sharedLibraryModal'); loadSharedLibrary();"><i class="fas fa-layer-group"></i></button>
                     <button class="action-btn" aria-label="فتح الأدوات" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
                 </div>
             </div>
@@ -1468,6 +1469,12 @@
                 <div id="adminInboxList" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;"></div>
             </div>
 
+            <div class="tool-section" id="adminReviewSection" style="display:none;">
+                <div class="tool-title"><i class="fas fa-file-circle-check"></i> مراجعة ملخصات المكتبة المشتركة</div>
+                <button class="btn-calc" style="margin-bottom:10px;background:var(--bg-2);color:var(--text-2);" onclick="loadAdminReviewQueue()"><i class="fas fa-rotate"></i> تحديث</button>
+                <div id="adminReviewList" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;"></div>
+            </div>
+
             <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--text-3);">
                 Chat X — تطوير <a href="/developer.html" target="_blank" style="color:var(--text-2);font-weight:700;text-decoration:none;">Ahmed Mousaa</a>
                 <br>
@@ -1616,6 +1623,68 @@
                 </p>
                 <button class="btn-calc" onclick="closeModal('toolsModal'); openDrugScanner();"><i class="fas fa-camera"></i> افتح الكاميرا</button>
             </div>
+            <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-layer-group"></i> المكتبة المشتركة</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    شوف ملخصات زمايلك في المعهد، أو شارك ملخص بتاعك — هيتم مراجعة محتواه من الأدمن الأول قبل ما يظهر للباقي.
+                </p>
+                <button class="btn-calc" onclick="closeModal('toolsModal'); openModal('sharedLibraryModal'); loadSharedLibrary();"><i class="fas fa-book-open"></i> تصفح المكتبة</button>
+                <button class="btn-calc" style="background:var(--bg-2);color:var(--text-2);margin-top:6px;" onclick="closeModal('toolsModal'); openModal('uploadSummaryModal');"><i class="fas fa-cloud-upload-alt"></i> شارك ملخص</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- رفع ملخص للمكتبة المشتركة -->
+    <div class="modal-overlay" id="uploadSummaryModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-cloud-upload-alt"></i> شارك ملخص</div>
+                <button class="close-modal" aria-label="إغلاق نافذة رفع الملخص" onclick="closeModal('uploadSummaryModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tool-section">
+                <div class="input-group">
+                    <label>الملف</label>
+                    <input type="file" id="summaryFileInput" class="tool-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt">
+                </div>
+                <div class="input-group">
+                    <label>موضوع الملف</label>
+                    <input type="text" id="summaryTopicInput" class="tool-input" placeholder="مثال: ملخص الفصل التاني - جهاز الدوران" maxlength="200">
+                </div>
+                <div class="input-group">
+                    <label>اسم المادة</label>
+                    <input type="text" id="summarySubjectInput" class="tool-input" placeholder="مثال: تمريض باطني" maxlength="100">
+                </div>
+                <div class="input-group">
+                    <label>الصف</label>
+                    <select id="summaryGradeSelect" class="tool-input">
+                        <option value="first">الأول الثانوي تمريض</option>
+                        <option value="second">الثاني الثانوي تمريض</option>
+                        <option value="third">الثالث الثانوي تمريض</option>
+                    </select>
+                </div>
+                <button class="btn-calc" id="summaryUploadBtn" onclick="uploadSharedSummary()"><i class="fas fa-upload"></i> رفع الملف</button>
+                <div class="calc-result" id="summaryUploadStatus"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- المكتبة المشتركة -->
+    <div class="modal-overlay" id="sharedLibraryModal">
+        <div class="modal" style="display:flex;flex-direction:column;height:80vh;max-height:640px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-layer-group"></i> المكتبة المشتركة</div>
+                <button class="close-modal" aria-label="إغلاق المكتبة المشتركة" onclick="closeModal('sharedLibraryModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border);">
+                <select id="libraryGradeFilter" class="tool-input" style="flex:1;min-width:120px;" onchange="loadSharedLibrary()">
+                    <option value="">كل الصفوف</option>
+                    <option value="first">الأول الثانوي</option>
+                    <option value="second">الثاني الثانوي</option>
+                    <option value="third">الثالث الثانوي</option>
+                </select>
+                <button class="btn-calc" style="flex:none;width:auto;padding:0 14px;" onclick="closeModal('sharedLibraryModal'); openModal('uploadSummaryModal');"><i class="fas fa-plus"></i> شارك ملخص</button>
+            </div>
+            <div id="sharedLibraryList" style="flex:1;overflow-y:auto;padding:12px 16px;"></div>
         </div>
     </div>
 
@@ -5623,6 +5692,11 @@
                     adminInboxSection.style.display = isAdmin ? 'block' : 'none';
                     if (isAdmin) loadAdminInbox();
                 }
+                const adminReviewSection = document.getElementById('adminReviewSection');
+                if (adminReviewSection) {
+                    adminReviewSection.style.display = isAdmin ? 'block' : 'none';
+                    if (isAdmin) loadAdminReviewQueue();
+                }
                 const adminPremiumPanelSection = document.getElementById('adminPremiumPanelSection');
                 if (adminPremiumPanelSection) adminPremiumPanelSection.style.display = isAdmin ? 'block' : 'none';
             } else {
@@ -5635,6 +5709,8 @@
                 if (sbQuickLogoutBtn) sbQuickLogoutBtn.style.display = 'none';
                 if (contactAdminSection) contactAdminSection.style.display = 'none';
                 if (adminInboxSection) adminInboxSection.style.display = 'none';
+                const adminReviewSectionOff = document.getElementById('adminReviewSection');
+                if (adminReviewSectionOff) adminReviewSectionOff.style.display = 'none';
                 const adminPremiumPanelSectionOff = document.getElementById('adminPremiumPanelSection');
                 if (adminPremiumPanelSectionOff) adminPremiumPanelSectionOff.style.display = 'none';
                 const leaderboardBtnOff = document.getElementById('leaderboardBtn');
@@ -5780,6 +5856,67 @@
                 });
             } catch (e) {
                 listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل الرسايل — endpoint الرسايل لسه مش متاح على سيرفر School X</div>';
+            }
+        }
+
+        // ====================== مراجعة ملخصات المكتبة المشتركة (أدمن فقط) ======================
+        async function loadAdminReviewQueue() {
+            const listEl = document.getElementById('adminReviewList');
+            if (!listEl || !schoolToken) return;
+            listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/shared-summaries/pending`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const files = await res.json();
+                if (!files.length) {
+                    listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش ملفات محتاجة مراجعة دلوقتي 👍</div>';
+                    return;
+                }
+                const gradeLabels = { first: 'الأول الثانوي', second: 'الثاني الثانوي', third: 'الثالث الثانوي' };
+                listEl.innerHTML = '';
+                files.forEach(f => {
+                    const item = document.createElement('div');
+                    item.id = `reviewItem_${f._id}`;
+                    item.style.cssText = 'padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-glass);';
+                    item.innerHTML = `
+                        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${escapeHtml(f.topic)}</div>
+                        <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;">
+                            ${escapeHtml(f.subject)} · ${gradeLabels[f.grade] || f.grade} · رفعه ${escapeHtml(f.uploadedByName || f.uploadedBy)}
+                        </div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+                            <a href="${f.url}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--accent);text-decoration:underline;"><i class="fas fa-eye"></i> معاينة الملف</a>
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn-calc" style="flex:1;background:var(--success);" onclick="reviewSharedSummary('${f._id}', 'approve')"><i class="fas fa-check"></i> قبول</button>
+                            <button class="btn-calc" style="flex:1;background:var(--danger);" onclick="reviewSharedSummary('${f._id}', 'reject')"><i class="fas fa-times"></i> رفض</button>
+                        </div>
+                    `;
+                    listEl.appendChild(item);
+                });
+            } catch (e) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل قائمة المراجعة</div>';
+            }
+        }
+
+        async function reviewSharedSummary(id, action) {
+            let reason = '';
+            if (action === 'reject') {
+                reason = prompt('سبب الرفض (اختياري، هيتبعت للطالب):') || '';
+            }
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/shared-summaries/${id}/${action}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: action === 'reject' ? JSON.stringify({ reason }) : undefined
+                });
+                if (!res.ok) throw new Error('failed');
+                const item = document.getElementById(`reviewItem_${id}`);
+                if (item) item.remove();
+                showToast(action === 'approve' ? 'تم قبول الملف ✅' : 'تم رفض الملف', 'success');
+            } catch (e) {
+                showToast('تعذر تنفيذ العملية، حاول تاني', 'error');
             }
         }
 
@@ -5948,6 +6085,123 @@
                 box.style.display = 'block';
             } catch (e) {
                 statusEl.textContent = 'تعذر البحث، حاول تاني';
+            }
+        }
+
+        // ====================== المكتبة المشتركة (ملخصات الطلاب) ======================
+        async function loadSharedLibrary() {
+            const listEl = document.getElementById('sharedLibraryList');
+            if (!schoolToken) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">لازم تسجّل دخول School X الأول</div>';
+                return;
+            }
+            const grade = document.getElementById('libraryGradeFilter').value;
+            listEl.innerHTML = Array.from({ length: 4 }).map(() =>
+                `<div class="skeleton-row"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div>`
+            ).join('');
+            try {
+                const qs = grade ? `?grade=${encodeURIComponent(grade)}` : '';
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/shared-summaries${qs}`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const files = await res.json();
+                if (!files.length) {
+                    listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">لسه مفيش ملخصات متاحة في القسم ده</div>';
+                    return;
+                }
+                const gradeLabels = { first: 'الأول الثانوي', second: 'الثاني الثانوي', third: 'الثالث الثانوي' };
+                listEl.innerHTML = '';
+                files.forEach(f => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;';
+                    row.innerHTML = `
+                        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${escapeHtml(f.topic)}</div>
+                        <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;">
+                            ${escapeHtml(f.subject)} · ${gradeLabels[f.grade] || f.grade} · رفعه ${escapeHtml(f.uploadedByName || f.uploadedBy)}
+                        </div>
+                        <button class="btn-calc" style="width:auto;padding:6px 14px;font-size:12px;" onclick="downloadSharedSummary('${f._id}')"><i class="fas fa-download"></i> تحميل</button>
+                    `;
+                    listEl.appendChild(row);
+                });
+            } catch (e) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل المكتبة المشتركة</div>';
+            }
+        }
+
+        async function downloadSharedSummary(id) {
+            if (!schoolToken) { showToast('لازم تسجّل دخول School X الأول', 'error'); return; }
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/shared-summaries/download/${id}`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const blob = await res.blob();
+                const cd = res.headers.get('Content-Disposition') || '';
+                const match = cd.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/);
+                const fileName = match ? decodeURIComponent(match[1]) : 'file';
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = fileName;
+                document.body.appendChild(a); a.click(); a.remove();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                showToast('تعذر تحميل الملف', 'error');
+            }
+        }
+
+        async function uploadSharedSummary() {
+            const fileInput = document.getElementById('summaryFileInput');
+            const topic = document.getElementById('summaryTopicInput').value.trim();
+            const subject = document.getElementById('summarySubjectInput').value.trim();
+            const grade = document.getElementById('summaryGradeSelect').value;
+            const statusEl = document.getElementById('summaryUploadStatus');
+            const btn = document.getElementById('summaryUploadBtn');
+
+            if (!schoolToken) { statusEl.innerHTML = '<span style="color:var(--danger);">لازم تسجّل دخول School X الأول</span>'; return; }
+            const file = fileInput.files[0];
+            if (!file) { statusEl.innerHTML = '<span style="color:var(--danger);">اختار ملف الأول</span>'; return; }
+            if (!topic) { statusEl.innerHTML = '<span style="color:var(--danger);">اكتب موضوع الملف</span>'; return; }
+            if (!subject) { statusEl.innerHTML = '<span style="color:var(--danger);">اكتب اسم المادة</span>'; return; }
+            if (file.size > 500 * 1024 * 1024) { statusEl.innerHTML = '<span style="color:var(--danger);">حجم الملف كبير جدًا</span>'; return; }
+
+            btn.disabled = true;
+            statusEl.innerHTML = '<span style="color:var(--text-2);">جاري الرفع...</span>';
+            try {
+                // 1. هات رابط رفع موقّع من R2 مباشرة
+                const urlRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/shared-summaries/upload-url`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ fileName: file.name, grade, subject })
+                });
+                if (!urlRes.ok) throw new Error('upload-url failed');
+                const { path, uploadUrl, publicUrl } = await urlRes.json();
+
+                // 2. ارفع الملف مباشرة على R2
+                const putRes = await fetch(uploadUrl, { method: 'PUT', body: file });
+                if (!putRes.ok) throw new Error('R2 upload failed');
+
+                // 3. سجّل معلومات الملف في الداتابيز (بيتسجل status: pending تلقائي على السيرفر)
+                const saveRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/shared-summaries/save`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({
+                        name: file.name, url: publicUrl, publicId: path,
+                        size: file.size, type: file.name.split('.').pop().toLowerCase(),
+                        topic, subject, grade
+                    })
+                });
+                if (!saveRes.ok) throw new Error('save failed');
+
+                statusEl.innerHTML = '<span style="color:var(--success);">تم رفع الملف بنجاح، هيتم مراجعة محتواه لكي يظهر على الصفحة من قبل الأدمن ✅</span>';
+                fileInput.value = '';
+                document.getElementById('summaryTopicInput').value = '';
+                document.getElementById('summarySubjectInput').value = '';
+                showToast('تم الرفع، هيتم مراجعته من الأدمن قبل ما يظهر', 'success');
+            } catch (e) {
+                statusEl.innerHTML = '<span style="color:var(--danger);">تعذر رفع الملف، حاول تاني</span>';
+            } finally {
+                btn.disabled = false;
             }
         }
 
