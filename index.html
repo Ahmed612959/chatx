@@ -31,7 +31,7 @@
     <meta property="og:image" content="/icons/og-image.png">
     <meta property="og:type" content="website">
 
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Righteous&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -275,8 +275,36 @@
         }
         
         .bot-text { flex: 0 1 auto; min-width: 0; }
+        .bot-name-badge {
+            position: relative;
+            padding: 7px 26px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            background:
+                linear-gradient(var(--bg-2), var(--bg-2)) padding-box,
+                var(--grad-bold) border-box;
+            background-size: 100% 100%, 200% 200%;
+            animation: gradientFlow 6s ease infinite, badgeGlow 2.5s ease-in-out infinite;
+            overflow: hidden;
+        }
+        .bot-name-badge::after {
+            content: '';
+            position: absolute; top: 0; left: -60%; width: 45%; height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.45), transparent);
+            transform: skewX(-20deg);
+            animation: badgeShimmer 3.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes badgeGlow {
+            0%, 100% { box-shadow: 0 0 14px 0 var(--accent-glow); }
+            50% { box-shadow: 0 0 26px 5px var(--accent-glow); }
+        }
+        @keyframes badgeShimmer {
+            0% { left: -60%; }
+            55%, 100% { left: 130%; }
+        }
         .bot-text h2 { 
-            font-family: 'FodaKufi', var(--font);
+            font-family: 'FodaKufi', 'Righteous', var(--font);
             font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 6px;
             color: var(--text-1); /* احتياطي: لو الجرادينت (اللي تحت) مش شغال على متصفح المستخدم، الاسم يفضل ظاهر بلون عادي بدل ما يختفي خالص */
             background: linear-gradient(120deg, var(--text-1) 20%, var(--accent) 55%, var(--accent-3));
@@ -1165,7 +1193,7 @@
             <div class="top-bar">
                 <div class="bot-identity">
                     <div class="bot-text">
-                        <h2>Chat X</h2>
+                        <div class="bot-name-badge"><h2>Chat X</h2></div>
                     </div>
                 </div>
                 <div class="top-actions">
