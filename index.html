@@ -1330,6 +1330,7 @@
                         <option value="mistral">🌬️ Mistral</option>
                         <option value="sambanova">🚀 SambaNova</option>
                         <option value="qwen">🐉 Qwen</option>
+                        <option value="onehop">🐋 DeepSeek</option>
                         <option value="zimage">🖼️ تحليل الصور</option>
                         <option value="local">💻 محلي</option>
                     </select>
@@ -3556,6 +3557,9 @@
                 } else if (model === 'qwen') {
                     source = 'qwen';
                     await streamQwen(chat.messages, abortController.signal);
+                } else if (model === 'onehop') {
+                    source = 'onehop';
+                    await streamOneHop(chat.messages, abortController.signal);
                 } else if (model === 'auto') {
                     if (hasImage) {
                         // Image attached in auto mode: try the dedicated vision model first,
@@ -4733,7 +4737,7 @@
             const sourceSpan = msgDiv.querySelector('.msg-source-icon');
             const actionsDiv = msgDiv.querySelector('.msg-actions');
             timeSpan.textContent = new Date(botMsg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
-            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'mistral' ? '🌬️' : botMsg.source === 'sambanova' ? '🚀' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'zimage' ? '🖼️' : '💻';
+            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'mistral' ? '🌬️' : botMsg.source === 'sambanova' ? '🚀' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'onehop' ? '🐋' : botMsg.source === 'zimage' ? '🖼️' : '💻';
             // This message was just pushed as the newest one, so it's always eligible for regenerate.
             buildMsgActionButtons(botMsg, actionsDiv, true);
             syncRegenerateButtons(chats.find(c => c.id === currentChatId));
@@ -4785,7 +4789,7 @@
             if (msg.role === 'bot') {
                 const sourceSpan = document.createElement('span');
                 sourceSpan.style.cssText = 'margin-right:6px;opacity:0.6';
-                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'mistral' ? '🌬️' : msg.source === 'sambanova' ? '🚀' : msg.source === 'qwen' ? '🐉' : msg.source === 'zimage' ? '🖼️' : '💻';
+                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'mistral' ? '🌬️' : msg.source === 'sambanova' ? '🚀' : msg.source === 'qwen' ? '🐉' : msg.source === 'onehop' ? '🐋' : msg.source === 'zimage' ? '🖼️' : '💻';
                 meta.appendChild(sourceSpan);
             }
 
@@ -5231,6 +5235,68 @@
             }
 
             renderFinishedBotMessage(fullText, 'qwen', false);
+        }
+
+        // موديل DeepSeek عن طريق OneHop — نفس شكل باقي الموديلات بالظبط، بيعدي على
+        // باك إند Chat X نفسه (مش على OneHop مباشرة) عشان الـ API key يفضل مخبّي
+        // على السيرفر وميظهرش في كود الموقع خالص.
+        async function streamOneHop(messages, signal) {
+            const response = await fetchWithRetry(`${settings.backendUrl}/api/onehop`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: "deepseek/deepseek-v4-pro",
+                    messages: [{role: "system", content: getSystemPrompt()}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    stream: true
+                }),
+                signal
+            });
+
+            if (!response.ok) {
+                let detail = '';
+                try { detail = (await response.text()).slice(0, 200); } catch (e) {}
+                console.error('OneHop API error', response.status, detail);
+                throw new Error(`OneHop API Error (${response.status}): ${detail || 'no detail'}`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let fullText = '';
+
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const payload = line.slice(6).trim();
+                        if (payload === '[DONE]') continue;
+                        try {
+                            const data = JSON.parse(payload);
+                            const content = data.choices[0]?.delta?.content || '';
+                            if (content) fullText += content;
+                        } catch (e) {}
+                    }
+                }
+            } catch (err) {
+                if (err.name === 'AbortError' && fullText) {
+                    renderFinishedBotMessage(fullText, 'onehop', true);
+                }
+                throw err;
+            }
+
+            if (!fullText) {
+                await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
+                return;
+            }
+
+            renderFinishedBotMessage(fullText, 'onehop', false);
         }
 
         // System prompt for the "معلم الألماني" mode: a professional German teacher
