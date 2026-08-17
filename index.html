@@ -258,6 +258,7 @@
         .bot-text { flex: 1; min-width: 0; }
         .bot-text h2 { 
             font-size: 16px; font-weight: 900; display: flex; align-items: center; gap: 6px;
+            color: var(--text-1); /* احتياطي: لو الجرادينت (اللي تحت) مش شغال على متصفح المستخدم، الاسم يفضل ظاهر بلون عادي بدل ما يختفي خالص */
             background: linear-gradient(120deg, var(--text-1) 20%, var(--accent) 55%, var(--accent-3));
             background-size: 200% 200%;
             animation: gradientFlow 6s ease infinite;
@@ -303,6 +304,7 @@
         
         .welcome-title { 
             font-size: 26px; font-weight: 900; margin-bottom: 8px;
+            color: var(--text-1);
             background: linear-gradient(135deg, var(--text-1) 30%, var(--accent));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
