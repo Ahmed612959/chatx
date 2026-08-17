@@ -3479,21 +3479,10 @@
         async function respondLocally(text, chat, signal) {
             document.getElementById('typingIndicator').classList.add('active');
             await sleep(600, signal);
-            document.getElementById('typingIndicator').classList.remove('active');
-            if (signal.aborted) return;
+            if (signal.aborted) { document.getElementById('typingIndicator').classList.remove('active'); return; }
 
             const fullText = getLocalResponse(text);
-            const botMsg = { role: 'bot', content: '', source: 'local', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
-            chat.messages.push(botMsg);
-
-            const msgDiv = createBotMessageShell(botMsg);
-            await typewriterEffect(fullText, msgDiv, botMsg, signal);
-            if (signal.aborted) {
-                finalizeStoppedBotMessage(msgDiv, botMsg);
-            } else {
-                finalizeBotMessage(msgDiv, botMsg);
-            }
-            saveData();
+            renderFinishedBotMessage(fullText, 'local', false);
         }
 
         function sleep(ms, signal) {
@@ -3522,17 +3511,23 @@
             return msgDiv;
         }
 
-        // بتتنادى أول ما أول حرف فعلي يوصل من مزود الذكاء الاصطناعي (مش أول ما الاتصال
-        // ينجح) — عشان التلت نقط (typing indicator) تفضل شغالة طول فترة "التفكير" من
-        // غير أي فقاعة فاضية بتبان فجأة، وتتقفل بس اللحظة اللي الرد يبدأ يتكتب فعليًا.
-        function beginBotMessage(source, signal) {
+        // بتتنادى مرة واحدة بس، أول ما نص الرد يكون جاهز بالكامل — إما لأن البوت خلّص
+        // الرد كله، أو لأن الطالب وقف الرد وعندنا الجزء اللي وصل لحد دلوقتي. بتقفل
+        // النقط وبتبني فقاعة الرد بالنص كله دفعة واحدة (من غير كتابة تدريجية).
+        function renderFinishedBotMessage(text, source, stopped) {
             document.getElementById('typingIndicator').classList.remove('active');
             const chat = chats.find(c => c.id === currentChatId);
-            const botMsg = { role: 'bot', content: '', source, timestamp: Date.now(), id: `msg-${Date.now()}-b` };
+            const finalText = stopped ? cleanupTruncatedMarkdown(text) : text;
+            const botMsg = { role: 'bot', content: finalText, source, timestamp: Date.now(), id: `msg-${Date.now()}-b` };
             chat.messages.push(botMsg);
             const msgDiv = createBotMessageShell(botMsg);
-            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
-            return { chat, botMsg, msgDiv, queue };
+            if (stopped) {
+                finalizeStoppedBotMessage(msgDiv, botMsg);
+            } else {
+                finalizeBotMessage(msgDiv, botMsg);
+            }
+            saveData();
+            return { msgDiv, botMsg };
         }
 
         // بتتنادى لما الطالب يوقف الرد وهو لسه بيتكتب: بتخلّص تنسيق النص اللي وصل لحد
@@ -3545,28 +3540,6 @@
             note.className = 'msg-stopped-note';
             note.innerHTML = '<i class="fas fa-circle-stop"></i> تم إيقاف الرد هنا بواسطتك';
             bubbleDiv.appendChild(note);
-        }
-
-        async function typewriterEffect(fullText, msgDiv, botMsg, signal) {
-            const bubbleDiv = msgDiv.querySelector('.msg-bubble');
-            const chars = Array.from(fullText);
-            const chunkSize = 2;
-            let displayed = '';
-            for (let i = 0; i < chars.length; i += chunkSize) {
-                if (signal.aborted) break;
-                displayed += chars.slice(i, i + chunkSize).join('');
-                bubbleDiv.innerHTML = marked.parse(displayed);
-                wrapTables(bubbleDiv);
-                botMsg.content = displayed;
-                scrollToBottom();
-                await sleep(30, signal);
-            }
-            if (signal.aborted) {
-                displayed = cleanupTruncatedMarkdown(displayed);
-                botMsg.content = displayed;
-                bubbleDiv.innerHTML = marked.parse(displayed);
-                wrapTables(bubbleDiv);
-            }
         }
 
         // بنك العبارات التحفيزية اللي بتظهر بعد رد الشات بوت — كل عبارة معاها إيموجي مناسب لجوها
@@ -4675,138 +4648,6 @@
             return out;
         }
 
-        // بتفصل النص لجزء "مستقر" آمن نعمله format دلوقتي، وجزء "معلّق" (آخر سطر لسه
-        // بيتكتب ومكملش) بنسيبه من غير format لحد ما يخلص. من غيرها، صف جدول ناقص زي
-        // "| اسم المريض | ال" كان بيتفسّر كـ Markdown ناقص فيبان نص خام مكسور (رموز |
-        // طايرة برا شكل الجدول) لحظة ما formatTick بيشتغل عليه، وده اللي كان بيحس المستخدم
-        // إن الجدول "بيخرج عن الكادر" أثناء الكتابة. أي سطر آخر يبدأ بـ | أو # أو فاصلة كود
-        // ```  مفتوحة بنستناه يخلص (سطر جديد يوصل) قبل ما نحوّله HTML.
-        function splitStableMarkdown(text) {
-            if (!text) return { stable: '', pending: '' };
-            const lastNewline = text.lastIndexOf('\n');
-            const lastLine = lastNewline === -1 ? text : text.slice(lastNewline + 1);
-            const trimmed = lastLine.trim();
-            const looksUnstableLine = trimmed.startsWith('|') || /^#{1,6}\s*$/.test(trimmed) ||
-                (trimmed.startsWith('```') && (text.match(/```/g) || []).length % 2 !== 0);
-            if (looksUnstableLine && lastNewline !== -1) {
-                return { stable: text.slice(0, lastNewline), pending: lastLine };
-            }
-            if (looksUnstableLine && lastNewline === -1) {
-                return { stable: '', pending: text };
-            }
-            // كمان: علامة تنسيق جزئية لسه ماتقفلتش (** بولد، أو ` كود سطري) في آخر جزء
-            // من النص. من غيرها، كلمة بتتحول بولد أو مونوسبيس فجأة لحظة ما العلامة
-            // المقابلة توصل، وده اللي بيبان كـ"قفزة"/تهزهز في شكل الرد أثناء الكتابة.
-            // بنفحص آخر 80 حرف بس (كفاية لأي علامة مفتوحة حديثة، ومش مكلف حسابيًا).
-            const tailStart = Math.max(0, text.length - 80);
-            const tail = text.slice(tailStart);
-            const dblStarOpen = (tail.match(/\*\*/g) || []).length % 2 !== 0;
-            const backtickOpen = !dblStarOpen && (tail.match(/`/g) || []).length % 2 !== 0;
-            if (dblStarOpen || backtickOpen) {
-                const marker = dblStarOpen ? tail.lastIndexOf('**') : tail.lastIndexOf('`');
-                const cutAt = tailStart + marker;
-                if (cutAt > 0) {
-                    return { stable: text.slice(0, cutAt), pending: text.slice(cutAt) };
-                }
-            }
-            return { stable: text, pending: '' };
-        }
-
-        // مسؤولة عن "تأثير الكتابة الحية" (النص بيظهر حرف حرف زي حد بيكتب دلوقتي) بدون ما
-        // يسبب تهزهز أو تعليق في الردود الطويلة. المشكلة اللي كانت موجودة قبل كده: كل الرد
-        // كان بيتعاد تفسيره كماركداون Markdown وبيتستبدل الـ HTML بالكامل جوه الفقاعة كل
-        // 18 مللي ثانية — يعني في رد طويل (3000 حرف مثلاً)، كان بيحصل آلاف عمليات إعادة رسم
-        // لنفس المحتوى المتراكم، وده اللي بيسبب التهزهز والبطء اللي حسّيت بيه.
-        //
-        // الحل: فصلنا حاجتين كانوا متلزّقين في بعض:
-        //   1) "ظهور النص" (fast tick, كل 18ms) — ده رخيص جدًا، مجرد إضافة نص خام (textContent)
-        //      من غير أي تحليل ماركداون أو استبدال HTML، فمفيش أي تكلفة إعادة رسم حقيقية.
-        //   2) "تحديث التنسيق" (Markdown → HTML: عناوين، بولد، جداول...) — ده الجزء المكلف،
-        //      وبقى بيحصل كل 120ms بس (تقريبًا 8 مرات في الثانية) بدل 55 مرة في الثانية،
-        //      وهي سرعة كفاية إن العين مش هتحس بفرق في التنسيق، لكن التكلفة الحسابية الكلية
-        //      بتقل بمقدار كبير جدًا (المحتوى بيتقرأ ماركداون مرات أقل بكتير طول الرد).
-        function createTypewriterQueue(msgDiv, botMsg, signal) {
-            let buffer = '';       // النص اللي وصل من الـ API ولسه ماتعرضش للمستخدم
-            let displayed = '';    // النص اللي ظاهر فعليًا على الشاشة دلوقتي
-            let revealTimer = null;      // تايمر ظهور النص (سريع، كل 18ms)
-            let formatTimer = null;      // تايمر تحديث التنسيق (أبطأ، كل 120ms)
-            let needsFormatUpdate = false; // فيه نص جديد اتضاف من آخر مرة اتعمل فيها تنسيق؟
-            const bubbleDiv = msgDiv.querySelector('.msg-bubble');
-
-            // بيضيف النص الجديد كنص خام بس (من غير ماركداون) — ده اللي بيدّي إحساس السرعة
-            // والسلاسة من غير أي تكلفة إعادة رسم حقيقية، لأن textContent مش بيعمل parsing
-            // ولا يبني عناصر HTML جديدة.
-            // ده كان سبب الإحساس بـ"سريع لحد ما يخلص فجأة": لو الـ API (خصوصًا Gemini،
-            // بيبعت في كتل كبيرة مش حرف حرف زي Groq) بعت أكتر من 24 حرف مرة واحدة،
-            // كنا بنكشفها *كلها فورًا* في تِك واحد (buffer.length كامل) — فكان الرد
-            // بيظهر كلمة كلمة بسلاسة في الأول، وبعدين فجأة نص الرد كله بيطق على الشاشة
-            // مرة واحدة، وده اللي حاسس إنه "مزعج". دلوقتي السرعة بتتدرّج مع حجم الكمية
-            // المتراكمة (backlog) بس بحد أقصى واضح للعين — أي قطعة كبيرة بتتحرك على
-            // الشاشة على شكل حروف متتالية سريعة، مش دفعة واحدة، بغض النظر عن حجمها.
-            // السرعة كانت 18ms/تِك وحتى 10 حروف في التِك الواحد (ممكن توصل لحوالي 550
-            // حرف/الثانية في الردود الطويلة) — حسّها المستخدم "سريعة جدًا". قللناها هنا
-            // لسرعة كتابة أهدأ وأوضح للعين (حد أقصى تقريبي حوالي 115 حرف/الثانية).
-            const REVEAL_MIN_STEP = 1;
-            const REVEAL_MAX_STEP = 4; // أقصى عدد حروف تتكشف في التِك الواحد، حتى لو الباكلوج ضخم
-            function revealTick() {
-                if (signal.aborted || buffer.length === 0) { stopReveal(); return; }
-                const step = Math.min(REVEAL_MAX_STEP, Math.max(REVEAL_MIN_STEP, Math.ceil(buffer.length / 10)));
-                displayed += buffer.slice(0, step);
-                buffer = buffer.slice(step);
-                botMsg.content = displayed;
-                bubbleDiv.textContent = displayed; // رخيص جدًا — مفيش reflow تقيل هنا
-                needsFormatUpdate = true;
-                scrollToBottom();
-            }
-
-
-            // بيحوّل النص المتراكم لماركداون منسّق فعليًا (عناوين، جداول، كود...) — العملية
-            // المكلفة اللي بقت بتحصل أبطأ بكتير دلوقتي. بنفرمت الجزء "المستقر" بس (splitStableMarkdown)
-            // ونسيب آخر سطر لسه بيتكتب (زي صف جدول ناقص) كنص خام معلّق تحت — كده الجدول
-            // مش بيبان مكسور وهو لسه بيتبني، وبيتحوّل لجدول فعلي أول ما الصف يكتمل.
-            function formatTick() {
-                if (!needsFormatUpdate) return;
-                needsFormatUpdate = false;
-                const { stable, pending } = splitStableMarkdown(displayed);
-                let html = marked.parse(stable);
-                if (pending) html += `<p style="opacity:.75">${pending.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`;
-                bubbleDiv.innerHTML = html;
-                wrapTables(bubbleDiv);
-            }
-
-            function startReveal() {
-                if (!revealTimer) revealTimer = setInterval(revealTick, 35);
-                if (!formatTimer) formatTimer = setInterval(formatTick, 140);
-            }
-
-            function stopReveal() {
-                if (revealTimer) { clearInterval(revealTimer); revealTimer = null; }
-                if (formatTimer) { clearInterval(formatTimer); formatTimer = null; }
-            }
-
-            return {
-                push(chunk) {
-                    buffer += chunk;
-                    startReveal();
-                },
-                async flush() {
-                    // نستنى لحد ما كل النص المتبقي في الـ buffer يظهر بالكامل...
-                    while (buffer.length > 0 && !signal.aborted) {
-                        await sleep(18, signal);
-                    }
-                    stopReveal();
-                    displayed += buffer;
-                    buffer = '';
-                    if (signal.aborted) displayed = cleanupTruncatedMarkdown(displayed);
-                    botMsg.content = displayed;
-                    // ...وفي الآخر بنعمل تنسيق نهائي واحد كامل ومضمون 100% (مش هيفضل أي جزء
-                    // من الرد من غير تنسيق حتى لو الـ formatTimer الأخير ماكانش لسه نفّذ).
-                    bubbleDiv.innerHTML = marked.parse(displayed);
-                    wrapTables(bubbleDiv);
-                    return displayed;
-                }
-            };
-        }
 
         // Retry مع exponential backoff — بيحاول تاني بس على فشل شبكة حقيقي (انقطاع نت، تايم أوت)
         // أو 5xx من السيرفر (مشكلة مؤقتة عند المزود). ميحاولش تاني على 4xx (زي 400 كوتة خلصت،
@@ -4880,7 +4721,7 @@
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            let started = null;
+            let fullText = '';
 
             try {
                 while (true) {
@@ -4898,31 +4739,23 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) {
-                                if (!started) started = beginBotMessage('groq', signal);
-                                started.queue.push(content);
-                            }
+                            if (content) fullText += content;
                         } catch (e) {}
                     }
                 }
             } catch (err) {
-                if (err.name === 'AbortError' && started) {
-                    await started.queue.flush();
-                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
-                    saveData();
+                if (err.name === 'AbortError' && fullText) {
+                    renderFinishedBotMessage(fullText, 'groq', true);
                 }
                 throw err;
             }
 
-            if (!started) {
-                // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
+            if (!fullText) {
                 await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            await started.queue.flush();
-            finalizeBotMessage(started.msgDiv, started.botMsg);
-            saveData();
+            renderFinishedBotMessage(fullText, 'groq', false);
         }
 
         async function streamOpenRouter(messages, signal) {
@@ -4950,7 +4783,7 @@
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            let started = null;
+            let fullText = '';
 
             try {
                 while (true) {
@@ -4968,31 +4801,23 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) {
-                                if (!started) started = beginBotMessage('openrouter', signal);
-                                started.queue.push(content);
-                            }
+                            if (content) fullText += content;
                         } catch (e) {}
                     }
                 }
             } catch (err) {
-                if (err.name === 'AbortError' && started) {
-                    await started.queue.flush();
-                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
-                    saveData();
+                if (err.name === 'AbortError' && fullText) {
+                    renderFinishedBotMessage(fullText, 'openrouter', true);
                 }
                 throw err;
             }
 
-            if (!started) {
-                // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
+            if (!fullText) {
                 await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            await started.queue.flush();
-            finalizeBotMessage(started.msgDiv, started.botMsg);
-            saveData();
+            renderFinishedBotMessage(fullText, 'openrouter', false);
         }
 
         async function streamCerebras(messages, signal) {
@@ -5017,7 +4842,7 @@
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            let started = null;
+            let fullText = '';
 
             try {
                 while (true) {
@@ -5035,31 +4860,23 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) {
-                                if (!started) started = beginBotMessage('cerebras', signal);
-                                started.queue.push(content);
-                            }
+                            if (content) fullText += content;
                         } catch (e) {}
                     }
                 }
             } catch (err) {
-                if (err.name === 'AbortError' && started) {
-                    await started.queue.flush();
-                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
-                    saveData();
+                if (err.name === 'AbortError' && fullText) {
+                    renderFinishedBotMessage(fullText, 'cerebras', true);
                 }
                 throw err;
             }
 
-            if (!started) {
-                // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
+            if (!fullText) {
                 await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            await started.queue.flush();
-            finalizeBotMessage(started.msgDiv, started.botMsg);
-            saveData();
+            renderFinishedBotMessage(fullText, 'cerebras', false);
         }
 
         async function streamMistral(messages, signal) {
@@ -5084,7 +4901,7 @@
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            let started = null;
+            let fullText = '';
 
             try {
                 while (true) {
@@ -5102,31 +4919,23 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) {
-                                if (!started) started = beginBotMessage('mistral', signal);
-                                started.queue.push(content);
-                            }
+                            if (content) fullText += content;
                         } catch (e) {}
                     }
                 }
             } catch (err) {
-                if (err.name === 'AbortError' && started) {
-                    await started.queue.flush();
-                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
-                    saveData();
+                if (err.name === 'AbortError' && fullText) {
+                    renderFinishedBotMessage(fullText, 'mistral', true);
                 }
                 throw err;
             }
 
-            if (!started) {
-                // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
+            if (!fullText) {
                 await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            await started.queue.flush();
-            finalizeBotMessage(started.msgDiv, started.botMsg);
-            saveData();
+            renderFinishedBotMessage(fullText, 'mistral', false);
         }
 
         async function streamSambanova(messages, signal) {
@@ -5151,7 +4960,7 @@
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            let started = null;
+            let fullText = '';
 
             try {
                 while (true) {
@@ -5169,31 +4978,23 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) {
-                                if (!started) started = beginBotMessage('sambanova', signal);
-                                started.queue.push(content);
-                            }
+                            if (content) fullText += content;
                         } catch (e) {}
                     }
                 }
             } catch (err) {
-                if (err.name === 'AbortError' && started) {
-                    await started.queue.flush();
-                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
-                    saveData();
+                if (err.name === 'AbortError' && fullText) {
+                    renderFinishedBotMessage(fullText, 'sambanova', true);
                 }
                 throw err;
             }
 
-            if (!started) {
-                // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
+            if (!fullText) {
                 await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            await started.queue.flush();
-            finalizeBotMessage(started.msgDiv, started.botMsg);
-            saveData();
+            renderFinishedBotMessage(fullText, 'sambanova', false);
         }
 
         async function streamQwen(messages, signal) {
@@ -5218,7 +5019,7 @@
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            let started = null;
+            let fullText = '';
 
             try {
                 while (true) {
@@ -5236,31 +5037,23 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) {
-                                if (!started) started = beginBotMessage('qwen', signal);
-                                started.queue.push(content);
-                            }
+                            if (content) fullText += content;
                         } catch (e) {}
                     }
                 }
             } catch (err) {
-                if (err.name === 'AbortError' && started) {
-                    await started.queue.flush();
-                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
-                    saveData();
+                if (err.name === 'AbortError' && fullText) {
+                    renderFinishedBotMessage(fullText, 'qwen', true);
                 }
                 throw err;
             }
 
-            if (!started) {
-                // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
+            if (!fullText) {
                 await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            await started.queue.flush();
-            finalizeBotMessage(started.msgDiv, started.botMsg);
-            saveData();
+            renderFinishedBotMessage(fullText, 'qwen', false);
         }
 
         // System prompt for the "معلم الألماني" mode: a professional German teacher
@@ -5309,7 +5102,7 @@
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            let started = null;
+            let fullText = '';
 
             try {
                 while (true) {
@@ -5325,30 +5118,23 @@
                         try {
                             const data = JSON.parse(line.slice(6));
                             const piece = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                            if (piece) {
-                                if (!started) started = beginBotMessage('gemini', signal);
-                                started.queue.push(piece);
-                            }
+                            if (piece) fullText += piece;
                         } catch (e) {}
                     }
                 }
             } catch (err) {
-                if (err.name === 'AbortError' && started) {
-                    await started.queue.flush();
-                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
-                    saveData();
+                if (err.name === 'AbortError' && fullText) {
+                    renderFinishedBotMessage(fullText, 'gemini', true);
                 }
                 throw err;
             }
 
-            if (!started) {
+            if (!fullText) {
                 await respondLocally(lastUserMsg.content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            await started.queue.flush();
-            finalizeBotMessage(started.msgDiv, started.botMsg);
-            saveData();
+            renderFinishedBotMessage(fullText, 'gemini', false);
         }
 
         // Sends the last user message (with its attached image, if any) to the vision-capable
@@ -5392,7 +5178,7 @@
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            let started = null;
+            let fullText = '';
 
             try {
                 while (true) {
@@ -5410,30 +5196,23 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) {
-                                if (!started) started = beginBotMessage('zimage', signal);
-                                started.queue.push(content);
-                            }
+                            if (content) fullText += content;
                         } catch (e) {}
                     }
                 }
             } catch (err) {
-                if (err.name === 'AbortError' && started) {
-                    await started.queue.flush();
-                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
-                    saveData();
+                if (err.name === 'AbortError' && fullText) {
+                    renderFinishedBotMessage(fullText, 'zimage', true);
                 }
                 throw err;
             }
 
-            if (!started) {
+            if (!fullText) {
                 await respondLocally(lastUserMsg.content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            await started.queue.flush();
-            finalizeBotMessage(started.msgDiv, started.botMsg);
-            saveData();
+            renderFinishedBotMessage(fullText, 'zimage', false);
         }
 
         function getLocalResponse(prompt) {
