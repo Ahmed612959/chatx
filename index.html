@@ -1322,18 +1322,22 @@
                     <span class="char-count" id="charCount">0 / 4000</span>
                     <select class="model-select" id="modelSelect" onchange="saveModelChoice()">
                         <option value="auto"> تلقائي</option>
-                        <option value="groq">⚡ Groq</option>
-                        <option value="gemini">🌟 Gemini</option>
-                        <option value="german-teacher">🇩🇪 معلم الألماني</option>
-                        <option value="openrouter">🔀 OpenRouter</option>
-                        <option value="cerebras" id="cerebrasModelOption">🧠 Cerebras</option>
-                        <option value="claude-opus" id="claudeOpusModelOption">✨ Claude Opus</option>
-                        <option value="mistral">🌬️ Mistral</option>
-                        <option value="sambanova">🚀 SambaNova</option>
-                        <option value="qwen">🐉 Qwen</option>
-                        <option value="onehop">🐋 DeepSeek</option>
-                        <option value="zimage">🖼️ تحليل الصور</option>
-                        <option value="local">💻 محلي</option>
+                        <optgroup label="✨ موديلات Premium" id="premiumModelsGroup">
+                            <option value="cerebras" id="cerebrasModelOption">🧠 Cerebras</option>
+                            <option value="claude-opus" id="claudeOpusModelOption">✨ Claude Opus</option>
+                        </optgroup>
+                        <optgroup label="الموديلات العامة">
+                            <option value="groq">⚡ Groq</option>
+                            <option value="gemini">🌟 Gemini</option>
+                            <option value="german-teacher">🇩🇪 معلم الألماني</option>
+                            <option value="openrouter">🔀 OpenRouter</option>
+                            <option value="mistral">🌬️ Mistral</option>
+                            <option value="sambanova">🚀 SambaNova</option>
+                            <option value="qwen">🐉 Qwen</option>
+                            <option value="onehop">🐋 DeepSeek</option>
+                            <option value="zimage">🖼️ تحليل الصور</option>
+                            <option value="local">💻 محلي</option>
+                        </optgroup>
                     </select>
                 </div>
             </div>
@@ -1898,7 +1902,7 @@
                     <span class="premium-card-title">الذكاء الاصطناعي المتقدم</span>
                     <span id="premium-ai-badge" class="premium-badge-locked">مقفول 🔒</span>
                 </div>
-                <div class="premium-card-desc">بتقدر تختار بين موديل Cerebras (أسرع) وموديل Claude Opus (أدق وأعمق في التحليل) من قايمة الموديلات فوق صندوق الكتابة، مع ردود أذكى وحد رسايل أعلى بكتير من الوضع العادي.</div>
+                <div class="premium-card-desc">بيتفتحلك قسم "موديلات Premium" فوق في قايمة الموديلات (Cerebras وClaude Opus)، وتقدر تختار منه أو من الموديلات العامة براحتك في أي رسالة، مع حد رسايل أعلى بكتير من الوضع العادي.</div>
             </div>
 
             <div class="premium-card">
@@ -2795,7 +2799,7 @@
         // مؤقتة في localStorage عشان الواجهة متتلخبطش في اللحظة الأولى قبل أول fetch).
         let myPremiumFeatures = JSON.parse(localStorage.getItem('sx_premium_features') || '[]');
         const PREMIUM_LABELS = {
-            premium_ai: { icon: '🧠', title: 'الذكاء الاصطناعي المتقدم (Cerebras / Claude Opus)', desc: 'بتقدر تختار بين موديل Cerebras وموديل Claude Opus من قايمة الموديلات، مع ردود أذكى وأعمق، وحد رسايل أعلى بكتير من الوضع العادي.' },
+            premium_ai: { icon: '🧠', title: 'الذكاء الاصطناعي المتقدم (Cerebras / Claude Opus)', desc: 'بيتفتحلك قسم "موديلات Premium" في قايمة الموديلات (Cerebras وClaude Opus)، وتقدر تختار منه أو من الموديلات العامة براحتك، مع حد رسايل أعلى بكتير من الوضع العادي.' },
             premium_mock_exams: { icon: '📝', title: 'امتحانات المحاكاة الشاملة', desc: 'امتحان محاكاة حقيقي من أكتر من فصل مع تقرير أداء مفصل وخطة مذاكرة بعده.' },
             premium_prompts: { icon: '⚡', title: 'مكتبة البرومبتس الذكية', desc: 'برومبتس جاهزة ومُختارة بعناية عشان تطلعلك أفضل نتيجة من المساعد في أي مهمة.' },
             premium_theme: { icon: '👑', title: 'تصميم Chat X الذهبي', desc: 'شكل مميز حصري بألوان ذهبية للمشتركين بس.' },
@@ -3512,18 +3516,13 @@
             const fallbackText = lastUserMsg ? lastUserMsg.content : '';
             const hasImage = !!(lastUserMsg && lastUserMsg.image && lastUserMsg.image.base64);
 
-            // premium_ai: Cerebras و Claude Opus هما "الموديلات المميزة" — أي طالب مفعّل
-            // الميزة دي بيتوجه لواحد منهم تلقائي (إلا لو الرسالة فيها صورة، وكلاهما نصي بس)،
-            // مع احترام اختيار الطالب لو حدد Claude Opus بنفسه من القايمة بدل ما نرجّعه
-            // لـ Cerebras (الافتراضي القديم) — وبعدين الشرط اللي تحت بيتكفل بتحويلها
-            // لموديل بيدعم الصور تلقائي.
+            // قسم موديلات Premium (Cerebras و Claude Opus): الطالب المشترك حر يختار أي
+            // موديل من القسمين (Premium أو العامة) وهيشتغل عليه براحته — مفيش توجيه
+            // تلقائي لموديل معيّن. اللي بيتفحص هنا هو بس إن الطالب اللي مش مشترك ميقدرش
+            // يستخدم الموديلات دي حتى لو القيمة اتحطت بأي طريقة (اختيار قديم متخزّن،
+            // تلاعب في القايمة من الـ devtools، إلخ) — نرجعها لـ "تلقائي".
             const premiumOnlyModels = ['cerebras', 'claude-opus'];
-            if (hasPremium('premium_ai') && !hasImage) {
-                if (!premiumOnlyModels.includes(model)) model = 'cerebras';
-            } else if (premiumOnlyModels.includes(model) && !hasPremium('premium_ai')) {
-                // حماية إضافية: لو اتحط 'cerebras' أو 'claude-opus' في القيمة بأي طريقة
-                // (اختيار قديم متخزّن، تلاعب في القايمة من الـ devtools، إلخ) وهو مش
-                // مستحق الميزة، نرجعها لتلقائي.
+            if (premiumOnlyModels.includes(model) && !hasPremium('premium_ai')) {
                 model = 'auto';
             }
 
@@ -7129,12 +7128,15 @@
             const themeManuallyOff = localStorage.getItem('sx_premium_theme_off') === '1';
             document.body.classList.toggle('premium-theme-on', hasPremium('premium_theme') && !themeManuallyOff);
 
-            // Cerebras و Claude Opus: موديلات Premium بس — نخفيهم من القايمة تمامًا لو الطالب
-            // مش مستحق، وأي اختيار قديم متخزّن لأي منهم (من قبل ما نقفله) بنرجعه لـ "تلقائي"
+            // قسم موديلات Premium (Cerebras و Claude Opus): بنخفي القسم كله من القايمة
+            // لو الطالب مش مستحق (اسم القسم نفسه بيختفي كمان، مش بس الموديلات جواه)،
+            // وأي اختيار قديم متخزّن لأي موديل منهم (من قبل ما نقفله) بنرجعه لـ "تلقائي"
             // بدل ما يفضل عالق عليه.
+            const premiumGroup = document.getElementById('premiumModelsGroup');
             const cerebrasOpt = document.getElementById('cerebrasModelOption');
             const claudeOpusOpt = document.getElementById('claudeOpusModelOption');
             const entitled = hasPremium('premium_ai');
+            if (premiumGroup) premiumGroup.style.display = entitled ? '' : 'none';
             if (cerebrasOpt) cerebrasOpt.style.display = entitled ? '' : 'none';
             if (claudeOpusOpt) claudeOpusOpt.style.display = entitled ? '' : 'none';
             const modelSelect = document.getElementById('modelSelect');
@@ -7205,7 +7207,7 @@
             },
             {
                 icon: '🧠', title: 'الذكاء الاصطناعي المتقدم',
-                body: 'لو مفعّلة، هتلاقي موديلين إضافيين في قايمة الموديلات فوق صندوق الكتابة: Cerebras (أسرع) وClaude Opus (أدق وأعمق في التحليل) — اختار أيهما تحب، وحد الرسايل بتاعك بيزيد من 15 لـ 60 رسالة في الدقيقة.'
+                body: 'لو مفعّلة، هيظهرلك قسم جديد اسمه "موديلات Premium" فوق قايمة الموديلات فيه Cerebras (أسرع) وClaude Opus (أدق وأعمق في التحليل) — وتقدر تختار أي موديل تحبه من القسم ده أو من الموديلات العامة براحتك في كل رسالة، وحد الرسايل بتاعك بيزيد من 15 لـ 60 رسالة في الدقيقة.'
             },
             {
                 icon: '📝', title: 'امتحانات المحاكاة',
