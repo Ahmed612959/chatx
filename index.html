@@ -459,6 +459,15 @@
         .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
         @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
 
+        /* شارة "تم إيقاف الرد" — بتظهر جوه فقاعة الرد لما الطالب يوقف البوت وهو لسه بيكتب،
+           عشان يبان بوضوح إن الرد اتقطع عمدًا مش إنه ناقص أو فيه خطأ. */
+        .msg-stopped-note {
+            display: flex; align-items: center; gap: 6px; margin-top: 10px; padding: 5px 10px;
+            background: var(--bg-2); border: 1px dashed var(--border-accent); border-radius: 8px;
+            font-size: 11px; font-weight: 600; color: var(--text-3); width: fit-content; animation: floatIn 0.25s ease;
+        }
+        .msg-stopped-note i { color: var(--warning); font-size: 10px; }
+
         .input-area {
             padding: 12px 14px; border-top: 1px solid var(--border); background: var(--bg-glass-heavy);
             backdrop-filter: blur(12px); flex-shrink: 0;
@@ -3479,7 +3488,11 @@
 
             const msgDiv = createBotMessageShell(botMsg);
             await typewriterEffect(fullText, msgDiv, botMsg, signal);
-            finalizeBotMessage(msgDiv, botMsg);
+            if (signal.aborted) {
+                finalizeStoppedBotMessage(msgDiv, botMsg);
+            } else {
+                finalizeBotMessage(msgDiv, botMsg);
+            }
             saveData();
         }
 
@@ -3507,6 +3520,31 @@
             `;
             document.getElementById('chatContainer').insertBefore(msgDiv, document.getElementById('typingIndicator'));
             return msgDiv;
+        }
+
+        // بتتنادى أول ما أول حرف فعلي يوصل من مزود الذكاء الاصطناعي (مش أول ما الاتصال
+        // ينجح) — عشان التلت نقط (typing indicator) تفضل شغالة طول فترة "التفكير" من
+        // غير أي فقاعة فاضية بتبان فجأة، وتتقفل بس اللحظة اللي الرد يبدأ يتكتب فعليًا.
+        function beginBotMessage(source, signal) {
+            document.getElementById('typingIndicator').classList.remove('active');
+            const chat = chats.find(c => c.id === currentChatId);
+            const botMsg = { role: 'bot', content: '', source, timestamp: Date.now(), id: `msg-${Date.now()}-b` };
+            chat.messages.push(botMsg);
+            const msgDiv = createBotMessageShell(botMsg);
+            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
+            return { chat, botMsg, msgDiv, queue };
+        }
+
+        // بتتنادى لما الطالب يوقف الرد وهو لسه بيتكتب: بتخلّص تنسيق النص اللي وصل لحد
+        // دلوقتي بشكل نهائي (مش هيفضل نص خام غير منسّق)، وبتضيف شارة صغيرة أنيقة توضّح
+        // إن الرد اتوقف عمدًا مش إنه ناقص لخطأ.
+        function finalizeStoppedBotMessage(msgDiv, botMsg) {
+            finalizeBotMessage(msgDiv, botMsg);
+            const bubbleDiv = msgDiv.querySelector('.msg-bubble');
+            const note = document.createElement('div');
+            note.className = 'msg-stopped-note';
+            note.innerHTML = '<i class="fas fa-circle-stop"></i> تم إيقاف الرد هنا بواسطتك';
+            bubbleDiv.appendChild(note);
         }
 
         async function typewriterEffect(fullText, msgDiv, botMsg, signal) {
@@ -4797,14 +4835,20 @@
                 const timeoutId = setTimeout(() => attemptController.abort(), PROVIDER_ATTEMPT_TIMEOUT_MS);
                 try {
                     const res = await fetch(url, { ...options, signal: attemptController.signal });
-                    if (res.ok || res.status < 500) return res; // نجح، أو فشل بشكل ثابت (4xx) — مفيش داعي نكرر
+                    clearTimeout(timeoutId);
+                    if (res.ok || res.status < 500) {
+                        // نجح الاتصال — سيبي المستمع شغال طول فترة قراءة الـ body (مش بس لحد وصول الهيدرز)
+                        // عشان زرار "إيقاف" يقدر يقفل الرد فورًا حتى لو لسه بيتكتب. هيتشال لوحده لما
+                        // outerSignal يتلغي (once: true) أو لما المحادثة الحالية تخلص طبيعي.
+                        return res;
+                    }
+                    if (outerSignal) outerSignal.removeEventListener('abort', onOuterAbort);
                     lastErr = new Error(`Server error ${res.status}`);
                 } catch (err) {
-                    if (outerSignal && outerSignal.aborted) { const abortErr = new Error('Aborted'); abortErr.name = 'AbortError'; throw abortErr; } // المستخدم ألغى بنفسه
-                    lastErr = (err.name === 'AbortError') ? new Error('Provider timeout') : err; // مهلتنا إحنا، مش إلغاء المستخدم — نكمل للمحاولة/المزود التالي
-                } finally {
                     clearTimeout(timeoutId);
                     if (outerSignal) outerSignal.removeEventListener('abort', onOuterAbort);
+                    if (outerSignal && outerSignal.aborted) { const abortErr = new Error('Aborted'); abortErr.name = 'AbortError'; throw abortErr; } // المستخدم ألغى بنفسه
+                    lastErr = (err.name === 'AbortError') ? new Error('Provider timeout') : err; // مهلتنا إحنا، مش إلغاء المستخدم — نكمل للمحاولة/المزود التالي
                 }
                 if (attempt < maxRetries) {
                     const delay = 300 * Math.pow(2, attempt); // 300ms, 600ms...
@@ -4833,54 +4877,51 @@
                 throw new Error(`Groq API Error (${response.status}): ${detail || 'no detail'}`);
             }
 
-            document.getElementById('typingIndicator').classList.remove('active');
-
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            
-            const chat = chats.find(c => c.id === currentChatId);
-            const botMsg = { role: 'bot', content: '', source: 'groq', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
-            chat.messages.push(botMsg);
-            
-            const msgDiv = createBotMessageShell(botMsg);
-            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
-            let hasContent = false;
-            
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop();
-                
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    const payload = line.slice(6).trim();
-                    if (payload === '[DONE]') continue;
-                    try {
-                        const data = JSON.parse(payload);
-                        const content = data.choices[0]?.delta?.content || '';
-                        if (content) {
-                            hasContent = true;
-                            queue.push(content);
-                        }
-                    } catch (e) {}
+            let started = null;
+
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const payload = line.slice(6).trim();
+                        if (payload === '[DONE]') continue;
+                        try {
+                            const data = JSON.parse(payload);
+                            const content = data.choices[0]?.delta?.content || '';
+                            if (content) {
+                                if (!started) started = beginBotMessage('groq', signal);
+                                started.queue.push(content);
+                            }
+                        } catch (e) {}
+                    }
                 }
+            } catch (err) {
+                if (err.name === 'AbortError' && started) {
+                    await started.queue.flush();
+                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
+                    saveData();
+                }
+                throw err;
             }
 
-            const fullText = await queue.flush();
-            
-            if (!hasContent) {
+            if (!started) {
                 // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
-                msgDiv.remove();
-                chat.messages.pop();
-                await respondLocally(messages[messages.length - 1].content, chat, signal);
+                await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            finalizeBotMessage(msgDiv, botMsg);
+            await started.queue.flush();
+            finalizeBotMessage(started.msgDiv, started.botMsg);
             saveData();
         }
 
@@ -4906,54 +4947,51 @@
                 throw new Error(`OpenRouter API Error (${response.status}): ${detail || 'no detail'}`);
             }
 
-            document.getElementById('typingIndicator').classList.remove('active');
-
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
+            let started = null;
 
-            const chat = chats.find(c => c.id === currentChatId);
-            const botMsg = { role: 'bot', content: '', source: 'openrouter', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
-            chat.messages.push(botMsg);
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-            const msgDiv = createBotMessageShell(botMsg);
-            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
-            let hasContent = false;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop();
-
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    const payload = line.slice(6).trim();
-                    if (payload === '[DONE]') continue;
-                    try {
-                        const data = JSON.parse(payload);
-                        const content = data.choices[0]?.delta?.content || '';
-                        if (content) {
-                            hasContent = true;
-                            queue.push(content);
-                        }
-                    } catch (e) {}
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const payload = line.slice(6).trim();
+                        if (payload === '[DONE]') continue;
+                        try {
+                            const data = JSON.parse(payload);
+                            const content = data.choices[0]?.delta?.content || '';
+                            if (content) {
+                                if (!started) started = beginBotMessage('openrouter', signal);
+                                started.queue.push(content);
+                            }
+                        } catch (e) {}
+                    }
                 }
+            } catch (err) {
+                if (err.name === 'AbortError' && started) {
+                    await started.queue.flush();
+                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
+                    saveData();
+                }
+                throw err;
             }
 
-            const fullText = await queue.flush();
-
-            if (!hasContent) {
+            if (!started) {
                 // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
-                msgDiv.remove();
-                chat.messages.pop();
-                await respondLocally(messages[messages.length - 1].content, chat, signal);
+                await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            finalizeBotMessage(msgDiv, botMsg);
+            await started.queue.flush();
+            finalizeBotMessage(started.msgDiv, started.botMsg);
             saveData();
         }
 
@@ -4976,54 +5014,51 @@
                 throw new Error(`Cerebras API Error (${response.status}): ${detail || 'no detail'}`);
             }
 
-            document.getElementById('typingIndicator').classList.remove('active');
-
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
+            let started = null;
 
-            const chat = chats.find(c => c.id === currentChatId);
-            const botMsg = { role: 'bot', content: '', source: 'cerebras', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
-            chat.messages.push(botMsg);
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-            const msgDiv = createBotMessageShell(botMsg);
-            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
-            let hasContent = false;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop();
-
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    const payload = line.slice(6).trim();
-                    if (payload === '[DONE]') continue;
-                    try {
-                        const data = JSON.parse(payload);
-                        const content = data.choices[0]?.delta?.content || '';
-                        if (content) {
-                            hasContent = true;
-                            queue.push(content);
-                        }
-                    } catch (e) {}
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const payload = line.slice(6).trim();
+                        if (payload === '[DONE]') continue;
+                        try {
+                            const data = JSON.parse(payload);
+                            const content = data.choices[0]?.delta?.content || '';
+                            if (content) {
+                                if (!started) started = beginBotMessage('cerebras', signal);
+                                started.queue.push(content);
+                            }
+                        } catch (e) {}
+                    }
                 }
+            } catch (err) {
+                if (err.name === 'AbortError' && started) {
+                    await started.queue.flush();
+                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
+                    saveData();
+                }
+                throw err;
             }
 
-            const fullText = await queue.flush();
-
-            if (!hasContent) {
+            if (!started) {
                 // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
-                msgDiv.remove();
-                chat.messages.pop();
-                await respondLocally(messages[messages.length - 1].content, chat, signal);
+                await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            finalizeBotMessage(msgDiv, botMsg);
+            await started.queue.flush();
+            finalizeBotMessage(started.msgDiv, started.botMsg);
             saveData();
         }
 
@@ -5046,54 +5081,51 @@
                 throw new Error(`Mistral API Error (${response.status}): ${detail || 'no detail'}`);
             }
 
-            document.getElementById('typingIndicator').classList.remove('active');
-
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
+            let started = null;
 
-            const chat = chats.find(c => c.id === currentChatId);
-            const botMsg = { role: 'bot', content: '', source: 'mistral', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
-            chat.messages.push(botMsg);
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-            const msgDiv = createBotMessageShell(botMsg);
-            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
-            let hasContent = false;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop();
-
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    const payload = line.slice(6).trim();
-                    if (payload === '[DONE]') continue;
-                    try {
-                        const data = JSON.parse(payload);
-                        const content = data.choices[0]?.delta?.content || '';
-                        if (content) {
-                            hasContent = true;
-                            queue.push(content);
-                        }
-                    } catch (e) {}
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const payload = line.slice(6).trim();
+                        if (payload === '[DONE]') continue;
+                        try {
+                            const data = JSON.parse(payload);
+                            const content = data.choices[0]?.delta?.content || '';
+                            if (content) {
+                                if (!started) started = beginBotMessage('mistral', signal);
+                                started.queue.push(content);
+                            }
+                        } catch (e) {}
+                    }
                 }
+            } catch (err) {
+                if (err.name === 'AbortError' && started) {
+                    await started.queue.flush();
+                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
+                    saveData();
+                }
+                throw err;
             }
 
-            const fullText = await queue.flush();
-
-            if (!hasContent) {
+            if (!started) {
                 // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
-                msgDiv.remove();
-                chat.messages.pop();
-                await respondLocally(messages[messages.length - 1].content, chat, signal);
+                await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            finalizeBotMessage(msgDiv, botMsg);
+            await started.queue.flush();
+            finalizeBotMessage(started.msgDiv, started.botMsg);
             saveData();
         }
 
@@ -5116,53 +5148,51 @@
                 throw new Error(`SambaNova API Error (${response.status}): ${detail || 'no detail'}`);
             }
 
-            document.getElementById('typingIndicator').classList.remove('active');
-
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
+            let started = null;
 
-            const chat = chats.find(c => c.id === currentChatId);
-            const botMsg = { role: 'bot', content: '', source: 'sambanova', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
-            chat.messages.push(botMsg);
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-            const msgDiv = createBotMessageShell(botMsg);
-            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
-            let hasContent = false;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop();
-
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    const payload = line.slice(6).trim();
-                    if (payload === '[DONE]') continue;
-                    try {
-                        const data = JSON.parse(payload);
-                        const content = data.choices[0]?.delta?.content || '';
-                        if (content) {
-                            hasContent = true;
-                            queue.push(content);
-                        }
-                    } catch (e) {}
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const payload = line.slice(6).trim();
+                        if (payload === '[DONE]') continue;
+                        try {
+                            const data = JSON.parse(payload);
+                            const content = data.choices[0]?.delta?.content || '';
+                            if (content) {
+                                if (!started) started = beginBotMessage('sambanova', signal);
+                                started.queue.push(content);
+                            }
+                        } catch (e) {}
+                    }
                 }
+            } catch (err) {
+                if (err.name === 'AbortError' && started) {
+                    await started.queue.flush();
+                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
+                    saveData();
+                }
+                throw err;
             }
 
-            const fullText = await queue.flush();
-
-            if (!hasContent) {
-                msgDiv.remove();
-                chat.messages.pop();
-                await respondLocally(messages[messages.length - 1].content, chat, signal);
+            if (!started) {
+                // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
+                await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            finalizeBotMessage(msgDiv, botMsg);
+            await started.queue.flush();
+            finalizeBotMessage(started.msgDiv, started.botMsg);
             saveData();
         }
 
@@ -5185,54 +5215,51 @@
                 throw new Error(`Qwen API Error (${response.status}): ${detail || 'no detail'}`);
             }
 
-            document.getElementById('typingIndicator').classList.remove('active');
-
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
+            let started = null;
 
-            const chat = chats.find(c => c.id === currentChatId);
-            const botMsg = { role: 'bot', content: '', source: 'qwen', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
-            chat.messages.push(botMsg);
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-            const msgDiv = createBotMessageShell(botMsg);
-            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
-            let hasContent = false;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop();
-
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    const payload = line.slice(6).trim();
-                    if (payload === '[DONE]') continue;
-                    try {
-                        const data = JSON.parse(payload);
-                        const content = data.choices[0]?.delta?.content || '';
-                        if (content) {
-                            hasContent = true;
-                            queue.push(content);
-                        }
-                    } catch (e) {}
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const payload = line.slice(6).trim();
+                        if (payload === '[DONE]') continue;
+                        try {
+                            const data = JSON.parse(payload);
+                            const content = data.choices[0]?.delta?.content || '';
+                            if (content) {
+                                if (!started) started = beginBotMessage('qwen', signal);
+                                started.queue.push(content);
+                            }
+                        } catch (e) {}
+                    }
                 }
+            } catch (err) {
+                if (err.name === 'AbortError' && started) {
+                    await started.queue.flush();
+                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
+                    saveData();
+                }
+                throw err;
             }
 
-            const fullText = await queue.flush();
-
-            if (!hasContent) {
+            if (!started) {
                 // Nothing came back from the API despite a 200 response — fall back locally instead of leaving an empty bubble
-                msgDiv.remove();
-                chat.messages.pop();
-                await respondLocally(messages[messages.length - 1].content, chat, signal);
+                await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            finalizeBotMessage(msgDiv, botMsg);
+            await started.queue.flush();
+            finalizeBotMessage(started.msgDiv, started.botMsg);
             saveData();
         }
 
@@ -5279,50 +5306,48 @@
                 throw new Error(`Gemini API Error (${response.status}): ${detail || 'no detail'}`);
             }
 
-            document.getElementById('typingIndicator').classList.remove('active');
-
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
+            let started = null;
 
-            const chat = chats.find(c => c.id === currentChatId);
-            const botMsg = { role: 'bot', content: '', source: 'gemini', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
-            chat.messages.push(botMsg);
-            const msgDiv = createBotMessageShell(botMsg);
-            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
-            let hasContent = false;
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // keep any partial line for the next chunk
 
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop(); // keep any partial line for the next chunk
-
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    try {
-                        const data = JSON.parse(line.slice(6));
-                        const piece = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                        if (piece) {
-                            hasContent = true;
-                            queue.push(piece);
-                        }
-                    } catch (e) {}
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            const piece = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                            if (piece) {
+                                if (!started) started = beginBotMessage('gemini', signal);
+                                started.queue.push(piece);
+                            }
+                        } catch (e) {}
+                    }
                 }
+            } catch (err) {
+                if (err.name === 'AbortError' && started) {
+                    await started.queue.flush();
+                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
+                    saveData();
+                }
+                throw err;
             }
 
-            const fullText = await queue.flush();
-
-            if (!hasContent) {
-                msgDiv.remove();
-                chat.messages.pop();
-                await respondLocally(lastUserMsg.content, chat, signal);
+            if (!started) {
+                await respondLocally(lastUserMsg.content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            finalizeBotMessage(msgDiv, botMsg);
+            await started.queue.flush();
+            finalizeBotMessage(started.msgDiv, started.botMsg);
             saveData();
         }
 
@@ -5364,52 +5389,50 @@
                 throw new Error(`Z-Image API Error (${response.status}): ${detail || 'no detail'}`);
             }
 
-            document.getElementById('typingIndicator').classList.remove('active');
-
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
+            let started = null;
 
-            const chat = chats.find(c => c.id === currentChatId);
-            const botMsg = { role: 'bot', content: '', source: 'zimage', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
-            chat.messages.push(botMsg);
-            const msgDiv = createBotMessageShell(botMsg);
-            const queue = createTypewriterQueue(msgDiv, botMsg, signal);
-            let hasContent = false;
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
 
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop();
-
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    const payload = line.slice(6).trim();
-                    if (payload === '[DONE]') continue;
-                    try {
-                        const data = JSON.parse(payload);
-                        const content = data.choices[0]?.delta?.content || '';
-                        if (content) {
-                            hasContent = true;
-                            queue.push(content);
-                        }
-                    } catch (e) {}
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const payload = line.slice(6).trim();
+                        if (payload === '[DONE]') continue;
+                        try {
+                            const data = JSON.parse(payload);
+                            const content = data.choices[0]?.delta?.content || '';
+                            if (content) {
+                                if (!started) started = beginBotMessage('zimage', signal);
+                                started.queue.push(content);
+                            }
+                        } catch (e) {}
+                    }
                 }
+            } catch (err) {
+                if (err.name === 'AbortError' && started) {
+                    await started.queue.flush();
+                    finalizeStoppedBotMessage(started.msgDiv, started.botMsg);
+                    saveData();
+                }
+                throw err;
             }
 
-            const fullText = await queue.flush();
-
-            if (!hasContent) {
-                msgDiv.remove();
-                chat.messages.pop();
-                await respondLocally(lastUserMsg.content, chat, signal);
+            if (!started) {
+                await respondLocally(lastUserMsg.content, chats.find(c => c.id === currentChatId), signal);
                 return;
             }
 
-            finalizeBotMessage(msgDiv, botMsg);
+            await started.queue.flush();
+            finalizeBotMessage(started.msgDiv, started.botMsg);
             saveData();
         }
 
