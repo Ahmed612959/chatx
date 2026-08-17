@@ -1327,6 +1327,7 @@
                         <option value="german-teacher">🇩🇪 معلم الألماني</option>
                         <option value="openrouter">🔀 OpenRouter</option>
                         <option value="cerebras" id="cerebrasModelOption">🧠 Cerebras</option>
+                        <option value="claude-opus" id="claudeOpusModelOption">✨ Claude Opus</option>
                         <option value="mistral">🌬️ Mistral</option>
                         <option value="sambanova">🚀 SambaNova</option>
                         <option value="qwen">🐉 Qwen</option>
@@ -1897,7 +1898,7 @@
                     <span class="premium-card-title">الذكاء الاصطناعي المتقدم</span>
                     <span id="premium-ai-badge" class="premium-badge-locked">مقفول 🔒</span>
                 </div>
-                <div class="premium-card-desc">بيوجهك تلقائي لموديل Cerebras (أسرع وأقوى)، مع ردود أذكى وأعمق، وحد رسايل أعلى بكتير من الوضع العادي — شغالة تلقائي في كل شات، مفيش حاجة تعملها.</div>
+                <div class="premium-card-desc">بتقدر تختار بين موديل Cerebras (أسرع) وموديل Claude Opus (أدق وأعمق في التحليل) من قايمة الموديلات فوق صندوق الكتابة، مع ردود أذكى وحد رسايل أعلى بكتير من الوضع العادي.</div>
             </div>
 
             <div class="premium-card">
@@ -2794,7 +2795,7 @@
         // مؤقتة في localStorage عشان الواجهة متتلخبطش في اللحظة الأولى قبل أول fetch).
         let myPremiumFeatures = JSON.parse(localStorage.getItem('sx_premium_features') || '[]');
         const PREMIUM_LABELS = {
-            premium_ai: { icon: '🧠', title: 'الذكاء الاصطناعي المتقدم (Cerebras)', desc: 'بيوجهك تلقائي لموديل Cerebras مع ردود أذكى وأعمق، وحد رسايل أعلى بكتير من الوضع العادي.' },
+            premium_ai: { icon: '🧠', title: 'الذكاء الاصطناعي المتقدم (Cerebras / Claude Opus)', desc: 'بتقدر تختار بين موديل Cerebras وموديل Claude Opus من قايمة الموديلات، مع ردود أذكى وأعمق، وحد رسايل أعلى بكتير من الوضع العادي.' },
             premium_mock_exams: { icon: '📝', title: 'امتحانات المحاكاة الشاملة', desc: 'امتحان محاكاة حقيقي من أكتر من فصل مع تقرير أداء مفصل وخطة مذاكرة بعده.' },
             premium_prompts: { icon: '⚡', title: 'مكتبة البرومبتس الذكية', desc: 'برومبتس جاهزة ومُختارة بعناية عشان تطلعلك أفضل نتيجة من المساعد في أي مهمة.' },
             premium_theme: { icon: '👑', title: 'تصميم Chat X الذهبي', desc: 'شكل مميز حصري بألوان ذهبية للمشتركين بس.' },
@@ -3511,14 +3512,18 @@
             const fallbackText = lastUserMsg ? lastUserMsg.content : '';
             const hasImage = !!(lastUserMsg && lastUserMsg.image && lastUserMsg.image.base64);
 
-            // premium_ai: Cerebras هو "الموديل المميز" — أي طالب مفعّل الميزة دي بيتوجه له
-            // مباشرة (بدل أي اختيار تاني في القايمة)، إلا لو الرسالة فيها صورة (Cerebras
-            // نصي بس)، وبعدين الشرط اللي تحت بيتكفل بتحويلها لموديل بيدعم الصور تلقائي.
+            // premium_ai: Cerebras و Claude Opus هما "الموديلات المميزة" — أي طالب مفعّل
+            // الميزة دي بيتوجه لواحد منهم تلقائي (إلا لو الرسالة فيها صورة، وكلاهما نصي بس)،
+            // مع احترام اختيار الطالب لو حدد Claude Opus بنفسه من القايمة بدل ما نرجّعه
+            // لـ Cerebras (الافتراضي القديم) — وبعدين الشرط اللي تحت بيتكفل بتحويلها
+            // لموديل بيدعم الصور تلقائي.
+            const premiumOnlyModels = ['cerebras', 'claude-opus'];
             if (hasPremium('premium_ai') && !hasImage) {
-                model = 'cerebras';
-            } else if (model === 'cerebras' && !hasPremium('premium_ai')) {
-                // حماية إضافية: لو اتحط 'cerebras' في القيمة بأي طريقة (اختيار قديم متخزّن،
-                // تلاعب في القايمة من الـ devtools، إلخ) وهو مش مستحق الميزة، نرجعه لتلقائي.
+                if (!premiumOnlyModels.includes(model)) model = 'cerebras';
+            } else if (premiumOnlyModels.includes(model) && !hasPremium('premium_ai')) {
+                // حماية إضافية: لو اتحط 'cerebras' أو 'claude-opus' في القيمة بأي طريقة
+                // (اختيار قديم متخزّن، تلاعب في القايمة من الـ devtools، إلخ) وهو مش
+                // مستحق الميزة، نرجعها لتلقائي.
                 model = 'auto';
             }
 
@@ -3548,6 +3553,9 @@
                 } else if (model === 'cerebras') {
                     source = 'cerebras';
                     await streamCerebras(chat.messages, abortController.signal);
+                } else if (model === 'claude-opus') {
+                    source = 'claude-opus';
+                    await streamClaudeOpus(chat.messages, abortController.signal);
                 } else if (model === 'mistral') {
                     source = 'mistral';
                     await streamMistral(chat.messages, abortController.signal);
@@ -3591,7 +3599,7 @@
                                 await streamOpenRouter(chat.messages, abortController.signal);
                             } catch (openrouterError) {
                                 if (openrouterError.name === 'AbortError') throw openrouterError;
-                                // Cerebras اتشال من سلسلة الـ auto العادية عمدًا — موديل Premium بس
+                                // Cerebras و Claude Opus اتشالوا من سلسلة الـ auto العادية عمدًا — موديلات Premium بس
                                 // (مشتركين premium_ai بياخدوه مباشرة فوق قبل ما نوصل هنا أصلاً).
                                 try {
                                     source = 'mistral';
@@ -4737,7 +4745,7 @@
             const sourceSpan = msgDiv.querySelector('.msg-source-icon');
             const actionsDiv = msgDiv.querySelector('.msg-actions');
             timeSpan.textContent = new Date(botMsg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
-            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'mistral' ? '🌬️' : botMsg.source === 'sambanova' ? '🚀' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'onehop' ? '🐋' : botMsg.source === 'zimage' ? '🖼️' : '💻';
+            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'claude-opus' ? '✨' : botMsg.source === 'mistral' ? '🌬️' : botMsg.source === 'sambanova' ? '🚀' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'onehop' ? '🐋' : botMsg.source === 'zimage' ? '🖼️' : '💻';
             // This message was just pushed as the newest one, so it's always eligible for regenerate.
             buildMsgActionButtons(botMsg, actionsDiv, true);
             syncRegenerateButtons(chats.find(c => c.id === currentChatId));
@@ -4789,7 +4797,7 @@
             if (msg.role === 'bot') {
                 const sourceSpan = document.createElement('span');
                 sourceSpan.style.cssText = 'margin-right:6px;opacity:0.6';
-                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'mistral' ? '🌬️' : msg.source === 'sambanova' ? '🚀' : msg.source === 'qwen' ? '🐉' : msg.source === 'onehop' ? '🐋' : msg.source === 'zimage' ? '🖼️' : '💻';
+                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'claude-opus' ? '✨' : msg.source === 'mistral' ? '🌬️' : msg.source === 'sambanova' ? '🚀' : msg.source === 'qwen' ? '🐉' : msg.source === 'onehop' ? '🐋' : msg.source === 'zimage' ? '🖼️' : '💻';
                 meta.appendChild(sourceSpan);
             }
 
@@ -5058,6 +5066,68 @@
             }
 
             renderFinishedBotMessage(fullText, 'cerebras', false);
+        }
+
+        // موديل Claude Opus عن طريق OneHop — Premium بس (زي Cerebras بالظبط)، بيعدي على
+        // باك إند Chat X نفسه على endpoint مخصص (/api/claude-opus) مش /api/onehop العادي،
+        // عشان الموديل يبقى مثبّت من السيرفر ومحدش يقدر يغيّره لموديل تاني أغلى أو مش
+        // مسموح بيه حتى لو لعب في الطلب من الـ devtools.
+        async function streamClaudeOpus(messages, signal) {
+            const response = await fetchWithRetry(`${settings.backendUrl}/api/claude-opus`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [{role: "system", content: getSystemPrompt()}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
+                    stream: true
+                }),
+                signal
+            });
+
+            if (!response.ok) {
+                let detail = '';
+                try { detail = (await response.text()).slice(0, 200); } catch (e) {}
+                console.error('Claude Opus API error', response.status, detail);
+                throw new Error(`Claude Opus API Error (${response.status}): ${detail || 'no detail'}`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let fullText = '';
+
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const payload = line.slice(6).trim();
+                        if (payload === '[DONE]') continue;
+                        try {
+                            const data = JSON.parse(payload);
+                            const content = data.choices[0]?.delta?.content || '';
+                            if (content) fullText += content;
+                        } catch (e) {}
+                    }
+                }
+            } catch (err) {
+                if (err.name === 'AbortError' && fullText) {
+                    renderFinishedBotMessage(fullText, 'claude-opus', true);
+                }
+                throw err;
+            }
+
+            if (!fullText) {
+                await respondLocally(messages[messages.length - 1].content, chats.find(c => c.id === currentChatId), signal);
+                return;
+            }
+
+            renderFinishedBotMessage(fullText, 'claude-opus', false);
         }
 
         async function streamMistral(messages, signal) {
@@ -7059,13 +7129,16 @@
             const themeManuallyOff = localStorage.getItem('sx_premium_theme_off') === '1';
             document.body.classList.toggle('premium-theme-on', hasPremium('premium_theme') && !themeManuallyOff);
 
-            // Cerebras: موديل Premium بس — نخفيه من القايمة تمامًا لو الطالب مش مستحقه، وأي
-            // اختيار قديم متخزّن ليه (من قبل ما نقفله) بنرجعه لـ "تلقائي" بدل ما يفضل عالق عليه.
+            // Cerebras و Claude Opus: موديلات Premium بس — نخفيهم من القايمة تمامًا لو الطالب
+            // مش مستحق، وأي اختيار قديم متخزّن لأي منهم (من قبل ما نقفله) بنرجعه لـ "تلقائي"
+            // بدل ما يفضل عالق عليه.
             const cerebrasOpt = document.getElementById('cerebrasModelOption');
+            const claudeOpusOpt = document.getElementById('claudeOpusModelOption');
             const entitled = hasPremium('premium_ai');
             if (cerebrasOpt) cerebrasOpt.style.display = entitled ? '' : 'none';
+            if (claudeOpusOpt) claudeOpusOpt.style.display = entitled ? '' : 'none';
             const modelSelect = document.getElementById('modelSelect');
-            if (modelSelect && modelSelect.value === 'cerebras' && !entitled) {
+            if (modelSelect && (modelSelect.value === 'cerebras' || modelSelect.value === 'claude-opus') && !entitled) {
                 modelSelect.value = 'auto';
                 saveModelChoice();
             }
@@ -7132,7 +7205,7 @@
             },
             {
                 icon: '🧠', title: 'الذكاء الاصطناعي المتقدم',
-                body: 'مفيش حاجة تعملها — لو مفعّلة، أي رسالة تبعتها بتتوجه تلقائيًا لموديل Cerebras (أسرع وأدق)، وحد الرسايل بتاعك بيزيد من 15 لـ 60 رسالة في الدقيقة.'
+                body: 'لو مفعّلة، هتلاقي موديلين إضافيين في قايمة الموديلات فوق صندوق الكتابة: Cerebras (أسرع) وClaude Opus (أدق وأعمق في التحليل) — اختار أيهما تحب، وحد الرسايل بتاعك بيزيد من 15 لـ 60 رسالة في الدقيقة.'
             },
             {
                 icon: '📝', title: 'امتحانات المحاكاة',
