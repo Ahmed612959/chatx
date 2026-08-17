@@ -1,16 +1,8 @@
 // ====================== DeepSeek عن طريق OneHop ======================
-// حط الكود ده في نفس ملف باك إند Chat X اللي فيه /api/mistral, /api/qwen, إلخ
-// (مش في server-index.js بتاع School X — ده مشروع تاني).
+// حط الكود ده في نفس ملف باك إند Chat X اللي فيه /api/mistral, /api/qwen, إلخ.
 //
-// ⚠️ مهم جدًا: حط الـ API key بتاعك كـ Environment Variable على السيرفر
-// (اسمه مثلاً ONEHOP_API_KEY)، وميتحطش أبدًا مكتوب مباشرة في الكود ولا في
-// أي ملف فرونت إند — لو اتحط في الفرونت إند أي حد بيفتح "عرض المصدر" هيقدر
-// ياخده ويستخدمه على حسابك.
-//
-// إعداد المتغير:
-//   - لو بتستضيف على Vercel: Project Settings → Environment Variables → أضف
-//     ONEHOP_API_KEY بالقيمة اللي عندك، وبعدين اعمل Redeploy.
-//   - لو محلي: حطه في ملف .env (وتأكد إن .env مضاف في .gitignore).
+// ⚠️ الـ API key بتاعك لازم يكون Environment Variable على السيرفر
+// (اسمه ONEHOP_API_KEY) — ميتحطش أبدًا مكتوب في الكود ولا في أي ملف فرونت إند.
 app.post('/api/onehop', async (req, res) => {
     try {
         const apiKey = process.env.ONEHOP_API_KEY;
@@ -42,13 +34,32 @@ app.post('/api/onehop', async (req, res) => {
             return res.status(upstream.status).send(errText || 'OneHop API error');
         }
 
-        // بنمرر الـ streaming response زي ما هو (نفس شكل باقي الـ providers) —
-        // الفرونت إند بيتوقع سطور "data: {...}" بصيغة OpenAI streaming القياسية،
-        // وOneHop بيرجعها بنفس الشكل لأنه OpenAI-compatible.
+        // ⚠️ upstream.body من fetch المدمج في Node.js (Node 18+/Vercel) هو
+        // Web ReadableStream — مافيهوش .pipe() (ده بتاع Node streams بس)، وده
+        // كان بيرمي خطأ فورًا وبيترجم لـ 500. بنقرا الـ stream يدويًا بدل كده
+        // (شغالة مع أي نسخة fetch، Node أو node-fetch v3).
         res.setHeader('Content-Type', 'text/event-stream');
-        upstream.body.pipe(res);
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const reader = upstream.body.getReader();
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                res.write(Buffer.from(value));
+            }
+        } catch (streamErr) {
+            console.error('❌ خطأ في تدفق رد OneHop:', streamErr);
+        } finally {
+            res.end();
+        }
     } catch (error) {
         console.error('❌ OneHop proxy error:', error);
-        res.status(500).json({ error: 'خطأ في الاتصال بـ OneHop: ' + error.message });
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'خطأ في الاتصال بـ OneHop: ' + error.message });
+        } else {
+            res.end();
+        }
     }
 });
