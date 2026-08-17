@@ -4850,8 +4850,12 @@
         // نجاح ولا فشل صريح، الشبكة واقفة عنده)، كنا بننتظره من غير حد أقصى لحد ما
         // المتصفح نفسه يقفل الاتصال بعد وقت طويل جدًا. دلوقتي بعد 12 ثانية بدون رد
         // نعتبرها فشلت وننزل فورًا للمزود التالي، بدل ما الطالب يحس إن البوت "واقف".
+        // ⚠️ 12 ثانية دي افتراضي مناسب لمعظم المزودين (Groq/Cerebras/DeepSeek/...
+        // كلهم سريعين في أول توكن). Claude Opus موديل "تفكير عميق" وبطبيعته أبطأ في
+        // إرسال أول توكن (time-to-first-byte)، فبنمرّرله timeoutMs أعلى صراحة عند
+        // النداء عليه (شوف streamClaudeOpus) بدل ما نغيّر الافتراضي العام لكل المزودين.
         const PROVIDER_ATTEMPT_TIMEOUT_MS = 12000;
-        async function fetchWithRetry(url, options, maxRetries = 1) {
+        async function fetchWithRetry(url, options, maxRetries = 1, timeoutMs = PROVIDER_ATTEMPT_TIMEOUT_MS) {
             let lastErr;
             for (let attempt = 0; attempt <= maxRetries; attempt++) {
                 const attemptController = new AbortController();
@@ -4861,7 +4865,7 @@
                     if (outerSignal.aborted) attemptController.abort();
                     else outerSignal.addEventListener('abort', onOuterAbort, { once: true });
                 }
-                const timeoutId = setTimeout(() => attemptController.abort(), PROVIDER_ATTEMPT_TIMEOUT_MS);
+                const timeoutId = setTimeout(() => attemptController.abort(), timeoutMs);
                 try {
                     const res = await fetch(url, { ...options, signal: attemptController.signal });
                     clearTimeout(timeoutId);
@@ -5071,6 +5075,11 @@
         // باك إند Chat X نفسه على endpoint مخصص (/api/claude-opus) مش /api/onehop العادي،
         // عشان الموديل يبقى مثبّت من السيرفر ومحدش يقدر يغيّره لموديل تاني أغلى أو مش
         // مسموح بيه حتى لو لعب في الطلب من الـ devtools.
+        // مهلة أطول خصيصًا لـ Claude Opus (35 ثانية بدل 12) — موديل "تفكير عميق"
+        // وأول توكن بيتأخر عليه طبيعي أكتر من الموديلات التانية، فمهلة الـ12 ثانية
+        // العادية كانت بتقفل الطلب وهو لسه شغال عند OneHop/Anthropic من غير أي خطأ
+        // حقيقي (Provider timeout ظاهري بس، مش عطل فعلي).
+        const CLAUDE_OPUS_TIMEOUT_MS = 35000;
         async function streamClaudeOpus(messages, signal) {
             const response = await fetchWithRetry(`${settings.backendUrl}/api/claude-opus`, {
                 method: 'POST',
@@ -5080,7 +5089,7 @@
                     stream: true
                 }),
                 signal
-            });
+            }, 1, CLAUDE_OPUS_TIMEOUT_MS);
 
             if (!response.ok) {
                 let detail = '';
