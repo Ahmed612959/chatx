@@ -303,6 +303,46 @@
             0% { left: -60%; }
             55%, 100% { left: 130%; }
         }
+
+        /* ====================== شريط تقدم الرفع/التحميل (أنيميشن) ====================== */
+        .upload-progress-wrap {
+            margin-top: 10px; height: 9px; border-radius: 999px; background: var(--bg-2);
+            overflow: hidden; display: none; position: relative;
+        }
+        .upload-progress-bar {
+            height: 100%; width: 0%; border-radius: 999px; background: var(--grad-bold);
+            transition: width 0.25s ease; position: relative; overflow: hidden;
+        }
+        .upload-progress-bar::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+            animation: progressShimmer 1.1s linear infinite;
+        }
+        @keyframes progressShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .upload-progress-text { font-size: 11.5px; color: var(--text-2); text-align: center; margin-top: 5px; font-weight: 600; }
+
+        /* أيقونة سبينر صغيرة تتحط جوه زرار "تحميل" وقت التحميل الفعلي */
+        .btn-spinner {
+            display: inline-block; width: 13px; height: 13px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff;
+            animation: btnSpin 0.7s linear infinite; vertical-align: middle; margin-left: 6px;
+        }
+        @keyframes btnSpin { to { transform: rotate(360deg); } }
+
+        /* ====================== مودال معاينة الملفات ====================== */
+        #filePreviewModal .modal { max-width: 900px; width: 92vw; height: 82vh; display: flex; flex-direction: column; padding: 0; }
+        #filePreviewModal .modal-header { padding: 14px 16px; }
+        #filePreviewBody {
+            flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center;
+            background: var(--bg-1); padding: 10px;
+        }
+        #filePreviewBody img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+        #filePreviewBody iframe { width: 100%; height: 100%; border: none; border-radius: 8px; background: #fff; }
+        #filePreviewBody pre { white-space: pre-wrap; word-break: break-word; width: 100%; height: 100%; overflow: auto; font-size: 13px; line-height: 1.9; padding: 6px; }
+
         .bot-text h2 { 
             font-family: 'FodaKufi', 'Righteous', var(--font);
             font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 6px;
@@ -1663,6 +1703,10 @@
                     </select>
                 </div>
                 <button class="btn-calc" id="summaryUploadBtn" onclick="uploadSharedSummary()"><i class="fas fa-upload"></i> رفع الملف</button>
+                <div class="upload-progress-wrap" id="summaryUploadProgressWrap">
+                    <div class="upload-progress-bar" id="summaryUploadProgressBar"></div>
+                </div>
+                <div class="upload-progress-text" id="summaryUploadProgressText"></div>
                 <div class="calc-result" id="summaryUploadStatus"></div>
             </div>
         </div>
@@ -1685,6 +1729,17 @@
                 <button class="btn-calc" style="flex:none;width:auto;padding:0 14px;" onclick="closeModal('sharedLibraryModal'); openModal('uploadSummaryModal');"><i class="fas fa-plus"></i> شارك ملخص</button>
             </div>
             <div id="sharedLibraryList" style="flex:1;overflow-y:auto;padding:12px 16px;"></div>
+        </div>
+    </div>
+
+    <!-- معاينة الملفات (كل الأنواع: صور، PDF، Word/Excel، نصوص) -->
+    <div class="modal-overlay" id="filePreviewModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="filePreviewTitle"><i class="fas fa-eye"></i> معاينة الملف</div>
+                <button class="close-modal" aria-label="إغلاق المعاينة" onclick="closeModal('filePreviewModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="filePreviewBody"></div>
         </div>
     </div>
 
@@ -5877,6 +5932,7 @@
                 const gradeLabels = { first: 'الأول الثانوي', second: 'الثاني الثانوي', third: 'الثالث الثانوي' };
                 listEl.innerHTML = '';
                 files.forEach(f => {
+                    registerPreviewFile(f._id, f.url, f.name);
                     const item = document.createElement('div');
                     item.id = `reviewItem_${f._id}`;
                     item.style.cssText = 'padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-glass);';
@@ -5886,7 +5942,7 @@
                             ${escapeHtml(f.subject)} · ${gradeLabels[f.grade] || f.grade} · رفعه ${escapeHtml(f.uploadedByName || f.uploadedBy)}
                         </div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
-                            <a href="${f.url}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--accent);text-decoration:underline;"><i class="fas fa-eye"></i> معاينة الملف</a>
+                            <button onclick="openFilePreview('${f._id}')" style="font-size:11.5px;color:var(--accent);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0;"><i class="fas fa-eye"></i> معاينة الملف</button>
                         </div>
                         <div style="display:flex;gap:6px;">
                             <button class="btn-calc" style="flex:1;background:var(--success);" onclick="reviewSharedSummary('${f._id}', 'approve')"><i class="fas fa-check"></i> قبول</button>
@@ -6089,6 +6145,48 @@
         }
 
         // ====================== المكتبة المشتركة (ملخصات الطلاب) ======================
+        const filePreviewRegistry = {};
+        function registerPreviewFile(id, url, name) { filePreviewRegistry[id] = { url, name }; }
+        function openFilePreview(id) {
+            const f = filePreviewRegistry[id];
+            if (!f) return;
+            previewFile(f.url, f.name);
+        }
+
+        // معاينة فعلية للملف حسب نوعه (مش مجرد رابط تحميل) — بتفتح مباشرة من رابط
+        // R2 العام، من غير ما تعدي على السيرفر بتاعنا خالص.
+        function previewFile(url, name) {
+            const body = document.getElementById('filePreviewBody');
+            const titleEl = document.getElementById('filePreviewTitle');
+            titleEl.innerHTML = `<i class="fas fa-eye"></i> ${escapeHtml(name || 'معاينة الملف')}`;
+            const cleanUrl = url.split('?')[0];
+            const ext = (cleanUrl.split('.').pop() || '').toLowerCase();
+            body.innerHTML = '';
+
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) {
+                body.innerHTML = `<img src="${url}" alt="${escapeHtml(name || '')}">`;
+            } else if (ext === 'pdf') {
+                body.innerHTML = `<iframe src="${url}"></iframe>`;
+            } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
+                // معاينة ملفات الأوفيس عن طريق Google Docs Viewer (محتاج الرابط يكون عام — وهو كذلك)
+                const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+                body.innerHTML = `<iframe src="${viewerUrl}"></iframe>`;
+            } else if (ext === 'txt') {
+                body.innerHTML = '<div style="color:var(--text-3);font-size:12px;">جارٍ تحميل النص...</div>';
+                fetch(url).then(r => r.text()).then(text => {
+                    body.innerHTML = `<pre>${escapeHtml(text)}</pre>`;
+                }).catch(() => {
+                    body.innerHTML = '<div style="color:var(--danger);font-size:12px;">تعذرت معاينة الملف</div>';
+                });
+            } else {
+                body.innerHTML = `<div style="text-align:center;color:var(--text-2);font-size:13px;line-height:2;">
+                    معاينة النوع ده مش مدعومة مباشرة جوه التطبيق.<br>
+                    <a href="${url}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;">افتح الملف في تاب جديد</a>
+                </div>`;
+            }
+            openModal('filePreviewModal');
+        }
+
         async function loadSharedLibrary() {
             const listEl = document.getElementById('sharedLibraryList');
             if (!schoolToken) {
@@ -6113,14 +6211,21 @@
                 const gradeLabels = { first: 'الأول الثانوي', second: 'الثاني الثانوي', third: 'الثالث الثانوي' };
                 listEl.innerHTML = '';
                 files.forEach(f => {
+                    registerPreviewFile(f._id, f.url, f.name);
                     const row = document.createElement('div');
+                    row.id = `libItem_${f._id}`;
                     row.style.cssText = 'padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;';
                     row.innerHTML = `
                         <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${escapeHtml(f.topic)}</div>
                         <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;">
                             ${escapeHtml(f.subject)} · ${gradeLabels[f.grade] || f.grade} · رفعه ${escapeHtml(f.uploadedByName || f.uploadedBy)}
                         </div>
-                        <button class="btn-calc" style="width:auto;padding:6px 14px;font-size:12px;" onclick="downloadSharedSummary('${f._id}')"><i class="fas fa-download"></i> تحميل</button>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:6px 10px;font-size:12px;" onclick="openFilePreview('${f._id}')"><i class="fas fa-eye"></i> معاينة</button>
+                            <button class="btn-calc" style="flex:1;padding:6px 10px;font-size:12px;" id="dlBtn_${f._id}" onclick="downloadSharedSummary('${f._id}', '${escapeAttr(f.name)}')"><i class="fas fa-download"></i> تحميل</button>
+                        </div>
+                        <div class="upload-progress-wrap" id="dlProgressWrap_${f._id}"><div class="upload-progress-bar" id="dlProgressBar_${f._id}"></div></div>
+                        <div class="upload-progress-text" id="dlProgressText_${f._id}"></div>
                     `;
                     listEl.appendChild(row);
                 });
@@ -6129,25 +6234,90 @@
             }
         }
 
-        async function downloadSharedSummary(id) {
+        // عشان نحط اسم فيه " أو ' جوه onclick="" من غير ما يبوظ الـ HTML
+        function escapeAttr(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+        }
+
+        async function downloadSharedSummary(id, displayName) {
             if (!schoolToken) { showToast('لازم تسجّل دخول School X الأول', 'error'); return; }
+            const btn = document.getElementById(`dlBtn_${id}`);
+            const wrap = document.getElementById(`dlProgressWrap_${id}`);
+            const bar = document.getElementById(`dlProgressBar_${id}`);
+            const text = document.getElementById(`dlProgressText_${id}`);
+            const originalBtnHtml = btn ? btn.innerHTML : '';
+
+            if (btn) { btn.disabled = true; btn.innerHTML = '<span class="btn-spinner"></span> جارٍ التحميل...'; }
+            if (wrap) wrap.style.display = 'block';
+            if (bar) bar.style.width = '0%';
+            if (text) text.textContent = '0%';
+
             try {
                 const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/shared-summaries/download/${id}`, {
                     headers: { 'Authorization': `Bearer ${schoolToken}` }
                 });
-                if (!res.ok) throw new Error('failed');
-                const blob = await res.blob();
+                if (!res.ok) {
+                    // نحاول نقرا رسالة الخطأ الحقيقية من السيرفر بدل ما نقول "تعذر" بشكل عام
+                    let msg = 'تعذر تحميل الملف';
+                    try { const errData = await res.json(); if (errData?.error) msg = errData.error; } catch (_) {}
+                    throw new Error(msg);
+                }
+
+                const totalSize = Number(res.headers.get('Content-Length')) || 0;
                 const cd = res.headers.get('Content-Disposition') || '';
                 const match = cd.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/);
-                const fileName = match ? decodeURIComponent(match[1]) : 'file';
-                const url = URL.createObjectURL(blob);
+                const fileName = match ? decodeURIComponent(match[1]) : (displayName || 'file');
+
+                // قراءة الملف على دفعات عشان نحسب نسبة التقدم الحقيقية (مش ممكن بـ res.blob() العادي)
+                const reader = res.body.getReader();
+                const chunks = [];
+                let received = 0;
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    chunks.push(value);
+                    received += value.length;
+                    if (totalSize && bar && text) {
+                        const pct = Math.min(100, Math.round((received / totalSize) * 100));
+                        bar.style.width = pct + '%';
+                        text.textContent = pct + '%';
+                    }
+                }
+                const blob = new Blob(chunks);
+                const blobUrl = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = url; a.download = fileName;
+                a.href = blobUrl; a.download = fileName;
                 document.body.appendChild(a); a.click(); a.remove();
-                URL.revokeObjectURL(url);
+                URL.revokeObjectURL(blobUrl);
+
+                if (bar) bar.style.width = '100%';
+                if (text) text.textContent = 'تم التحميل ✅';
+                setTimeout(() => { if (wrap) wrap.style.display = 'none'; if (text) text.textContent = ''; }, 1500);
             } catch (e) {
-                showToast('تعذر تحميل الملف', 'error');
+                showToast(e.message || 'تعذر تحميل الملف', 'error');
+                if (wrap) wrap.style.display = 'none';
+                if (text) text.textContent = '';
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = originalBtnHtml; }
             }
+        }
+
+        // رفع الملف على R2 بـ XMLHttpRequest بدل fetch — عشان fetch مالوش دعم موثوق
+        // لتتبع نسبة تقدم الرفع (upload progress) في كل المتصفحات، وxhr.upload.onprogress بييجي جاهز.
+        function uploadFileWithProgress(url, file, onProgress) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', url);
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+                };
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) resolve();
+                    else reject(new Error('فشل رفع الملف على التخزين (كود ' + xhr.status + ')'));
+                };
+                xhr.onerror = () => reject(new Error('خطأ في الشبكة أثناء الرفع'));
+                xhr.send(file);
+            });
         }
 
         async function uploadSharedSummary() {
@@ -6157,6 +6327,9 @@
             const grade = document.getElementById('summaryGradeSelect').value;
             const statusEl = document.getElementById('summaryUploadStatus');
             const btn = document.getElementById('summaryUploadBtn');
+            const wrap = document.getElementById('summaryUploadProgressWrap');
+            const bar = document.getElementById('summaryUploadProgressBar');
+            const progText = document.getElementById('summaryUploadProgressText');
 
             if (!schoolToken) { statusEl.innerHTML = '<span style="color:var(--danger);">لازم تسجّل دخول School X الأول</span>'; return; }
             const file = fileInput.files[0];
@@ -6166,7 +6339,10 @@
             if (file.size > 500 * 1024 * 1024) { statusEl.innerHTML = '<span style="color:var(--danger);">حجم الملف كبير جدًا</span>'; return; }
 
             btn.disabled = true;
-            statusEl.innerHTML = '<span style="color:var(--text-2);">جاري الرفع...</span>';
+            statusEl.innerHTML = '';
+            wrap.style.display = 'block';
+            bar.style.width = '0%';
+            progText.textContent = 'جارٍ التحضير...';
             try {
                 // 1. هات رابط رفع موقّع من R2 مباشرة
                 const urlRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/shared-summaries/upload-url`, {
@@ -6174,12 +6350,16 @@
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
                     body: JSON.stringify({ fileName: file.name, grade, subject })
                 });
-                if (!urlRes.ok) throw new Error('upload-url failed');
+                if (!urlRes.ok) throw new Error('تعذر تجهيز رابط الرفع');
                 const { path, uploadUrl, publicUrl } = await urlRes.json();
 
-                // 2. ارفع الملف مباشرة على R2
-                const putRes = await fetch(uploadUrl, { method: 'PUT', body: file });
-                if (!putRes.ok) throw new Error('R2 upload failed');
+                // 2. ارفع الملف مباشرة على R2 مع تتبع نسبة التقدم
+                await uploadFileWithProgress(uploadUrl, file, (pct) => {
+                    bar.style.width = pct + '%';
+                    progText.textContent = `جارٍ الرفع... ${pct}%`;
+                });
+
+                progText.textContent = 'جارٍ حفظ البيانات...';
 
                 // 3. سجّل معلومات الملف في الداتابيز (بيتسجل status: pending تلقائي على السيرفر)
                 const saveRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/shared-summaries/save`, {
@@ -6191,15 +6371,24 @@
                         topic, subject, grade
                     })
                 });
-                if (!saveRes.ok) throw new Error('save failed');
+                if (!saveRes.ok) {
+                    let msg = 'تعذر حفظ معلومات الملف';
+                    try { const errData = await saveRes.json(); if (errData?.error) msg = errData.error; } catch (_) {}
+                    throw new Error(msg);
+                }
 
+                bar.style.width = '100%';
+                progText.textContent = 'تم الرفع بنجاح ✅';
                 statusEl.innerHTML = '<span style="color:var(--success);">تم رفع الملف بنجاح، هيتم مراجعة محتواه لكي يظهر على الصفحة من قبل الأدمن ✅</span>';
                 fileInput.value = '';
                 document.getElementById('summaryTopicInput').value = '';
                 document.getElementById('summarySubjectInput').value = '';
                 showToast('تم الرفع، هيتم مراجعته من الأدمن قبل ما يظهر', 'success');
+                setTimeout(() => { wrap.style.display = 'none'; progText.textContent = ''; bar.style.width = '0%'; }, 2000);
             } catch (e) {
-                statusEl.innerHTML = '<span style="color:var(--danger);">تعذر رفع الملف، حاول تاني</span>';
+                statusEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر رفع الملف، حاول تاني')}</span>`;
+                wrap.style.display = 'none';
+                progText.textContent = '';
             } finally {
                 btn.disabled = false;
             }
