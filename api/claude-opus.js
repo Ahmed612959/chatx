@@ -1,7 +1,7 @@
 export const config = { runtime: 'edge' };
 import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
 
-// ⚠️ الموديل ده مخصص للطلاب المشتركين في premium_ai بس (بديل Cerebras). الفرونت
+// ⚠️ الموديل ده مخصص للطلاب المشتركين في premium_ai بس (بديل/رفيق Cerebras). الفرونت
 // إند بيتحقق من الاشتراك قبل ما يظهر الاختيار ده أصلاً، لكن ده مش كافي وحده —
 // أي حد يقدر يفتح الـ devtools ويبعت طلب مباشر على الـ endpoint ده. عشان كده
 // الموديل هنا مثبّت من السيرفر (مش بياخده من جسم الطلب) — حتى لو حد بعت
@@ -15,6 +15,20 @@ import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
 // السيرفر، محتاج نضيف هنا تحقق من التوكن + الاشتراك عن طريق نداء على السيرفر
 // الرئيسي (server-index.js) قبل ما نكمل — قولّي لو عايز ده.
 const FORCED_MODEL = 'anthropic/claude-opus-5';
+const MAX_TOKENS = 4096;
+
+// ⚠️ موديلات Anthropic عند OneHop (زي الموديل ده) بتتنادى ببروتوكول مختلف تمامًا
+// عن باقي الموديلات في الموقع (Cerebras/DeepSeek/Mistral/...):
+// - مش /v1/chat/completions (بروتوكول OpenAI) — ده بيرجع 400
+//   "can't be called via this endpoint (protocol 'openai_chat')".
+// - الصح هو /anthropic/v1/messages (بروتوكول Anthropic Messages API الأصلي)،
+//   بـ header اسمه x-api-key بدل Authorization: Bearer، وheader تاني
+//   anthropic-version، وmax_tokens مطلوب في الـ body.
+// - الـ system prompt بيتبعت كحقل منفصل اسمه "system"، مش كرسالة role:"system"
+//   جوه مصفوفة messages زي OpenAI.
+// المصدر: https://onehop.ai/docs/chat (قسم "Anthropic messages").
+const UPSTREAM_URL = 'https://api.onehop.ai/anthropic/v1/messages';
+const ANTHROPIC_VERSION = '2023-06-01';
 
 export default async function handler(request) {
   try {
@@ -45,30 +59,53 @@ export default async function handler(request) {
       });
     }
 
-    if (!Array.isArray(payload?.messages) || !payload.messages.length) {
+    const incomingMessages = Array.isArray(payload?.messages) ? payload.messages : [];
+    if (!incomingMessages.length) {
       return new Response(JSON.stringify({ error: 'الرسايل مطلوبة' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
+    // الفرونت إند بيبعت الـ system prompt كأول رسالة في المصفوفة (role: 'system')
+    // زي باقي الموديلات كلها (شكل OpenAI). Anthropic Messages API عايزاه منفصل،
+    // فبنسحبه هنا ونحط الباقي (user/assistant بس) في messages.
+    let systemPrompt;
+    let messages = incomingMessages;
+    if (incomingMessages[0]?.role === 'system') {
+      systemPrompt = incomingMessages[0].content;
+      messages = incomingMessages.slice(1);
+    }
+
+    if (!messages.length) {
+      return new Response(JSON.stringify({ error: 'الرسايل مطلوبة' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const wantsStream = payload.stream !== false;
+
     // بنبني الـ body إحنا من الأول — مش بنمرر جسم الطلب زي ما هو — عشان الموديل
     // يفضل مثبّت دايمًا بغض النظر عما بيبعته الفرونت إند.
-    const forwardBody = JSON.stringify({
+    const anthropicBody = {
       model: FORCED_MODEL,
-      messages: payload.messages,
-      stream: payload.stream !== false
-    });
+      max_tokens: MAX_TOKENS,
+      messages: messages.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
+      stream: wantsStream
+    };
+    if (systemPrompt) anthropicBody.system = systemPrompt;
 
     let upstream;
     try {
-      upstream = await fetch('https://api.onehop.ai/v1/chat/completions', {
+      upstream = await fetch(UPSTREAM_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${CLAUDE_OPUS_API_KEY}`
+          'x-api-key': CLAUDE_OPUS_API_KEY,
+          'anthropic-version': ANTHROPIC_VERSION
         },
-        body: forwardBody
+        body: JSON.stringify(anthropicBody)
       });
     } catch (err) {
       return new Response(JSON.stringify({ error: 'تعذر الوصول لموديل Claude Opus' }), {
@@ -77,31 +114,93 @@ export default async function handler(request) {
       });
     }
 
-    if (!upstream.ok || !upstream.body) {
-      // مش استريمنج لسه (أخطاء المصادقة/الحصة/الطلب الغلط بتوصل كـ JSON عادي) —
-      // آمن إننا نمررها زي ما هي، مفيش حاجة نص عملية.
+    if (!upstream.ok) {
+      // أخطاء المصادقة/الحصة/الطلب الغلط بتوصل كـ JSON عادي من Anthropic — آمن
+      // إننا نمررها زي ما هي، مفيش حاجة نص عملية.
       return new Response(upstream.body, {
         status: upstream.status,
         headers: { 'Content-Type': upstream.headers.get('content-type') || 'application/json' }
       });
     }
 
-    // من هنا الاستجابة بدأت تتستريم فعليًا للعميل، فأي قطع في النص (الشبكة، تايم
-    // آوت، إلخ) لازم نمسكه هنا — خطأ بعد ما الدالة دي ترجع هيكون برة أي try/catch
-    // وهيسيب الاتصال يتقفل فجأة من غير رسالة واضحة للفرونت إند.
+    if (!wantsStream) {
+      // غير استريمنج: بنترجم رد Anthropic (شكل {content:[{type:'text',text:...}]})
+      // لشكل OpenAI اللي باقي الكود في الفرونت إند متعوّد عليه، عشان مفيش داعي
+      // نلمس أي حاجة تانية في الموقع.
+      let anthropicJson;
+      try {
+        anthropicJson = await upstream.json();
+      } catch (e) {
+        return new Response(JSON.stringify({ error: 'رد غير متوقع من موديل Claude Opus' }), {
+          status: 502,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      const text = (anthropicJson.content || [])
+        .filter(block => block.type === 'text')
+        .map(block => block.text)
+        .join('');
+      return new Response(JSON.stringify({
+        choices: [{ message: { role: 'assistant', content: text }, delta: { content: text } }]
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (!upstream.body) {
+      return new Response(JSON.stringify({ error: 'مفيش استريم راجع من موديل Claude Opus' }), {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // ====================== ترجمة استريم Anthropic لشكل OpenAI ======================
+    // Anthropic Messages API بتبعت أحداث SSE مختلفة تمامًا عن OpenAI: أنواع زي
+    // message_start / content_block_start / content_block_delta / message_delta /
+    // message_stop، والنص الفعلي بييجي في content_block_delta جوه
+    // delta.text_delta.text — مش choices[0].delta.content زي كل موديل تاني في
+    // الموقع. بدل ما نغيّر منطق الاستريمنج في الفرونت إند كله عشان موديل واحد،
+    // بنترجم هنا في السيرفر: بنقرأ استريم Anthropic ونطلّع بدله استريم بشكل
+    // OpenAI عادي (نفس اللي streamCerebras/streamOneHop في الفرونت إند بيفهموه)،
+    // فباقي الكود (الـ parsing، عرض الرسالة، إلخ) يفضل شغال من غير أي تغيير.
     const upstreamReader = upstream.body.getReader();
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+    let buffer = '';
+
     const safeStream = new ReadableStream({
       async pull(controller) {
         try {
           const { done, value } = await upstreamReader.read();
           if (done) {
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             controller.close();
             return;
           }
-          controller.enqueue(value);
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const raw = line.slice(6).trim();
+            if (!raw) continue;
+
+            let evt;
+            try { evt = JSON.parse(raw); } catch (e) { continue; }
+
+            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta' && evt.delta.text) {
+              const chunk = { choices: [{ delta: { content: evt.delta.text } }] };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+            } else if (evt.type === 'error') {
+              const msg = evt.error?.message || 'خطأ من موديل Claude Opus';
+              controller.enqueue(encoder.encode(`data: {"error":{"message":${JSON.stringify(msg)}}}\n\n`));
+            }
+            // باقي أنواع الأحداث (message_start, content_block_start, message_delta,
+            // message_stop, ping...) متجاهلة عمدًا — مش محتاجينها عشان نطلّع النص بس.
+          }
         } catch (err) {
           try {
-            controller.enqueue(new TextEncoder().encode(
+            controller.enqueue(encoder.encode(
               `data: {"error":{"message":"انقطع الاتصال بموديل Claude Opus أثناء الرد"}}\n\n`
             ));
           } catch (e) {}
@@ -114,9 +213,9 @@ export default async function handler(request) {
     });
 
     return new Response(safeStream, {
-      status: upstream.status,
+      status: 200,
       headers: {
-        'Content-Type': upstream.headers.get('content-type') || 'text/event-stream',
+        'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache'
       }
     });
