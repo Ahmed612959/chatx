@@ -17,8 +17,14 @@
 const SCHOOL_API_URL = process.env.SCHOOL_API_URL || 'https://schoolx-eta.vercel.app';
 
 // بيقرأ التوكن من Authorization: Bearer <token> — لو مش موجود أو الصيغة غلط بيرجع null.
+// شغالة مع نوعين مختلفين من الـ request objects عندنا في المشروع:
+// - Web-standard Request (edge functions زي claude-opus.js): headers.get('authorization')
+// - Node.js/Express-style request (regular serverless functions زي cerebras.js،
+//   اللي شغالة Node مش Edge عشان تتخطى حماية Cerebras): headers.authorization مباشرة.
 export function extractBearerToken(request) {
-  const authHeader = request.headers.get('authorization') || '';
+  const authHeader = (typeof request.headers?.get === 'function')
+    ? (request.headers.get('authorization') || '')
+    : (request.headers?.authorization || request.headers?.Authorization || '');
   const parts = authHeader.split(' ');
   return (parts[0] === 'Bearer' && parts[1]) ? parts[1] : null;
 }

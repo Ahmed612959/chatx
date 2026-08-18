@@ -4,6 +4,7 @@
 // Node functions send a different network/TLS fingerprint that gets through.
 
 import { checkRateLimit } from './_rateLimit.js';
+import { isEntitled, extractBearerToken } from './_premiumCheck.js';
 
 export default async function handler(request, response) {
   try {
@@ -15,6 +16,15 @@ export default async function handler(request, response) {
     if (!rl.allowed) {
       response.setHeader('Retry-After', String(rl.retryAfterSeconds));
       return response.status(429).json({ error: `طلبات كتير أوي في وقت قصير — حاول تاني بعد ${rl.retryAfterSeconds} ثانية` });
+    }
+
+    // ✅ التحقق الحقيقي من الاشتراك (مش بس ثقة في الفرونت إند): كل طلب لازم يجيب
+    // معاه توكن School X، وبنتأكد فعليًا من قاعدة البيانات إن صاحبه مشترك في
+    // premium_ai (أو أدمن) قبل ما نكمل — شوف _premiumCheck.js لتفاصيل الـ fail-closed.
+    const token = extractBearerToken(request);
+    const allowed = await isEntitled(token, 'premium_ai');
+    if (!allowed) {
+      return response.status(403).json({ error: 'الموديل ده متاح للمشتركين في Premium بس' });
     }
 
     const CEREBRAS_API_KEY = process.env.CEREBRAS_API_KEY;
