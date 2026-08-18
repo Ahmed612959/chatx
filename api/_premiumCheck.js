@@ -37,8 +37,32 @@ export function extractBearerToken(request) {
 // الشك هنا لازم يروح لصالح الحماية مش لصالح السماح، عكس أغلب الأماكن التانية في
 // الكود اللي بتفشل بشكل "مرن" (fallback لموديل تاني مثلاً) — هنا الفشل الآمن
 // هو المنع، لأن التكلفة على الطرف التاني (استخدام موديل مكلّف من غير استحقاق).
+//
+// ⚡ كاش قصير في الذاكرة (90 ثانية) للموافقات بس — الطالب بيبعت رسايل كتير متتالية
+// في نفس الشات، وكل رسالة كانت بتدفع تمن نداء شبكة كامل لـ School X من الأول، وده
+// كان بيضيف تأخير محسوس فوق بطء الموديل نفسه. دلوقتي أول رسالة بس هي اللي بتستنى
+// الفحص الكامل، والرسايل اللي بعدها (لحد 90 ثانية) بتاخد "مسموح" من الكاش فورًا.
+// الرفض (false) مبيتكاشش خالص — كل رسالة من طالب مش مسموحله بتتفحص من جديد، عشان
+// أي مشكلة شبكة عابرة أو طالب اتفعله الاشتراك لتوّه ميفضلش عالق برفض غلط.
+// ⚠️ الكاش ده best-effort بس (edge/Node instances بتتقفل وتتفتح من غير إنذار،
+// فمش مضمون إنه يفضل موجود بين كل رسالتين) ومش مشترك بين الموديلين (Cerebras
+// وClaude Opus كل واحد بقالته نسخة منفصلة من الملف ده — عادي، الكاش محلي لكل
+// instance مش قاعدة بيانات مركزية). التريدأوف الوحيد: لو الأدمن سحب الاشتراك من
+// طالب وهو نص محادثة، ممكن ياخد لحد 90 ثانية لحد ما السحب يتفعّل بدل ما يكون
+// فوري — مقبول جدًا مقابل السرعة المكتسبة، وأقل بكتير من صلاحية التوكن نفسه (24 ساعة).
+const ENTITLEMENT_CACHE_TTL_MS = 90_000;
+const entitlementCache = new Map(); // key: `${token}:${featureKey}` → { allowed, expiresAt }
+
 export async function isEntitled(token, featureKey) {
   if (!token) return false;
+
+  const cacheKey = `${token}:${featureKey}`;
+  const cached = entitlementCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.allowed;
+  }
+
+  let allowed = false;
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000);
@@ -51,11 +75,24 @@ export async function isEntitled(token, featureKey) {
     } finally {
       clearTimeout(timeoutId);
     }
-    if (!res.ok) return false;
-    const data = await res.json();
-    if (data?.type === 'admin') return true;
-    return Array.isArray(data?.premiumFeatures) && data.premiumFeatures.includes(featureKey);
+    if (res.ok) {
+      const data = await res.json();
+      allowed = data?.type === 'admin'
+        || (Array.isArray(data?.premiumFeatures) && data.premiumFeatures.includes(featureKey));
+    }
   } catch (e) {
-    return false;
+    allowed = false;
   }
+
+  // بنكاش الموافقة (true) بس — مش الرفض. لو كاشنا false كمان، أي مشكلة شبكة
+  // عابرة أو طالب اتفعله الاشتراك لتوّه ممكن يفضل مرفوض لحد 90 ثانية غلط، وده
+  // أسوأ بكتير من تمن نداء شبكة إضافي واحد. التريدأوف بقى في اتجاه واحد بس:
+  // نكسب سرعة للحالة العادية (طالب مشترك فعلًا بيبعت رسايل متتالية) من غير ما
+  // نخاطر نمنع حد مستحق فعلًا.
+  if (allowed) {
+    if (entitlementCache.size > 500) entitlementCache.clear();
+    entitlementCache.set(cacheKey, { allowed: true, expiresAt: Date.now() + ENTITLEMENT_CACHE_TTL_MS });
+  }
+
+  return allowed;
 }
