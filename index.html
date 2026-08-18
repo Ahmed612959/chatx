@@ -1654,6 +1654,13 @@
                 </div>
             </div>
             <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-calendar-check"></i> جدول المذاكرة الشخصي</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    اعمل جدولك بنفسك — اكتب المواد ومواعيدها في أي وقت من اليوم، وفعّل التذكير عشان توصلك رسالة تلقائي وقت كل مادة.
+                </p>
+                <button class="btn-calc" onclick="closeModal('toolsModal'); openStudySchedule();"><i class="fas fa-calendar-days"></i> افتح جدول المذاكرة</button>
+            </div>
+            <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-pills"></i> فحص دواء بالكاميرا (تدريب الصيدلية)</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
                     وجّه الكاميرا على علبة الدواء أو المحلول أو الأمبولة — هيحاول يقرا الباركود/الكيوركود ويصور العلبة، وبعدين المساعد يقولك اسم الدواء ودواعي استعماله وطريقة إعطائه.
@@ -1671,7 +1678,63 @@
         </div>
     </div>
 
-    <!-- رفع ملخص للمكتبة المشتركة -->
+    <!-- جدول المذاكرة الشخصي: الطالب هو اللي بيكتب مواده ومواعيده بنفسه، مش الذكاء
+         الاصطناعي — الجدول ده تحت تحكمه بالكامل، وممكن يفعّل تذكير يوصله رسالة تلقائي
+         أول ما يجي معاد أي مادة. راجع openStudySchedule/addStudyBlock/checkStudyScheduleReminders. -->
+    <div class="modal-overlay" id="studyScheduleModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-calendar-check"></i> جدول المذاكرة الشخصي</div>
+                <button class="close-modal" aria-label="إغلاق جدول المذاكرة" onclick="closeModal('studyScheduleModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tool-section">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg-2);border-radius:10px;padding:10px 12px;margin-bottom:14px;">
+                    <span style="font-size:12.5px;color:var(--text-2);">🔔 فعّل تذكير جدول المذاكرة</span>
+                    <input type="checkbox" id="studyReminderToggle" onchange="toggleStudyReminders(this.checked)" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;">
+                </div>
+                <p id="studyReminderPermNote" style="display:none;font-size:11px;color:var(--warning);margin:-6px 0 12px;line-height:1.7;">
+                    <i class="fas fa-triangle-exclamation"></i> لازم توافق على إذن الإشعارات من المتصفح عشان التذكير يوصلك حتى لو مفتحتش الموقع في اللحظة نفسها. لو رفضته، هتفضل تشوف تنبيه جوه الصفحة بس وقت ما تكون فاتحها.
+                </p>
+                <p style="font-size:11px;color:var(--text-3);margin-bottom:14px;line-height:1.7;">
+                    التذكير بيشتغل طول ما الموقع مفتوح عندك (تاب أو تطبيق) — مش لو قافل الموقع تمامًا.
+                </p>
+
+                <div class="tool-title" style="margin-top:4px;"><i class="fas fa-plus"></i> إضافة فترة مذاكرة</div>
+                <div class="input-group">
+                    <label>اليوم</label>
+                    <select id="studyBlockDay" class="tool-input">
+                        <option value="0">الأحد</option>
+                        <option value="1">الاثنين</option>
+                        <option value="2">الثلاثاء</option>
+                        <option value="3">الأربعاء</option>
+                        <option value="4">الخميس</option>
+                        <option value="5">الجمعة</option>
+                        <option value="6">السبت</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <div class="input-group" style="flex:1;">
+                        <label>من الساعة</label>
+                        <input type="time" id="studyBlockStart" class="tool-input">
+                    </div>
+                    <div class="input-group" style="flex:1;">
+                        <label>لحد الساعة</label>
+                        <input type="time" id="studyBlockEnd" class="tool-input">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>المادة</label>
+                    <input type="text" id="studyBlockSubject" class="tool-input" placeholder="مثال: تمريض باطني" maxlength="60">
+                </div>
+                <button class="btn-calc" onclick="addStudyBlock()"><i class="fas fa-plus"></i> إضافة للجدول</button>
+
+                <div class="tool-title" style="margin-top:18px;"><i class="fas fa-list"></i> جدولك</div>
+                <div id="studyScheduleList"></div>
+            </div>
+        </div>
+    </div>
+
+
     <div class="modal-overlay" id="uploadSummaryModal">
         <div class="modal">
             <div class="modal-header">
@@ -2975,6 +3038,165 @@
                 duaReminderShowing = false;
             }
         }
+
+        // ====================== جدول المذاكرة الشخصي ======================
+        // الطالب هو اللي بيبني الجدول بنفسه بالكامل (مواد ومواعيد براحته) — مفيش أي
+        // اقتراح أو توليد تلقائي من الذكاء الاصطناعي هنا عمدًا، الجدول ده ملكه هو بس.
+        // مخزّن محليًا في المتصفح (localStorage)، زي باقي إعدادات الطالب الشخصية.
+        let studySchedule = JSON.parse(localStorage.getItem('sx_study_schedule')) || [];
+        const STUDY_DAY_NAMES = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+        function saveStudySchedule() {
+            localStorage.setItem('sx_study_schedule', JSON.stringify(studySchedule));
+        }
+
+        function openStudySchedule() {
+            const toggle = document.getElementById('studyReminderToggle');
+            if (toggle) toggle.checked = settings.studyReminders === true;
+            const permNote = document.getElementById('studyReminderPermNote');
+            if (permNote) permNote.style.display = (settings.studyReminders === true && window.Notification && Notification.permission !== 'granted') ? 'block' : 'none';
+            renderStudySchedule();
+            openModal('studyScheduleModal');
+        }
+
+        function renderStudySchedule() {
+            const list = document.getElementById('studyScheduleList');
+            if (!list) return;
+            if (!studySchedule.length) {
+                list.innerHTML = '<div style="text-align:center;padding:16px 10px;color:var(--text-3);font-size:12px;">لسه مفيش فترات مذاكرة مضافة — ضيف أول فترة من فوق</div>';
+                return;
+            }
+            // مرتبين حسب اليوم الأول، وبعدين حسب وقت البداية جوه نفس اليوم
+            const sorted = [...studySchedule].sort((a, b) => (a.day - b.day) || a.start.localeCompare(b.start));
+            let html = '';
+            let lastDay = null;
+            for (const block of sorted) {
+                if (block.day !== lastDay) {
+                    html += `<div style="font-size:12px;font-weight:700;color:var(--accent);margin:${lastDay === null ? '0' : '14px'} 0 6px;">${STUDY_DAY_NAMES[block.day]}</div>`;
+                    lastDay = block.day;
+                }
+                html += `
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg-2);border-radius:10px;padding:8px 10px;margin-bottom:6px;">
+                        <div style="font-size:12.5px;">
+                            <b>${escapeHtml(block.subject)}</b>
+                            <div style="color:var(--text-3);font-size:11px;margin-top:2px;">${block.start} — ${block.end}</div>
+                        </div>
+                        <button class="icon-btn" style="flex-shrink:0;" aria-label="حذف فترة ${escapeHtml(block.subject)}" onclick="deleteStudyBlock('${block.id}')"><i class="fas fa-trash"></i></button>
+                    </div>`;
+            }
+            list.innerHTML = html;
+        }
+
+        function addStudyBlock() {
+            const day = parseInt(document.getElementById('studyBlockDay').value, 10);
+            const start = document.getElementById('studyBlockStart').value;
+            const end = document.getElementById('studyBlockEnd').value;
+            const subject = document.getElementById('studyBlockSubject').value.trim();
+
+            if (!subject) { showToast('اكتب اسم المادة الأول', 'error'); return; }
+            if (!start || !end) { showToast('حدد وقت البداية والنهاية', 'error'); return; }
+            if (start >= end) { showToast('وقت النهاية لازم يكون بعد وقت البداية', 'error'); return; }
+
+            studySchedule.push({
+                id: 'sb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                day, start, end, subject
+            });
+            saveStudySchedule();
+            renderStudySchedule();
+            document.getElementById('studyBlockSubject').value = '';
+            showToast('اتضافت فترة المذاكرة', 'success');
+        }
+
+        function deleteStudyBlock(id) {
+            studySchedule = studySchedule.filter(b => b.id !== id);
+            saveStudySchedule();
+            renderStudySchedule();
+        }
+
+        function toggleStudyReminders(enabled) {
+            settings.studyReminders = enabled;
+            saveData();
+            const permNote = document.getElementById('studyReminderPermNote');
+            if (enabled) {
+                // نطلب إذن الإشعارات فورًا لو لسه ملهوش قرار — عشان التذكير يقدر يوصل حتى
+                // لو الطالب مفتحش الموقع في اللحظة نفسها (طالما فيه إذن نظام ممنوح).
+                if (window.Notification && Notification.permission === 'default') {
+                    Notification.requestPermission().then(() => {
+                        if (permNote) permNote.style.display = Notification.permission !== 'granted' ? 'block' : 'none';
+                    }).catch(() => {});
+                } else if (permNote) {
+                    permNote.style.display = (window.Notification && Notification.permission !== 'granted') ? 'block' : 'none';
+                }
+                showToast('اتفعّل تذكير جدول المذاكرة', 'success');
+            } else {
+                if (permNote) permNote.style.display = 'none';
+                showToast('اتوقف تذكير جدول المذاكرة', 'success');
+            }
+        }
+
+        // بيدوّر كل دقيقة (طول ما الصفحة/التطبيق مفتوح) على فترة مذاكرة بتبدأ دلوقتي
+        // بالظبط، ولو لقى، يفكّر الطالب — إما بإشعار نظام حقيقي (لو موافق عليه) أو
+        // ببانر جوه الصفحة (زي تذكير الصلاة والواجبات بالظبط، نفس النظام).
+        // ⚠️ حدود مهمة: التذكير ده شغال طول ما المتصفح/التطبيق مفتوح في الخلفية (تاب
+        // مفتوح أو الـ PWA شغالة)، مش لو التطبيق مقفول تمامًا. تذكير حقيقي حتى مع قفل
+        // التطبيق محتاج Push Notification فعلي يتبعت من السيرفر في وقت محدد، وده محتاج
+        // نظام مجدول (Cron Job) يخزن جدول كل طالب على السيرفر ويبعتله وقت المذاكرة
+        // بالظبط — مرحلة تانية لو حابب نضيفها بعدين.
+        let studyReminderLastFired = {}; // blockId -> "YYYY-MM-DD" آخر يوم اتبعت فيه تذكير البلوك ده
+
+        function checkStudyScheduleReminders() {
+            if (settings.studyReminders !== true || !studySchedule.length) return;
+            const now = new Date();
+            const day = now.getDay();
+            const nowStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const todayKey = now.toISOString().slice(0, 10);
+
+            for (const block of studySchedule) {
+                if (block.day !== day || block.start !== nowStr) continue;
+                if (studyReminderLastFired[block.id] === todayKey) continue; // اتبعت النهاردة بالفعل
+                studyReminderLastFired[block.id] = todayKey;
+                fireStudyReminder(block);
+            }
+        }
+
+        function fireStudyReminder(block) {
+            if (window.Notification && Notification.permission === 'granted') {
+                try {
+                    new Notification('⏰ وقت المذاكرة', {
+                        body: `دلوقتي معاد مذاكرة ${block.subject} (${block.start} - ${block.end})`,
+                        icon: '/icons/icon-192.png',
+                        tag: 'study-reminder-' + block.id
+                    });
+                    return;
+                } catch (e) { /* نزّل على البانر جوه الصفحة لو الإشعار فشل لأي سبب */ }
+            }
+            showStudyReminderOverlay(block);
+        }
+
+        // بديل جوه الصفحة (لو الإشعارات مش متاحة/مرفوضة) — بيستخدم نفس نظام الـ overlay
+        // المشترك مع تذكير الصلاة/الواجبات (duaOverlayContainer) بدل ما نكرر نفس الكود.
+        function showStudyReminderOverlay(block) {
+            const container = document.getElementById('duaOverlayContainer');
+            if (!container || duaReminderShowing) return;
+            duaReminderShowing = true;
+            container.innerHTML = `
+                <div class="dua-overlay" id="duaOverlayEl">
+                    <div class="dua-card" style="background:linear-gradient(160deg, #0d2e3a 0%, #113a4b 45%, #1a4c5c 100%); border-color: rgba(66,180,244,.4);">
+                        <button class="dua-close" onclick="closeDuaReminder()"><i class="fas fa-times"></i></button>
+                        <div class="dua-icon" style="color:#42b4f4;text-shadow:0 0 20px rgba(66,180,244,.5);"><i class="fas fa-clock"></i></div>
+                        <div class="dua-title">وقت المذاكرة! ⏰</div>
+                        <div class="dua-sub">${escapeHtml(block.subject)}</div>
+                        <div class="dua-text" style="text-align:center;">من ${block.start} لحد ${block.end}</div>
+                        <div class="dua-extra">يلا بينا، ركّز وابدأ 💪</div>
+                    </div>
+                </div>`;
+            const overlayEl = document.getElementById('duaOverlayEl');
+            requestAnimationFrame(() => overlayEl.classList.add('show'));
+            const t = setTimeout(() => closeDuaReminder(), 15000);
+            duaReminderTimers.push(t);
+        }
+
+        setInterval(checkStudyScheduleReminders, 60000);
 
         // كل 10 دقايق من فتح الصفحة (طول ما هي ظاهرة قدام المستخدم) — وبس لو الطالب مفعّل
         // الميزة دي من الإعدادات (بعض الطلبة بيحسوا إنها بتقاطعهم وهما في نص حل مسألة).
