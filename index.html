@@ -5015,7 +5015,13 @@
         async function streamCerebras(messages, signal) {
             const response = await fetchWithRetry(`${settings.backendUrl}/api/cerebras`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    // بنبعت توكن School X عشان السيرفر يتأكد فعليًا إن الطالب مشترك في
+                    // premium_ai قبل ما يكمل الطلب — مش بس ثقة في إن الفرونت إند مخفي
+                    // الخيار ده عن غير المشتركين (ده سهل الالتفاف عليه من الـ devtools).
+                    ...(schoolToken ? { 'Authorization': `Bearer ${schoolToken}` } : {})
+                },
                 body: JSON.stringify({
                     model: "gpt-oss-120b",
                     messages: [{role: "system", content: getSystemPrompt()}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
@@ -5083,7 +5089,13 @@
         async function streamClaudeOpus(messages, signal) {
             const response = await fetchWithRetry(`${settings.backendUrl}/api/claude-opus`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    // بنبعت توكن School X عشان السيرفر يتأكد فعليًا إن الطالب مشترك في
+                    // premium_ai قبل ما يكمل الطلب — مش بس ثقة في إن الفرونت إند مخفي
+                    // الخيار ده عن غير المشتركين (ده سهل الالتفاف عليه من الـ devtools).
+                    ...(schoolToken ? { 'Authorization': `Bearer ${schoolToken}` } : {})
+                },
                 body: JSON.stringify({
                     messages: [{role: "system", content: getSystemPrompt()}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
                     stream: true
