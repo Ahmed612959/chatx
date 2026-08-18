@@ -5012,6 +5012,10 @@
             renderFinishedBotMessage(fullText, 'openrouter', false);
         }
 
+        // مهلة أعلى شوية من الافتراضي (20 ثانية بدل 12) — بعد ما ضفنا فحص الاشتراك
+        // الحقيقي (نداء شبكة + استعلام قاعدة بيانات) قبل أي طلب لـ Cerebras، بقى فيه
+        // زمن إضافي فوق سرعة Cerebras الطبيعية، خصوصًا في أول طلب (cold start).
+        const CEREBRAS_TIMEOUT_MS = 20000;
         async function streamCerebras(messages, signal) {
             const response = await fetchWithRetry(`${settings.backendUrl}/api/cerebras`, {
                 method: 'POST',
@@ -5028,7 +5032,7 @@
                     stream: true
                 }),
                 signal
-            });
+            }, 1, CEREBRAS_TIMEOUT_MS);
 
             if (!response.ok) {
                 let detail = '';
@@ -5081,11 +5085,11 @@
         // باك إند Chat X نفسه على endpoint مخصص (/api/claude-opus) مش /api/onehop العادي،
         // عشان الموديل يبقى مثبّت من السيرفر ومحدش يقدر يغيّره لموديل تاني أغلى أو مش
         // مسموح بيه حتى لو لعب في الطلب من الـ devtools.
-        // مهلة أطول خصيصًا لـ Claude Opus (35 ثانية بدل 12) — موديل "تفكير عميق"
-        // وأول توكن بيتأخر عليه طبيعي أكتر من الموديلات التانية، فمهلة الـ12 ثانية
-        // العادية كانت بتقفل الطلب وهو لسه شغال عند OneHop/Anthropic من غير أي خطأ
-        // حقيقي (Provider timeout ظاهري بس، مش عطل فعلي).
-        const CLAUDE_OPUS_TIMEOUT_MS = 35000;
+        // مهلة أطول خصيصًا لـ Claude Opus/Fable (60 ثانية بدل 35) — بعد ما ضفنا فحص
+        // الاشتراك الحقيقي (نداء شبكة + استعلام قاعدة بيانات على سيرفر School X) قبل
+        // ما نبدأ حتى نكلم الموديل، بقى فيه زمن إضافي فوق بطء الموديل نفسه الطبيعي في
+        // أول رد. 35 ثانية بقت مش كفاية أحيانًا، خصوصًا في أول طلب (cold start).
+        const CLAUDE_OPUS_TIMEOUT_MS = 60000;
         async function streamClaudeOpus(messages, signal) {
             const response = await fetchWithRetry(`${settings.backendUrl}/api/claude-opus`, {
                 method: 'POST',
