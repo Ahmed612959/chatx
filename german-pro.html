@@ -27,9 +27,15 @@ body.light {
     --text-1: #0f172a; --text-2: #475569; --text-3: #94a3b8;
     --border: rgba(0, 0, 0, 0.08); --border-accent: rgba(79, 70, 229, 0.3);
 }
+:root { --gold: #e8b64c; --gold-2: #f5d98a; --gold-glow: rgba(232, 182, 76, 0.45); }
 @keyframes gradientFlow { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
 @keyframes floatIn { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+@keyframes bounceDot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.5; } 30% { transform: translateY(-6px); opacity: 1; } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes confettiFall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 1; } 100% { transform: translateY(340px) rotate(540deg); opacity: 0; } }
+@keyframes popIn { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes ringGlow { 0%, 100% { box-shadow: 0 0 0 0 var(--gold-glow); } 50% { box-shadow: 0 0 14px 2px var(--gold-glow); } }
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
 html, body { height: 100%; overflow: hidden; }
@@ -57,28 +63,52 @@ body {
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; }
 .sidebar-overlay.show { display: block; }
 
-.sb-header { padding: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.sb-header { padding: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; position: relative; overflow: hidden; }
+.sb-header::before {
+    content: ''; position: absolute; inset: 0; height: 2px; top: 0;
+    background: linear-gradient(90deg, transparent, var(--gold), var(--accent-2), var(--gold), transparent);
+    background-size: 200% 100%; animation: shimmer 3.5s linear infinite;
+}
 .sb-header .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px; }
 .sb-header .brand .flag { font-size: 18px; }
 .sb-header .badge {
-    font-size: 10px; background: linear-gradient(120deg, #e8b64c, #f5d98a); color: #3a2a00;
-    padding: 2px 8px; border-radius: 20px; font-weight: 800; margin-right: 6px;
+    font-size: 10px; background: linear-gradient(110deg, var(--gold) 30%, #fff6df 45%, var(--gold-2) 55%, var(--gold) 70%);
+    background-size: 250% 100%; animation: shimmer 2.8s ease-in-out infinite; color: #3a2a00;
+    padding: 2px 9px; border-radius: 20px; font-weight: 800; margin-right: 6px; letter-spacing: 0.4px;
+    box-shadow: 0 2px 8px var(--gold-glow);
 }
 .sb-header .level-pill { margin-top: 10px; font-size: 12px; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
 .sb-header .level-pill b { color: var(--accent); }
+
+/* -------- Progress bar (تقدّم الخطة الكلي) -------- */
+.progress-wrap { margin-top: 12px; }
+.progress-top { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-3); margin-bottom: 5px; }
+.progress-track { height: 7px; border-radius: 20px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
+.progress-fill {
+    height: 100%; border-radius: 20px; background: linear-gradient(90deg, var(--accent), var(--gold));
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); background-size: 200% 100%; animation: shimmer 4s linear infinite;
+}
 
 .plan-list { flex: 1; overflow-y: auto; padding: 10px; }
 .plan-list::-webkit-scrollbar { width: 4px; }
 .plan-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 .unit-card {
     padding: 11px 12px; border-radius: var(--radius-sm); margin-bottom: 6px; font-size: 12.5px;
-    border: 1px solid var(--border); background: var(--bg); transition: all 0.2s;
+    border: 1px solid var(--border); background: var(--bg); transition: all 0.25s;
 }
-.unit-card.active { background: rgba(99, 102, 241, 0.12); border-color: var(--border-accent); box-shadow: 0 0 0 1px var(--border-accent); }
-.unit-card.done { opacity: 0.6; }
+.unit-card.active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(232, 182, 76, 0.08));
+    border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold-glow); animation: ringGlow 2.5s ease-in-out infinite;
+}
+.unit-card.done { opacity: 0.55; }
+.unit-card.done .u-top span:first-child { animation: popIn 0.4s ease; }
 .unit-card .u-top { display: flex; justify-content: space-between; gap: 6px; align-items: flex-start; }
 .unit-card .u-title { font-weight: 700; line-height: 1.4; }
 .unit-card .u-track { font-size: 10.5px; color: var(--text-3); margin-top: 4px; }
+.unit-card .u-active-tag {
+    display: inline-block; margin-top: 6px; font-size: 9.5px; font-weight: 800; color: var(--gold);
+    letter-spacing: 0.3px;
+}
 .plan-empty { color: var(--text-3); font-size: 12.5px; padding: 14px; text-align: center; line-height: 1.7; }
 
 .sb-footer { padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
@@ -111,6 +141,18 @@ body {
 }
 .bot-sub { font-size: 10.5px; color: var(--text-2); font-weight: 600; }
 .top-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.streak-badge {
+    display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 20px;
+    background: linear-gradient(120deg, rgba(232,182,76,0.15), rgba(236,72,153,0.1));
+    border: 1px solid var(--gold-glow); font-size: 12px; font-weight: 800; color: var(--gold); flex-shrink: 0;
+}
+.streak-badge i { font-size: 11px; }
+
+/* -------- Confetti (احتفال بإنهاء وحدة) -------- */
+.confetti-piece {
+    position: fixed; top: -10px; width: 8px; height: 8px; z-index: 999; pointer-events: none;
+    animation: confettiFall linear forwards;
+}
 .icon-btn, .menu-btn, .action-btn {
     width: 38px; height: 38px; border-radius: 10px; background: var(--bg-2); border: 1px solid var(--border);
     color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -128,9 +170,21 @@ body {
 .welcome-logo {
     width: 64px; height: 64px; border-radius: 18px; background: var(--grad-bold); display: flex;
     align-items: center; justify-content: center; font-size: 28px; margin-bottom: 18px; box-shadow: 0 0 40px var(--accent-glow);
+    position: relative;
+}
+.welcome-logo::after {
+    content: ''; position: absolute; inset: -3px; border-radius: 20px; z-index: -1;
+    background: conic-gradient(var(--gold), var(--accent-2), var(--accent-3), var(--gold));
+    opacity: 0.6; filter: blur(6px);
 }
 .welcome-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
-.welcome-sub { font-size: 13px; color: var(--text-2); max-width: 420px; line-height: 1.8; }
+.welcome-sub { font-size: 13px; color: var(--text-2); max-width: 420px; line-height: 1.8; margin-bottom: 20px; }
+.welcome-features { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 480px; }
+.welcome-feature {
+    display: flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: 20px;
+    background: var(--bg-glass); border: 1px solid var(--border); font-size: 11.5px; font-weight: 700; color: var(--text-2);
+}
+.welcome-feature i { color: var(--gold); font-size: 11px; }
 
 .message { display: flex; gap: 10px; max-width: 90%; animation: floatIn 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
 @media (min-width: 768px) { .message { max-width: 78%; gap: 12px; } }
@@ -158,8 +212,8 @@ body {
 .message.system-note { align-self: center; max-width: 90%; }
 .message.system-note .msg-bubble { background: transparent; border: 1px dashed var(--border-accent); color: var(--text-3); font-size: 12.5px; text-align: center; }
 
-.typing-indicator { display: flex; gap: 4px; padding: 14px; background: var(--bg-glass); border: 1px solid var(--border); border-radius: 16px; border-top-right-radius: 4px; width: fit-content; }
-.typing-indicator span { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: pulse 1s infinite; }
+.typing-indicator { display: flex; align-items: center; gap: 4px; padding: 14px; background: var(--bg-glass); border: 1px solid var(--border); border-radius: 16px; border-top-right-radius: 4px; width: fit-content; }
+.typing-indicator span { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: bounceDot 1.2s infinite ease-in-out; }
 .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
 .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
 
@@ -210,6 +264,10 @@ body {
         <div class="sb-header">
             <div class="brand"><span class="flag">🇩🇪</span> خطة German Pro <span class="badge">PREMIUM</span></div>
             <div class="level-pill"><i class="fas fa-signal"></i> المستوى الحالي: <b id="levelText">—</b></div>
+            <div class="progress-wrap">
+                <div class="progress-top"><span>تقدّمك في الخطة</span><span id="progressPct">0%</span></div>
+                <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+            </div>
         </div>
         <div class="plan-list" id="planList">
             <div class="plan-empty">هتظهر خطتك هنا بعد التقييم المبدئي — ابدأ الشات على اليمين.</div>
@@ -229,6 +287,7 @@ body {
                 </div>
             </div>
             <div class="top-actions">
+                <div class="streak-badge" id="streakBadge" style="display:none"><i class="fas fa-fire"></i> <span id="streakCount">0</span></div>
                 <button class="action-btn" id="themeBtn" aria-label="تبديل الوضع الليلي والنهاري" onclick="toggleTheme(event)"><i class="fas fa-moon" id="themeIcon"></i></button>
                 <button class="menu-btn" aria-label="الخطة" onclick="toggleSidebar()"><i class="fas fa-list-check"></i></button>
             </div>
@@ -239,6 +298,12 @@ body {
                 <div class="welcome-logo">🇩🇪</div>
                 <h1 class="welcome-title">أهلاً بيك في German Pro</h1>
                 <p class="welcome-sub">مدرّس ألماني احترافي متخصص في التمريض. ابعت أي رسالة (مثلاً "ابدأ") وهنعمل تقييم سريع، وبعدها هتاخد خطة تعلّم كاملة مبنية عليك.</p>
+                <div class="welcome-features">
+                    <div class="welcome-feature"><i class="fas fa-route"></i> خطة شخصية متكاملة</div>
+                    <div class="welcome-feature"><i class="fas fa-stethoscope"></i> متخصص في لغة التمريض</div>
+                    <div class="welcome-feature"><i class="fas fa-volume-high"></i> نطق دقيق لكل كلمة</div>
+                    <div class="welcome-feature"><i class="fas fa-brain"></i> يفتكر تقدّمك دايمًا</div>
+                </div>
             </div>
         </div>
 
@@ -300,20 +365,71 @@ async function api(path, opts = {}) {
 function trackLabel(t) { return t === 'nursing' ? '🩺 تمريض' : '💬 عام'; }
 function statusIcon(s) { return s === 'done' ? '✅' : s === 'active' ? '▶️' : '🔒'; }
 
+let lastDoneCount = 0;
+
 function renderPlan(plan, level, currentUnitId) {
     document.getElementById('levelText').textContent = level || '—';
     const list = document.getElementById('planList');
     if (!plan || !plan.length) {
         list.innerHTML = '<div class="plan-empty">هتظهر خطتك هنا بعد التقييم المبدئي — ابدأ الشات على اليمين.</div>';
+        updateProgress(0, 0);
         return;
     }
     list.innerHTML = plan.map(u => `
         <div class="unit-card ${u.id === currentUnitId ? 'active' : ''} ${u.status === 'done' ? 'done' : ''}">
             <div class="u-top"><span>${statusIcon(u.status)}</span><span class="u-title">${escapeHtml(u.title)}</span></div>
             <div class="u-track">${trackLabel(u.track)} · ${escapeHtml(u.level || '')}</div>
+            ${u.id === currentUnitId ? '<span class="u-active-tag">📍 الوحدة الحالية</span>' : ''}
         </div>
     `).join('');
+
+    const doneCount = plan.filter(u => u.status === 'done').length;
+    updateProgress(doneCount, plan.length);
+    if (doneCount > lastDoneCount && lastDoneCount !== 0) fireConfetti();
+    lastDoneCount = doneCount;
 }
+
+function updateProgress(done, total) {
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    document.getElementById('progressPct').textContent = pct + '%';
+    document.getElementById('progressFill').style.width = pct + '%';
+}
+
+// -------- احتفال بصري بسيط لما الطالب يخلّص وحدة --------
+function fireConfetti() {
+    const colors = ['#e8b64c', '#6366f1', '#8b5cf6', '#ec4899', '#10b981'];
+    for (let i = 0; i < 26; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.background = colors[Math.floor(Math.random() * colors.length)];
+        el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        el.style.animationDuration = (1.6 + Math.random() * 1.2) + 's';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3000);
+    }
+}
+
+// -------- سلسلة أيام الاستخدام (Streak) — محسوبة محليًا من تاريخ آخر زيارة --------
+function updateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = 'gp_streak_data';
+    let data;
+    try { data = JSON.parse(localStorage.getItem(key)) || {}; } catch (e) { data = {}; }
+    if (data.lastDate === today) {
+        // زيارة تانية في نفس اليوم — من غير تغيير
+    } else {
+        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        data.count = (data.lastDate === yesterday) ? (data.count || 0) + 1 : 1;
+        data.lastDate = today;
+        localStorage.setItem(key, JSON.stringify(data));
+    }
+    if (data.count > 1) {
+        document.getElementById('streakBadge').style.display = 'flex';
+        document.getElementById('streakCount').textContent = data.count;
+    }
+}
+updateStreak();
 
 function hideWelcome() {
     const w = document.getElementById('welcomeScreen');
