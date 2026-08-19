@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>German Pro — تعلّم الألمانية للتمريض باحترافية</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e222d; --border:#2a2f3d;
+    --text:#eef0f5; --muted:#9aa2b1; --accent:#4f8cff; --accent2:#22c55e;
+    --gold:#e8b64c; --danger:#ef4444;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex}
+  #locked{display:none;flex-direction:column;align-items:center;justify-content:center;height:100vh;width:100%;text-align:center;padding:20px}
+  #locked h1{font-size:22px}
+  #locked p{color:var(--muted);max-width:420px}
+  .app{display:none;width:100%;height:100%}
+  .app.show{display:flex}
+  #locked.show{display:flex}
+
+  .sidebar{width:300px;min-width:300px;background:var(--panel);border-left:1px solid var(--border);
+    display:flex;flex-direction:column;overflow:hidden}
+  .sidebar-head{padding:16px;border-bottom:1px solid var(--border)}
+  .sidebar-head h2{margin:0;font-size:16px;display:flex;align-items:center;gap:8px}
+  .sidebar-head .badge{font-size:11px;background:linear-gradient(90deg,var(--gold),#f5d98a);color:#3a2a00;
+    padding:2px 8px;border-radius:20px;font-weight:700}
+  .level-pill{margin-top:8px;font-size:12px;color:var(--muted)}
+  .plan{flex:1;overflow-y:auto;padding:10px}
+  .unit{padding:10px 12px;border-radius:10px;margin-bottom:6px;font-size:13px;border:1px solid transparent}
+  .unit.active{background:rgba(79,140,255,.12);border-color:var(--accent)}
+  .unit.done{opacity:.65}
+  .unit .u-top{display:flex;justify-content:space-between;gap:6px;align-items:center}
+  .unit .u-title{font-weight:600}
+  .unit .u-track{font-size:10px;color:var(--muted);margin-top:2px}
+  .icon{width:16px;text-align:center}
+  .sidebar-foot{padding:10px;border-top:1px solid var(--border)}
+  .sidebar-foot button{width:100%;background:transparent;color:var(--muted);border:1px solid var(--border);
+    border-radius:8px;padding:8px;cursor:pointer;font-size:12px}
+  .sidebar-foot button:hover{color:var(--danger);border-color:var(--danger)}
+
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .topbar h1{font-size:16px;margin:0}
+  .topbar a{color:var(--muted);text-decoration:none;font-size:13px}
+
+  .messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+  .msg{max-width:78%;padding:12px 14px;border-radius:14px;line-height:1.7;font-size:14.5px;white-space:pre-wrap}
+  .msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-left-radius:4px}
+  .msg.bot{align-self:flex-start;background:var(--panel2);border:1px solid var(--border);border-bottom-right-radius:4px}
+  .msg.system{align-self:center;color:var(--muted);font-size:12px;background:transparent}
+  .typing{align-self:flex-start;color:var(--muted);font-size:13px;padding:0 4px}
+
+  .composer{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:10px}
+  .composer textarea{flex:1;resize:none;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:12px;padding:12px 14px;font-size:14px;font-family:inherit;height:50px}
+  .composer button{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:0 22px;cursor:pointer;font-weight:600}
+  .composer button:disabled{opacity:.5;cursor:not-allowed}
+</style>
+</head>
+<body>
+
+  <div id="locked">
+    <h1>🔒 German Pro</h1>
+    <p>الميزة دي متاحة بس لطلاب <b>Premium</b> المفعّل لهم "German Pro". لو حاسس إن ده غلط، كلم الأدمن.</p>
+    <p id="lockedDetail" style="color:var(--danger);font-size:13px"></p>
+  </div>
+
+  <div class="app" id="app">
+    <div class="sidebar">
+      <div class="sidebar-head">
+        <h2>🇩🇪 German Pro <span class="badge">PREMIUM</span></h2>
+        <div class="level-pill" id="levelPill">المستوى: —</div>
+      </div>
+      <div class="plan" id="planList"></div>
+      <div class="sidebar-foot">
+        <button id="resetBtn">إعادة تعيين الخطة من الصفر</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <h1>مدرّس الألمانية الاحترافي — تخصص تمريض</h1>
+        <a href="index.html">↩ رجوع للشات الرئيسي</a>
+      </div>
+      <div class="messages" id="messages"></div>
+      <div class="composer">
+        <textarea id="input" placeholder="اكتب رسالتك هنا... (مثلاً: ابدأ التقييم)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"></textarea>
+        <button id="sendBtn" onclick="send()">إرسال</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const API = 'https://schoolx-eta.vercel.app'; // نفس السيرفر المستخدم في index.html — غيّره لو مختلف
+const token = localStorage.getItem('sx_school_token');
+const premiumFeatures = JSON.parse(localStorage.getItem('sx_premium_features') || '[]');
+const schoolUser = JSON.parse(localStorage.getItem('sx_school_user') || 'null');
+const isAdminUser = schoolUser?.type === 'admin';
+
+function showLocked(detail){
+  document.getElementById('locked').classList.add('show');
+  if(detail) document.getElementById('lockedDetail').textContent = detail;
+}
+
+if(!token || (!isAdminUser && !premiumFeatures.includes('premium_german_pro'))){
+  showLocked('');
+} else {
+  document.getElementById('app').classList.add('show');
+  init();
+}
+
+async function api(path, opts={}){
+  const res = await fetch(API + path, {
+    ...opts,
+    headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer ' + token, ...(opts.headers||{}) }
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+  return data;
+}
+
+function trackLabel(t){ return t === 'nursing' ? '🩺 تمريض' : '💬 عام'; }
+function statusIcon(s){ return s === 'done' ? '✅' : s === 'active' ? '▶️' : '🔒'; }
+
+function renderPlan(plan, level, currentUnitId){
+  document.getElementById('levelPill').textContent = 'المستوى: ' + (level || '—');
+  const list = document.getElementById('planList');
+  if(!plan || !plan.length){
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:10px">هيتم عرض خطتك هنا بعد التقييم المبدئي — ابدأ الشات على اليمين.</div>';
+    return;
+  }
+  list.innerHTML = plan.map(u => `
+    <div class="unit ${u.id === currentUnitId ? 'active' : ''} ${u.status === 'done' ? 'done' : ''}">
+      <div class="u-top"><span class="icon">${statusIcon(u.status)}</span><span class="u-title">${escapeHtml(u.title)}</span></div>
+      <div class="u-track">${trackLabel(u.track)} · ${escapeHtml(u.level || '')}</div>
+    </div>
+  `).join('');
+}
+
+function addMsg(role, text){
+  const box = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function init(){
+  try{
+    const data = await api('/api/german-pro/state');
+    renderPlan(data.plan, data.level, data.currentUnitId);
+    const box = document.getElementById('messages');
+    box.innerHTML = '';
+    if(!data.history || !data.history.length){
+      addMsg('system', 'أهلاً بيك في German Pro 🇩🇪 — ابعت أي رسالة (مثلاً "ابدأ") عشان نعمل تقييم سريع ونبني خطتك الشخصية.');
+    } else {
+      data.history.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bot', m.content));
+    }
+  }catch(e){
+    if(String(e.message).includes('403')) showLocked(e.message);
+    addMsg('system', 'تعذر تحميل الحالة: ' + e.message);
+  }
+}
+
+async function send(){
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  document.getElementById('sendBtn').disabled = true;
+  addMsg('user', text);
+  const box = document.getElementById('messages');
+  const typing = document.createElement('div');
+  typing.className = 'typing';
+  typing.textContent = 'بيكتب...';
+  box.appendChild(typing);
+  box.scrollTop = box.scrollHeight;
+
+  try{
+    const data = await api('/api/german-pro/message', { method:'POST', body: JSON.stringify({ message: text }) });
+    typing.remove();
+    addMsg('bot', data.reply);
+    renderPlan(data.plan, data.level, data.currentUnitId);
+  }catch(e){
+    typing.remove();
+    addMsg('system', 'حصل خطأ: ' + e.message);
+  }finally{
+    document.getElementById('sendBtn').disabled = false;
+  }
+}
+
+document.getElementById('resetBtn').addEventListener('click', async ()=>{
+  if(!confirm('هيتم مسح كل تقدمك وتبدأ من الصفر تاني — متأكد؟')) return;
+  try{
+    await api('/api/german-pro/reset', { method:'POST' });
+    location.reload();
+  }catch(e){ alert('خطأ: ' + e.message); }
+});
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+</body>
+</html>
