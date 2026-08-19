@@ -501,6 +501,8 @@
         .msg-action-btn.stop-btn { background: var(--danger); color: white; animation: pulse 1.5s infinite; }
         .msg-action-btn.speaking { background: var(--accent); color: white; }
         .msg-action-btn.pin-btn.pinned { background: var(--warning); color: white; }
+        .msg-action-btn.rate-active-up { background: var(--success); color: white; }
+        .msg-action-btn.rate-active-down { background: var(--danger); color: white; }
         .msg-action-btn.delete-btn:hover { color: var(--danger); }
         .msg-bubble.pinned-msg { box-shadow: 0 0 0 2px var(--warning) inset; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
@@ -1216,6 +1218,7 @@
                 <button class="icon-btn" id="sbQuickLogoutBtn" style="display:none;" title="تسجيل الخروج من School X" aria-label="تسجيل الخروج من School X" onclick="quickSchoolLogout()"><i class="fas fa-right-from-bracket"></i></button>
                 <button class="icon-btn" id="leaderboardBtn" style="display:none;" title="لوحة الصدارة الأسبوعية" aria-label="لوحة الصدارة الأسبوعية" onclick="openLeaderboard()"><i class="fas fa-trophy"></i></button>
                 <button class="icon-btn" id="groupChatBtn" style="display:none;" title="غرفة مذاكرة جماعية" aria-label="غرفة مذاكرة جماعية" onclick="openGroupChatList()"><i class="fas fa-user-group"></i></button>
+                <button class="icon-btn" id="academicProfileBtn" style="display:none;" title="البروفايل الأكاديمي (Premium)" aria-label="البروفايل الأكاديمي" onclick="openAcademicProfile()"><i class="fas fa-id-card-clip"></i></button>
                 <button class="icon-btn" aria-label="الإعدادات" onclick="openModal('settingsModal')"><i class="fas fa-gear"></i></button>
             </div>
         </aside>
@@ -1512,6 +1515,14 @@
                 <div id="adminReviewList" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;"></div>
             </div>
 
+            <div class="tool-section" id="adminRatingsSection" style="display:none;">
+                <div class="tool-title"><i class="fas fa-thumbs-up"></i> تقييمات ردود الذكاء الاصطناعي</div>
+                <button class="btn-calc" style="margin-bottom:10px;background:var(--bg-2);color:var(--text-2);" onclick="loadAdminRatingsSummary()"><i class="fas fa-rotate"></i> تحديث</button>
+                <div id="adminRatingsSummary" style="display:flex;flex-direction:column;gap:6px;"></div>
+                <div class="tool-title" style="margin-top:14px;font-size:12.5px;"><i class="fas fa-triangle-exclamation"></i> آخر تقييمات سلبية</div>
+                <div id="adminRatingsNegative" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;margin-top:8px;"></div>
+            </div>
+
             <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--text-3);">
                 Chat X — تطوير <a href="/developer.html" target="_blank" style="color:var(--text-2);font-weight:700;text-decoration:none;">Ahmed Mousaa</a>
                 <br>
@@ -1730,6 +1741,21 @@
 
                 <div class="tool-title" style="margin-top:18px;"><i class="fas fa-list"></i> جدولك</div>
                 <div id="studyScheduleList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- البروفايل الأكاديمي الموحّد (Premium) — بيجمع بيانات موجودة أصلاً في /api/me
+         (حضور، نتائج امتحانات، واجبات، مخالفات) في شاشة واحدة بدل ما تكون متفرقة.
+         مفيش أي endpoint جديد على السيرفر لازم للميزة دي — راجع openAcademicProfile(). -->
+    <div class="modal-overlay" id="academicProfileModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-id-card-clip"></i> البروفايل الأكاديمي</div>
+                <button class="close-modal" aria-label="إغلاق البروفايل الأكاديمي" onclick="closeModal('academicProfileModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tool-section" id="academicProfileContent">
+                <div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>
             </div>
         </div>
     </div>
@@ -1990,6 +2016,17 @@
                 <div class="premium-card-desc">اعمل "مهارات" خاصة بيك — تعليمات ثابتة (اكتبها إنت أو ارفعها كملف نصي) — والمساعد يلتزم بيها ويستخدمها تلقائي في ردوده وقت ما تكون مناسبة، بالظبط زي مهارات Claude.</div>
                 <button id="premium-skills-action" class="btn-calc" style="display:none;" onclick="closeModal('premiumHubModal'); openPremiumSkills();">إدارة المهارات</button>
                 <div id="premium-skills-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
+            </div>
+
+            <div class="premium-card">
+                <div class="premium-card-head">
+                    <span class="premium-card-icon">📊</span>
+                    <span class="premium-card-title">البروفايل الأكاديمي الموحّد</span>
+                    <span id="premium-academic-badge" class="premium-badge-locked">مقفول 🔒</span>
+                </div>
+                <div class="premium-card-desc">حضورك، نتائج امتحاناتك، الواجبات المستحقة، والمخالفات — كل ده في شاشة واحدة بدل ما يكون متفرق، وبيتحدث فورًا كل ما تفتحه.</div>
+                <button id="premium-academic-action" class="btn-calc" style="display:none;" onclick="closeModal('premiumHubModal'); openAcademicProfile();">افتح البروفايل</button>
+                <div id="premium-academic-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
             </div>
 
             <div class="premium-card">
@@ -2470,6 +2507,25 @@
                 downloadBtn.addEventListener('click', () => downloadAsAudio(msg.content, downloadBtn));
                 actionsDiv.appendChild(downloadBtn);
 
+                // تقييم الرد (👍/👎) — بيساعدنا نعرف فعليًا أي موديل بيدي إجابات ضعيفة.
+                // دوس على نفس الزرار تاني يشيل التقييم (toggle)، مش لازم يفضل ثابت.
+                const rateUpBtn = document.createElement('button');
+                rateUpBtn.className = 'msg-action-btn rate-btn' + (msg.rating === 'up' ? ' rate-active-up' : '');
+                rateUpBtn.title = 'رد مفيد';
+                rateUpBtn.setAttribute('aria-label', 'تقييم الرد كمفيد');
+                rateUpBtn.innerHTML = '<i class="fas fa-thumbs-up"></i>';
+                actionsDiv.appendChild(rateUpBtn);
+
+                const rateDownBtn = document.createElement('button');
+                rateDownBtn.className = 'msg-action-btn rate-btn' + (msg.rating === 'down' ? ' rate-active-down' : '');
+                rateDownBtn.title = 'رد مش مفيد';
+                rateDownBtn.setAttribute('aria-label', 'تقييم الرد كغير مفيد');
+                rateDownBtn.innerHTML = '<i class="fas fa-thumbs-down"></i>';
+                actionsDiv.appendChild(rateDownBtn);
+
+                rateUpBtn.addEventListener('click', () => rateMessage(msg, 'up', rateUpBtn, rateDownBtn));
+                rateDownBtn.addEventListener('click', () => rateMessage(msg, 'down', rateUpBtn, rateDownBtn));
+
                 if (isLastBotMsg) {
                     const regenBtn = document.createElement('button');
                     regenBtn.className = 'msg-action-btn regen-btn';
@@ -2506,6 +2562,39 @@
             pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i>';
             pinBtn.addEventListener('click', () => togglePinMessage(msg.id));
             actionsDiv.appendChild(pinBtn);
+        }
+
+        // تقييم رد بوت (👍/👎) — بيتخزن محليًا فورًا (تجربة الطالب متتأثرش لو الشبكة بطيئة
+        // أو فشلت)، وبيتبعت لسيرفر School X في الخلفية عشان يظهر في ملخص الأدمن. دوس على
+        // نفس الزرار اللي مختاره تاني = إلغاء التقييم (toggle)، مش استبدال إجباري.
+        // متاحة لكل الطلاب (Premium وعاديين) — مش ميزة Premium.
+        async function rateMessage(msg, rating, upBtn, downBtn) {
+            const newRating = (msg.rating === rating) ? null : rating;
+            msg.rating = newRating;
+            saveData();
+            upBtn.classList.toggle('rate-active-up', newRating === 'up');
+            downBtn.classList.toggle('rate-active-down', newRating === 'down');
+
+            if (!schoolToken) return; // من غير حساب School X، التقييم بيفضل محلي بس (تجربة الواجهة) ومبيوصلش للأدمن
+            try {
+                if (newRating) {
+                    await fetch(`${FIXED_SCHOOL_API_URL}/api/message-ratings`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                        body: JSON.stringify({
+                            clientMessageId: msg.id,
+                            model: msg.source || 'unknown',
+                            rating: newRating,
+                            excerpt: (msg.content || '').slice(0, 200)
+                        })
+                    });
+                } else {
+                    await fetch(`${FIXED_SCHOOL_API_URL}/api/message-ratings/${encodeURIComponent(msg.id)}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${schoolToken}` }
+                    });
+                }
+            } catch (e) { /* فشل الحفظ في السيرفر مش لازم يبوّظ تجربة الطالب — التقييم المحلي فضل شغال */ }
         }
 
         // Ensures the "regenerate" button only ever appears on the current last bot reply.
@@ -2836,7 +2925,8 @@
             premium_drug_library: { icon: '💊', title: 'مكتبة الأدوية الشخصية', desc: 'كل دواء تفحصه بالكاميرا بيتحفظلك تلقائيًا في مكتبة شخصية ترجعلها وقت ما تحب.' },
             premium_clinical_sim: { icon: '🩺', title: 'محاكي المواقف الإكلينيكية', desc: 'حالة مريض واقعية بتتفاعل معاها وتاخد قرارات، وفي الآخر بتاخد تقييم لقراراتك.' },
             premium_lecture_audio: { icon: '🎙️', title: 'ملخص صوتي للمحاضرات', desc: 'سجّل المحاضرة بصوتك، وهيتحول لنص وملخص منظم بالنقاط تلقائيًا.' },
-            premium_skills: { icon: '🧩', title: 'مهارات مخصصة (Skills)', desc: 'اعمل مهارات خاصة بيك (تعليمات ثابتة يلتزم بيها المساعد)، وهو يستخدمها تلقائي في ردوده وقت ما تكون مناسبة.' }
+            premium_skills: { icon: '🧩', title: 'مهارات مخصصة (Skills)', desc: 'اعمل مهارات خاصة بيك (تعليمات ثابتة يلتزم بيها المساعد)، وهو يستخدمها تلقائي في ردوده وقت ما تكون مناسبة.' },
+            premium_academic_profile: { icon: '📊', title: 'البروفايل الأكاديمي الموحّد', desc: 'كل حاجة عن أدائك (حضور، نتائج امتحانات، واجبات، مخالفات) في شاشة واحدة، بدل ما تكون متفرقة.' }
         };
         // الأدمن (type === 'admin' جاية من بيانات School X) عنده كل مميزات Premium تلقائيًا
         // من غير ما يحتاج يفعّلها لنفسه — طبيعي إنه يقدر يجرب أي حاجة بيفعّلها للطلاب.
@@ -6116,6 +6206,11 @@
                     adminReviewSection.style.display = isAdmin ? 'block' : 'none';
                     if (isAdmin) loadAdminReviewQueue();
                 }
+                const adminRatingsSection = document.getElementById('adminRatingsSection');
+                if (adminRatingsSection) {
+                    adminRatingsSection.style.display = isAdmin ? 'block' : 'none';
+                    if (isAdmin) loadAdminRatingsSummary();
+                }
                 const adminPremiumPanelSection = document.getElementById('adminPremiumPanelSection');
                 if (adminPremiumPanelSection) adminPremiumPanelSection.style.display = isAdmin ? 'block' : 'none';
             } else {
@@ -6130,6 +6225,8 @@
                 if (adminInboxSection) adminInboxSection.style.display = 'none';
                 const adminReviewSectionOff = document.getElementById('adminReviewSection');
                 if (adminReviewSectionOff) adminReviewSectionOff.style.display = 'none';
+                const adminRatingsSectionOff = document.getElementById('adminRatingsSection');
+                if (adminRatingsSectionOff) adminRatingsSectionOff.style.display = 'none';
                 const adminPremiumPanelSectionOff = document.getElementById('adminPremiumPanelSection');
                 if (adminPremiumPanelSectionOff) adminPremiumPanelSectionOff.style.display = 'none';
                 const leaderboardBtnOff = document.getElementById('leaderboardBtn');
@@ -6279,6 +6376,190 @@
         }
 
         // ====================== مراجعة ملخصات المكتبة المشتركة (أدمن فقط) ======================
+        // ملخص تقييمات الردود لكل موديل — للأدمن بس. بيوري كل موديل (👍/👎/الإجمالي/نسبة
+        // الرضا)، وتحته آخر 15 تقييم سلبي كأمثلة حقيقية سريعة من غير ما يفتح كل رسالة لوحدها.
+        const RATING_MODEL_NAMES = {
+            groq: 'Groq', gemini: 'Gemini', 'german-teacher': 'معلم الألماني', openrouter: 'OpenRouter',
+            cerebras: 'Cerebras', 'claude-opus': 'Claude', mistral: 'Mistral', sambanova: 'SambaNova',
+            qwen: 'Qwen', onehop: 'DeepSeek/OpenRouter', zimage: 'تحليل الصور', local: 'محلي', unknown: 'غير معروف'
+        };
+        async function loadAdminRatingsSummary() {
+            const summaryEl = document.getElementById('adminRatingsSummary');
+            const negativeEl = document.getElementById('adminRatingsNegative');
+            if (!summaryEl || !negativeEl || !schoolToken) return;
+            summaryEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>';
+            negativeEl.innerHTML = '';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/message-ratings/summary`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+
+                if (!data.summary.length) {
+                    summaryEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش تقييمات لسه</div>';
+                } else {
+                    summaryEl.innerHTML = data.summary.map(s => {
+                        const name = RATING_MODEL_NAMES[s.model] || s.model;
+                        const rateColor = s.approvalRate === null ? 'var(--text-3)' : (s.approvalRate >= 70 ? 'var(--success)' : s.approvalRate >= 40 ? 'var(--warning)' : 'var(--danger)');
+                        return `
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg-2);border-radius:10px;padding:9px 12px;">
+                                <div style="font-size:12.5px;font-weight:700;">${escapeHtml(name)}</div>
+                                <div style="display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--text-2);">
+                                    <span><i class="fas fa-thumbs-up" style="color:var(--success);"></i> ${s.up}</span>
+                                    <span><i class="fas fa-thumbs-down" style="color:var(--danger);"></i> ${s.down}</span>
+                                    <span style="font-weight:700;color:${rateColor};">${s.approvalRate === null ? '—' : s.approvalRate + '%'}</span>
+                                </div>
+                            </div>`;
+                    }).join('');
+                }
+
+                if (!data.recentNegative.length) {
+                    negativeEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش تقييمات سلبية 👍</div>';
+                } else {
+                    negativeEl.innerHTML = data.recentNegative.map(r => `
+                        <div style="padding:9px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-glass);">
+                            <div style="font-size:11px;color:var(--text-3);margin-bottom:4px;">
+                                ${escapeHtml(RATING_MODEL_NAMES[r.model] || r.model)} · ${escapeHtml(r.studentCode)} · ${new Date(r.createdAt).toLocaleDateString('ar-EG')}
+                            </div>
+                            <div style="font-size:12px;line-height:1.6;">${escapeHtml(r.excerpt) || '<span style="color:var(--text-3);">(بدون نص)</span>'}</div>
+                        </div>`).join('');
+                }
+            } catch (e) {
+                summaryEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل التقييمات</div>';
+            }
+        }
+
+        // البروفايل الأكاديمي الموحّد (Premium) — بيستخدم نفس /api/me الموجود أصلاً (مفيش
+        // endpoint جديد)، وبيجمع كل حاجة عن أداء الطالب في شاشة واحدة. بيعمل نداء تاني
+        // لطلب بيانات محدّثة كل مرة يتفتح فيها (بدل ما يعتمد على schoolContext النصي
+        // المخزّن من fetchSchoolProfile، اللي بيلخّص البيانات كنص مش بيحتفظ بيها منظّمة).
+        const ACADEMIC_GRADE_LABELS = { first: 'الأول الثانوي', second: 'الثاني الثانوي', third: 'الثالث الثانوي' };
+        async function openAcademicProfile() {
+            const contentEl = document.getElementById('academicProfileContent');
+            if (!contentEl) return;
+            openModal('academicProfileModal');
+            if (!schoolToken) {
+                contentEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px;">لازم تكون مسجّل دخول بحساب School X عشان تشوف البروفايل ده.</div>';
+                return;
+            }
+            contentEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/me`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+                if (data.type !== 'student') {
+                    contentEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px;">البروفايل ده للطلاب بس.</div>';
+                    return;
+                }
+                renderAcademicProfile(data);
+            } catch (e) {
+                contentEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:12px;">تعذر تحميل البيانات — جرّب تاني.</div>';
+            }
+        }
+
+        function renderAcademicProfile(data) {
+            const contentEl = document.getElementById('academicProfileContent');
+            const p = data.profile || {};
+            const attendance = data.attendance || [];
+            const examResults = data.examResults || [];
+            const violations = data.violations || [];
+            const pendingHomework = data.pendingHomework || [];
+
+            // إحصائيات الحضور — نفس منطق الحساب المستخدم في باقي السيرفر (present/absent/late)
+            const presentCount = attendance.filter(a => a.status === 'present').length;
+            const absentCount = attendance.filter(a => a.status === 'absent').length;
+            const lateCount = attendance.filter(a => a.status === 'late').length;
+            const attendanceTotal = attendance.length;
+            const attendancePct = attendanceTotal > 0 ? Math.round((presentCount / attendanceTotal) * 100) : null;
+            const attendanceColor = attendancePct === null ? 'var(--text-3)' : (attendancePct >= 85 ? 'var(--success)' : attendancePct >= 65 ? 'var(--warning)' : 'var(--danger)');
+
+            // متوسط درجات الامتحانات (كنسبة مئوية، لأن كل امتحان عدد أسئلته مختلف)
+            const scoredResults = examResults.filter(r => r.totalQuestions);
+            const avgPct = scoredResults.length
+                ? Math.round(scoredResults.reduce((sum, r) => sum + (r.score / r.totalQuestions) * 100, 0) / scoredResults.length)
+                : null;
+
+            let html = `
+                <div style="text-align:center;margin-bottom:16px;">
+                    <div style="font-size:15px;font-weight:800;">${escapeHtml(p.fullName || '')}</div>
+                    <div style="font-size:11.5px;color:var(--text-3);margin-top:2px;">${escapeHtml(ACADEMIC_GRADE_LABELS[p.grade] || p.grade || '')} · كود ${escapeHtml(p.studentCode || '')}</div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+                    <div style="background:var(--bg-2);border-radius:10px;padding:10px;text-align:center;">
+                        <div style="font-size:20px;font-weight:800;color:${attendanceColor};">${attendancePct === null ? '—' : attendancePct + '%'}</div>
+                        <div style="font-size:10.5px;color:var(--text-3);margin-top:2px;">نسبة الحضور (آخر ${attendanceTotal} يوم)</div>
+                    </div>
+                    <div style="background:var(--bg-2);border-radius:10px;padding:10px;text-align:center;">
+                        <div style="font-size:20px;font-weight:800;color:${avgPct === null ? 'var(--text-3)' : avgPct >= 60 ? 'var(--success)' : 'var(--danger)'};">${avgPct === null ? '—' : avgPct + '%'}</div>
+                        <div style="font-size:10.5px;color:var(--text-3);margin-top:2px;">متوسط الامتحانات (آخر ${examResults.length})</div>
+                    </div>
+                    <div style="background:var(--bg-2);border-radius:10px;padding:10px;text-align:center;">
+                        <div style="font-size:20px;font-weight:800;">${pendingHomework.length}</div>
+                        <div style="font-size:10.5px;color:var(--text-3);margin-top:2px;">واجبات مستحقة</div>
+                    </div>
+                    <div style="background:var(--bg-2);border-radius:10px;padding:10px;text-align:center;">
+                        <div style="font-size:20px;font-weight:800;color:${violations.length ? 'var(--danger)' : 'var(--success)'};">${violations.length}</div>
+                        <div style="font-size:10.5px;color:var(--text-3);margin-top:2px;">مخالفات مسجّلة</div>
+                    </div>
+                </div>`;
+
+            html += `<div class="tool-title"><i class="fas fa-calendar-days"></i> آخر أيام الحضور</div>`;
+            if (!attendance.length) {
+                html += `<div style="text-align:center;padding:10px;color:var(--text-3);font-size:11.5px;">مفيش سجلات حضور لسه</div>`;
+            } else {
+                const statusLabels = { present: 'حاضر', absent: 'غايب', late: 'متأخر' };
+                const statusColors = { present: 'var(--success)', absent: 'var(--danger)', late: 'var(--warning)' };
+                html += `<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px;">` +
+                    attendance.slice(0, 8).map(a => `
+                        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-2);border-radius:8px;padding:7px 10px;font-size:11.5px;">
+                            <span>${escapeHtml(a.date)}</span>
+                            <span style="color:${statusColors[a.status] || 'var(--text-3)'};font-weight:700;">${statusLabels[a.status] || a.status}</span>
+                        </div>`).join('') +
+                    `</div>`;
+            }
+
+            html += `<div class="tool-title"><i class="fas fa-file-lines"></i> آخر نتائج الامتحانات</div>`;
+            if (!examResults.length) {
+                html += `<div style="text-align:center;padding:10px;color:var(--text-3);font-size:11.5px;">مفيش امتحانات متسجّلة لسه</div>`;
+            } else {
+                html += `<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px;">` +
+                    examResults.slice(0, 8).map(r => `
+                        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-2);border-radius:8px;padding:7px 10px;font-size:11.5px;gap:8px;">
+                            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(r.examName || r.examCode)}</span>
+                            <span style="font-weight:700;flex-shrink:0;">${r.score}${r.totalQuestions ? ' / ' + r.totalQuestions : ''}</span>
+                        </div>`).join('') +
+                    `</div>`;
+            }
+
+            if (violations.length) {
+                html += `<div class="tool-title"><i class="fas fa-triangle-exclamation"></i> المخالفات</div>
+                    <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px;">` +
+                    violations.slice(0, 8).map(v => `
+                        <div style="background:var(--bg-2);border-radius:8px;padding:7px 10px;font-size:11.5px;">
+                            <div style="font-weight:700;">${escapeHtml(v.type || 'مخالفة')}</div>
+                            <div style="color:var(--text-3);margin-top:2px;">${escapeHtml(v.reason || '')} ${v.date ? '· ' + escapeHtml(v.date) : ''}</div>
+                        </div>`).join('') +
+                    `</div>`;
+            }
+
+            if (pendingHomework.length) {
+                html += `<div class="tool-title"><i class="fas fa-list-check"></i> واجبات لسه ماسلمتهاش</div>
+                    <div style="display:flex;flex-direction:column;gap:5px;">` +
+                    pendingHomework.slice(0, 8).map(h => `
+                        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-2);border-radius:8px;padding:7px 10px;font-size:11.5px;gap:8px;">
+                            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(h.title)}</span>
+                            <span style="color:var(--warning);flex-shrink:0;">حتى ${escapeHtml(h.deadline)}</span>
+                        </div>`).join('') +
+                    `</div>`;
+            }
+
+            contentEl.innerHTML = html;
+        }
+
         async function loadAdminReviewQueue() {
             const listEl = document.getElementById('adminReviewList');
             if (!listEl || !schoolToken) return;
@@ -7357,6 +7638,11 @@
             const themeManuallyOff = localStorage.getItem('sx_premium_theme_off') === '1';
             document.body.classList.toggle('premium-theme-on', hasPremium('premium_theme') && !themeManuallyOff);
 
+            // زرار البروفايل الأكاديمي الموحّد في السايدبار — لطلاب premium_academic_profile
+            // بس (زي باقي أزرار السايدبار المشروطة بلوجن، ده مشروط بالميزة كمان فوق اللوجن).
+            const academicProfileBtn = document.getElementById('academicProfileBtn');
+            if (academicProfileBtn) academicProfileBtn.style.display = hasPremium('premium_academic_profile') ? 'flex' : 'none';
+
             // قسم موديلات Premium (Cerebras و Claude Opus): بنخفي القسم كله من القايمة
             // لو الطالب مش مستحق (اسم القسم نفسه بيختفي كمان، مش بس الموديلات جواه)،
             // وأي اختيار قديم متخزّن لأي موديل منهم (من قبل ما نقفله) بنرجعه لـ "تلقائي"
@@ -7408,7 +7694,8 @@
             premium_ai: 'ai', premium_mock_exams: 'mock', premium_prompts: 'prompts',
             premium_theme: 'theme', premium_drug_library: 'drugs',
             premium_clinical_sim: 'clinical', premium_lecture_audio: 'lecture',
-            premium_video_sim: 'videosim', premium_voice: 'voice', premium_skills: 'skills'
+            premium_video_sim: 'videosim', premium_voice: 'voice', premium_skills: 'skills',
+            premium_academic_profile: 'academic'
         };
         function openPremiumHub() {
             Object.entries(PREMIUM_UI_MAP).forEach(([key, suffix]) => {
