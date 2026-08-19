@@ -80,6 +80,67 @@ body {
 .sb-header .level-pill { margin-top: 10px; font-size: 12px; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
 .sb-header .level-pill b { color: var(--accent); }
 
+/* -------- CEFR level roadmap (A1 → C1) -------- */
+.level-roadmap { display: flex; align-items: center; gap: 3px; margin-top: 12px; }
+.level-step {
+    flex: 1; text-align: center; font-size: 10px; font-weight: 800; padding: 5px 0; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--border); color: var(--text-3); transition: all 0.3s;
+}
+.level-step.past { background: rgba(16, 185, 129, 0.12); border-color: rgba(16,185,129,0.4); color: var(--success); }
+.level-step.current {
+    background: linear-gradient(135deg, var(--accent), var(--gold)); color: #fff; border-color: transparent;
+    box-shadow: 0 2px 10px var(--accent-glow); transform: scale(1.08);
+}
+
+/* -------- Achievement badges -------- */
+.badges-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.ach-badge {
+    display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; padding: 4px 8px;
+    border-radius: 20px; background: var(--bg); border: 1px solid var(--gold-glow); color: var(--gold);
+}
+.ach-badge i { font-size: 10px; }
+
+/* -------- Vocabulary book button/modal -------- */
+.vocab-btn {
+    width: 100%; padding: 10px; background: linear-gradient(120deg, rgba(99,102,241,0.12), rgba(232,182,76,0.1));
+    border: 1px solid var(--border-accent); border-radius: var(--radius-sm); color: var(--text-1);
+    font-family: var(--font); font-size: 12.5px; font-weight: 700; cursor: pointer; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;
+}
+.vocab-btn:hover { border-color: var(--gold); color: var(--gold); }
+.vocab-modal {
+    display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6);
+    align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);
+}
+.vocab-modal.show { display: flex; }
+.vocab-panel {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 18px; max-width: 480px;
+    width: 100%; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
+    animation: floatIn 0.3s ease;
+}
+.vocab-panel-head { padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.vocab-panel-head h3 { font-size: 15px; font-weight: 800; }
+.vocab-panel-body { padding: 14px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.vocab-chip {
+    padding: 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border);
+    font-size: 12.5px; font-weight: 700; text-align: center; direction: ltr;
+}
+.vocab-empty { grid-column: 1 / -1; text-align: center; color: var(--text-3); font-size: 12.5px; padding: 20px; }
+
+/* -------- TTS pronunciation button inside bot bubbles -------- */
+.tts-btn {
+    display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+    border-radius: 7px; border: 1px solid var(--border); background: var(--bg-2); color: var(--text-3);
+    cursor: pointer; font-size: 10px; margin-right: 6px; vertical-align: middle; transition: all 0.2s;
+}
+.tts-btn:hover, .tts-btn.speaking { color: var(--accent); border-color: var(--accent); }
+.msg-toolbar { display: flex; align-items: center; gap: 4px; margin-top: 8px; }
+.copy-msg-btn {
+    width: 24px; height: 24px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg-2);
+    color: var(--text-3); cursor: pointer; font-size: 10px; display: inline-flex; align-items: center; justify-content: center;
+}
+.copy-msg-btn.copied { color: var(--success); border-color: var(--success); }
+
 /* -------- Progress bar (تقدّم الخطة الكلي) -------- */
 .progress-wrap { margin-top: 12px; }
 .progress-top { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-3); margin-bottom: 5px; }
@@ -263,16 +324,18 @@ body {
     <aside class="sidebar" id="sidebar">
         <div class="sb-header">
             <div class="brand"><span class="flag">🇩🇪</span> خطة German Pro <span class="badge">PREMIUM</span></div>
-            <div class="level-pill"><i class="fas fa-signal"></i> المستوى الحالي: <b id="levelText">—</b></div>
+            <div class="level-roadmap" id="levelRoadmap"></div>
             <div class="progress-wrap">
                 <div class="progress-top"><span>تقدّمك في الخطة</span><span id="progressPct">0%</span></div>
                 <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
             </div>
+            <div class="badges-row" id="badgesRow"></div>
         </div>
         <div class="plan-list" id="planList">
             <div class="plan-empty">هتظهر خطتك هنا بعد التقييم المبدئي — ابدأ الشات على اليمين.</div>
         </div>
         <div class="sb-footer">
+            <button class="vocab-btn" id="vocabBtn"><i class="fas fa-book-open"></i> دفتر المفردات (<span id="vocabCount">0</span>)</button>
             <button class="reset-btn" id="resetBtn"><i class="fas fa-rotate-left"></i> إعادة تعيين الخطة من الصفر</button>
         </div>
     </aside>
@@ -314,6 +377,16 @@ body {
             </div>
         </div>
     </main>
+</div>
+
+<div class="vocab-modal" id="vocabModal">
+    <div class="vocab-panel">
+        <div class="vocab-panel-head">
+            <h3>📘 دفتر مفرداتك</h3>
+            <button class="action-btn" onclick="document.getElementById('vocabModal').classList.remove('show')"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="vocab-panel-body" id="vocabPanelBody"></div>
+    </div>
 </div>
 
 <script>
@@ -366,13 +439,34 @@ function trackLabel(t) { return t === 'nursing' ? '🩺 تمريض' : '💬 عا
 function statusIcon(s) { return s === 'done' ? '✅' : s === 'active' ? '▶️' : '🔒'; }
 
 let lastDoneCount = 0;
+const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1'];
+
+function renderLevelRoadmap(level) {
+    const idx = CEFR_LEVELS.indexOf((level || '').toUpperCase());
+    document.getElementById('levelRoadmap').innerHTML = CEFR_LEVELS.map((lv, i) => {
+        const cls = idx === -1 ? '' : (i < idx ? 'past' : i === idx ? 'current' : '');
+        return `<div class="level-step ${cls}">${lv}</div>`;
+    }).join('');
+}
+
+function renderBadges(doneCount, level) {
+    const badges = [];
+    if (doneCount >= 1) badges.push(['fa-star', 'أول وحدة']);
+    if (doneCount >= 5) badges.push(['fa-medal', '5 وحدات']);
+    if (doneCount >= 10) badges.push(['fa-trophy', '10 وحدات']);
+    if (['B1', 'B2', 'C1'].includes((level || '').toUpperCase())) badges.push(['fa-crown', 'وصلت B1+']);
+    document.getElementById('badgesRow').innerHTML = badges.map(([icon, label]) =>
+        `<span class="ach-badge"><i class="fas ${icon}"></i> ${label}</span>`
+    ).join('');
+}
 
 function renderPlan(plan, level, currentUnitId) {
-    document.getElementById('levelText').textContent = level || '—';
+    renderLevelRoadmap(level);
     const list = document.getElementById('planList');
     if (!plan || !plan.length) {
         list.innerHTML = '<div class="plan-empty">هتظهر خطتك هنا بعد التقييم المبدئي — ابدأ الشات على اليمين.</div>';
         updateProgress(0, 0);
+        renderBadges(0, level);
         return;
     }
     list.innerHTML = plan.map(u => `
@@ -385,7 +479,8 @@ function renderPlan(plan, level, currentUnitId) {
 
     const doneCount = plan.filter(u => u.status === 'done').length;
     updateProgress(doneCount, plan.length);
-    if (doneCount > lastDoneCount && lastDoneCount !== 0) fireConfetti();
+    renderBadges(doneCount, level);
+    if (doneCount > lastDoneCount && lastDoneCount !== 0) { fireConfetti(); playChime(); }
     lastDoneCount = doneCount;
 }
 
@@ -393,6 +488,24 @@ function updateProgress(done, total) {
     const pct = total ? Math.round((done / total) * 100) : 0;
     document.getElementById('progressPct').textContent = pct + '%';
     document.getElementById('progressFill').style.width = pct + '%';
+}
+
+// -------- نغمة قصيرة بسيطة (Web Audio) عند إنهاء وحدة --------
+function playChime() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [523.25, 659.25, 783.99].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.35);
+            osc.connect(gain).connect(ctx.destination);
+            osc.start(ctx.currentTime + i * 0.12);
+            osc.stop(ctx.currentTime + i * 0.12 + 0.35);
+        });
+    } catch (e) { /* الجهاز/المتصفح مش داعم Web Audio — تجاهل */ }
 }
 
 // -------- احتفال بصري بسيط لما الطالب يخلّص وحدة --------
@@ -447,14 +560,48 @@ function addMessage(role, content) {
         wrap.className = 'message ' + (role === 'user' ? 'user' : 'bot');
         const avatar = role === 'user' ? '<i class="fas fa-user"></i>' : '🇩🇪';
         const bubbleHtml = role === 'user' ? escapeHtml(content) : marked.parse(content);
+        const toolbar = role === 'bot'
+            ? `<div class="msg-toolbar">
+                 <button class="tts-btn" title="استماع للنطق" onclick="speakText(this, ${JSON.stringify(content)})"><i class="fas fa-volume-high"></i></button>
+                 <button class="copy-msg-btn" title="نسخ" onclick="copyMsg(this, ${JSON.stringify(content)})"><i class="fas fa-copy"></i></button>
+               </div>`
+            : '';
         wrap.innerHTML = `
             <div class="msg-avatar">${avatar}</div>
-            <div class="msg-content"><div class="msg-bubble">${bubbleHtml}</div></div>
+            <div class="msg-content"><div class="msg-bubble">${bubbleHtml}</div>${toolbar}</div>
         `;
     }
     box.appendChild(wrap);
     box.scrollTop = box.scrollHeight;
     return wrap;
+}
+
+// -------- استماع للنطق (Web Speech API — نطق ألماني بمتصفحات اللي بتدعمها) --------
+let currentUtterance = null;
+function speakText(btn, text) {
+    if (!('speechSynthesis' in window)) { alert('متصفحك مش بيدعم النطق الصوتي.'); return; }
+    if (currentUtterance) { speechSynthesis.cancel(); currentUtterance = null; }
+    document.querySelectorAll('.tts-btn.speaking').forEach(b => b.classList.remove('speaking'));
+
+    const clean = text.replace(/```[\s\S]*?```/g, '').replace(/[*_#>`]/g, '');
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.lang = 'de-DE';
+    utter.rate = 0.92;
+    const voices = speechSynthesis.getVoices();
+    const deVoice = voices.find(v => v.lang && v.lang.startsWith('de'));
+    if (deVoice) utter.voice = deVoice;
+    utter.onstart = () => btn.classList.add('speaking');
+    utter.onend = () => { btn.classList.remove('speaking'); currentUtterance = null; };
+    currentUtterance = utter;
+    speechSynthesis.speak(utter);
+}
+
+function copyMsg(btn, text) {
+    const clean = text.replace(/[*_#>`]/g, '');
+    navigator.clipboard.writeText(clean).then(() => {
+        btn.classList.add('copied');
+        setTimeout(() => btn.classList.remove('copied'), 1500);
+    });
 }
 
 function showTyping() {
@@ -469,10 +616,32 @@ function showTyping() {
 }
 function hideTyping() { document.getElementById('typingRow')?.remove(); }
 
+// -------- دفتر المفردات (من الوحدات المخلّصة) --------
+let allCompletedUnits = [];
+function renderVocabBook() {
+    document.getElementById('vocabCount').textContent = allCompletedUnits.reduce((n, u) => n + (u.keyVocab?.length || 0), 0);
+    const body = document.getElementById('vocabPanelBody');
+    const words = allCompletedUnits.flatMap(u => u.keyVocab || []);
+    if (!words.length) {
+        body.innerHTML = '<div class="vocab-empty">لسه مفيش مفردات محفوظة — هتتجمع تلقائي كل ما تخلّص وحدة.</div>';
+        return;
+    }
+    body.innerHTML = words.map(w => `<div class="vocab-chip">${escapeHtml(w)}</div>`).join('');
+}
+document.getElementById('vocabBtn')?.addEventListener('click', () => {
+    renderVocabBook();
+    document.getElementById('vocabModal').classList.add('show');
+});
+document.getElementById('vocabModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'vocabModal') e.target.classList.remove('show');
+});
+
 async function init() {
     try {
         const data = await api('/api/german-pro/state');
+        allCompletedUnits = data.completedUnits || [];
         renderPlan(data.plan, data.level, data.currentUnitId);
+        renderVocabBook();
         if (data.history && data.history.length) {
             hideWelcome();
             data.history.forEach(m => addMessage(m.role === 'user' ? 'user' : 'bot', m.content));
@@ -499,6 +668,7 @@ async function send() {
         const data = await api('/api/german-pro/message', { method: 'POST', body: JSON.stringify({ message: text }) });
         hideTyping();
         addMessage('bot', data.reply);
+        allCompletedUnits = data.completedUnits || allCompletedUnits;
         renderPlan(data.plan, data.level, data.currentUnitId);
     } catch (e) {
         hideTyping();
