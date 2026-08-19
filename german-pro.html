@@ -2,205 +2,407 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>German Pro — تعلّم الألمانية للتمريض باحترافية</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#6366f1">
+<title>German Pro | Chat X</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 <style>
-  :root{
-    --bg:#0f1117; --panel:#171a23; --panel2:#1e222d; --border:#2a2f3d;
-    --text:#eef0f5; --muted:#9aa2b1; --accent:#4f8cff; --accent2:#22c55e;
-    --gold:#e8b64c; --danger:#ef4444;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex}
-  #locked{display:none;flex-direction:column;align-items:center;justify-content:center;height:100vh;width:100%;text-align:center;padding:20px}
-  #locked h1{font-size:22px}
-  #locked p{color:var(--muted);max-width:420px}
-  .app{display:none;width:100%;height:100%}
-  .app.show{display:flex}
-  #locked.show{display:flex}
+:root {
+    --bg: #0a0e1a; --bg-2: #131827; --bg-glass: rgba(19, 24, 39, 0.75); --bg-glass-heavy: rgba(10, 14, 26, 0.95);
+    --accent: #6366f1; --accent-2: #8b5cf6; --accent-3: #ec4899; --accent-glow: rgba(99, 102, 241, 0.35);
+    --text-1: #f1f5f9; --text-2: #94a3b8; --text-3: #64748b;
+    --border: rgba(255, 255, 255, 0.08); --border-accent: rgba(99, 102, 241, 0.4);
+    --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+    --radius: 16px; --radius-sm: 10px;
+    --font: 'Cairo', sans-serif;
+    --grad-bold: linear-gradient(120deg, var(--accent), var(--accent-2) 55%, var(--accent-3));
+}
+body.light {
+    --bg: #f8fafc; --bg-2: #ffffff; --bg-glass: rgba(255, 255, 255, 0.8); --bg-glass-heavy: rgba(255, 255, 255, 0.95);
+    --accent: #4f46e5; --accent-2: #7c3aed; --accent-3: #db2777; --accent-glow: rgba(79, 70, 229, 0.2);
+    --text-1: #0f172a; --text-2: #475569; --text-3: #94a3b8;
+    --border: rgba(0, 0, 0, 0.08); --border-accent: rgba(79, 70, 229, 0.3);
+}
+@keyframes gradientFlow { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes floatIn { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
-  .sidebar{width:300px;min-width:300px;background:var(--panel);border-left:1px solid var(--border);
-    display:flex;flex-direction:column;overflow:hidden}
-  .sidebar-head{padding:16px;border-bottom:1px solid var(--border)}
-  .sidebar-head h2{margin:0;font-size:16px;display:flex;align-items:center;gap:8px}
-  .sidebar-head .badge{font-size:11px;background:linear-gradient(90deg,var(--gold),#f5d98a);color:#3a2a00;
-    padding:2px 8px;border-radius:20px;font-weight:700}
-  .level-pill{margin-top:8px;font-size:12px;color:var(--muted)}
-  .plan{flex:1;overflow-y:auto;padding:10px}
-  .unit{padding:10px 12px;border-radius:10px;margin-bottom:6px;font-size:13px;border:1px solid transparent}
-  .unit.active{background:rgba(79,140,255,.12);border-color:var(--accent)}
-  .unit.done{opacity:.65}
-  .unit .u-top{display:flex;justify-content:space-between;gap:6px;align-items:center}
-  .unit .u-title{font-weight:600}
-  .unit .u-track{font-size:10px;color:var(--muted);margin-top:2px}
-  .icon{width:16px;text-align:center}
-  .sidebar-foot{padding:10px;border-top:1px solid var(--border)}
-  .sidebar-foot button{width:100%;background:transparent;color:var(--muted);border:1px solid var(--border);
-    border-radius:8px;padding:8px;cursor:pointer;font-size:12px}
-  .sidebar-foot button:hover{color:var(--danger);border-color:var(--danger)}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+html, body { height: 100%; overflow: hidden; }
+body {
+    font-family: var(--font); background: var(--bg); color: var(--text-1);
+    height: 100dvh; display: flex; justify-content: center;
+    transition: background 0.4s ease, color 0.4s ease;
+}
+.app-container { display: flex; width: 100%; height: 100%; max-width: 1400px; position: relative; }
 
-  .main{flex:1;display:flex;flex-direction:column;min-width:0}
-  .topbar{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-  .topbar h1{font-size:16px;margin:0}
-  .topbar a{color:var(--muted);text-decoration:none;font-size:13px}
+/* -------- Sidebar (خطة الوحدات) -------- */
+.sidebar {
+    width: 300px; min-width: 300px; background: var(--bg-2); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden; transition: transform 0.3s ease;
+}
+@media (max-width: 767px) {
+    .sidebar {
+        position: fixed; top: 0; right: 0; height: 100dvh; width: 85vw; max-width: 320px;
+        transform: translateX(100%); box-shadow: -10px 0 40px rgba(0,0,0,0.5);
+        padding-top: env(safe-area-inset-top); z-index: 50;
+    }
+    .sidebar.open { transform: translateX(0); }
+}
+@media (min-width: 768px) { .sidebar { border-radius: 0 24px 24px 0; } }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; }
+.sidebar-overlay.show { display: block; }
 
-  .messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
-  .msg{max-width:78%;padding:12px 14px;border-radius:14px;line-height:1.7;font-size:14.5px;white-space:pre-wrap}
-  .msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-left-radius:4px}
-  .msg.bot{align-self:flex-start;background:var(--panel2);border:1px solid var(--border);border-bottom-right-radius:4px}
-  .msg.system{align-self:center;color:var(--muted);font-size:12px;background:transparent}
-  .typing{align-self:flex-start;color:var(--muted);font-size:13px;padding:0 4px}
+.sb-header { padding: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.sb-header .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px; }
+.sb-header .brand .flag { font-size: 18px; }
+.sb-header .badge {
+    font-size: 10px; background: linear-gradient(120deg, #e8b64c, #f5d98a); color: #3a2a00;
+    padding: 2px 8px; border-radius: 20px; font-weight: 800; margin-right: 6px;
+}
+.sb-header .level-pill { margin-top: 10px; font-size: 12px; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
+.sb-header .level-pill b { color: var(--accent); }
 
-  .composer{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:10px}
-  .composer textarea{flex:1;resize:none;background:var(--panel2);border:1px solid var(--border);color:var(--text);
-    border-radius:12px;padding:12px 14px;font-size:14px;font-family:inherit;height:50px}
-  .composer button{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:0 22px;cursor:pointer;font-weight:600}
-  .composer button:disabled{opacity:.5;cursor:not-allowed}
+.plan-list { flex: 1; overflow-y: auto; padding: 10px; }
+.plan-list::-webkit-scrollbar { width: 4px; }
+.plan-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.unit-card {
+    padding: 11px 12px; border-radius: var(--radius-sm); margin-bottom: 6px; font-size: 12.5px;
+    border: 1px solid var(--border); background: var(--bg); transition: all 0.2s;
+}
+.unit-card.active { background: rgba(99, 102, 241, 0.12); border-color: var(--border-accent); box-shadow: 0 0 0 1px var(--border-accent); }
+.unit-card.done { opacity: 0.6; }
+.unit-card .u-top { display: flex; justify-content: space-between; gap: 6px; align-items: flex-start; }
+.unit-card .u-title { font-weight: 700; line-height: 1.4; }
+.unit-card .u-track { font-size: 10.5px; color: var(--text-3); margin-top: 4px; }
+.plan-empty { color: var(--text-3); font-size: 12.5px; padding: 14px; text-align: center; line-height: 1.7; }
+
+.sb-footer { padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+.reset-btn {
+    width: 100%; padding: 10px; background: transparent; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text-3); font-family: var(--font); font-size: 12px;
+    font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.2s;
+}
+.reset-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+/* -------- Main -------- */
+.main-area { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; background: var(--bg); }
+.top-bar {
+    padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center;
+    justify-content: space-between; gap: 10px; background: var(--bg-glass-heavy); backdrop-filter: blur(12px);
+    flex-shrink: 0; padding-top: max(12px, env(safe-area-inset-top));
+}
+.bot-identity { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.bot-avatar {
+    width: 38px; height: 38px; border-radius: 10px; background: var(--grad-bold); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px;
+}
+.bot-text { min-width: 0; }
+.bot-name-badge { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.bot-name-badge h2 {
+    font-size: 16px; font-weight: 800;
+    background: linear-gradient(120deg, var(--text-1) 20%, var(--accent) 55%, var(--accent-3));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.bot-sub { font-size: 10.5px; color: var(--text-2); font-weight: 600; }
+.top-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.icon-btn, .menu-btn, .action-btn {
+    width: 38px; height: 38px; border-radius: 10px; background: var(--bg-2); border: 1px solid var(--border);
+    color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; transition: all 0.2s; flex-shrink: 0;
+}
+.action-btn:hover { border-color: var(--accent); color: var(--accent); }
+.menu-btn { display: none; }
+@media (max-width: 767px) { .menu-btn { display: flex; } }
+
+.chat-container { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.chat-container::-webkit-scrollbar { width: 4px; }
+.chat-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.welcome-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+.welcome-logo {
+    width: 64px; height: 64px; border-radius: 18px; background: var(--grad-bold); display: flex;
+    align-items: center; justify-content: center; font-size: 28px; margin-bottom: 18px; box-shadow: 0 0 40px var(--accent-glow);
+}
+.welcome-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.welcome-sub { font-size: 13px; color: var(--text-2); max-width: 420px; line-height: 1.8; }
+
+.message { display: flex; gap: 10px; max-width: 90%; animation: floatIn 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+@media (min-width: 768px) { .message { max-width: 78%; gap: 12px; } }
+.message.user { flex-direction: row-reverse; margin-left: auto; }
+.msg-avatar {
+    width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; display: flex;
+    align-items: center; justify-content: center; font-size: 13px; margin-top: 2px;
+}
+.message.bot .msg-avatar { background: var(--grad-bold); color: white; }
+.message.user .msg-avatar { background: var(--bg-2); border: 1px solid var(--border); color: var(--text-2); }
+.msg-content { flex: 1; min-width: 0; max-width: 100%; }
+.msg-bubble {
+    padding: 12px 14px; border-radius: 16px; font-size: 14px; line-height: 1.7;
+    word-wrap: break-word; overflow-wrap: anywhere; max-width: 100%;
+}
+.message.bot .msg-bubble { background: var(--bg-glass); border: 1px solid var(--border); border-top-right-radius: 4px; }
+.message.user .msg-bubble {
+    background: var(--grad-bold); background-size: 200% 200%; color: #fff; border-top-left-radius: 4px;
+    animation: gradientFlow 8s ease infinite; box-shadow: 0 4px 16px -6px var(--accent-glow);
+}
+.msg-bubble p { margin-bottom: 8px; } .msg-bubble p:last-child { margin-bottom: 0; }
+.msg-bubble ul, .msg-bubble ol { margin: 6px 18px; }
+.msg-bubble code { font-family: 'Consolas', monospace; background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 5px; font-size: 12.5px; direction: ltr; unicode-bidi: isolate; }
+.msg-bubble strong { color: inherit; }
+.message.system-note { align-self: center; max-width: 90%; }
+.message.system-note .msg-bubble { background: transparent; border: 1px dashed var(--border-accent); color: var(--text-3); font-size: 12.5px; text-align: center; }
+
+.typing-indicator { display: flex; gap: 4px; padding: 14px; background: var(--bg-glass); border: 1px solid var(--border); border-radius: 16px; border-top-right-radius: 4px; width: fit-content; }
+.typing-indicator span { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: pulse 1s infinite; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+
+.input-area {
+    padding: 12px 14px; border-top: 1px solid var(--border); background: var(--bg-glass-heavy);
+    backdrop-filter: blur(12px); flex-shrink: 0; padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+.input-row { display: flex; align-items: flex-end; gap: 8px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 18px; padding: 8px 8px 8px 14px; }
+.input-row textarea {
+    flex: 1; border: none; background: transparent; color: var(--text-1); font-family: var(--font);
+    font-size: 14px; resize: none; max-height: 120px; min-height: 24px; line-height: 1.6; padding: 6px 0;
+}
+.send-btn {
+    width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--grad-bold); color: #fff;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
+    box-shadow: 0 4px 14px var(--accent-glow); transition: transform 0.15s;
+}
+.send-btn:active { transform: scale(0.92); }
+.send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* -------- Locked screen -------- */
+#lockedScreen {
+    display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%;
+    width: 100%; text-align: center; padding: 30px;
+}
+#lockedScreen.show { display: flex; }
+.lock-icon {
+    width: 70px; height: 70px; border-radius: 20px; background: var(--bg-2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: 28px; color: var(--text-3); margin-bottom: 18px;
+}
+#lockedScreen h1 { font-size: 19px; margin-bottom: 8px; }
+#lockedScreen p { color: var(--text-2); max-width: 380px; font-size: 13.5px; line-height: 1.8; }
+.back-link { margin-top: 20px; color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 700; }
 </style>
 </head>
 <body>
 
-  <div id="locked">
-    <h1>🔒 German Pro</h1>
-    <p>الميزة دي متاحة بس لطلاب <b>Premium</b> المفعّل لهم "German Pro". لو حاسس إن ده غلط، كلم الأدمن.</p>
-    <p id="lockedDetail" style="color:var(--danger);font-size:13px"></p>
-  </div>
+<div id="lockedScreen">
+    <div class="lock-icon"><i class="fas fa-lock"></i></div>
+    <h1>🇩🇪 German Pro</h1>
+    <p>الميزة دي متاحة بس لطلاب Premium المفعّل لهم "German Pro". لو حاسس إن ده غلط، كلم الأدمن بتاعك.</p>
+    <a class="back-link" href="index.html">↩ رجوع لـ Chat X</a>
+</div>
 
-  <div class="app" id="app">
-    <div class="sidebar">
-      <div class="sidebar-head">
-        <h2>🇩🇪 German Pro <span class="badge">PREMIUM</span></h2>
-        <div class="level-pill" id="levelPill">المستوى: —</div>
-      </div>
-      <div class="plan" id="planList"></div>
-      <div class="sidebar-foot">
-        <button id="resetBtn">إعادة تعيين الخطة من الصفر</button>
-      </div>
-    </div>
+<div class="app-container" id="appContainer" style="display:none">
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sb-header">
+            <div class="brand"><span class="flag">🇩🇪</span> خطة German Pro <span class="badge">PREMIUM</span></div>
+            <div class="level-pill"><i class="fas fa-signal"></i> المستوى الحالي: <b id="levelText">—</b></div>
+        </div>
+        <div class="plan-list" id="planList">
+            <div class="plan-empty">هتظهر خطتك هنا بعد التقييم المبدئي — ابدأ الشات على اليمين.</div>
+        </div>
+        <div class="sb-footer">
+            <button class="reset-btn" id="resetBtn"><i class="fas fa-rotate-left"></i> إعادة تعيين الخطة من الصفر</button>
+        </div>
+    </aside>
 
-    <div class="main">
-      <div class="topbar">
-        <h1>مدرّس الألمانية الاحترافي — تخصص تمريض</h1>
-        <a href="index.html">↩ رجوع للشات الرئيسي</a>
-      </div>
-      <div class="messages" id="messages"></div>
-      <div class="composer">
-        <textarea id="input" placeholder="اكتب رسالتك هنا... (مثلاً: ابدأ التقييم)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"></textarea>
-        <button id="sendBtn" onclick="send()">إرسال</button>
-      </div>
-    </div>
-  </div>
+    <main class="main-area">
+        <div class="top-bar">
+            <div class="bot-identity">
+                <div class="bot-avatar"><i class="fas fa-graduation-cap"></i></div>
+                <div class="bot-text">
+                    <div class="bot-name-badge"><h2>Chat X</h2></div>
+                    <div class="bot-sub">🇩🇪 German Pro — الألمانية الاحترافية للتمريض</div>
+                </div>
+            </div>
+            <div class="top-actions">
+                <button class="action-btn" id="themeBtn" aria-label="تبديل الوضع الليلي والنهاري" onclick="toggleTheme(event)"><i class="fas fa-moon" id="themeIcon"></i></button>
+                <button class="menu-btn" aria-label="الخطة" onclick="toggleSidebar()"><i class="fas fa-list-check"></i></button>
+            </div>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-logo">🇩🇪</div>
+                <h1 class="welcome-title">أهلاً بيك في German Pro</h1>
+                <p class="welcome-sub">مدرّس ألماني احترافي متخصص في التمريض. ابعت أي رسالة (مثلاً "ابدأ") وهنعمل تقييم سريع، وبعدها هتاخد خطة تعلّم كاملة مبنية عليك.</p>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-row">
+                <textarea id="input" rows="1" placeholder="اكتب رسالتك هنا..." onkeydown="handleKeydown(event)" oninput="autoGrow(this)"></textarea>
+                <button class="send-btn" id="sendBtn" onclick="send()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </main>
+</div>
 
 <script>
-const API = 'https://schoolx-eta.vercel.app'; // نفس السيرفر المستخدم في index.html — غيّره لو مختلف
+const API = 'https://schoolx-eta.vercel.app'; // نفس سيرفر School X المستخدم في index.html
 const token = localStorage.getItem('sx_school_token');
 const premiumFeatures = JSON.parse(localStorage.getItem('sx_premium_features') || '[]');
 const schoolUser = JSON.parse(localStorage.getItem('sx_school_user') || 'null');
 const isAdminUser = schoolUser?.type === 'admin';
 
-function showLocked(detail){
-  document.getElementById('locked').classList.add('show');
-  if(detail) document.getElementById('lockedDetail').textContent = detail;
+marked.setOptions({ breaks: true, gfm: true });
+
+// ---------- نفس نظام الوضع الليلي/النهاري المستخدم في index.html ----------
+const settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: 'dark' };
+function applyTheme(theme) {
+    document.body.className = theme === 'light' ? 'light' : '';
+    const icon = document.getElementById('themeIcon');
+    if (icon) icon.className = theme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
+}
+function toggleTheme() {
+    settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(settings.theme);
+    localStorage.setItem('sx_settings', JSON.stringify(settings));
+}
+applyTheme(settings.theme || 'dark');
+
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('show');
 }
 
-if(!token || (!isAdminUser && !premiumFeatures.includes('premium_german_pro'))){
-  showLocked('');
+// ---------- تحقق من صلاحية الدخول ----------
+if (!token || (!isAdminUser && !premiumFeatures.includes('premium_german_pro'))) {
+    document.getElementById('lockedScreen').classList.add('show');
 } else {
-  document.getElementById('app').classList.add('show');
-  init();
+    document.getElementById('appContainer').style.display = 'flex';
+    init();
 }
 
-async function api(path, opts={}){
-  const res = await fetch(API + path, {
-    ...opts,
-    headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer ' + token, ...(opts.headers||{}) }
-  });
-  const data = await res.json().catch(()=>({}));
-  if(!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
-  return data;
+async function api(path, opts = {}) {
+    const res = await fetch(API + path, {
+        ...opts,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...(opts.headers || {}) }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    return data;
 }
 
-function trackLabel(t){ return t === 'nursing' ? '🩺 تمريض' : '💬 عام'; }
-function statusIcon(s){ return s === 'done' ? '✅' : s === 'active' ? '▶️' : '🔒'; }
+function trackLabel(t) { return t === 'nursing' ? '🩺 تمريض' : '💬 عام'; }
+function statusIcon(s) { return s === 'done' ? '✅' : s === 'active' ? '▶️' : '🔒'; }
 
-function renderPlan(plan, level, currentUnitId){
-  document.getElementById('levelPill').textContent = 'المستوى: ' + (level || '—');
-  const list = document.getElementById('planList');
-  if(!plan || !plan.length){
-    list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:10px">هيتم عرض خطتك هنا بعد التقييم المبدئي — ابدأ الشات على اليمين.</div>';
-    return;
-  }
-  list.innerHTML = plan.map(u => `
-    <div class="unit ${u.id === currentUnitId ? 'active' : ''} ${u.status === 'done' ? 'done' : ''}">
-      <div class="u-top"><span class="icon">${statusIcon(u.status)}</span><span class="u-title">${escapeHtml(u.title)}</span></div>
-      <div class="u-track">${trackLabel(u.track)} · ${escapeHtml(u.level || '')}</div>
-    </div>
-  `).join('');
-}
-
-function addMsg(role, text){
-  const box = document.getElementById('messages');
-  const div = document.createElement('div');
-  div.className = 'msg ' + role;
-  div.textContent = text;
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
-}
-
-async function init(){
-  try{
-    const data = await api('/api/german-pro/state');
-    renderPlan(data.plan, data.level, data.currentUnitId);
-    const box = document.getElementById('messages');
-    box.innerHTML = '';
-    if(!data.history || !data.history.length){
-      addMsg('system', 'أهلاً بيك في German Pro 🇩🇪 — ابعت أي رسالة (مثلاً "ابدأ") عشان نعمل تقييم سريع ونبني خطتك الشخصية.');
-    } else {
-      data.history.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bot', m.content));
+function renderPlan(plan, level, currentUnitId) {
+    document.getElementById('levelText').textContent = level || '—';
+    const list = document.getElementById('planList');
+    if (!plan || !plan.length) {
+        list.innerHTML = '<div class="plan-empty">هتظهر خطتك هنا بعد التقييم المبدئي — ابدأ الشات على اليمين.</div>';
+        return;
     }
-  }catch(e){
-    if(String(e.message).includes('403')) showLocked(e.message);
-    addMsg('system', 'تعذر تحميل الحالة: ' + e.message);
-  }
+    list.innerHTML = plan.map(u => `
+        <div class="unit-card ${u.id === currentUnitId ? 'active' : ''} ${u.status === 'done' ? 'done' : ''}">
+            <div class="u-top"><span>${statusIcon(u.status)}</span><span class="u-title">${escapeHtml(u.title)}</span></div>
+            <div class="u-track">${trackLabel(u.track)} · ${escapeHtml(u.level || '')}</div>
+        </div>
+    `).join('');
 }
 
-async function send(){
-  const input = document.getElementById('input');
-  const text = input.value.trim();
-  if(!text) return;
-  input.value = '';
-  document.getElementById('sendBtn').disabled = true;
-  addMsg('user', text);
-  const box = document.getElementById('messages');
-  const typing = document.createElement('div');
-  typing.className = 'typing';
-  typing.textContent = 'بيكتب...';
-  box.appendChild(typing);
-  box.scrollTop = box.scrollHeight;
-
-  try{
-    const data = await api('/api/german-pro/message', { method:'POST', body: JSON.stringify({ message: text }) });
-    typing.remove();
-    addMsg('bot', data.reply);
-    renderPlan(data.plan, data.level, data.currentUnitId);
-  }catch(e){
-    typing.remove();
-    addMsg('system', 'حصل خطأ: ' + e.message);
-  }finally{
-    document.getElementById('sendBtn').disabled = false;
-  }
+function hideWelcome() {
+    const w = document.getElementById('welcomeScreen');
+    if (w) w.remove();
 }
 
-document.getElementById('resetBtn').addEventListener('click', async ()=>{
-  if(!confirm('هيتم مسح كل تقدمك وتبدأ من الصفر تاني — متأكد؟')) return;
-  try{
-    await api('/api/german-pro/reset', { method:'POST' });
-    location.reload();
-  }catch(e){ alert('خطأ: ' + e.message); }
+function addMessage(role, content) {
+    hideWelcome();
+    const box = document.getElementById('chatContainer');
+    const wrap = document.createElement('div');
+    if (role === 'system') {
+        wrap.className = 'message system-note';
+        wrap.innerHTML = `<div class="msg-content"><div class="msg-bubble">${escapeHtml(content)}</div></div>`;
+    } else {
+        wrap.className = 'message ' + (role === 'user' ? 'user' : 'bot');
+        const avatar = role === 'user' ? '<i class="fas fa-user"></i>' : '🇩🇪';
+        const bubbleHtml = role === 'user' ? escapeHtml(content) : marked.parse(content);
+        wrap.innerHTML = `
+            <div class="msg-avatar">${avatar}</div>
+            <div class="msg-content"><div class="msg-bubble">${bubbleHtml}</div></div>
+        `;
+    }
+    box.appendChild(wrap);
+    box.scrollTop = box.scrollHeight;
+    return wrap;
+}
+
+function showTyping() {
+    hideWelcome();
+    const box = document.getElementById('chatContainer');
+    const wrap = document.createElement('div');
+    wrap.className = 'message bot';
+    wrap.id = 'typingRow';
+    wrap.innerHTML = `<div class="msg-avatar">🇩🇪</div><div class="msg-content"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+    box.appendChild(wrap);
+    box.scrollTop = box.scrollHeight;
+}
+function hideTyping() { document.getElementById('typingRow')?.remove(); }
+
+async function init() {
+    try {
+        const data = await api('/api/german-pro/state');
+        renderPlan(data.plan, data.level, data.currentUnitId);
+        if (data.history && data.history.length) {
+            hideWelcome();
+            data.history.forEach(m => addMessage(m.role === 'user' ? 'user' : 'bot', m.content));
+        }
+    } catch (e) {
+        addMessage('system', 'تعذر تحميل حالتك: ' + e.message);
+    }
+}
+
+function autoGrow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+function handleKeydown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+
+async function send() {
+    const input = document.getElementById('input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    autoGrow(input);
+    document.getElementById('sendBtn').disabled = true;
+    addMessage('user', text);
+    showTyping();
+
+    try {
+        const data = await api('/api/german-pro/message', { method: 'POST', body: JSON.stringify({ message: text }) });
+        hideTyping();
+        addMessage('bot', data.reply);
+        renderPlan(data.plan, data.level, data.currentUnitId);
+    } catch (e) {
+        hideTyping();
+        addMessage('system', 'حصل خطأ: ' + e.message);
+    } finally {
+        document.getElementById('sendBtn').disabled = false;
+        input.focus();
+    }
+}
+
+document.getElementById('resetBtn')?.addEventListener('click', async () => {
+    if (!confirm('هيتم مسح كل تقدمك وتبدأ من الصفر تاني — متأكد؟')) return;
+    try {
+        await api('/api/german-pro/reset', { method: 'POST' });
+        location.reload();
+    } catch (e) { alert('خطأ: ' + e.message); }
 });
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 </script>
 </body>
