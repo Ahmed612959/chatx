@@ -263,6 +263,7 @@ body {
 
 .message { display: flex; gap: 10px; max-width: 90%; animation: floatIn 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
 @media (min-width: 768px) { .message { max-width: 78%; gap: 12px; } }
+@media (max-width: 767px) { .message.bot.has-table { max-width: 97%; } }
 .message.user { flex-direction: row-reverse; margin-left: auto; }
 .msg-avatar {
     width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; display: flex;
@@ -293,12 +294,19 @@ body {
 .msg-bubble blockquote { border-right: 3px solid var(--border-accent); padding: 4px 12px; margin: 8px 0; color: var(--text-2); font-size: 13px; }
 .msg-bubble table {
     width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12.5px;
-    direction: ltr; text-align: center; overflow: hidden; border-radius: 8px;
+    direction: ltr; text-align: center; overflow: hidden; border-radius: 8px; table-layout: auto;
 }
-.msg-bubble th, .msg-bubble td { border: 1px solid var(--border); padding: 7px 9px; }
+.msg-bubble th, .msg-bubble td { border: 1px solid var(--border); padding: 8px 10px; white-space: normal; min-width: 84px; }
 .msg-bubble th { background: rgba(99, 102, 241, 0.15); font-weight: 800; color: var(--text-1); }
 .msg-bubble tr:nth-child(even) td { background: rgba(255, 255, 255, 0.02); }
-.msg-bubble .table-scroll { overflow-x: auto; margin: 8px 0; }
+.msg-bubble .table-scroll {
+    overflow-x: auto; margin: 10px -14px; padding: 0 14px; -webkit-overflow-scrolling: touch;
+}
+.msg-bubble .table-scroll table { min-width: 100%; }
+@media (max-width: 480px) {
+    .msg-bubble .table-scroll { margin: 10px -12px; padding: 0 12px; }
+    .msg-bubble th, .msg-bubble td { padding: 7px 8px; font-size: 12px; }
+}
 .message.system-note { align-self: center; max-width: 90%; }
 .message.system-note .msg-bubble { background: transparent; border: 1px dashed var(--border-accent); color: var(--text-3); font-size: 12.5px; text-align: center; }
 
@@ -625,12 +633,14 @@ function addMessage(role, content) {
     }
     box.appendChild(wrap);
     if (role === 'bot') {
-        wrap.querySelectorAll('.msg-bubble table').forEach(t => {
+        const tables = wrap.querySelectorAll('.msg-bubble table');
+        tables.forEach(t => {
             const scrollDiv = document.createElement('div');
             scrollDiv.className = 'table-scroll';
             t.parentNode.insertBefore(scrollDiv, t);
             scrollDiv.appendChild(t);
         });
+        if (tables.length) wrap.classList.add('has-table');
     }
     box.scrollTop = box.scrollHeight;
     return wrap;
