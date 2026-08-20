@@ -132,7 +132,8 @@ body {
 .vocab-card .vc-ipa { direction: ltr; text-align: left; font-size: 11px; color: var(--text-3); margin-top: 3px; }
 .vocab-card .vc-meaning { font-size: 13px; font-weight: 700; margin-top: 6px; }
 .vocab-card .vc-example { font-size: 11.5px; color: var(--text-2); margin-top: 6px; border-top: 1px dashed var(--border); padding-top: 6px; line-height: 1.6; }
-.vocab-card .vc-example .de { direction: ltr; text-align: left; display: block; font-weight: 600; color: var(--text-1); }
+.vocab-card .vc-example .de { direction: ltr; text-align: left; display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text-1); }
+.vocab-card .vc-example .de .tts-btn { width: 20px; height: 20px; font-size: 9px; margin: 0; flex-shrink: 0; }
 .vocab-panel-body.grammar-list { display: flex; flex-direction: column; gap: 10px; }
 .grammar-card { padding: 12px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); }
 .grammar-card h4 { font-size: 13.5px; font-weight: 800; margin-bottom: 6px; color: var(--gold); }
@@ -646,23 +647,84 @@ function addMessage(role, content) {
     return wrap;
 }
 
-// -------- استماع للنطق (Web Speech API — نطق ألماني بمتصفحات اللي بتدعمها) --------
-let currentUtterance = null;
-function speakText(btn, text) {
-    if (!('speechSynthesis' in window)) { alert('متصفحك مش بيدعم النطق الصوتي.'); return; }
-    if (currentUtterance) { speechSynthesis.cancel(); currentUtterance = null; }
+// -------- استماع للنطق — من السيرفر أساسًا (بيشتغل مع أي طالب على أي جهاز)،
+// مع نطق المتصفح كخطة بديلة صامتة لو السيرفر فشل لأي سبب --------
+let currentAudio = null;
+let ttsWarnedOnce = false;
+
+function sanitizeForSpeech(text) {
+    return text
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/\[[^\]]*\]/g, '')                        // شيل [IPA]
+        .replace(/\([^)]*[\u0600-\u06FF][^)]*\)/g, '')     // شيل أي قوس فيه عربي (النطق التقريبي)
+        .replace(/[*_#>`|]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+async function speakText(btn, text) {
+    // إيقاف أي صوت شغال دلوقتي
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
     document.querySelectorAll('.tts-btn.speaking').forEach(b => b.classList.remove('speaking'));
 
-    const clean = text.replace(/```[\s\S]*?```/g, '').replace(/[*_#>`]/g, '');
+    const clean = sanitizeForSpeech(text);
+    if (!clean) return;
+
+    btn.classList.add('speaking');
+    btn.disabled = true;
+
+    try {
+        const resp = await fetch(API + '/api/german-pro/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ text: clean })
+        });
+        if (!resp.ok) throw new Error('server-tts-failed');
+
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        currentAudio = audio;
+        audio.onended = () => { btn.classList.remove('speaking'); btn.disabled = false; URL.revokeObjectURL(url); currentAudio = null; };
+        audio.onerror = () => { btn.classList.remove('speaking'); btn.disabled = false; URL.revokeObjectURL(url); currentAudio = null; };
+        await audio.play();
+    } catch (e) {
+        // فشل السيرفر (شبكة/ضغط مؤقت) — نجرّب نطق المتصفح كحل بديل بدل ما نسيب
+        // الطالب من غير صوت خالص
+        speakWithBrowserFallback(btn, clean);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+let cachedVoices = [];
+function warmUpVoices() {
+    if (!('speechSynthesis' in window)) return;
+    cachedVoices = speechSynthesis.getVoices();
+    speechSynthesis.onvoiceschanged = () => { cachedVoices = speechSynthesis.getVoices(); };
+}
+warmUpVoices();
+
+function speakWithBrowserFallback(btn, clean) {
+    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+        if (!ttsWarnedOnce) { ttsWarnedOnce = true; alert('تعذر تشغيل الصوت من السيرفر ومتصفحك مش بيدعم نطق بديل. جرّب تاني كمان شوية.'); }
+        btn.classList.remove('speaking');
+        return;
+    }
     const utter = new SpeechSynthesisUtterance(clean);
     utter.lang = 'de-DE';
-    utter.rate = 0.92;
-    const voices = speechSynthesis.getVoices();
-    const deVoice = voices.find(v => v.lang && v.lang.startsWith('de'));
+    utter.rate = 0.68;
+    const deVoice = cachedVoices.find(v => v.lang === 'de-DE') || cachedVoices.find(v => v.lang && v.lang.startsWith('de'));
     if (deVoice) utter.voice = deVoice;
-    utter.onstart = () => btn.classList.add('speaking');
-    utter.onend = () => { btn.classList.remove('speaking'); currentUtterance = null; };
-    currentUtterance = utter;
+    utter.onend = () => btn.classList.remove('speaking');
+    utter.onerror = () => {
+        btn.classList.remove('speaking');
+        if (!ttsWarnedOnce) {
+            ttsWarnedOnce = true;
+            alert('تعذر تشغيل الصوت دلوقتي (من السيرفر ومن الجهاز). جرّب تاني بعد شوية.');
+        }
+    };
     speechSynthesis.speak(utter);
 }
 
@@ -699,10 +761,10 @@ function renderVocabBook() {
     }
     body.innerHTML = allVocabulary.slice().reverse().map(v => `
         <div class="vocab-card">
-            <div class="vc-word">${escapeHtml(v.word)} <button class="tts-btn" data-word="${escapeHtml(v.word)}" title="نطق"><i class="fas fa-volume-high"></i></button></div>
+            <div class="vc-word">${escapeHtml(v.word)} <button class="tts-btn" data-word="${escapeHtml(v.word)}" title="نطق الكلمة"><i class="fas fa-volume-high"></i></button></div>
             ${v.ipa ? `<div class="vc-ipa">${escapeHtml(v.ipa)}</div>` : ''}
             ${v.meaning ? `<div class="vc-meaning">${escapeHtml(v.meaning)}</div>` : ''}
-            ${v.exampleDe ? `<div class="vc-example"><span class="de">${escapeHtml(v.exampleDe)}</span>${v.exampleAr ? escapeHtml(v.exampleAr) : ''}</div>` : ''}
+            ${v.exampleDe ? `<div class="vc-example"><span class="de"><button class="tts-btn" data-word="${escapeHtml(v.exampleDe)}" title="نطق الجملة"><i class="fas fa-volume-high"></i></button> ${escapeHtml(v.exampleDe)}</span>${v.exampleAr ? escapeHtml(v.exampleAr) : ''}</div>` : ''}
         </div>
     `).join('');
     body.querySelectorAll('.tts-btn[data-word]').forEach(btn => {
