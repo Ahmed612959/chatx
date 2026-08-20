@@ -780,7 +780,7 @@ document.getElementById('downloadGrammarBtn')?.addEventListener('click', () => {
     openPrintWindow('🧩 دفتر قواعد German Pro', html);
 });
 
-async function init() {
+async function init(silentRefresh) {
     try {
         const data = await api('/api/german-pro/state');
         allVocabulary = data.vocabulary || [];
@@ -788,12 +788,12 @@ async function init() {
         renderPlan(data.plan, data.level, data.currentUnitId);
         renderVocabBook();
         renderGrammarBook();
-        if (data.history && data.history.length) {
+        if (!silentRefresh && data.history && data.history.length) {
             hideWelcome();
             data.history.forEach(m => addMessage(m.role === 'user' ? 'user' : 'bot', m.content));
         }
     } catch (e) {
-        addMessage('system', 'تعذر تحميل حالتك: ' + e.message);
+        if (!silentRefresh) addMessage('system', 'تعذر تحميل حالتك: ' + e.message);
     }
 }
 
@@ -819,6 +819,12 @@ async function send() {
         renderVocabBook();
         renderGrammarBook();
         renderPlan(data.plan, data.level, data.currentUnitId);
+        // لو رد المعلم اتقطع (حد الطول) وميتاداتاه معطلت، الخطة/التقدم بيفضلوا
+        // زي ما هما من غير تحديث في الرد ده — بنعيد نجيب الحالة الرسمية من
+        // السيرفر بهدوء عشان أي رسالة جاية تبدأ من الوضع الصح.
+        if (data.metaParsed === false) {
+            setTimeout(() => { init(true); }, 300);
+        }
     } catch (e) {
         hideTyping();
         addMessage('system', 'حصل خطأ: ' + e.message);
