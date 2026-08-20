@@ -120,11 +120,25 @@ body {
 }
 .vocab-panel-head { padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
 .vocab-panel-head h3 { font-size: 15px; font-weight: 800; }
-.vocab-panel-body { padding: 14px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.vocab-panel-body { padding: 14px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
 .vocab-chip {
     padding: 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border);
     font-size: 12.5px; font-weight: 700; text-align: center; direction: ltr;
 }
+.vocab-card {
+    padding: 12px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); text-align: right;
+}
+.vocab-card .vc-word { direction: ltr; text-align: left; font-size: 15px; font-weight: 800; color: var(--accent); display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.vocab-card .vc-ipa { direction: ltr; text-align: left; font-size: 11px; color: var(--text-3); margin-top: 3px; }
+.vocab-card .vc-meaning { font-size: 13px; font-weight: 700; margin-top: 6px; }
+.vocab-card .vc-example { font-size: 11.5px; color: var(--text-2); margin-top: 6px; border-top: 1px dashed var(--border); padding-top: 6px; line-height: 1.6; }
+.vocab-card .vc-example .de { direction: ltr; text-align: left; display: block; font-weight: 600; color: var(--text-1); }
+.vocab-panel-body.grammar-list { display: flex; flex-direction: column; gap: 10px; }
+.grammar-card { padding: 12px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); }
+.grammar-card h4 { font-size: 13.5px; font-weight: 800; margin-bottom: 6px; color: var(--gold); }
+.grammar-card .gc-body { font-size: 12.5px; line-height: 1.8; color: var(--text-2); }
+.grammar-card .gc-body table { width: 100%; border-collapse: collapse; margin: 6px 0; direction: ltr; font-size: 11.5px; }
+.grammar-card .gc-body th, .grammar-card .gc-body td { border: 1px solid var(--border); padding: 5px 7px; text-align: center; }
 .vocab-empty { grid-column: 1 / -1; text-align: center; color: var(--text-3); font-size: 12.5px; padding: 20px; }
 
 /* -------- TTS pronunciation button inside bot bubbles -------- */
@@ -267,9 +281,24 @@ body {
     animation: gradientFlow 8s ease infinite; box-shadow: 0 4px 16px -6px var(--accent-glow);
 }
 .msg-bubble p { margin-bottom: 8px; } .msg-bubble p:last-child { margin-bottom: 0; }
-.msg-bubble ul, .msg-bubble ol { margin: 6px 18px; }
-.msg-bubble code { font-family: 'Consolas', monospace; background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 5px; font-size: 12.5px; direction: ltr; unicode-bidi: isolate; }
-.msg-bubble strong { color: inherit; }
+.msg-bubble ul, .msg-bubble ol { margin: 6px 18px 10px; }
+.msg-bubble li { margin-bottom: 3px; }
+.msg-bubble code { font-family: 'Consolas', monospace; background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 5px; font-size: 12.5px; direction: ltr; unicode-bidi: isolate; display: inline-block; }
+.msg-bubble pre { background: rgba(0,0,0,0.28); padding: 10px 12px; border-radius: 10px; overflow-x: auto; margin: 8px 0; direction: ltr; }
+.msg-bubble pre code { background: transparent; padding: 0; display: block; }
+.msg-bubble strong { color: inherit; font-weight: 800; }
+.msg-bubble h1, .msg-bubble h2, .msg-bubble h3, .msg-bubble h4 { margin: 12px 0 6px; font-size: 15px; font-weight: 800; line-height: 1.5; }
+.msg-bubble h1:first-child, .msg-bubble h2:first-child, .msg-bubble h3:first-child { margin-top: 0; }
+.msg-bubble hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+.msg-bubble blockquote { border-right: 3px solid var(--border-accent); padding: 4px 12px; margin: 8px 0; color: var(--text-2); font-size: 13px; }
+.msg-bubble table {
+    width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12.5px;
+    direction: ltr; text-align: center; overflow: hidden; border-radius: 8px;
+}
+.msg-bubble th, .msg-bubble td { border: 1px solid var(--border); padding: 7px 9px; }
+.msg-bubble th { background: rgba(99, 102, 241, 0.15); font-weight: 800; color: var(--text-1); }
+.msg-bubble tr:nth-child(even) td { background: rgba(255, 255, 255, 0.02); }
+.msg-bubble .table-scroll { overflow-x: auto; margin: 8px 0; }
 .message.system-note { align-self: center; max-width: 90%; }
 .message.system-note .msg-bubble { background: transparent; border: 1px dashed var(--border-accent); color: var(--text-3); font-size: 12.5px; text-align: center; }
 
@@ -336,6 +365,7 @@ body {
         </div>
         <div class="sb-footer">
             <button class="vocab-btn" id="vocabBtn"><i class="fas fa-book-open"></i> دفتر المفردات (<span id="vocabCount">0</span>)</button>
+            <button class="vocab-btn" id="grammarBtn"><i class="fas fa-diagram-project"></i> دفتر القواعد (<span id="grammarCount">0</span>)</button>
             <button class="reset-btn" id="resetBtn"><i class="fas fa-rotate-left"></i> إعادة تعيين الخطة من الصفر</button>
         </div>
     </aside>
@@ -383,9 +413,25 @@ body {
     <div class="vocab-panel">
         <div class="vocab-panel-head">
             <h3>📘 دفتر مفرداتك</h3>
-            <button class="action-btn" onclick="document.getElementById('vocabModal').classList.remove('show')"><i class="fas fa-xmark"></i></button>
+            <div style="display:flex; gap:6px;">
+                <button class="action-btn" id="downloadVocabBtn" title="تحميل PDF"><i class="fas fa-download"></i></button>
+                <button class="action-btn" onclick="document.getElementById('vocabModal').classList.remove('show')"><i class="fas fa-xmark"></i></button>
+            </div>
         </div>
         <div class="vocab-panel-body" id="vocabPanelBody"></div>
+    </div>
+</div>
+
+<div class="vocab-modal" id="grammarModal">
+    <div class="vocab-panel">
+        <div class="vocab-panel-head">
+            <h3>🧩 دفتر القواعد</h3>
+            <div style="display:flex; gap:6px;">
+                <button class="action-btn" id="downloadGrammarBtn" title="تحميل PDF"><i class="fas fa-download"></i></button>
+                <button class="action-btn" onclick="document.getElementById('grammarModal').classList.remove('show')"><i class="fas fa-xmark"></i></button>
+            </div>
+        </div>
+        <div class="vocab-panel-body" id="grammarPanelBody" style="display:block"></div>
     </div>
 </div>
 
@@ -562,16 +608,30 @@ function addMessage(role, content) {
         const bubbleHtml = role === 'user' ? escapeHtml(content) : marked.parse(content);
         const toolbar = role === 'bot'
             ? `<div class="msg-toolbar">
-                 <button class="tts-btn" title="استماع للنطق" onclick="speakText(this, ${JSON.stringify(content)})"><i class="fas fa-volume-high"></i></button>
-                 <button class="copy-msg-btn" title="نسخ" onclick="copyMsg(this, ${JSON.stringify(content)})"><i class="fas fa-copy"></i></button>
+                 <button class="tts-btn" title="استماع للنطق"><i class="fas fa-volume-high"></i></button>
+                 <button class="copy-msg-btn" title="نسخ"><i class="fas fa-copy"></i></button>
                </div>`
             : '';
         wrap.innerHTML = `
             <div class="msg-avatar">${avatar}</div>
             <div class="msg-content"><div class="msg-bubble">${bubbleHtml}</div>${toolbar}</div>
         `;
+        // بنحط النص عن طريق خاصية JS مباشرة (مش HTML attribute) عشان أي علامات
+        // تنصيص أو رموز جوه رد الموديل متكسرش الـ HTML خالص.
+        const ttsBtn = wrap.querySelector('.tts-btn');
+        const copyBtn = wrap.querySelector('.copy-msg-btn');
+        if (ttsBtn) ttsBtn.addEventListener('click', () => speakText(ttsBtn, content));
+        if (copyBtn) copyBtn.addEventListener('click', () => copyMsg(copyBtn, content));
     }
     box.appendChild(wrap);
+    if (role === 'bot') {
+        wrap.querySelectorAll('.msg-bubble table').forEach(t => {
+            const scrollDiv = document.createElement('div');
+            scrollDiv.className = 'table-scroll';
+            t.parentNode.insertBefore(scrollDiv, t);
+            scrollDiv.appendChild(t);
+        });
+    }
     box.scrollTop = box.scrollHeight;
     return wrap;
 }
@@ -616,32 +676,118 @@ function showTyping() {
 }
 function hideTyping() { document.getElementById('typingRow')?.remove(); }
 
-// -------- دفتر المفردات (من الوحدات المخلّصة) --------
-let allCompletedUnits = [];
+// -------- دفتر المفردات (تراكمي — بيتحدّث تلقائي من كل رسالة) --------
+let allVocabulary = [];
+let allGrammarNotes = [];
+
 function renderVocabBook() {
-    document.getElementById('vocabCount').textContent = allCompletedUnits.reduce((n, u) => n + (u.keyVocab?.length || 0), 0);
+    document.getElementById('vocabCount').textContent = allVocabulary.length;
     const body = document.getElementById('vocabPanelBody');
-    const words = allCompletedUnits.flatMap(u => u.keyVocab || []);
-    if (!words.length) {
-        body.innerHTML = '<div class="vocab-empty">لسه مفيش مفردات محفوظة — هتتجمع تلقائي كل ما تخلّص وحدة.</div>';
+    if (!allVocabulary.length) {
+        body.innerHTML = '<div class="vocab-empty">لسه مفيش مفردات محفوظة — هتتجمع تلقائي أول ما المعلم يعلّمك كلمة جديدة.</div>';
         return;
     }
-    body.innerHTML = words.map(w => `<div class="vocab-chip">${escapeHtml(w)}</div>`).join('');
+    body.innerHTML = allVocabulary.slice().reverse().map(v => `
+        <div class="vocab-card">
+            <div class="vc-word">${escapeHtml(v.word)} <button class="tts-btn" data-word="${escapeHtml(v.word)}" title="نطق"><i class="fas fa-volume-high"></i></button></div>
+            ${v.ipa ? `<div class="vc-ipa">${escapeHtml(v.ipa)}</div>` : ''}
+            ${v.meaning ? `<div class="vc-meaning">${escapeHtml(v.meaning)}</div>` : ''}
+            ${v.exampleDe ? `<div class="vc-example"><span class="de">${escapeHtml(v.exampleDe)}</span>${v.exampleAr ? escapeHtml(v.exampleAr) : ''}</div>` : ''}
+        </div>
+    `).join('');
+    body.querySelectorAll('.tts-btn[data-word]').forEach(btn => {
+        btn.addEventListener('click', () => speakText(btn, btn.getAttribute('data-word')));
+    });
 }
+
+function renderGrammarBook() {
+    document.getElementById('grammarCount').textContent = allGrammarNotes.length;
+    const body = document.getElementById('grammarPanelBody');
+    body.className = 'vocab-panel-body grammar-list';
+    if (!allGrammarNotes.length) {
+        body.innerHTML = '<div class="vocab-empty">لسه مفيش قواعد محفوظة — هتتحفظ تلقائي كل ما المعلم يشرحلك قاعدة جديدة.</div>';
+        return;
+    }
+    body.innerHTML = allGrammarNotes.slice().reverse().map(g => `
+        <div class="grammar-card">
+            <h4>${escapeHtml(g.title)}</h4>
+            <div class="gc-body">${marked.parse(g.explanation || '')}</div>
+        </div>
+    `).join('');
+}
+
 document.getElementById('vocabBtn')?.addEventListener('click', () => {
     renderVocabBook();
     document.getElementById('vocabModal').classList.add('show');
 });
+document.getElementById('grammarBtn')?.addEventListener('click', () => {
+    renderGrammarBook();
+    document.getElementById('grammarModal').classList.add('show');
+});
 document.getElementById('vocabModal')?.addEventListener('click', (e) => {
     if (e.target.id === 'vocabModal') e.target.classList.remove('show');
+});
+document.getElementById('grammarModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'grammarModal') e.target.classList.remove('show');
+});
+
+// -------- تحميل PDF (عن طريق نافذة طباعة — بيدعم عربي/ألماني بشكل مثالي من غير مشاكل خطوط) --------
+function openPrintWindow(title, bodyHtml) {
+    const win = window.open('', '_blank');
+    if (!win) { alert('المتصفح منع فتح نافذة جديدة — اسمح بالنوافذ المنبثقة لهذا الموقع وحاول تاني.'); return; }
+    win.document.write(`
+        <!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${title}</title>
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; padding: 30px; color: #111; direction: rtl; }
+            h1 { font-size: 20px; border-bottom: 3px solid #6366f1; padding-bottom: 10px; margin-bottom: 20px; }
+            .item { border: 1px solid #ddd; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; page-break-inside: avoid; }
+            .word { direction: ltr; text-align: left; font-size: 16px; font-weight: 800; color: #4f46e5; }
+            .ipa { direction: ltr; text-align: left; font-size: 11px; color: #666; margin-top: 2px; }
+            .meaning { font-weight: 700; margin-top: 6px; }
+            .example { font-size: 12px; color: #444; margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 6px; }
+            .example .de { direction: ltr; text-align: left; display: block; font-weight: 600; color: #111; }
+            h4 { color: #4f46e5; margin-bottom: 6px; }
+            table { border-collapse: collapse; width: 100%; direction: ltr; margin: 8px 0; }
+            th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: center; font-size: 12px; }
+            @media print { body { padding: 10px; } }
+        </style></head><body>
+        <h1>${title}</h1>
+        ${bodyHtml}
+        </body></html>
+    `);
+    win.document.close();
+    setTimeout(() => win.print(), 400);
+}
+
+document.getElementById('downloadVocabBtn')?.addEventListener('click', () => {
+    if (!allVocabulary.length) { alert('دفتر المفردات لسه فاضي.'); return; }
+    const html = allVocabulary.map(v => `
+        <div class="item">
+            <div class="word">${escapeHtml(v.word)}</div>
+            ${v.ipa ? `<div class="ipa">${escapeHtml(v.ipa)}</div>` : ''}
+            ${v.meaning ? `<div class="meaning">${escapeHtml(v.meaning)}</div>` : ''}
+            ${v.exampleDe ? `<div class="example"><span class="de">${escapeHtml(v.exampleDe)}</span>${v.exampleAr ? escapeHtml(v.exampleAr) : ''}</div>` : ''}
+        </div>
+    `).join('');
+    openPrintWindow('📘 دفتر مفردات German Pro', html);
+});
+
+document.getElementById('downloadGrammarBtn')?.addEventListener('click', () => {
+    if (!allGrammarNotes.length) { alert('دفتر القواعد لسه فاضي.'); return; }
+    const html = allGrammarNotes.map(g => `
+        <div class="item"><h4>${escapeHtml(g.title)}</h4>${marked.parse(g.explanation || '')}</div>
+    `).join('');
+    openPrintWindow('🧩 دفتر قواعد German Pro', html);
 });
 
 async function init() {
     try {
         const data = await api('/api/german-pro/state');
-        allCompletedUnits = data.completedUnits || [];
+        allVocabulary = data.vocabulary || [];
+        allGrammarNotes = data.grammarNotes || [];
         renderPlan(data.plan, data.level, data.currentUnitId);
         renderVocabBook();
+        renderGrammarBook();
         if (data.history && data.history.length) {
             hideWelcome();
             data.history.forEach(m => addMessage(m.role === 'user' ? 'user' : 'bot', m.content));
@@ -668,7 +814,10 @@ async function send() {
         const data = await api('/api/german-pro/message', { method: 'POST', body: JSON.stringify({ message: text }) });
         hideTyping();
         addMessage('bot', data.reply);
-        allCompletedUnits = data.completedUnits || allCompletedUnits;
+        allVocabulary = data.vocabulary || allVocabulary;
+        allGrammarNotes = data.grammarNotes || allGrammarNotes;
+        renderVocabBook();
+        renderGrammarBook();
         renderPlan(data.plan, data.level, data.currentUnitId);
     } catch (e) {
         hideTyping();
@@ -678,6 +827,7 @@ async function send() {
         input.focus();
     }
 }
+
 
 document.getElementById('resetBtn')?.addEventListener('click', async () => {
     if (!confirm('هيتم مسح كل تقدمك وتبدأ من الصفر تاني — متأكد؟')) return;
