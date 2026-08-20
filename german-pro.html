@@ -685,6 +685,8 @@ async function speakText(btn, text) {
         const blob = await resp.blob();
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
+        audio.playbackRate = 0.8; // السيرفر بيبعت الصوت بأبطأ وضع متاح عنده أصلاً؛
+                                   // البطء الإضافي ده بيتحكم فيه المتصفح نفسه فوق الصوت الجاهز
         currentAudio = audio;
         audio.onended = () => { btn.classList.remove('speaking'); btn.disabled = false; URL.revokeObjectURL(url); currentAudio = null; };
         audio.onerror = () => { btn.classList.remove('speaking'); btn.disabled = false; URL.revokeObjectURL(url); currentAudio = null; };
@@ -714,7 +716,7 @@ function speakWithBrowserFallback(btn, clean) {
     }
     const utter = new SpeechSynthesisUtterance(clean);
     utter.lang = 'de-DE';
-    utter.rate = 0.68;
+    utter.rate = 0.58;
     const deVoice = cachedVoices.find(v => v.lang === 'de-DE') || cachedVoices.find(v => v.lang && v.lang.startsWith('de'));
     if (deVoice) utter.voice = deVoice;
     utter.onend = () => btn.classList.remove('speaking');
