@@ -3202,5 +3202,2405 @@ const MEDICAL_DICTIONARY = [
     "category": "interaction_phrases",
     "exampleEn": "Empathy is essential in nursing care.",
     "exampleAr": "التعاطف أساسي في الرعاية التمريضية."
+  },
+  {
+    "word": "registered nurse (RN)",
+    "ipa": "[ˈredʒɪstərd nɜːrs] (رِجِستَرد نِرس)",
+    "meaning": "ممرض مسجّل",
+    "category": "nursing_roles_education",
+    "exampleEn": "She works as a registered nurse in the ICU.",
+    "exampleAr": "بتشتغل ممرضة مسجّلة في العناية المركزة."
+  },
+  {
+    "word": "licensed practical nurse (LPN)",
+    "ipa": "[ˈlaɪsənst ˈpræktɪkəl nɜːrs] (لايسِنست براكتِكَل نِرس)",
+    "meaning": "ممرض عملي مرخّص",
+    "category": "nursing_roles_education",
+    "exampleEn": "The LPN assisted with basic patient care.",
+    "exampleAr": "الممرض العملي المرخّص ساعد في الرعاية الأساسية."
+  },
+  {
+    "word": "nurse practitioner",
+    "ipa": "[nɜːrs prækˈtɪʃənər] (نِرس براكتِشَنَر)",
+    "meaning": "ممرض ممارس (صلاحيات موسّعة)",
+    "category": "nursing_roles_education",
+    "exampleEn": "The nurse practitioner prescribed the medication.",
+    "exampleAr": "الممرض الممارس وصف الدواء."
+  },
+  {
+    "word": "charge nurse",
+    "ipa": "[tʃɑːrdʒ nɜːrs] (تشارج نِرس)",
+    "meaning": "الممرض المسؤول عن الوردية",
+    "category": "nursing_roles_education",
+    "exampleEn": "Report any concerns to the charge nurse.",
+    "exampleAr": "بلّغ أي ملاحظات للممرض المسؤول عن الوردية."
+  },
+  {
+    "word": "attending physician",
+    "ipa": "[əˈtendɪŋ fɪˈzɪʃən] (أتِندِنج فِزِشَن)",
+    "meaning": "الطبيب المعالج المسؤول",
+    "category": "nursing_roles_education",
+    "exampleEn": "The attending physician reviewed the case.",
+    "exampleAr": "الطبيب المعالج راجع الحالة."
+  },
+  {
+    "word": "preceptor",
+    "ipa": "[prɪˈseptər] (پرِسِپتَر)",
+    "meaning": "المدرّب الإكلينيكي",
+    "category": "nursing_roles_education",
+    "exampleEn": "My preceptor guided me through my first shift.",
+    "exampleAr": "المدرّب الإكلينيكي وجّهني في أول شيفت."
+  },
+  {
+    "word": "clinicals",
+    "ipa": "[ˈklɪnɪkəlz] (كلينِكَلز)",
+    "meaning": "التدريب الإكلينيكي العملي",
+    "category": "nursing_roles_education",
+    "exampleEn": "Nursing students complete clinicals in hospitals.",
+    "exampleAr": "طلاب التمريض بيعملوا تدريب إكلينيكي في المستشفيات."
+  },
+  {
+    "word": "charting",
+    "ipa": "[ˈtʃɑːrtɪŋ] (تشارتِنج)",
+    "meaning": "توثيق بيانات المريض",
+    "category": "nursing_roles_education",
+    "exampleEn": "Charting must be accurate and timely.",
+    "exampleAr": "التوثيق لازم يكون دقيق وفي وقته."
+  },
+  {
+    "word": "rounds",
+    "ipa": "[raʊndz] (راوندز)",
+    "meaning": "الجولة الطبية اليومية",
+    "category": "nursing_roles_education",
+    "exampleEn": "The team does rounds every morning.",
+    "exampleAr": "الفريق بيعمل جولة طبية كل صبح."
+  },
+  {
+    "word": "shift report",
+    "ipa": "[ʃɪft rɪˈpɔːrt] (شِفت رِپورت)",
+    "meaning": "تقرير تسليم الوردية",
+    "category": "nursing_roles_education",
+    "exampleEn": "Give a clear shift report to the next nurse.",
+    "exampleAr": "قدّم تقرير تسليم واضح للممرض اللي بعدك."
+  },
+  {
+    "word": "code (coding)",
+    "ipa": "[koʊd] (كود)",
+    "meaning": "حالة طوارئ (سكتة قلبية)",
+    "category": "nursing_slang",
+    "exampleEn": "The patient started coding at 3 AM.",
+    "exampleAr": "المريض دخل في حالة طوارئ الساعة 3 الفجر."
+  },
+  {
+    "word": "peds",
+    "ipa": "[pedz] (پِدز)",
+    "meaning": "قسم الأطفال (اختصار عامي)",
+    "category": "nursing_slang",
+    "exampleEn": "She transferred to peds last month.",
+    "exampleAr": "اتنقلت لقسم الأطفال الشهر اللي فات."
+  },
+  {
+    "word": "total care patient",
+    "ipa": "[ˈtoʊtəl ker ˈpeɪʃənt] (توتَل كير پيشِنت)",
+    "meaning": "مريض محتاج رعاية كاملة",
+    "category": "nursing_slang",
+    "exampleEn": "He is a total care patient after the stroke.",
+    "exampleAr": "هو مريض محتاج رعاية كاملة بعد السكتة الدماغية."
+  },
+  {
+    "word": "ambulatory patient",
+    "ipa": "[ˈæmbjələtɔːri ˈpeɪʃənt] (امبيولَتوري پيشِنت)",
+    "meaning": "مريض قادر على المشي",
+    "category": "nursing_slang",
+    "exampleEn": "He is now an ambulatory patient.",
+    "exampleAr": "هو دلوقتي قادر يمشي لوحده."
+  },
+  {
+    "word": "STAT order",
+    "ipa": "[stæt ˈɔːrdər] (ستات أوردَر)",
+    "meaning": "أمر طبي فوري",
+    "category": "nursing_slang",
+    "exampleEn": "The doctor gave a STAT order for blood work.",
+    "exampleAr": "الدكتور طلب تحليل دم فوري."
+  },
+  {
+    "word": "CBR (complete bed rest)",
+    "ipa": "[siː biː ɑːr] (سي-بي-آر)",
+    "meaning": "راحة تامة بالسرير",
+    "category": "nursing_slang",
+    "exampleEn": "The patient is on CBR for now.",
+    "exampleAr": "المريض على راحة تامة بالسرير دلوقتي."
+  },
+  {
+    "word": "ABCs (airway, breathing, circulation)",
+    "ipa": "[eɪ biː siːz] (إيه-بي-سيز)",
+    "meaning": "مجرى التنفس والتنفس والدورة الدموية",
+    "category": "nursing_slang",
+    "exampleEn": "Always check the ABCs first in an emergency.",
+    "exampleAr": "دايمًا افحص مجرى التنفس والتنفس والدورة الدموية الأول في الطوارئ."
+  },
+  {
+    "word": "ABG (arterial blood gas)",
+    "ipa": "[eɪ biː dʒiː] (إيه-بي-جي)",
+    "meaning": "تحليل غازات الدم الشرياني",
+    "category": "clinical_abbreviations",
+    "exampleEn": "An ABG was drawn to check oxygen levels.",
+    "exampleAr": "اتسحب تحليل غازات دم شرياني عشان يتفحص مستوى الأكسجين."
+  },
+  {
+    "word": "acidosis",
+    "ipa": "[ˌæsɪˈdoʊsɪs] (أسِدوسِس)",
+    "meaning": "الحماض (زيادة حموضة الدم)",
+    "category": "clinical_abbreviations",
+    "exampleEn": "The blood test showed metabolic acidosis.",
+    "exampleAr": "تحليل الدم أظهر حماض استقلابي."
+  },
+  {
+    "word": "alkalosis",
+    "ipa": "[ˌælkəˈloʊsɪs] (الكالوسِس)",
+    "meaning": "القلاء (زيادة قلوية الدم)",
+    "category": "clinical_abbreviations",
+    "exampleEn": "Respiratory alkalosis can result from rapid breathing.",
+    "exampleAr": "القلاء التنفسي ممكن يحصل بسبب التنفس السريع."
+  },
+  {
+    "word": "acuity",
+    "ipa": "[əˈkjuːəti] (أكيويتي)",
+    "meaning": "شدة/خطورة الحالة",
+    "category": "clinical_abbreviations",
+    "exampleEn": "Patient acuity determines staffing levels.",
+    "exampleAr": "خطورة حالة المريض بتحدد عدد الطاقم المطلوب."
+  },
+  {
+    "word": "AFib (atrial fibrillation)",
+    "ipa": "[eɪ fɪb] (إيه-فِب)",
+    "meaning": "الرجفان الأذيني",
+    "category": "clinical_abbreviations",
+    "exampleEn": "He was diagnosed with AFib.",
+    "exampleAr": "اتشخّص بالرجفان الأذيني."
+  },
+  {
+    "word": "CBC (complete blood count)",
+    "ipa": "[siː biː siː] (سي-بي-سي)",
+    "meaning": "صورة الدم الكاملة",
+    "category": "clinical_abbreviations",
+    "exampleEn": "A CBC was ordered to check for infection.",
+    "exampleAr": "اتطلبت صورة دم كاملة للكشف عن التهاب."
+  },
+  {
+    "word": "Foley catheter",
+    "ipa": "[ˈfoʊli ˈkæθətər] (فولي كاثِتَر)",
+    "meaning": "قسطرة بولية دائمة (فولي)",
+    "category": "clinical_abbreviations",
+    "exampleEn": "A Foley catheter was inserted after surgery.",
+    "exampleAr": "قسطرة فولي اتركّبت بعد العملية."
+  },
+  {
+    "word": "saline lock",
+    "ipa": "[ˈseɪliːn lɒk] (سيلين لوك)",
+    "meaning": "منفذ وريدي بمحلول ملحي",
+    "category": "clinical_abbreviations",
+    "exampleEn": "The IV was converted to a saline lock.",
+    "exampleAr": "المحلول الوريدي اتحوّل لمنفذ بمحلول ملحي."
+  },
+  {
+    "word": "PPI (proton pump inhibitor)",
+    "ipa": "[piː piː aɪ] (پي-پي-آي)",
+    "meaning": "مثبط مضخة البروتون",
+    "category": "clinical_abbreviations",
+    "exampleEn": "He takes a PPI for acid reflux.",
+    "exampleAr": "بياخد مثبط مضخة بروتون لارتجاع الحمض."
+  },
+  {
+    "word": "q4h (every 4 hours)",
+    "ipa": "[kjuː fɔːr eɪtʃ] (كيو-فور-إتش)",
+    "meaning": "كل 4 ساعات",
+    "category": "clinical_abbreviations",
+    "exampleEn": "Give the medication q4h.",
+    "exampleAr": "أعطي الدواء كل 4 ساعات."
+  },
+  {
+    "word": "antihypertensive",
+    "ipa": "[ˌæntiˌhaɪpərˈtensɪv] (أنتي-هايپَرتِنسِڤ)",
+    "meaning": "خافض لضغط الدم",
+    "category": "medication_classes",
+    "exampleEn": "He takes an antihypertensive daily.",
+    "exampleAr": "بياخد دواء خافض لضغط الدم يوميًا."
+  },
+  {
+    "word": "anticoagulant",
+    "ipa": "[ˌæntikoʊˈæɡjələnt] (أنتي-كوآجيولَنت)",
+    "meaning": "مضاد للتخثر (سيولة الدم)",
+    "category": "medication_classes",
+    "exampleEn": "Warfarin is a common anticoagulant.",
+    "exampleAr": "الوارفارين مضاد تخثر شائع."
+  },
+  {
+    "word": "analgesic",
+    "ipa": "[ˌænəlˈdʒiːzɪk] (أنَلجيزِك)",
+    "meaning": "مسكّن للألم",
+    "category": "medication_classes",
+    "exampleEn": "An analgesic was given for the pain.",
+    "exampleAr": "اتدى مسكّن ألم."
+  },
+  {
+    "word": "antiemetic",
+    "ipa": "[ˌæntiɪˈmetɪk] (أنتي-إمِتِك)",
+    "meaning": "مضاد للقيء",
+    "category": "medication_classes",
+    "exampleEn": "An antiemetic was administered before chemo.",
+    "exampleAr": "اتدى مضاد قيء قبل الكيماوي."
+  },
+  {
+    "word": "antipyretic",
+    "ipa": "[ˌæntipaɪˈretɪk] (أنتي-بايرِتِك)",
+    "meaning": "خافض للحرارة",
+    "category": "medication_classes",
+    "exampleEn": "Paracetamol acts as an antipyretic.",
+    "exampleAr": "الباراسيتامول بيعمل كخافض حرارة."
+  },
+  {
+    "word": "bronchodilator",
+    "ipa": "[ˌbrɒŋkoʊˈdaɪleɪtər] (برونكو-دايليتَر)",
+    "meaning": "موسّع للشعب الهوائية",
+    "category": "medication_classes",
+    "exampleEn": "Use the bronchodilator during an asthma attack.",
+    "exampleAr": "استخدم الموسّع أثناء نوبة الربو."
+  },
+  {
+    "word": "sedative",
+    "ipa": "[ˈsedətɪv] (سِداتِڤ)",
+    "meaning": "مهدّئ",
+    "category": "medication_classes",
+    "exampleEn": "A mild sedative helped her sleep.",
+    "exampleAr": "مهدّئ خفيف ساعدها تنام."
+  },
+  {
+    "word": "laxative",
+    "ipa": "[ˈlæksətɪv] (لاكسَتِڤ)",
+    "meaning": "ملّين",
+    "category": "medication_classes",
+    "exampleEn": "A laxative was prescribed for constipation.",
+    "exampleAr": "اتوصف ملّين للإمساك."
+  },
+  {
+    "word": "corticosteroid",
+    "ipa": "[ˌkɔːrtɪkoʊˈstɪərɔɪd] (كورتيكو-ستِرويد)",
+    "meaning": "كورتيزون",
+    "category": "medication_classes",
+    "exampleEn": "Corticosteroids reduce inflammation.",
+    "exampleAr": "الكورتيزون بيقلل الالتهاب."
+  },
+  {
+    "word": "anticonvulsant",
+    "ipa": "[ˌæntikənˈvʌlsənt] (أنتي-كونڤَلسَنت)",
+    "meaning": "مضاد للتشنجات",
+    "category": "medication_classes",
+    "exampleEn": "He takes an anticonvulsant for epilepsy.",
+    "exampleAr": "بياخد مضاد تشنجات لعلاج الصرع."
+  },
+  {
+    "word": "sphygmomanometer",
+    "ipa": "[ˌsfɪɡmoʊməˈnɒmɪtər] (سفِجمو-مانومِتَر)",
+    "meaning": "جهاز قياس ضغط الدم اليدوي",
+    "category": "equipment_more",
+    "exampleEn": "The nurse used a sphygmomanometer.",
+    "exampleAr": "الممرض استخدم جهاز قياس ضغط يدوي."
+  },
+  {
+    "word": "glucometer",
+    "ipa": "[ɡluːˈkɒmɪtər] (جلوكومِتَر)",
+    "meaning": "جهاز قياس السكر المحمول",
+    "category": "equipment_more",
+    "exampleEn": "Check his sugar with the glucometer.",
+    "exampleAr": "افحص السكر عنده بجهاز القياس المحمول."
+  },
+  {
+    "word": "suction catheter",
+    "ipa": "[ˈsʌkʃən ˈkæθətər] (سَكشِن كاثِتَر)",
+    "meaning": "قسطرة الشفط",
+    "category": "equipment_more",
+    "exampleEn": "Use a suction catheter to clear secretions.",
+    "exampleAr": "استخدم قسطرة الشفط عشان تشيل الإفرازات."
+  },
+  {
+    "word": "IV pole",
+    "ipa": "[ˌaɪ ˈviː poʊl] (آي-ڤي پول)",
+    "meaning": "حامل المحلول الوريدي",
+    "category": "equipment_more",
+    "exampleEn": "Attach the bag to the IV pole.",
+    "exampleAr": "علّق الكيس على حامل المحلول."
+  },
+  {
+    "word": "bedpan",
+    "ipa": "[ˈbedpæn] (بِد-پان)",
+    "meaning": "المرحاض المتنقل (للسرير)",
+    "category": "equipment_more",
+    "exampleEn": "Bring a bedpan for the patient.",
+    "exampleAr": "هات مرحاض متنقل للمريض."
+  },
+  {
+    "word": "tourniquet",
+    "ipa": "[ˈtʊərnɪket] (تورنِكيت)",
+    "meaning": "رباط ضاغط (لسحب الدم)",
+    "category": "equipment_more",
+    "exampleEn": "Apply the tourniquet before drawing blood.",
+    "exampleAr": "حط الرباط الضاغط قبل سحب الدم."
+  },
+  {
+    "word": "forceps",
+    "ipa": "[ˈfɔːrsɛps] (فورسِپس)",
+    "meaning": "الملقط الجراحي",
+    "category": "equipment_more",
+    "exampleEn": "The surgeon used forceps to remove the object.",
+    "exampleAr": "الجرّاح استخدم ملقط عشان يشيل الجسم الغريب."
+  },
+  {
+    "word": "nasal cannula",
+    "ipa": "[ˈneɪzəl ˈkænjələ] (نيزَل كانيولا)",
+    "meaning": "أنبوب أكسجين أنفي",
+    "category": "equipment_more",
+    "exampleEn": "He is on oxygen via nasal cannula.",
+    "exampleAr": "بياخد أكسجين عن طريق أنبوب أنفي."
+  },
+  {
+    "word": "cardiovascular system",
+    "ipa": "[ˌkɑːrdioʊˈvæskjələr ˈsɪstəm] (كارديو-ڤاسكيولَر سِستَم)",
+    "meaning": "الجهاز الدوري (القلب والأوعية)",
+    "category": "body_systems",
+    "exampleEn": "The cardiovascular system pumps blood throughout the body.",
+    "exampleAr": "الجهاز الدوري بيضخ الدم في كل الجسم."
+  },
+  {
+    "word": "musculoskeletal system",
+    "ipa": "[ˌmʌskjəloʊˈskelɪtəl ˈsɪstəm] (مَسكيولو-سكِلِتَل سِستَم)",
+    "meaning": "الجهاز العضلي الهيكلي",
+    "category": "body_systems",
+    "exampleEn": "The musculoskeletal system supports movement.",
+    "exampleAr": "الجهاز العضلي الهيكلي بيدعم الحركة."
+  },
+  {
+    "word": "nervous system",
+    "ipa": "[ˈnɜːrvəs ˈsɪstəm] (نِرڤَس سِستَم)",
+    "meaning": "الجهاز العصبي",
+    "category": "body_systems",
+    "exampleEn": "The nervous system controls body functions.",
+    "exampleAr": "الجهاز العصبي بيتحكم في وظائف الجسم."
+  },
+  {
+    "word": "endocrine system",
+    "ipa": "[ˈendəkraɪn ˈsɪstəm] (إندَكراين سِستَم)",
+    "meaning": "الجهاز الصمّاوي (الغدد)",
+    "category": "body_systems",
+    "exampleEn": "The endocrine system regulates hormones.",
+    "exampleAr": "الجهاز الصمّاوي بينظّم الهرمونات."
+  },
+  {
+    "word": "lymphatic system",
+    "ipa": "[lɪmˈfætɪk ˈsɪstəm] (لِمفاتِك سِستَم)",
+    "meaning": "الجهاز الليمفاوي",
+    "category": "body_systems",
+    "exampleEn": "The lymphatic system fights infection.",
+    "exampleAr": "الجهاز الليمفاوي بيحارب العدوى."
+  },
+  {
+    "word": "reproductive system",
+    "ipa": "[ˌriːprəˈdʌktɪv ˈsɪstəm] (ري-پرودَكتِڤ سِستَم)",
+    "meaning": "الجهاز التناسلي",
+    "category": "body_systems",
+    "exampleEn": "The reproductive system was examined.",
+    "exampleAr": "الجهاز التناسلي اتفحص."
+  },
+  {
+    "word": "osteoarthritis",
+    "ipa": "[ˌɒstioʊɑːrˈθraɪtɪs] (أوستيو-آرثرايتِس)",
+    "meaning": "خشونة المفاصل",
+    "category": "common_diseases_more",
+    "exampleEn": "Osteoarthritis affects her hip joint.",
+    "exampleAr": "خشونة المفاصل بتأثر على مفصل وركها."
+  },
+  {
+    "word": "rheumatoid arthritis",
+    "ipa": "[ˈruːmətɔɪd ɑːrˈθraɪtɪs] (رُيوماتويد آرثرايتِس)",
+    "meaning": "الروماتويد",
+    "category": "common_diseases_more",
+    "exampleEn": "She was diagnosed with rheumatoid arthritis.",
+    "exampleAr": "اتشخّصت بالروماتويد."
+  },
+  {
+    "word": "epilepsy",
+    "ipa": "[ˈepɪlepsi] (إپِلِپسي)",
+    "meaning": "الصرع",
+    "category": "common_diseases_more",
+    "exampleEn": "He has been managing epilepsy for years.",
+    "exampleAr": "بيتحكم في الصرع من سنين."
+  },
+  {
+    "word": "migraine",
+    "ipa": "[ˈmaɪɡreɪn] (مايجرين)",
+    "meaning": "الصداع النصفي",
+    "category": "common_diseases_more",
+    "exampleEn": "She suffers from severe migraines.",
+    "exampleAr": "بتعاني من صداع نصفي شديد."
+  },
+  {
+    "word": "cirrhosis",
+    "ipa": "[sɪˈroʊsɪs] (سِيروسِس)",
+    "meaning": "تليّف الكبد",
+    "category": "common_diseases_more",
+    "exampleEn": "Cirrhosis can result from chronic alcohol use.",
+    "exampleAr": "تليّف الكبد ممكن ينتج عن إدمان الكحول المزمن."
+  },
+  {
+    "word": "gallstones",
+    "ipa": "[ˈɡɔːlstoʊnz] (جول-ستونز)",
+    "meaning": "حصوات المرارة",
+    "category": "common_diseases_more",
+    "exampleEn": "He was treated for gallstones.",
+    "exampleAr": "اتعالج من حصوات المرارة."
+  },
+  {
+    "word": "hernia",
+    "ipa": "[ˈhɜːrniə] (هِرنيا)",
+    "meaning": "الفتق",
+    "category": "common_diseases_more",
+    "exampleEn": "He needs surgery to repair the hernia.",
+    "exampleAr": "محتاج عملية عشان يصلّح الفتق."
+  },
+  {
+    "word": "gout",
+    "ipa": "[ɡaʊt] (جاوت)",
+    "meaning": "النقرس",
+    "category": "common_diseases_more",
+    "exampleEn": "Gout causes sudden joint pain.",
+    "exampleAr": "النقرس بيسبب ألم مفاجئ في المفاصل."
+  },
+  {
+    "word": "laparoscopy",
+    "ipa": "[ˌlæpəˈrɒskəpi] (لاپَروسكوپي)",
+    "meaning": "منظار البطن",
+    "category": "surgical_terms_more",
+    "exampleEn": "The procedure was done via laparoscopy.",
+    "exampleAr": "الإجراء اتعمل بمنظار البطن."
+  },
+  {
+    "word": "appendectomy",
+    "ipa": "[ˌæpənˈdektəmi] (أپِنِدِكتَمي)",
+    "meaning": "استئصال الزائدة الدودية",
+    "category": "surgical_terms_more",
+    "exampleEn": "He underwent an emergency appendectomy.",
+    "exampleAr": "اتعمله استئصال زائدة دودية طارئ."
+  },
+  {
+    "word": "hysterectomy",
+    "ipa": "[ˌhɪstəˈrektəmi] (هِستِرِكتَمي)",
+    "meaning": "استئصال الرحم",
+    "category": "surgical_terms_more",
+    "exampleEn": "She had a hysterectomy last month.",
+    "exampleAr": "اتعملها استئصال رحم الشهر اللي فات."
+  },
+  {
+    "word": "amputation",
+    "ipa": "[ˌæmpjuˈteɪʃən] (امپيوتيشِن)",
+    "meaning": "بتر الطرف",
+    "category": "surgical_terms_more",
+    "exampleEn": "The amputation was necessary to save his life.",
+    "exampleAr": "البتر كان ضروري عشان ينقذ حياته."
+  },
+  {
+    "word": "transplant",
+    "ipa": "[ˈtrænsplænt] (ترانسپلانت)",
+    "meaning": "زراعة عضو",
+    "category": "surgical_terms_more",
+    "exampleEn": "He received a kidney transplant.",
+    "exampleAr": "اتعملله زراعة كلية."
+  },
+  {
+    "word": "skin graft",
+    "ipa": "[skɪn ɡræft] (سكِن جرافت)",
+    "meaning": "ترقيع جلدي",
+    "category": "surgical_terms_more",
+    "exampleEn": "A skin graft was used to cover the burn.",
+    "exampleAr": "استُخدم ترقيع جلدي عشان يغطي الحرق."
+  },
+  {
+    "word": "fall precautions",
+    "ipa": "[fɔːl prɪˈkɔːʃənz] (فول پرِكوشِنز)",
+    "meaning": "احتياطات منع السقوط",
+    "category": "patient_safety",
+    "exampleEn": "Fall precautions are in place for this patient.",
+    "exampleAr": "احتياطات منع السقوط مطبّقة على المريض ده."
+  },
+  {
+    "word": "restraint",
+    "ipa": "[rɪˈstreɪnt] (رِستريِنت)",
+    "meaning": "وسيلة تقييد (للأمان)",
+    "category": "patient_safety",
+    "exampleEn": "A restraint was used only as a last resort.",
+    "exampleAr": "استُخدمت وسيلة تقييد كملاذ أخير بس."
+  },
+  {
+    "word": "bed alarm",
+    "ipa": "[bed əˈlɑːrm] (بِد ألارم)",
+    "meaning": "منبّه السرير",
+    "category": "patient_safety",
+    "exampleEn": "The bed alarm alerts staff if he tries to get up.",
+    "exampleAr": "منبّه السرير بينبّه الطاقم لو حاول يقوم."
+  },
+  {
+    "word": "identification band",
+    "ipa": "[aɪˌdentɪfɪˈkeɪʃən bænd] (آيدِنتِفِكيشِن باند)",
+    "meaning": "سوار تعريف المريض",
+    "category": "patient_safety",
+    "exampleEn": "Always check the identification band before medication.",
+    "exampleAr": "دايمًا افحص سوار التعريف قبل إعطاء الدواء."
+  },
+  {
+    "word": "two-patient identifiers",
+    "ipa": "[tuː ˈpeɪʃənt aɪˈdentɪfaɪərz] (تو-پيشِنت آيدِنتِفايَرز)",
+    "meaning": "وسيلتا التعرّف على المريض",
+    "category": "patient_safety",
+    "exampleEn": "Use two-patient identifiers before any procedure.",
+    "exampleAr": "استخدم وسيلتين للتعرّف على المريض قبل أي إجراء."
+  },
+  {
+    "word": "to document",
+    "ipa": "[ˈdɒkjəment] (دوكيومِنت)",
+    "meaning": "يوثّق",
+    "category": "common_verbs_more",
+    "exampleEn": "Document all findings accurately.",
+    "exampleAr": "وثّق كل الملاحظات بدقة."
+  },
+  {
+    "word": "to delegate",
+    "ipa": "[ˈdelɪɡeɪt] (دِلِجيت)",
+    "meaning": "يُفوّض مهمة",
+    "category": "common_verbs_more",
+    "exampleEn": "Delegate simple tasks to the assistant.",
+    "exampleAr": "فوّض المهام البسيطة للمساعد."
+  },
+  {
+    "word": "to educate",
+    "ipa": "[ˈedʒukeɪt] (إدجوكيت)",
+    "meaning": "يُثقّف/يُعلّم",
+    "category": "common_verbs_more",
+    "exampleEn": "Educate the patient about the medication.",
+    "exampleAr": "ثقّف المريض عن الدواء."
+  },
+  {
+    "word": "to counsel",
+    "ipa": "[ˈkaʊnsəl] (كاونسِل)",
+    "meaning": "يُقدّم استشارة",
+    "category": "common_verbs_more",
+    "exampleEn": "Counsel the family on the next steps.",
+    "exampleAr": "قدّم استشارة للعيلة عن الخطوات الجاية."
+  },
+  {
+    "word": "to consult",
+    "ipa": "[kənˈsʌlt] (كونسَلت)",
+    "meaning": "يستشير",
+    "category": "common_verbs_more",
+    "exampleEn": "Consult a specialist if symptoms persist.",
+    "exampleAr": "استشر أخصائي لو الأعراض استمرت."
+  },
+  {
+    "word": "to collaborate",
+    "ipa": "[kəˈlæbəreɪt] (كولابوريت)",
+    "meaning": "يتعاون",
+    "category": "common_verbs_more",
+    "exampleEn": "Collaborate with the medical team.",
+    "exampleAr": "اتعاون مع الفريق الطبي."
+  },
+  {
+    "word": "allergy history",
+    "ipa": "[ˈælərdʒi ˈhɪstəri] (أليرچي هِستَري)",
+    "meaning": "تاريخ الحساسية",
+    "category": "patient_history_terms",
+    "exampleEn": "Check his allergy history before prescribing.",
+    "exampleAr": "افحص تاريخ الحساسية قبل ما تصف الدواء."
+  },
+  {
+    "word": "surgical history",
+    "ipa": "[ˈsɜːrdʒɪkəl ˈhɪstəri] (سِرجِكَل هِستَري)",
+    "meaning": "التاريخ الجراحي",
+    "category": "patient_history_terms",
+    "exampleEn": "His surgical history includes an appendectomy.",
+    "exampleAr": "تاريخه الجراحي فيه استئصال زائدة."
+  },
+  {
+    "word": "family history",
+    "ipa": "[ˈfæməli ˈhɪstəri] (فامِلي هِستَري)",
+    "meaning": "التاريخ العائلي",
+    "category": "patient_history_terms",
+    "exampleEn": "Family history of diabetes was noted.",
+    "exampleAr": "اتسجّل تاريخ عائلي للسكري."
+  },
+  {
+    "word": "social history",
+    "ipa": "[ˈsoʊʃəl ˈhɪstəri] (سوشَل هِستَري)",
+    "meaning": "التاريخ الاجتماعي",
+    "category": "patient_history_terms",
+    "exampleEn": "Social history includes smoking status.",
+    "exampleAr": "التاريخ الاجتماعي بيشمل حالة التدخين."
+  },
+  {
+    "word": "medication history",
+    "ipa": "[ˌmedɪˈkeɪʃən ˈhɪstəri] (مِدِكيشِن هِستَري)",
+    "meaning": "تاريخ الأدوية",
+    "category": "patient_history_terms",
+    "exampleEn": "Review his medication history first.",
+    "exampleAr": "راجع تاريخ الأدوية بتاعه الأول."
+  },
+  {
+    "word": "frustrated",
+    "ipa": "[frʌˈstreɪtɪd] (فرَستريتِد)",
+    "meaning": "محبَط",
+    "category": "patient_emotions",
+    "exampleEn": "He felt frustrated with the slow recovery.",
+    "exampleAr": "حس بإحباط من بطء التعافي."
+  },
+  {
+    "word": "scared",
+    "ipa": "[skerd] (سكيرد)",
+    "meaning": "خايف",
+    "category": "patient_emotions",
+    "exampleEn": "The child was scared of the injection.",
+    "exampleAr": "الطفل كان خايف من الحقنة."
+  },
+  {
+    "word": "worried",
+    "ipa": "[ˈwɜːrid] (ووريد)",
+    "meaning": "قلقان",
+    "category": "patient_emotions",
+    "exampleEn": "The family was worried about the surgery.",
+    "exampleAr": "العيلة كانت قلقانة على العملية."
+  },
+  {
+    "word": "relieved",
+    "ipa": "[rɪˈliːvd] (رِليڤد)",
+    "meaning": "مرتاح/مطمئن",
+    "category": "patient_emotions",
+    "exampleEn": "She felt relieved after the good news.",
+    "exampleAr": "حست بارتياح بعد الخبر الكويس."
+  },
+  {
+    "word": "grateful",
+    "ipa": "[ˈɡreɪtfəl] (جريتفَل)",
+    "meaning": "ممتن",
+    "category": "patient_emotions",
+    "exampleEn": "He was grateful for the care he received.",
+    "exampleAr": "كان ممتن للرعاية اللي استلمها."
+  },
+  {
+    "word": "embarrassed",
+    "ipa": "[ɪmˈbærəst] (إمبارَست)",
+    "meaning": "محرج",
+    "category": "patient_emotions",
+    "exampleEn": "She felt embarrassed discussing the symptom.",
+    "exampleAr": "حست بحرج وهي بتتكلم عن العرض."
+  },
+  {
+    "word": "compassionate",
+    "ipa": "[kəmˈpæʃənət] (كومپاشِنِت)",
+    "meaning": "متعاطف/رحيم",
+    "category": "professional_qualities",
+    "exampleEn": "A good nurse is compassionate and patient.",
+    "exampleAr": "الممرض الكويس متعاطف وصبور."
+  },
+  {
+    "word": "attentive",
+    "ipa": "[əˈtentɪv] (أتِنتِڤ)",
+    "meaning": "منتبه/يقظ",
+    "category": "professional_qualities",
+    "exampleEn": "She is very attentive to her patients' needs.",
+    "exampleAr": "هي منتبهة جدًا لاحتياجات مرضاها."
+  },
+  {
+    "word": "thorough",
+    "ipa": "[ˈθʌroʊ] (ثَرو)",
+    "meaning": "دقيق/شامل",
+    "category": "professional_qualities",
+    "exampleEn": "He did a thorough assessment.",
+    "exampleAr": "عمل تقييم دقيق وشامل."
+  },
+  {
+    "word": "punctual",
+    "ipa": "[ˈpʌŋktʃuəl] (پَنكتشوَل)",
+    "meaning": "ملتزم بالمواعيد",
+    "category": "professional_qualities",
+    "exampleEn": "Being punctual is essential in healthcare.",
+    "exampleAr": "الالتزام بالمواعيد أساسي في الرعاية الصحية."
+  },
+  {
+    "word": "meticulous",
+    "ipa": "[məˈtɪkjələs] (مِتِكيولَس)",
+    "meaning": "دقيق جدًا/حريص",
+    "category": "professional_qualities",
+    "exampleEn": "She is meticulous about documentation.",
+    "exampleAr": "هي دقيقة جدًا في التوثيق."
+  },
+  {
+    "word": "baseline",
+    "ipa": "[ˈbeɪslaɪn] (بيسلاين)",
+    "meaning": "القيمة الأساسية المرجعية",
+    "category": "general_medical_more",
+    "exampleEn": "Compare the results to the baseline.",
+    "exampleAr": "قارن النتائج بالقيمة الأساسية."
+  },
+  {
+    "word": "intervention",
+    "ipa": "[ˌɪntərˈvenʃən] (إنتِرڤِنشِن)",
+    "meaning": "التدخل الطبي",
+    "category": "general_medical_more",
+    "exampleEn": "Early intervention improves outcomes.",
+    "exampleAr": "التدخل المبكر بيحسّن النتائج."
+  },
+  {
+    "word": "complication",
+    "ipa": "[ˌkɒmplɪˈkeɪʃən] (كومپلِكيشِن)",
+    "meaning": "المضاعفة",
+    "category": "general_medical_more",
+    "exampleEn": "Infection is a possible complication.",
+    "exampleAr": "الالتهاب مضاعفة محتملة."
+  },
+  {
+    "word": "outcome",
+    "ipa": "[ˈaʊtkʌm] (أوت-كَم)",
+    "meaning": "النتيجة النهائية",
+    "category": "general_medical_more",
+    "exampleEn": "The treatment outcome was positive.",
+    "exampleAr": "نتيجة العلاج كانت إيجابية."
+  },
+  {
+    "word": "etiology",
+    "ipa": "[ˌiːtiˈɒlədʒi] (إيتيولوچي)",
+    "meaning": "المسبب/السببية",
+    "category": "general_medical_more",
+    "exampleEn": "The etiology of the disease is unknown.",
+    "exampleAr": "سبب المرض مش معروف."
+  },
+  {
+    "word": "morbidity",
+    "ipa": "[mɔːrˈbɪdəti] (موربِدِتي)",
+    "meaning": "معدل الإصابة بالمرض",
+    "category": "general_medical_more",
+    "exampleEn": "Morbidity rates have decreased.",
+    "exampleAr": "معدلات الإصابة بالمرض قلّت."
+  },
+  {
+    "word": "exudate",
+    "ipa": "[ˈeksjuːdeɪt] (إكسيوديت)",
+    "meaning": "الإفراز (من الجرح)",
+    "category": "wound_care_more",
+    "exampleEn": "There is moderate exudate from the wound.",
+    "exampleAr": "فيه إفراز متوسط من الجرح."
+  },
+  {
+    "word": "granulation tissue",
+    "ipa": "[ˌɡrænjəˈleɪʃən ˈtɪʃuː] (جرانيوليشِن تِشو)",
+    "meaning": "نسيج التحبب (شفاء الجرح)",
+    "category": "wound_care_more",
+    "exampleEn": "Granulation tissue indicates healing.",
+    "exampleAr": "نسيج التحبب بيدل على الالتئام."
+  },
+  {
+    "word": "slough",
+    "ipa": "[slʌf] (سلَف)",
+    "meaning": "النسيج الميت الرطب",
+    "category": "wound_care_more",
+    "exampleEn": "Remove the slough during dressing.",
+    "exampleAr": "شيل النسيج الميت أثناء التضميد."
+  },
+  {
+    "word": "eschar",
+    "ipa": "[ˈeskɑːr] (إسكار)",
+    "meaning": "القشرة الجافة (نسيج ميت)",
+    "category": "wound_care_more",
+    "exampleEn": "The wound has a layer of eschar.",
+    "exampleAr": "الجرح فيه طبقة قشرة جافة."
+  },
+  {
+    "word": "growth spurt",
+    "ipa": "[ɡroʊθ spɜːrt] (جروث سپِرت)",
+    "meaning": "طفرة النمو",
+    "category": "pediatric_more",
+    "exampleEn": "Teenagers often have a growth spurt.",
+    "exampleAr": "المراهقين غالبًا بيحصلهم طفرة نمو."
+  },
+  {
+    "word": "milestone",
+    "ipa": "[ˈmaɪlstoʊn] (مايل-ستون)",
+    "meaning": "معلم تطوري (للطفل)",
+    "category": "pediatric_more",
+    "exampleEn": "Walking is an important developmental milestone.",
+    "exampleAr": "المشي معلم تطوري مهم."
+  },
+  {
+    "word": "colic",
+    "ipa": "[ˈkɒlɪk] (كولِك)",
+    "meaning": "المغص عند الرضّع",
+    "category": "pediatric_more",
+    "exampleEn": "The baby cries a lot due to colic.",
+    "exampleAr": "الطفل بيعيط كتير بسبب المغص."
+  },
+  {
+    "word": "febrile seizure",
+    "ipa": "[ˈfebraɪl ˈsiːʒər] (فِبرايل سيچَر)",
+    "meaning": "تشنج حراري",
+    "category": "pediatric_more",
+    "exampleEn": "He had a febrile seizure during the fever.",
+    "exampleAr": "حصله تشنج حراري أثناء السخونية."
+  },
+  {
+    "word": "formula feeding",
+    "ipa": "[ˈfɔːrmjələ ˈfiːdɪŋ] (فورميولا فيدِنج)",
+    "meaning": "التغذية بالحليب الصناعي",
+    "category": "pediatric_more",
+    "exampleEn": "She switched to formula feeding at four months.",
+    "exampleAr": "اتحوّلت للتغذية بالحليب الصناعي بعد أربعة شهور."
+  },
+  {
+    "word": "frailty",
+    "ipa": "[ˈfreɪlti] (فريلتي)",
+    "meaning": "الضعف/الهشاشة (كبار السن)",
+    "category": "geriatric_more",
+    "exampleEn": "Frailty increases the risk of falls.",
+    "exampleAr": "الضعف عند كبار السن بيزود خطر السقوط."
+  },
+  {
+    "word": "polypharmacy",
+    "ipa": "[ˌpɒliˈfɑːrməsi] (پولي-فارماسي)",
+    "meaning": "تعدد الأدوية",
+    "category": "geriatric_more",
+    "exampleEn": "Polypharmacy is common in elderly patients.",
+    "exampleAr": "تعدد الأدوية شائع عند كبار السن."
+  },
+  {
+    "word": "activities of daily living (ADL)",
+    "ipa": "[ækˈtɪvətiz əv ˈdeɪli ˈlɪvɪŋ] (أكتِڤِتيز أوف ديلي لِڤِنج)",
+    "meaning": "أنشطة الحياة اليومية",
+    "category": "geriatric_more",
+    "exampleEn": "He needs help with activities of daily living.",
+    "exampleAr": "محتاج مساعدة في أنشطة الحياة اليومية."
+  },
+  {
+    "word": "cognitive decline",
+    "ipa": "[ˈkɒɡnətɪv dɪˈklaɪn] (كوجنِتِڤ دِكلاين)",
+    "meaning": "التدهور المعرفي",
+    "category": "geriatric_more",
+    "exampleEn": "Signs of cognitive decline were noted.",
+    "exampleAr": "اتلوحظت علامات تدهور معرفي."
+  },
+  {
+    "word": "psychosis",
+    "ipa": "[saɪˈkoʊsɪs] (سايكوسِس)",
+    "meaning": "الذهان",
+    "category": "mental_health_more",
+    "exampleEn": "He was treated for acute psychosis.",
+    "exampleAr": "اتعالج من ذهان حاد."
+  },
+  {
+    "word": "bipolar disorder",
+    "ipa": "[ˌbaɪˈpoʊlər dɪsˈɔːrdər] (باي-پولَر دِسأوردَر)",
+    "meaning": "اضطراب ثنائي القطب",
+    "category": "mental_health_more",
+    "exampleEn": "She manages bipolar disorder with medication.",
+    "exampleAr": "بتتحكم في اضطراب ثنائي القطب بالدواء."
+  },
+  {
+    "word": "counseling",
+    "ipa": "[ˈkaʊnsəlɪŋ] (كاونسِلِنج)",
+    "meaning": "الاستشارة النفسية",
+    "category": "mental_health_more",
+    "exampleEn": "He attends weekly counseling sessions.",
+    "exampleAr": "بيروح جلسات استشارة نفسية أسبوعية."
+  },
+  {
+    "word": "clear liquid diet",
+    "ipa": "[klɪr ˈlɪkwɪd ˈdaɪət] (كلير لِكويد دايَت)",
+    "meaning": "نظام السوائل الصافية",
+    "category": "nutrition_more",
+    "exampleEn": "He is on a clear liquid diet after surgery.",
+    "exampleAr": "على نظام سوائل صافية بعد العملية."
+  },
+  {
+    "word": "soft diet",
+    "ipa": "[sɒft ˈdaɪət] (سوفت دايَت)",
+    "meaning": "النظام الغذائي اللين",
+    "category": "nutrition_more",
+    "exampleEn": "A soft diet is recommended after dental surgery.",
+    "exampleAr": "النظام اللين موصى بيه بعد جراحة الأسنان."
+  },
+  {
+    "word": "TPN (total parenteral nutrition)",
+    "ipa": "[tiː piː en] (تي-پي-إن)",
+    "meaning": "التغذية الوريدية الكاملة",
+    "category": "nutrition_more",
+    "exampleEn": "He receives TPN through a central line.",
+    "exampleAr": "بياخد تغذية وريدية كاملة عن طريق خط مركزي."
+  },
+  {
+    "word": "cerebrum",
+    "ipa": "[səˈriːbrəm] (سِريبرَم)",
+    "meaning": "المخ الكبير",
+    "category": "anatomy_detailed",
+    "exampleEn": "The cerebrum controls voluntary movement.",
+    "exampleAr": "المخ الكبير بيتحكم في الحركة الإرادية."
+  },
+  {
+    "word": "cerebellum",
+    "ipa": "[ˌserəˈbeləm] (سِرِبِلَم)",
+    "meaning": "المخيخ",
+    "category": "anatomy_detailed",
+    "exampleEn": "The cerebellum controls balance.",
+    "exampleAr": "المخيخ بيتحكم في التوازن."
+  },
+  {
+    "word": "trachea",
+    "ipa": "[ˈtreɪkiə] (تريكيا)",
+    "meaning": "القصبة الهوائية",
+    "category": "anatomy_detailed",
+    "exampleEn": "The trachea carries air to the lungs.",
+    "exampleAr": "القصبة الهوائية بتنقل الهوا للرئتين."
+  },
+  {
+    "word": "diaphragm",
+    "ipa": "[ˈdaɪəfræm] (دايَفرام)",
+    "meaning": "الحجاب الحاجز",
+    "category": "anatomy_detailed",
+    "exampleEn": "The diaphragm helps with breathing.",
+    "exampleAr": "الحجاب الحاجز بيساعد في التنفس."
+  },
+  {
+    "word": "esophagus",
+    "ipa": "[ɪˈsɒfəɡəs] (إسوفَجَس)",
+    "meaning": "المريء",
+    "category": "anatomy_detailed",
+    "exampleEn": "Food passes through the esophagus.",
+    "exampleAr": "الأكل بيعدي من خلال المريء."
+  },
+  {
+    "word": "gallbladder",
+    "ipa": "[ˈɡɔːlblædər] (جول-بلادَر)",
+    "meaning": "المرارة",
+    "category": "anatomy_detailed",
+    "exampleEn": "The gallbladder stores bile.",
+    "exampleAr": "المرارة بتخزن العصارة الصفراوية."
+  },
+  {
+    "word": "spleen",
+    "ipa": "[spliːn] (سبلين)",
+    "meaning": "الطحال",
+    "category": "anatomy_detailed",
+    "exampleEn": "The spleen filters blood.",
+    "exampleAr": "الطحال بيرشّح الدم."
+  },
+  {
+    "word": "colon",
+    "ipa": "[ˈkoʊlən] (كولَن)",
+    "meaning": "القولون",
+    "category": "anatomy_detailed",
+    "exampleEn": "The colon absorbs water from waste.",
+    "exampleAr": "القولون بيمتص المية من الفضلات."
+  },
+  {
+    "word": "rectum",
+    "ipa": "[ˈrektəm] (رِكتَم)",
+    "meaning": "المستقيم",
+    "category": "anatomy_detailed",
+    "exampleEn": "A rectal exam was performed.",
+    "exampleAr": "اتعمل فحص للمستقيم."
+  },
+  {
+    "word": "cartilage",
+    "ipa": "[ˈkɑːrtəlɪdʒ] (كارتِلِج)",
+    "meaning": "الغضروف",
+    "category": "anatomy_detailed",
+    "exampleEn": "Cartilage cushions the joints.",
+    "exampleAr": "الغضروف بيوسّد المفاصل."
+  },
+  {
+    "word": "nerve",
+    "ipa": "[nɜːrv] (نِرڤ)",
+    "meaning": "العصب",
+    "category": "anatomy_detailed",
+    "exampleEn": "A pinched nerve causes pain.",
+    "exampleAr": "العصب المضغوط بيسبب ألم."
+  },
+  {
+    "word": "capillary",
+    "ipa": "[ˈkæpəleri] (كاپِلَري)",
+    "meaning": "الشعيرة الدموية",
+    "category": "anatomy_detailed",
+    "exampleEn": "Capillaries connect arteries and veins.",
+    "exampleAr": "الشعيرات الدموية بتوصل الشرايين بالأوردة."
+  },
+  {
+    "word": "Apply direct pressure.",
+    "ipa": "[əˈplaɪ dɪˈrekt ˈpreʃər] (أپلاي دايركت پريشَر)",
+    "meaning": "اضغط مباشرة على المكان.",
+    "category": "first_aid_phrases",
+    "exampleEn": "Apply direct pressure to stop the bleeding.",
+    "exampleAr": "اضغط مباشرة عشان توقف النزيف."
+  },
+  {
+    "word": "Call for help immediately.",
+    "ipa": "[kɔːl fɔːr help ɪˈmiːdiətli] (كول فور هِلپ إميديَتلي)",
+    "meaning": "اطلب المساعدة فورًا.",
+    "category": "first_aid_phrases",
+    "exampleEn": "Call for help immediately if he collapses.",
+    "exampleAr": "اطلب المساعدة فورًا لو حصله انهيار."
+  },
+  {
+    "word": "Keep the airway clear.",
+    "ipa": "[kiːp ðə ˈeərweɪ klɪr] (كيپ ذا إيروي كلير)",
+    "meaning": "خلّي مجرى التنفس مفتوح.",
+    "category": "first_aid_phrases",
+    "exampleEn": "Keep the airway clear at all times.",
+    "exampleAr": "خلّي مجرى التنفس مفتوح طول الوقت."
+  },
+  {
+    "word": "Do not move the patient.",
+    "ipa": "[duː nɒt muːv ðə ˈpeɪʃənt] (دو نوت موڤ ذا پيشِنت)",
+    "meaning": "متحركش المريض.",
+    "category": "first_aid_phrases",
+    "exampleEn": "Do not move the patient if a spinal injury is suspected.",
+    "exampleAr": "متحركش المريض لو فيه شك إصابة بالعمود الفقري."
+  },
+  {
+    "word": "Check for a response.",
+    "ipa": "[tʃek fɔːr ə rɪˈspɒns] (تشِك فور أ رِسپونس)",
+    "meaning": "افحص لو فيه استجابة.",
+    "category": "first_aid_phrases",
+    "exampleEn": "Check for a response before starting CPR.",
+    "exampleAr": "افحص لو فيه استجابة قبل ما تبدأ الإنعاش."
+  },
+  {
+    "word": "Avoid driving for 24 hours.",
+    "ipa": "[əˈvɔɪd ˈdraɪvɪŋ fɔːr ˌtwenti fɔːr ˈaʊərz] (أفويد درايڤِنج فور 24 آورز)",
+    "meaning": "تجنّب القيادة 24 ساعة.",
+    "category": "discharge_more",
+    "exampleEn": "Avoid driving for 24 hours after anesthesia.",
+    "exampleAr": "تجنّب القيادة 24 ساعة بعد التخدير."
+  },
+  {
+    "word": "Do not remove the dressing.",
+    "ipa": "[duː nɒt rɪˈmuːv ðə ˈdresɪŋ] (دو نوت رِموڤ ذا دريسِنج)",
+    "meaning": "متشلش الضمادة.",
+    "category": "discharge_more",
+    "exampleEn": "Do not remove the dressing for 48 hours.",
+    "exampleAr": "متشلش الضمادة لمدة 48 ساعة."
+  },
+  {
+    "word": "Complete the full course of antibiotics.",
+    "ipa": "[kəmˈpliːt ðə fʊl kɔːrs əv ˌæntibaɪˈɒtɪks] (كومپليت ذا فول كورس أوف أنتي-بايوتِكس)",
+    "meaning": "خلّص الكورس كامل من المضاد الحيوي.",
+    "category": "discharge_more",
+    "exampleEn": "Complete the full course of antibiotics even if you feel better.",
+    "exampleAr": "خلّص كورس المضاد الحيوي كامل حتى لو حسّيت إنك اتحسّنت."
+  },
+  {
+    "word": "Attend your follow-up appointment.",
+    "ipa": "[əˈtend jʊər ˈfɒloʊ ʌp əˈpɔɪntmənt] (أتِند يور فولو-أپ أپوينتمِنت)",
+    "meaning": "احضر موعد المتابعة.",
+    "category": "discharge_more",
+    "exampleEn": "Please attend your follow-up appointment next week.",
+    "exampleAr": "من فضلك احضر موعد المتابعة الأسبوع الجاي."
+  },
+  {
+    "word": "prior to",
+    "ipa": "[ˈpraɪər tuː] (برايَر تو)",
+    "meaning": "قبل",
+    "category": "medical_time_words",
+    "exampleEn": "Fast prior to the blood test.",
+    "exampleAr": "صوم قبل تحليل الدم."
+  },
+  {
+    "word": "immediately",
+    "ipa": "[ɪˈmiːdiətli] (إميديَتلي)",
+    "meaning": "فورًا",
+    "category": "medical_time_words",
+    "exampleEn": "Notify the doctor immediately.",
+    "exampleAr": "بلّغ الدكتور فورًا."
+  },
+  {
+    "word": "as directed",
+    "ipa": "[æz dɪˈrektɪd] (از دايركتِد)",
+    "meaning": "حسب التوجيهات",
+    "category": "medical_time_words",
+    "exampleEn": "Take the medication as directed.",
+    "exampleAr": "خد الدواء حسب التوجيهات."
+  },
+  {
+    "word": "within 24 hours",
+    "ipa": "[wɪˈðɪn ˌtwenti fɔːr ˈaʊərz] (وِذِن 24 آورز)",
+    "meaning": "خلال 24 ساعة",
+    "category": "medical_time_words",
+    "exampleEn": "Results will be ready within 24 hours.",
+    "exampleAr": "النتائج هتكون جاهزة خلال 24 ساعة."
+  },
+  {
+    "word": "on an empty stomach",
+    "ipa": "[ɒn æn ˈempti ˈstʌmək] (أون أن إمبتي ستَمَك)",
+    "meaning": "على معدة فارغة",
+    "category": "medical_time_words",
+    "exampleEn": "Take this tablet on an empty stomach.",
+    "exampleAr": "خد القرص ده على معدة فارغة."
+  },
+  {
+    "word": "every other day",
+    "ipa": "[ˈevri ˈʌðər deɪ] (إيڤري أذَر دي)",
+    "meaning": "كل يومين",
+    "category": "medical_time_words",
+    "exampleEn": "Take the injection every other day.",
+    "exampleAr": "خد الحقنة كل يومين."
+  },
+  {
+    "word": "pain scale",
+    "ipa": "[peɪn skeɪl] (پين سكيل)",
+    "meaning": "مقياس الألم",
+    "category": "pain_management",
+    "exampleEn": "Rate your pain on the pain scale from one to ten.",
+    "exampleAr": "قيّم ألمك على مقياس الألم من واحد لعشرة."
+  },
+  {
+    "word": "throbbing pain",
+    "ipa": "[ˈθrɒbɪŋ peɪn] (ثروبِنج پين)",
+    "meaning": "ألم نابض",
+    "category": "pain_management",
+    "exampleEn": "He described a throbbing pain in his head.",
+    "exampleAr": "وصف ألم نابض في دماغه."
+  },
+  {
+    "word": "sharp pain",
+    "ipa": "[ʃɑːrp peɪn] (شارپ پين)",
+    "meaning": "ألم حاد",
+    "category": "pain_management",
+    "exampleEn": "She felt a sharp pain in her chest.",
+    "exampleAr": "حست بألم حاد في صدرها."
+  },
+  {
+    "word": "dull ache",
+    "ipa": "[dʌl eɪk] (دَل إيك)",
+    "meaning": "ألم خفيف مستمر",
+    "category": "pain_management",
+    "exampleEn": "There is a dull ache in his lower back.",
+    "exampleAr": "فيه ألم خفيف مستمر في أسفل ضهره."
+  },
+  {
+    "word": "pain relief",
+    "ipa": "[peɪn rɪˈliːf] (پين رِليف)",
+    "meaning": "تسكين الألم",
+    "category": "pain_management",
+    "exampleEn": "The medication provides pain relief.",
+    "exampleAr": "الدواء بيوفّر تسكين للألم."
+  },
+  {
+    "word": "booster shot",
+    "ipa": "[ˈbuːstər ʃɒt] (بوستَر شوت)",
+    "meaning": "جرعة معززة",
+    "category": "vaccination_more",
+    "exampleEn": "He received a booster shot this year.",
+    "exampleAr": "استلم جرعة معززة السنة دي."
+  },
+  {
+    "word": "live vaccine",
+    "ipa": "[laɪv vækˈsiːn] (لايڤ ڤاكسين)",
+    "meaning": "لقاح حي",
+    "category": "vaccination_more",
+    "exampleEn": "This is a live vaccine, avoid during pregnancy.",
+    "exampleAr": "ده لقاح حي، تجنّبه أثناء الحمل."
+  },
+  {
+    "word": "side effect (vaccine)",
+    "ipa": "[saɪd ɪˈfekt] (سايد إفِكت)",
+    "meaning": "أثر جانبي (للقاح)",
+    "category": "vaccination_more",
+    "exampleEn": "Mild fever is a common side effect.",
+    "exampleAr": "السخونية الخفيفة أثر جانبي شائع."
+  },
+  {
+    "word": "paracetamol",
+    "ipa": "[ˌpærəˈsiːtəmɒl] (پارَسيتامول)",
+    "meaning": "الباراسيتامول",
+    "category": "common_drug_names",
+    "exampleEn": "Take paracetamol for the fever.",
+    "exampleAr": "خد باراسيتامول للحرارة."
+  },
+  {
+    "word": "ibuprofen",
+    "ipa": "[ˌaɪbjuːˈproʊfən] (آيبيوپروفِن)",
+    "meaning": "الإيبوبروفين",
+    "category": "common_drug_names",
+    "exampleEn": "Ibuprofen reduces inflammation.",
+    "exampleAr": "الإيبوبروفين بيقلل الالتهاب."
+  },
+  {
+    "word": "aspirin",
+    "ipa": "[ˈæsprɪn] (أسپرِن)",
+    "meaning": "الأسبرين",
+    "category": "common_drug_names",
+    "exampleEn": "He takes a low-dose aspirin daily.",
+    "exampleAr": "بياخد أسبرين بجرعة قليلة يوميًا."
+  },
+  {
+    "word": "amoxicillin",
+    "ipa": "[əˌmɒksɪˈsɪlɪn] (أموكسِسِلِن)",
+    "meaning": "الأموكسيسيلين",
+    "category": "common_drug_names",
+    "exampleEn": "Amoxicillin was prescribed for the infection.",
+    "exampleAr": "اتوصف أموكسيسيلين للعدوى."
+  },
+  {
+    "word": "metformin",
+    "ipa": "[metˈfɔːrmɪn] (مِتفورمِن)",
+    "meaning": "الميتفورمين",
+    "category": "common_drug_names",
+    "exampleEn": "Metformin helps control blood sugar.",
+    "exampleAr": "الميتفورمين بيساعد يتحكم في السكر."
+  },
+  {
+    "word": "morphine",
+    "ipa": "[ˈmɔːrfiːn] (مورفين)",
+    "meaning": "المورفين",
+    "category": "common_drug_names",
+    "exampleEn": "Morphine was given for severe pain.",
+    "exampleAr": "اتدى مورفين للألم الشديد."
+  },
+  {
+    "word": "oriented to time and place",
+    "ipa": "[ˈɔːrienti d tuː taɪm ænd pleɪs] (أورينتِد تو تايم آند پليس)",
+    "meaning": "مدرك للزمان والمكان",
+    "category": "assessment_phrases",
+    "exampleEn": "The patient is oriented to time and place.",
+    "exampleAr": "المريض مدرك للزمان والمكان."
+  },
+  {
+    "word": "responds to pain",
+    "ipa": "[rɪˈspɒndz tuː peɪn] (رِسپوندز تو پين)",
+    "meaning": "بيستجيب للألم",
+    "category": "assessment_phrases",
+    "exampleEn": "He only responds to pain stimuli.",
+    "exampleAr": "بيستجيب بس لمثيرات الألم."
+  },
+  {
+    "word": "pupils equal and reactive",
+    "ipa": "[ˈpjuːpəlz ˈiːkwəl ænd riˈæktɪv] (پيوپِلز إيكوَل آند رياكتِڤ)",
+    "meaning": "حدقتان متساويتان ومتفاعلتان",
+    "category": "assessment_phrases",
+    "exampleEn": "Pupils equal and reactive to light.",
+    "exampleAr": "الحدقتان متساويتان ومتفاعلتان مع الضوء."
+  },
+  {
+    "word": "skin turgor",
+    "ipa": "[skɪn ˈtɜːrɡər] (سكِن تِرجَر)",
+    "meaning": "مرونة الجلد",
+    "category": "assessment_phrases",
+    "exampleEn": "Skin turgor is a sign of hydration.",
+    "exampleAr": "مرونة الجلد علامة على الترطيب."
+  },
+  {
+    "word": "capillary refill",
+    "ipa": "[ˈkæpəleri rɪˈfɪl] (كاپِلَري رِفِل)",
+    "meaning": "زمن امتلاء الشعيرات الدموية",
+    "category": "assessment_phrases",
+    "exampleEn": "Capillary refill was less than two seconds.",
+    "exampleAr": "زمن امتلاء الشعيرات كان أقل من ثانيتين."
+  },
+  {
+    "word": "range of motion exercises",
+    "ipa": "[reɪndʒ əv ˈmoʊʃən ˈeksərsaɪzɪz] (رينج أوف موشِن إكسِرسايزِز)",
+    "meaning": "تمارين مدى الحركة",
+    "category": "rehab_more",
+    "exampleEn": "Perform range of motion exercises daily.",
+    "exampleAr": "اعمل تمارين مدى الحركة يوميًا."
+  },
+  {
+    "word": "assistive device",
+    "ipa": "[əˈsɪstɪv dɪˈvaɪs] (أسِستِڤ دِڤايس)",
+    "meaning": "وسيلة مساعدة",
+    "category": "rehab_more",
+    "exampleEn": "He uses an assistive device to walk.",
+    "exampleAr": "بيستخدم وسيلة مساعدة عشان يمشي."
+  },
+  {
+    "word": "independence",
+    "ipa": "[ˌɪndɪˈpendəns] (إندِپِندِنس)",
+    "meaning": "الاستقلالية",
+    "category": "rehab_more",
+    "exampleEn": "The goal is to regain independence.",
+    "exampleAr": "الهدف استعادة الاستقلالية."
+  },
+  {
+    "word": "handoff",
+    "ipa": "[ˈhændɒf] (هاند-أوف)",
+    "meaning": "تسليم المسؤولية",
+    "category": "professional_communication",
+    "exampleEn": "A proper handoff prevents errors.",
+    "exampleAr": "التسليم الصحيح بيمنع الأخطاء."
+  },
+  {
+    "word": "escalate",
+    "ipa": "[ˈeskəleɪt] (إسكَليت)",
+    "meaning": "يصعّد (يبلّغ لمستوى أعلى)",
+    "category": "professional_communication",
+    "exampleEn": "Escalate the concern to the supervisor.",
+    "exampleAr": "صعّد الملاحظة للمشرف."
+  },
+  {
+    "word": "clarify",
+    "ipa": "[ˈklærɪfaɪ] (كلارِفاي)",
+    "meaning": "يوضّح",
+    "category": "professional_communication",
+    "exampleEn": "Please clarify the dosage instructions.",
+    "exampleAr": "من فضلك وضّح تعليمات الجرعة."
+  },
+  {
+    "word": "verbal order",
+    "ipa": "[ˈvɜːrbəl ˈɔːrdər] (ڤِربَل أوردَر)",
+    "meaning": "أمر طبي شفهي",
+    "category": "professional_communication",
+    "exampleEn": "A verbal order must be confirmed in writing.",
+    "exampleAr": "الأمر الشفهي لازم يتأكد كتابيًا."
+  },
+  {
+    "word": "private room",
+    "ipa": "[ˈpraɪvət ruːm] (برايڤِت روم)",
+    "meaning": "غرفة خاصة",
+    "category": "bed_room_types",
+    "exampleEn": "He was moved to a private room.",
+    "exampleAr": "اتنقل لغرفة خاصة."
+  },
+  {
+    "word": "shared ward",
+    "ipa": "[ʃerd wɔːrd] (شيرد وورد)",
+    "meaning": "قسم مشترك",
+    "category": "bed_room_types",
+    "exampleEn": "She is staying in a shared ward.",
+    "exampleAr": "مقيمة في قسم مشترك."
+  },
+  {
+    "word": "adjustable bed",
+    "ipa": "[əˈdʒʌstəbəl bed] (أدجَستَبِل بِد)",
+    "meaning": "سرير قابل للتعديل",
+    "category": "bed_room_types",
+    "exampleEn": "Raise the adjustable bed slightly.",
+    "exampleAr": "ارفع السرير القابل للتعديل شوية."
+  },
+  {
+    "word": "cotton swab",
+    "ipa": "[ˈkɒtən swɒb] (كوتِن سواب)",
+    "meaning": "قطنة/عود قطن طبي",
+    "category": "medical_supplies",
+    "exampleEn": "Use a cotton swab to clean the area.",
+    "exampleAr": "استخدم قطنة عشان تنضّف المنطقة."
+  },
+  {
+    "word": "adhesive tape",
+    "ipa": "[ədˈhiːsɪv teɪp] (أدهيسِڤ تيپ)",
+    "meaning": "شريط لاصق طبي",
+    "category": "medical_supplies",
+    "exampleEn": "Secure the dressing with adhesive tape.",
+    "exampleAr": "ثبّت الضمادة بشريط لاصق."
+  },
+  {
+    "word": "antiseptic",
+    "ipa": "[ˌæntiˈseptɪk] (أنتي-سِپتِك)",
+    "meaning": "مطهّر",
+    "category": "medical_supplies",
+    "exampleEn": "Clean the wound with antiseptic solution.",
+    "exampleAr": "نضّف الجرح بمحلول مطهّر."
+  },
+  {
+    "word": "disposable gloves",
+    "ipa": "[dɪˈspoʊzəbəl ɡlʌvz] (دِسپوزَبِل جلَڤز)",
+    "meaning": "قفازات يُستعمل مرة واحدة",
+    "category": "medical_supplies",
+    "exampleEn": "Always use disposable gloves.",
+    "exampleAr": "دايمًا استخدم قفازات تُستعمل مرة واحدة."
+  },
+  {
+    "word": "admission",
+    "ipa": "[ədˈmɪʃən] (أدمِشِن)",
+    "meaning": "دخول المستشفى",
+    "category": "admission_process",
+    "exampleEn": "His admission was for chest pain.",
+    "exampleAr": "دخوله المستشفى كان بسبب ألم صدر."
+  },
+  {
+    "word": "registration",
+    "ipa": "[ˌredʒɪˈstreɪʃən] (رِجِستريشِن)",
+    "meaning": "التسجيل",
+    "category": "admission_process",
+    "exampleEn": "Complete the registration form first.",
+    "exampleAr": "خلّص استمارة التسجيل الأول."
+  },
+  {
+    "word": "insurance details",
+    "ipa": "[ɪnˈʃʊərəns ˈdiːteɪlz] (إنشورَنس ديتيلز)",
+    "meaning": "بيانات التأمين",
+    "category": "admission_process",
+    "exampleEn": "Please provide your insurance details.",
+    "exampleAr": "من فضلك قدّم بيانات التأمين."
+  },
+  {
+    "word": "waiting room",
+    "ipa": "[ˈweɪtɪŋ ruːm] (ويتِنج روم)",
+    "meaning": "غرفة الانتظار",
+    "category": "admission_process",
+    "exampleEn": "Please have a seat in the waiting room.",
+    "exampleAr": "من فضلك اقعد في غرفة الانتظار."
+  },
+  {
+    "word": "bed availability",
+    "ipa": "[bed əˌveɪləˈbɪləti] (بِد أڤيلَبِلِتي)",
+    "meaning": "توفّر الأسرّة",
+    "category": "admission_process",
+    "exampleEn": "We are checking bed availability now.",
+    "exampleAr": "بنفحص توفّر الأسرّة دلوقتي."
+  },
+  {
+    "word": "inspection",
+    "ipa": "[ɪnˈspekʃən] (إنسپِكشِن)",
+    "meaning": "الفحص بالنظر",
+    "category": "physical_exam_more",
+    "exampleEn": "Inspection revealed no visible swelling.",
+    "exampleAr": "الفحص بالنظر مفيهوش تورّم واضح."
+  },
+  {
+    "word": "percussion",
+    "ipa": "[pərˈkʌʃən] (پِركَشِن)",
+    "meaning": "الفحص بالنقر",
+    "category": "physical_exam_more",
+    "exampleEn": "Percussion of the chest was normal.",
+    "exampleAr": "الفحص بالنقر على الصدر كان طبيعي."
+  },
+  {
+    "word": "reflexes",
+    "ipa": "[ˈriːfleksɪz] (ريفلِكسِز)",
+    "meaning": "المنعكسات",
+    "category": "physical_exam_more",
+    "exampleEn": "His reflexes are normal.",
+    "exampleAr": "المنعكسات عنده طبيعية."
+  },
+  {
+    "word": "range of motion",
+    "ipa": "[reɪndʒ əv ˈmoʊʃən] (رينج أوف موشِن)",
+    "meaning": "مدى الحركة",
+    "category": "physical_exam_more",
+    "exampleEn": "Full range of motion was observed.",
+    "exampleAr": "اتلوحظ مدى حركة كامل."
+  },
+  {
+    "word": "I need your signature here.",
+    "ipa": "[aɪ niːd jʊər ˈsɪɡnətʃər hɪr] (آي نيد يور سِجنَتشَر هير)",
+    "meaning": "محتاج توقيعك هنا.",
+    "category": "consent_refusal",
+    "exampleEn": "I need your signature here to proceed.",
+    "exampleAr": "محتاج توقيعك هنا عشان نكمل."
+  },
+  {
+    "word": "Do you have any questions?",
+    "ipa": "[duː juː hæv ˈeni ˈkwestʃənz] (دو يو هاڤ إني كوستشِنز)",
+    "meaning": "عندك أي أسئلة؟",
+    "category": "consent_refusal",
+    "exampleEn": "Do you have any questions before we start?",
+    "exampleAr": "عندك أي أسئلة قبل ما نبدأ؟"
+  },
+  {
+    "word": "You have the right to refuse.",
+    "ipa": "[juː hæv ðə raɪt tuː rɪˈfjuːz] (يو هاڤ ذا رايت تو رِفيوز)",
+    "meaning": "من حقك ترفض.",
+    "category": "consent_refusal",
+    "exampleEn": "You have the right to refuse this treatment.",
+    "exampleAr": "من حقك ترفض العلاج ده."
+  },
+  {
+    "word": "This is a routine procedure.",
+    "ipa": "[ðɪs ɪz ə ruːˈtiːn prəˈsiːdʒər] (ذِس إز أ روتين پروسيجَر)",
+    "meaning": "ده إجراء روتيني.",
+    "category": "reassurance_phrases",
+    "exampleEn": "This is a routine procedure, nothing to worry about.",
+    "exampleAr": "ده إجراء روتيني، متقلقش."
+  },
+  {
+    "word": "You're doing great.",
+    "ipa": "[jʊr ˈduːɪŋ ɡreɪt] (يور دوينج جريت)",
+    "meaning": "أنت بتعمل حاجة كويسة.",
+    "category": "reassurance_phrases",
+    "exampleEn": "You're doing great, just a little more.",
+    "exampleAr": "أنت بتعمل كويس، شوية كمان."
+  },
+  {
+    "word": "Almost done.",
+    "ipa": "[ˈɔːlmoʊst dʌn] (أولموست دَن)",
+    "meaning": "خلصنا تقريبًا.",
+    "category": "reassurance_phrases",
+    "exampleEn": "Almost done, hang in there.",
+    "exampleAr": "خلصنا تقريبًا، استحمل شوية."
+  },
+  {
+    "word": "distended abdomen",
+    "ipa": "[dɪˈstendɪd ˈæbdəmən] (دِستِندِد أبدَمِن)",
+    "meaning": "بطن منتفخ",
+    "category": "clinical_exam_extra",
+    "exampleEn": "He presented with a distended abdomen.",
+    "exampleAr": "جه بحالة بطن منتفخ."
+  },
+  {
+    "word": "tender",
+    "ipa": "[ˈtendər] (تِندَر)",
+    "meaning": "مؤلم عند اللمس",
+    "category": "clinical_exam_extra",
+    "exampleEn": "The area is tender to touch.",
+    "exampleAr": "المنطقة دي مؤلمة عند اللمس."
+  },
+  {
+    "word": "rigid",
+    "ipa": "[ˈrɪdʒɪd] (رِجِد)",
+    "meaning": "متصلّب",
+    "category": "clinical_exam_extra",
+    "exampleEn": "The abdomen was rigid on examination.",
+    "exampleAr": "البطن كان متصلّب عند الفحص."
+  },
+  {
+    "word": "guarding",
+    "ipa": "[ˈɡɑːrdɪŋ] (جاردِنج)",
+    "meaning": "تيبّس دفاعي (وقاية من الألم)",
+    "category": "clinical_exam_extra",
+    "exampleEn": "Guarding was noted during palpation.",
+    "exampleAr": "اتلوحظ تيبّس دفاعي أثناء الفحص باللمس."
+  },
+  {
+    "word": "milligram (mg)",
+    "ipa": "[ˈmɪlɪɡræm] (مِلي-جرام)",
+    "meaning": "المليجرام",
+    "category": "measurement_terms",
+    "exampleEn": "Take 500 milligrams twice a day.",
+    "exampleAr": "خد 500 مليجرام مرتين يوميًا."
+  },
+  {
+    "word": "milliliter (mL)",
+    "ipa": "[ˈmɪlɪliːtər] (مِلي-ليتَر)",
+    "meaning": "المليلتر",
+    "category": "measurement_terms",
+    "exampleEn": "Give 5 milliliters of syrup.",
+    "exampleAr": "هات 5 مليلتر شراب."
+  },
+  {
+    "word": "kilogram (kg)",
+    "ipa": "[ˈkɪləɡræm] (كيلوجرام)",
+    "meaning": "الكيلوجرام",
+    "category": "measurement_terms",
+    "exampleEn": "The dose is calculated per kilogram.",
+    "exampleAr": "الجرعة بتتحسب على الكيلوجرام."
+  },
+  {
+    "word": "Celsius",
+    "ipa": "[ˈselsiəs] (سِلسيَس)",
+    "meaning": "درجة مئوية",
+    "category": "measurement_terms",
+    "exampleEn": "The temperature is 38 degrees Celsius.",
+    "exampleAr": "الحرارة 38 درجة مئوية."
+  },
+  {
+    "word": "bed capacity",
+    "ipa": "[bed kəˈpæsəti] (بِد كَپاسِتي)",
+    "meaning": "السعة السريرية",
+    "category": "admin_more",
+    "exampleEn": "The hospital is at full bed capacity.",
+    "exampleAr": "المستشفى وصلت للسعة الكاملة."
+  },
+  {
+    "word": "occupancy rate",
+    "ipa": "[ˈɒkjəpənsi reɪt] (أوكيوپَنسي ريت)",
+    "meaning": "نسبة الإشغال",
+    "category": "admin_more",
+    "exampleEn": "The occupancy rate rose this winter.",
+    "exampleAr": "نسبة الإشغال زادت الشتا ده."
+  },
+  {
+    "word": "length of stay",
+    "ipa": "[leŋθ əv steɪ] (لِنجث أوف ستاي)",
+    "meaning": "مدة الإقامة بالمستشفى",
+    "category": "admin_more",
+    "exampleEn": "His length of stay was five days.",
+    "exampleAr": "مدة إقامته كانت خمس أيام."
+  },
+  {
+    "word": "Fasting is required.",
+    "ipa": "[ˈfɑːstɪŋ ɪz rɪˈkwaɪərd] (فاستِنج إز رِكوايَرد)",
+    "meaning": "الصيام مطلوب.",
+    "category": "test_communication",
+    "exampleEn": "Fasting is required for this blood test.",
+    "exampleAr": "الصيام مطلوب لتحليل الدم ده."
+  },
+  {
+    "word": "The results will take a few days.",
+    "ipa": "[ðə rɪˈzʌlts wɪl teɪk ə fjuː deɪz] (ذا رِزَلتس ويل تيك أ فيو ديز)",
+    "meaning": "النتائج هتاخد كام يوم.",
+    "category": "test_communication",
+    "exampleEn": "The results will take a few days to come back.",
+    "exampleAr": "النتائج هتاخد كام يوم عشان تطلع."
+  },
+  {
+    "word": "Please remain still.",
+    "ipa": "[pliːz rɪˈmeɪn stɪl] (پليز رِمين ستِل)",
+    "meaning": "من فضلك ابقى ثابت.",
+    "category": "test_communication",
+    "exampleEn": "Please remain still during the scan.",
+    "exampleAr": "من فضلك ابقى ثابت أثناء الأشعة."
+  },
+  {
+    "word": "comfort measures",
+    "ipa": "[ˈkʌmfərt ˈmeʒərz] (كَمفَرت مِچَرز)",
+    "meaning": "إجراءات الراحة",
+    "category": "palliative_more",
+    "exampleEn": "The family chose comfort measures only.",
+    "exampleAr": "العيلة اختارت إجراءات الراحة بس."
+  },
+  {
+    "word": "end-of-life care",
+    "ipa": "[end əv laɪf ker] (إند-أوف-لايف كير)",
+    "meaning": "رعاية نهاية الحياة",
+    "category": "palliative_more",
+    "exampleEn": "End-of-life care focuses on dignity.",
+    "exampleAr": "رعاية نهاية الحياة بتركّز على الكرامة."
+  },
+  {
+    "word": "preventive medicine",
+    "ipa": "[prɪˈventɪv ˈmedɪsɪn] (پرِڤِنتِڤ مِدِسِن)",
+    "meaning": "الطب الوقائي",
+    "category": "preventive_care",
+    "exampleEn": "Preventive medicine reduces hospital visits.",
+    "exampleAr": "الطب الوقائي بيقلل زيارات المستشفى."
+  },
+  {
+    "word": "early detection",
+    "ipa": "[ˈɜːrli dɪˈtekʃən] (إرلي دِتِكشِن)",
+    "meaning": "الكشف المبكر",
+    "category": "preventive_care",
+    "exampleEn": "Early detection saves lives.",
+    "exampleAr": "الكشف المبكر بينقذ حياة."
+  },
+  {
+    "word": "routine check-up",
+    "ipa": "[ruːˈtiːn tʃek ʌp] (روتين تشِك-أپ)",
+    "meaning": "الفحص الدوري",
+    "category": "preventive_care",
+    "exampleEn": "He has a routine check-up every year.",
+    "exampleAr": "بيعمل فحص دوري كل سنة."
+  },
+  {
+    "word": "numbness",
+    "ipa": "[ˈnʌmnəs] (نَمنِس)",
+    "meaning": "الخدر",
+    "category": "neuro_sensory",
+    "exampleEn": "She reported numbness in her hand.",
+    "exampleAr": "أبلغت عن خدر في إيدها."
+  },
+  {
+    "word": "tingling",
+    "ipa": "[ˈtɪŋɡlɪŋ] (تِنجلِنج)",
+    "meaning": "الوخز/التنميل",
+    "category": "neuro_sensory",
+    "exampleEn": "He felt tingling in his fingers.",
+    "exampleAr": "حس بتنميل في صوابعه."
+  },
+  {
+    "word": "tremor",
+    "ipa": "[ˈtremər] (تريمَر)",
+    "meaning": "الرعاش",
+    "category": "neuro_sensory",
+    "exampleEn": "A hand tremor was observed.",
+    "exampleAr": "اتلوحظ رعاش في الإيد."
+  },
+  {
+    "word": "paralysis",
+    "ipa": "[pəˈræləsɪs] (پارَلِسِس)",
+    "meaning": "الشلل",
+    "category": "neuro_sensory",
+    "exampleEn": "The stroke caused partial paralysis.",
+    "exampleAr": "السكتة الدماغية سببت شلل جزئي."
+  },
+  {
+    "word": "blurred speech (slurred speech)",
+    "ipa": "[slɜːrd spiːtʃ] (سلِرد سپيتش)",
+    "meaning": "تلعثم/تداخل الكلام",
+    "category": "neuro_sensory",
+    "exampleEn": "Slurred speech is a stroke warning sign.",
+    "exampleAr": "تداخل الكلام علامة تحذيرية للسكتة الدماغية."
+  },
+  {
+    "word": "power of attorney",
+    "ipa": "[ˈpaʊər əv əˈtɜːrni] (پاوَر أوف أتِرني)",
+    "meaning": "توكيل قانوني",
+    "category": "legal_documentation",
+    "exampleEn": "His son has power of attorney.",
+    "exampleAr": "ابنه عنده توكيل قانوني."
+  },
+  {
+    "word": "advance directive",
+    "ipa": "[ədˈvæns dɪˈrektɪv] (أدڤانس دايركتِڤ)",
+    "meaning": "التوجيه المسبق (رغبات المريض)",
+    "category": "legal_documentation",
+    "exampleEn": "She has an advance directive on file.",
+    "exampleAr": "عندها توجيه مسبق مسجّل."
+  },
+  {
+    "word": "confidentiality",
+    "ipa": "[ˌkɒnfɪˌdenʃiˈæləti] (كونفِدِنشياليتي)",
+    "meaning": "السرية الطبية",
+    "category": "legal_documentation",
+    "exampleEn": "Patient confidentiality must be maintained.",
+    "exampleAr": "لازم الحفاظ على السرية الطبية للمريض."
+  },
+  {
+    "word": "leukemia",
+    "ipa": "[luːˈkiːmiə] (لوكيميا)",
+    "meaning": "سرطان الدم",
+    "category": "hematology",
+    "exampleEn": "He was diagnosed with leukemia last year.",
+    "exampleAr": "اتشخّص بسرطان الدم السنة اللي فاتت."
+  },
+  {
+    "word": "clotting",
+    "ipa": "[ˈklɒtɪŋ] (كلوتِنج)",
+    "meaning": "تخثّر الدم",
+    "category": "hematology",
+    "exampleEn": "Blood clotting time was checked.",
+    "exampleAr": "وقت تخثّر الدم اتفحص."
+  },
+  {
+    "word": "platelet",
+    "ipa": "[ˈpleɪtlət] (پليتلِت)",
+    "meaning": "الصفيحة الدموية",
+    "category": "hematology",
+    "exampleEn": "His platelet count is low.",
+    "exampleAr": "عدد الصفائح الدموية عنده قليل."
+  },
+  {
+    "word": "blood type",
+    "ipa": "[blʌd taɪp] (بلَد تايپ)",
+    "meaning": "فصيلة الدم",
+    "category": "hematology",
+    "exampleEn": "Check his blood type before transfusion.",
+    "exampleAr": "افحص فصيلة دمه قبل نقل الدم."
+  },
+  {
+    "word": "bruising easily",
+    "ipa": "[ˈbruːzɪŋ ˈiːzəli] (بروزِنج إيزِلي)",
+    "meaning": "الكدمات بسهولة",
+    "category": "hematology",
+    "exampleEn": "She reported bruising easily.",
+    "exampleAr": "أبلغت عن ظهور كدمات بسهولة."
+  },
+  {
+    "word": "cataract",
+    "ipa": "[ˈkætərækt] (كاتَراكت)",
+    "meaning": "الماء الأبيض (الساد)",
+    "category": "ophthalmology_more",
+    "exampleEn": "He had cataract surgery last month.",
+    "exampleAr": "اتعمل عملية ماء أبيض الشهر اللي فات."
+  },
+  {
+    "word": "glaucoma",
+    "ipa": "[ɡlɔːˈkoʊmə] (جلوكوما)",
+    "meaning": "الماء الأزرق (الجلوكوما)",
+    "category": "ophthalmology_more",
+    "exampleEn": "Glaucoma can lead to vision loss.",
+    "exampleAr": "الجلوكوما ممكن تؤدي لفقدان الرؤية."
+  },
+  {
+    "word": "eye drops",
+    "ipa": "[aɪ drɒps] (آي دروپس)",
+    "meaning": "قطرة العين",
+    "category": "ophthalmology_more",
+    "exampleEn": "Use the eye drops twice daily.",
+    "exampleAr": "استخدم قطرة العين مرتين يوميًا."
+  },
+  {
+    "word": "toothache",
+    "ipa": "[ˈtuːθeɪk] (توث-إيك)",
+    "meaning": "ألم الأسنان",
+    "category": "dental",
+    "exampleEn": "He came in with a severe toothache.",
+    "exampleAr": "جه بألم أسنان شديد."
+  },
+  {
+    "word": "cavity",
+    "ipa": "[ˈkævəti] (كافِتي)",
+    "meaning": "تسوّس الأسنان",
+    "category": "dental",
+    "exampleEn": "The dentist found a cavity.",
+    "exampleAr": "دكتور الأسنان لقى تسوّس."
+  },
+  {
+    "word": "gum disease",
+    "ipa": "[ɡʌm dɪˈziːz] (جَم دِزيز)",
+    "meaning": "أمراض اللثة",
+    "category": "dental",
+    "exampleEn": "Gum disease can affect overall health.",
+    "exampleAr": "أمراض اللثة ممكن تأثر على الصحة العامة."
+  },
+  {
+    "word": "interpreter",
+    "ipa": "[ɪnˈtɜːrprɪtər] (إنتِرپرِتَر)",
+    "meaning": "المترجم الفوري",
+    "category": "interpreter_communication",
+    "exampleEn": "We need an interpreter for this patient.",
+    "exampleAr": "محتاجين مترجم فوري للمريض ده."
+  },
+  {
+    "word": "language barrier",
+    "ipa": "[ˈlæŋɡwɪdʒ ˈbæriər] (لانجويج باريَر)",
+    "meaning": "حاجز اللغة",
+    "category": "interpreter_communication",
+    "exampleEn": "A language barrier can affect care.",
+    "exampleAr": "حاجز اللغة ممكن يأثر على الرعاية."
+  },
+  {
+    "word": "Can you repeat that, please?",
+    "ipa": "[kæn juː rɪˈpiːt ðæt pliːz] (كان يو رِپيت ذات پليز)",
+    "meaning": "ممكن تعيد تاني لو سمحت؟",
+    "category": "interpreter_communication",
+    "exampleEn": "Can you repeat that, please? I didn't catch it.",
+    "exampleAr": "ممكن تعيد تاني؟ مسمعتش كويس."
+  },
+  {
+    "word": "consent for procedure",
+    "ipa": "[kənˈsent fɔːr prəˈsiːdʒər] (كونسِنت فور پروسيجَر)",
+    "meaning": "الموافقة على الإجراء",
+    "category": "pre_post_test",
+    "exampleEn": "We need consent for the procedure.",
+    "exampleAr": "محتاجين موافقة على الإجراء."
+  },
+  {
+    "word": "sedation",
+    "ipa": "[sɪˈdeɪʃən] (سِديشِن)",
+    "meaning": "التخدير الخفيف/التسكين",
+    "category": "pre_post_test",
+    "exampleEn": "Light sedation was used for the endoscopy.",
+    "exampleAr": "استُخدم تخدير خفيف للمنظار."
+  },
+  {
+    "word": "recovery time",
+    "ipa": "[rɪˈkʌvəri taɪm] (رِكَڤَري تايم)",
+    "meaning": "وقت التعافي",
+    "category": "pre_post_test",
+    "exampleEn": "Recovery time varies by patient.",
+    "exampleAr": "وقت التعافي بيختلف من مريض للتاني."
+  },
+  {
+    "word": "trimester",
+    "ipa": "[traɪˈmestər] (تراي-مِستَر)",
+    "meaning": "الثلث (من الحمل)",
+    "category": "pregnancy_more",
+    "exampleEn": "She is in her third trimester.",
+    "exampleAr": "هي في الثلث الأخير من الحمل."
+  },
+  {
+    "word": "ultrasound scan (pregnancy)",
+    "ipa": "[ˈʌltrəsaʊnd skæn] (ألترا-ساوند سكان)",
+    "meaning": "أشعة الحمل",
+    "category": "pregnancy_more",
+    "exampleEn": "The ultrasound scan confirmed the due date.",
+    "exampleAr": "أشعة الحمل أكّدت ميعاد الولادة."
+  },
+  {
+    "word": "due date",
+    "ipa": "[djuː deɪt] (ديو ديت)",
+    "meaning": "الموعد المتوقع للولادة",
+    "category": "pregnancy_more",
+    "exampleEn": "Her due date is next month.",
+    "exampleAr": "موعد ولادتها المتوقع الشهر الجاي."
+  },
+  {
+    "word": "epidural",
+    "ipa": "[ˌepɪˈdjʊərəl] (إپِديورَل)",
+    "meaning": "إبرة الظهر (تخدير الولادة)",
+    "category": "pregnancy_more",
+    "exampleEn": "She requested an epidural during labor.",
+    "exampleAr": "طلبت إبرة الظهر أثناء المخاض."
+  },
+  {
+    "word": "It's okay to feel scared.",
+    "ipa": "[ɪts oʊˈkeɪ tuː fiːl skerd] (إتس أوكي تو فيل سكيرد)",
+    "meaning": "عادي إنك تحس بالخوف.",
+    "category": "emotional_support_more",
+    "exampleEn": "It's okay to feel scared before surgery.",
+    "exampleAr": "عادي إنك تحس بالخوف قبل العملية."
+  },
+  {
+    "word": "We're here for you.",
+    "ipa": "[wɪr hɪr fɔːr juː] (وير هير فور يو)",
+    "meaning": "إحنا موجودين معاك.",
+    "category": "emotional_support_more",
+    "exampleEn": "We're here for you every step of the way.",
+    "exampleAr": "إحنا موجودين معاك في كل خطوة."
+  },
+  {
+    "word": "Take your time.",
+    "ipa": "[teɪk jʊər taɪm] (تيك يور تايم)",
+    "meaning": "خد وقتك.",
+    "category": "emotional_support_more",
+    "exampleEn": "Take your time, there's no rush.",
+    "exampleAr": "خد وقتك، مفيش استعجال."
+  },
+  {
+    "word": "dietitian",
+    "ipa": "[ˌdaɪəˈtɪʃən] (دايَتِشِن)",
+    "meaning": "أخصائي التغذية",
+    "category": "healthcare_team",
+    "exampleEn": "The dietitian planned his meal schedule.",
+    "exampleAr": "أخصائي التغذية حط له جدول الوجبات."
+  },
+  {
+    "word": "radiologist",
+    "ipa": "[ˌreɪdiˈɒlədʒɪst] (ريديولوجِست)",
+    "meaning": "أخصائي الأشعة",
+    "category": "healthcare_team",
+    "exampleEn": "The radiologist reviewed the scan.",
+    "exampleAr": "أخصائي الأشعة راجع الأشعة."
+  },
+  {
+    "word": "anesthetist",
+    "ipa": "[əˈniːsθətɪst] (أنيسثِتِست)",
+    "meaning": "أخصائي التخدير",
+    "category": "healthcare_team",
+    "exampleEn": "The anesthetist explained the sedation options.",
+    "exampleAr": "أخصائي التخدير شرح خيارات التخدير."
+  },
+  {
+    "word": "social worker",
+    "ipa": "[ˈsoʊʃəl ˈwɜːrkər] (سوشَل وِركَر)",
+    "meaning": "الأخصائي الاجتماعي",
+    "category": "healthcare_team",
+    "exampleEn": "A social worker will assist with discharge planning.",
+    "exampleAr": "أخصائي اجتماعي هيساعد في تخطيط الخروج."
+  },
+  {
+    "word": "case manager",
+    "ipa": "[keɪs ˈmænɪdʒər] (كيس مانِجَر)",
+    "meaning": "مدير الحالة",
+    "category": "healthcare_team",
+    "exampleEn": "The case manager coordinates his care.",
+    "exampleAr": "مدير الحالة بينسّق رعايته."
+  },
+  {
+    "word": "Do you understand the instructions?",
+    "ipa": "[duː juː ˌʌndərˈstænd ðə ɪnˈstrʌkʃənz] (دو يو أندِرستاند ذا إنسترَكشِنز)",
+    "meaning": "فاهم التعليمات؟",
+    "category": "education_phrases_more",
+    "exampleEn": "Do you understand the instructions I gave you?",
+    "exampleAr": "فاهم التعليمات اللي قولتهالك؟"
+  },
+  {
+    "word": "Let me explain again.",
+    "ipa": "[let miː ɪkˈspleɪn əˈɡen] (ليت مي إكسپلين أجين)",
+    "meaning": "خليني أشرحلك تاني.",
+    "category": "education_phrases_more",
+    "exampleEn": "Let me explain again more slowly.",
+    "exampleAr": "خليني أشرحلك تاني بشكل أبطأ."
+  },
+  {
+    "word": "Show me how you would do it.",
+    "ipa": "[ʃoʊ miː haʊ juː wʊd duː ɪt] (شو مي هاو يو وود دو إت)",
+    "meaning": "ورّيني هتعمله إزاي.",
+    "category": "education_phrases_more",
+    "exampleEn": "Show me how you would do it at home.",
+    "exampleAr": "ورّيني هتعمله إزاي في البيت."
+  },
+  {
+    "word": "chest tightness",
+    "ipa": "[tʃest ˈtaɪtnəs] (تشِست تايتنِس)",
+    "meaning": "ضيق في الصدر",
+    "category": "critical_warning_signs",
+    "exampleEn": "He reported chest tightness.",
+    "exampleAr": "أبلغ عن ضيق في الصدر."
+  },
+  {
+    "word": "sudden weakness",
+    "ipa": "[ˈsʌdən ˈwiːknəs] (سَدِن ويكنِس)",
+    "meaning": "ضعف مفاجئ",
+    "category": "critical_warning_signs",
+    "exampleEn": "Sudden weakness on one side is a stroke sign.",
+    "exampleAr": "الضعف المفاجئ في جهة واحدة علامة سكتة دماغية."
+  },
+  {
+    "word": "difficulty speaking",
+    "ipa": "[ˈdɪfɪkəlti ˈspiːkɪŋ] (دِفِكَلتي سپيكِنج)",
+    "meaning": "صعوبة في الكلام",
+    "category": "critical_warning_signs",
+    "exampleEn": "Difficulty speaking requires urgent attention.",
+    "exampleAr": "صعوبة الكلام محتاجة اهتمام عاجل."
+  },
+  {
+    "word": "loss of consciousness",
+    "ipa": "[lɒs əv ˈkɒnʃəsnəs] (لوس أوف كونشَسنِس)",
+    "meaning": "فقدان الوعي",
+    "category": "critical_warning_signs",
+    "exampleEn": "He had a brief loss of consciousness.",
+    "exampleAr": "حصله فقدان وعي بسيط."
+  },
+  {
+    "word": "Do you smoke?",
+    "ipa": "[duː juː smoʊk] (دو يو سموك)",
+    "meaning": "بتدخّن؟",
+    "category": "health_survey_phrases",
+    "exampleEn": "Do you smoke or drink alcohol?",
+    "exampleAr": "بتدخّن أو تشرب كحول؟"
+  },
+  {
+    "word": "Any known allergies?",
+    "ipa": "[ˈeni noʊn ˈælərdʒiz] (إني نون أليرجيز)",
+    "meaning": "عندك أي حساسية معروفة؟",
+    "category": "health_survey_phrases",
+    "exampleEn": "Any known allergies to medication?",
+    "exampleAr": "عندك أي حساسية معروفة من أدوية؟"
+  },
+  {
+    "word": "Are you currently taking any medication?",
+    "ipa": "[ɑːr juː ˈkʌrəntli ˈteɪkɪŋ ˈeni ˌmedɪˈkeɪʃən] (آر يو كَرِنتلي تيكِنج إني مِدِكيشِن)",
+    "meaning": "بتاخد أي دواء حاليًا؟",
+    "category": "health_survey_phrases",
+    "exampleEn": "Are you currently taking any medication regularly?",
+    "exampleAr": "بتاخد أي دواء بانتظام حاليًا؟"
+  },
+  {
+    "word": "head injury",
+    "ipa": "[hed ˈɪndʒəri] (هِد إنجَري)",
+    "meaning": "إصابة في الرأس",
+    "category": "injuries_accidents",
+    "exampleEn": "He suffered a head injury in the accident.",
+    "exampleAr": "أصيب في رأسه في الحادثة."
+  },
+  {
+    "word": "concussion",
+    "ipa": "[kənˈkʌʃən] (كونكَشِن)",
+    "meaning": "ارتجاج في المخ",
+    "category": "injuries_accidents",
+    "exampleEn": "The doctor suspects a concussion.",
+    "exampleAr": "الدكتور بيشك في ارتجاج مخي."
+  },
+  {
+    "word": "whiplash",
+    "ipa": "[ˈwɪplæʃ] (ويپلاش)",
+    "meaning": "إصابة الرقبة (اهتزازية)",
+    "category": "injuries_accidents",
+    "exampleEn": "She has whiplash from the car accident.",
+    "exampleAr": "عندها إصابة رقبة من حادثة السيارة."
+  },
+  {
+    "word": "puncture wound",
+    "ipa": "[ˈpʌŋktʃər wuːnd] (پَنكتشَر ووند)",
+    "meaning": "جرح ثقبي",
+    "category": "injuries_accidents",
+    "exampleEn": "He has a puncture wound on his foot.",
+    "exampleAr": "عنده جرح ثقبي في رجله."
+  },
+  {
+    "word": "road traffic accident",
+    "ipa": "[roʊd ˈtræfɪk ˈæksɪdənt] (رود ترافِك أكسِدِنت)",
+    "meaning": "حادثة مرورية",
+    "category": "injuries_accidents",
+    "exampleEn": "He was brought in after a road traffic accident.",
+    "exampleAr": "اتنقل بعد حادثة مرورية."
+  },
+  {
+    "word": "gluten intolerance",
+    "ipa": "[ˈɡluːtən ɪnˈtɒlərəns] (جلوتِن إنتولَرَنس)",
+    "meaning": "عدم تحمّل الجلوتين",
+    "category": "food_allergies",
+    "exampleEn": "She has gluten intolerance.",
+    "exampleAr": "عندها عدم تحمّل للجلوتين."
+  },
+  {
+    "word": "lactose intolerance",
+    "ipa": "[ˈlæktoʊs ɪnˈtɒlərəns] (لاكتوس إنتولَرَنس)",
+    "meaning": "عدم تحمّل اللاكتوز",
+    "category": "food_allergies",
+    "exampleEn": "He avoids dairy due to lactose intolerance.",
+    "exampleAr": "بيتجنّب الألبان بسبب عدم تحمّل اللاكتوز."
+  },
+  {
+    "word": "nut allergy",
+    "ipa": "[nʌt ˈælərdʒi] (نَت أليرجي)",
+    "meaning": "حساسية المكسرات",
+    "category": "food_allergies",
+    "exampleEn": "Check for a nut allergy before serving food.",
+    "exampleAr": "افحص حساسية المكسرات قبل تقديم الأكل."
+  },
+  {
+    "word": "circulation",
+    "ipa": "[ˌsɜːrkjəˈleɪʃən] (سِركيوليشِن)",
+    "meaning": "الدورة الدموية",
+    "category": "vital_processes",
+    "exampleEn": "Poor circulation causes cold hands.",
+    "exampleAr": "ضعف الدورة الدموية بيسبب برودة الإيدين."
+  },
+  {
+    "word": "digestion",
+    "ipa": "[daɪˈdʒestʃən] (دايجِستشِن)",
+    "meaning": "الهضم",
+    "category": "vital_processes",
+    "exampleEn": "Slow digestion can cause bloating.",
+    "exampleAr": "الهضم البطيء ممكن يسبب انتفاخ."
+  },
+  {
+    "word": "perspiration",
+    "ipa": "[ˌpɜːrspəˈreɪʃən] (پِرسپِريشِن)",
+    "meaning": "التعرّق",
+    "category": "vital_processes",
+    "exampleEn": "Excessive perspiration was noted.",
+    "exampleAr": "اتلوحظ تعرّق زايد."
+  },
+  {
+    "word": "workshop",
+    "ipa": "[ˈwɜːrkʃɒp] (ورك-شوپ)",
+    "meaning": "ورشة عمل",
+    "category": "continuing_education",
+    "exampleEn": "She attended a wound care workshop.",
+    "exampleAr": "حضرت ورشة عمل عن العناية بالجروح."
+  },
+  {
+    "word": "certification",
+    "ipa": "[ˌsɜːrtɪfɪˈkeɪʃən] (سِرتِفِكيشِن)",
+    "meaning": "الشهادة/الاعتماد",
+    "category": "continuing_education",
+    "exampleEn": "He completed his CPR certification.",
+    "exampleAr": "خلّص شهادة الإنعاش القلبي الرئوي."
+  },
+  {
+    "word": "competency",
+    "ipa": "[ˈkɒmpɪtənsi] (كومپِتِنسي)",
+    "meaning": "الكفاءة المهنية",
+    "category": "continuing_education",
+    "exampleEn": "Nurses must maintain clinical competency.",
+    "exampleAr": "الممرضين لازم يحافظوا على كفاءتهم الإكلينيكية."
+  },
+  {
+    "word": "electronic health record (EHR)",
+    "ipa": "[ɪˌlekˈtrɒnɪk helθ ˈrekərd] (إليكترونِك هِلث رِكورد)",
+    "meaning": "الملف الصحي الإلكتروني",
+    "category": "medical_technology",
+    "exampleEn": "All notes are entered into the EHR.",
+    "exampleAr": "كل الملاحظات بتتسجّل في الملف الإلكتروني."
+  },
+  {
+    "word": "telehealth",
+    "ipa": "[ˈtelihelθ] (تيلي-هِلث)",
+    "meaning": "الرعاية الصحية عن بُعد",
+    "category": "medical_technology",
+    "exampleEn": "The consultation was done via telehealth.",
+    "exampleAr": "الاستشارة اتعملت عن بُعد."
+  },
+  {
+    "word": "barcode scanning",
+    "ipa": "[ˈbɑːrkoʊd ˈskænɪŋ] (باركود سكانِنج)",
+    "meaning": "مسح الباركود (للأدوية)",
+    "category": "medical_technology",
+    "exampleEn": "Barcode scanning prevents medication errors.",
+    "exampleAr": "مسح الباركود بيمنع أخطاء الأدوية."
+  },
+  {
+    "word": "priority",
+    "ipa": "[praɪˈɒrəti] (برايوريتي)",
+    "meaning": "الأولوية",
+    "category": "prioritization",
+    "exampleEn": "This patient is a high priority.",
+    "exampleAr": "المريض ده أولوية عالية."
+  },
+  {
+    "word": "multitasking",
+    "ipa": "[ˌmʌltiˈtæskɪŋ] (مَلتي-تاسكِنج)",
+    "meaning": "تعدد المهام",
+    "category": "prioritization",
+    "exampleEn": "Nursing requires excellent multitasking skills.",
+    "exampleAr": "التمريض محتاج مهارات تعدد مهام ممتازة."
+  },
+  {
+    "word": "time management",
+    "ipa": "[taɪm ˈmænɪdʒmənt] (تايم مانِجمِنت)",
+    "meaning": "إدارة الوقت",
+    "category": "prioritization",
+    "exampleEn": "Good time management reduces stress.",
+    "exampleAr": "إدارة الوقت الكويسة بتقلل التوتر."
+  },
+  {
+    "word": "Is there anything else you'd like to ask?",
+    "ipa": "[ɪz ðer ˈeniθɪŋ els juːd laɪk tuː ɑːsk] (إز ذير إني ثينج إلس يود لايك تو آسك)",
+    "meaning": "فيه حاجة تانية عايز تسأل عنها؟",
+    "category": "closing_phrases",
+    "exampleEn": "Is there anything else you'd like to ask before you leave?",
+    "exampleAr": "فيه حاجة تانية عايز تسأل عنها قبل ما تمشي؟"
+  },
+  {
+    "word": "We'll see you at your next visit.",
+    "ipa": "[wiːl siː juː æt jʊər nekst ˈvɪzɪt] (ويل سي يو آت يور نِكست ڤِزِت)",
+    "meaning": "هنشوفك في زيارتك الجاية.",
+    "category": "closing_phrases",
+    "exampleEn": "We'll see you at your next visit in two weeks.",
+    "exampleAr": "هنشوفك في زيارتك الجاية بعد أسبوعين."
+  },
+  {
+    "word": "Get well soon.",
+    "ipa": "[ɡet wel suːn] (جِت ويل سون)",
+    "meaning": "سلامتك.",
+    "category": "closing_phrases",
+    "exampleEn": "Get well soon and take care.",
+    "exampleAr": "سلامتك واعتني بنفسك."
+  },
+  {
+    "word": "blood culture",
+    "ipa": "[blʌd ˈkʌltʃər] (بلَد كَلتشَر)",
+    "meaning": "مزرعة دم",
+    "category": "lab_values",
+    "exampleEn": "A blood culture will identify the infection source.",
+    "exampleAr": "مزرعة الدم هتحدد مصدر العدوى."
+  },
+  {
+    "word": "wound culture",
+    "ipa": "[wuːnd ˈkʌltʃər] (ووند كَلتشَر)",
+    "meaning": "مزرعة الجرح",
+    "category": "lab_values",
+    "exampleEn": "A wound culture was sent to the lab.",
+    "exampleAr": "مزرعة الجرح اتبعتت للمعمل."
+  },
+  {
+    "word": "electrolytes",
+    "ipa": "[ɪˈlektrəlaɪts] (إليكترولايتس)",
+    "meaning": "الأملاح المعدنية بالدم",
+    "category": "lab_values",
+    "exampleEn": "Electrolytes were within normal range.",
+    "exampleAr": "الأملاح المعدنية كانت ضمن المعدل الطبيعي."
+  },
+  {
+    "word": "creatinine",
+    "ipa": "[kriˈætɪniːn] (كرياتِنين)",
+    "meaning": "الكرياتينين (مؤشر وظائف الكلى)",
+    "category": "lab_values",
+    "exampleEn": "His creatinine level indicates kidney function.",
+    "exampleAr": "مستوى الكرياتينين بيدل على وظائف الكلى."
+  },
+  {
+    "word": "bilirubin",
+    "ipa": "[ˌbɪlɪˈruːbɪn] (بِلي-روبِن)",
+    "meaning": "البيليروبين",
+    "category": "lab_values",
+    "exampleEn": "Elevated bilirubin causes jaundice.",
+    "exampleAr": "ارتفاع البيليروبين بيسبب يرقان."
+  },
+  {
+    "word": "clinic",
+    "ipa": "[ˈklɪnɪk] (كلينِك)",
+    "meaning": "العيادة",
+    "category": "departments",
+    "exampleEn": "The clinic opens at 9 AM.",
+    "exampleAr": "العيادة بتفتح الساعة 9 الصبح."
+  },
+  {
+    "word": "burn unit",
+    "ipa": "[bɜːrn ˈjuːnɪt] (بِرن يونِت)",
+    "meaning": "وحدة الحروق",
+    "category": "departments",
+    "exampleEn": "He was transferred to the burn unit.",
+    "exampleAr": "اتنقل لوحدة الحروق."
+  },
+  {
+    "word": "dialysis unit",
+    "ipa": "[daɪˈæləsɪs ˈjuːnɪt] (دايالِسِس يونِت)",
+    "meaning": "وحدة الغسيل الكلوي",
+    "category": "departments",
+    "exampleEn": "She visits the dialysis unit three times a week.",
+    "exampleAr": "بتروح وحدة الغسيل الكلوي 3 مرات أسبوعيًا."
+  },
+  {
+    "word": "nursery",
+    "ipa": "[ˈnɜːrsəri] (نِرسَري)",
+    "meaning": "حضانة المواليد",
+    "category": "departments",
+    "exampleEn": "The newborn is in the nursery.",
+    "exampleAr": "المولود في حضانة المواليد."
+  },
+  {
+    "word": "physical therapy department",
+    "ipa": "[ˈfɪzɪkəl ˈθerəpi dɪˈpɑːrtmənt] (فِزِكَل ثيرَپي دِپارتمِنت)",
+    "meaning": "قسم العلاج الطبيعي",
+    "category": "departments",
+    "exampleEn": "He was referred to the physical therapy department.",
+    "exampleAr": "اتحوّل لقسم العلاج الطبيعي."
+  },
+  {
+    "word": "hydrocephalus",
+    "ipa": "[ˌhaɪdroʊˈsefələs] (هايدرو-سِفَلَس)",
+    "meaning": "استسقاء الدماغ",
+    "category": "diseases",
+    "exampleEn": "Hydrocephalus was diagnosed in infancy.",
+    "exampleAr": "استسقاء الدماغ اتشخّص من الرضاعة."
+  },
+  {
+    "word": "shingles",
+    "ipa": "[ˈʃɪŋɡəlz] (شِنجِلز)",
+    "meaning": "الحزام الناري",
+    "category": "diseases",
+    "exampleEn": "He developed shingles after stress.",
+    "exampleAr": "ظهرله حزام ناري بعد ضغط نفسي."
+  },
+  {
+    "word": "measles",
+    "ipa": "[ˈmiːzəlz] (ميزِلز)",
+    "meaning": "الحصبة",
+    "category": "diseases",
+    "exampleEn": "Measles is highly contagious.",
+    "exampleAr": "الحصبة معدية جدًا."
+  },
+  {
+    "word": "chickenpox",
+    "ipa": "[ˈtʃɪkənpɒks] (تشِكِن-پوكس)",
+    "meaning": "جدري الماء",
+    "category": "diseases",
+    "exampleEn": "The child has chickenpox.",
+    "exampleAr": "الطفل عنده جدري ماء."
+  },
+  {
+    "word": "mumps",
+    "ipa": "[mʌmps] (مَمپس)",
+    "meaning": "النكاف",
+    "category": "diseases",
+    "exampleEn": "Mumps causes swollen glands.",
+    "exampleAr": "النكاف بيسبب تورم الغدد."
+  },
+  {
+    "word": "water intoxication",
+    "ipa": "[ˈwɔːtər ɪnˌtɒksɪˈkeɪʃən] (ووتَر إنتوكسِكيشِن)",
+    "meaning": "تسمم مائي",
+    "category": "general_medical_more",
+    "exampleEn": "Water intoxication is rare but serious.",
+    "exampleAr": "التسمم المائي نادر لكنه خطير."
+  },
+  {
+    "word": "halitosis",
+    "ipa": "[ˌhælɪˈtoʊsɪs] (هالِتوسِس)",
+    "meaning": "رائحة الفم الكريهة",
+    "category": "general_medical_more",
+    "exampleEn": "Halitosis can indicate gum disease.",
+    "exampleAr": "رائحة الفم الكريهة ممكن تدل على مرض لثة."
+  },
+  {
+    "word": "night sweats",
+    "ipa": "[naɪt swets] (نايت سويتس)",
+    "meaning": "التعرّق الليلي",
+    "category": "symptoms",
+    "exampleEn": "She has been having night sweats.",
+    "exampleAr": "بتعاني من تعرّق ليلي."
+  },
+  {
+    "word": "loss of appetite",
+    "ipa": "[lɒs əv ˈæpɪtaɪt] (لوس أوف أپِتايت)",
+    "meaning": "فقدان الشهية",
+    "category": "symptoms",
+    "exampleEn": "Loss of appetite is a common symptom.",
+    "exampleAr": "فقدان الشهية عرض شائع."
   }
 ];

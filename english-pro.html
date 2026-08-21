@@ -182,6 +182,27 @@ body {
 .dict-load-more:hover { background: rgba(99, 102, 241, 0.08); }
 .dict-result-count { grid-column: 1 / -1; font-size: 11px; color: var(--text-3); padding: 2px 2px 6px; }
 
+/* -------- كارت الاحتفال بإنهاء مستوى كامل -------- */
+.level-complete-card {
+    background: var(--bg-2); border: 1px solid var(--gold-glow); border-radius: 20px;
+    max-width: 380px; width: 100%; padding: 30px 24px; text-align: center;
+    animation: floatIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 20px 60px -10px var(--gold-glow);
+}
+.lc-badge {
+    width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 16px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-2)); display: flex;
+    align-items: center; justify-content: center; font-size: 34px; box-shadow: 0 0 40px var(--gold-glow);
+}
+.level-complete-card h2 { font-size: 18px; font-weight: 800; margin-bottom: 10px; }
+.lc-units { font-size: 12.5px; color: var(--gold); font-weight: 700; margin-bottom: 12px; }
+.lc-summary { font-size: 13px; color: var(--text-2); line-height: 1.8; margin-bottom: 22px; white-space: pre-wrap; }
+.lc-continue-btn {
+    width: 100%; padding: 13px; border-radius: 12px; border: none; background: var(--grad-bold);
+    color: #fff; font-family: var(--font); font-size: 14px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 6px 20px -4px var(--accent-glow);
+}
+
 /* -------- TTS pronunciation button inside bot bubbles -------- */
 .tts-btn {
     display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
@@ -225,6 +246,10 @@ body {
     display: inline-block; margin-top: 6px; font-size: 9.5px; font-weight: 800; color: var(--gold);
     letter-spacing: 0.3px;
 }
+.unit-depth { margin-top: 8px; }
+.unit-depth-top { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-3); margin-bottom: 4px; }
+.unit-depth-track { height: 5px; border-radius: 20px; background: var(--bg); overflow: hidden; }
+.unit-depth-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, var(--gold), var(--accent)); transition: width 0.5s ease; }
 .plan-empty { color: var(--text-3); font-size: 12.5px; padding: 14px; text-align: center; line-height: 1.7; }
 
 .sb-footer { padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
@@ -510,6 +535,16 @@ body {
     </div>
 </div>
 
+<div class="vocab-modal" id="levelCompleteModal">
+    <div class="level-complete-card">
+        <div class="lc-badge">🏆</div>
+        <h2 id="levelCompleteTitle">🎉 خلّصت المستوى بجدارة!</h2>
+        <div class="lc-units" id="levelCompleteUnits"></div>
+        <p class="lc-summary" id="levelCompleteSummary"></p>
+        <button class="lc-continue-btn" onclick="document.getElementById('levelCompleteModal').classList.remove('show')">أكمل رحلتي 🚀</button>
+    </div>
+</div>
+
 <script>
 const API = 'https://schoolx-eta.vercel.app'; // نفس سيرفر School X المستخدم في index.html
 const token = localStorage.getItem('sx_school_token');
@@ -591,13 +626,27 @@ function renderPlan(plan, level, currentUnitId) {
         renderBadges(0, level);
         return;
     }
-    list.innerHTML = plan.map(u => `
+    const UNIT_WORD_TARGET = 20; // تقريبي — الوحدة الحقيقية بتحتوي 15-25 كلمة قبل ما تتقفل
+    list.innerHTML = plan.map(u => {
+        let depthBar = '';
+        if (u.id === currentUnitId) {
+            const wordsInUnit = allVocabulary.filter(v => v.unitId === u.id).length;
+            const pct = Math.min(100, Math.round((wordsInUnit / UNIT_WORD_TARGET) * 100));
+            depthBar = `
+                <div class="unit-depth">
+                    <div class="unit-depth-top"><span>عمق الوحدة</span><span>${wordsInUnit}/${UNIT_WORD_TARGET} كلمة</span></div>
+                    <div class="unit-depth-track"><div class="unit-depth-fill" style="width:${pct}%"></div></div>
+                </div>`;
+        }
+        return `
         <div class="unit-card ${u.id === currentUnitId ? 'active' : ''} ${u.status === 'done' ? 'done' : ''}">
             <div class="u-top"><span>${statusIcon(u.status)}</span><span class="u-title">${escapeHtml(u.title)}</span></div>
             <div class="u-track">${trackLabel(u.track)} · ${escapeHtml(u.level || '')}</div>
             ${u.id === currentUnitId ? '<span class="u-active-tag">📍 الوحدة الحالية</span>' : ''}
+            ${depthBar}
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     const doneCount = plan.filter(u => u.status === 'done').length;
     updateProgress(doneCount, plan.length);
@@ -873,31 +922,38 @@ document.getElementById('grammarModal')?.addEventListener('click', (e) => {
 });
 
 // -------- القاموس الطبي/التمريضي الثابت (من english-medical-dictionary.js) --------
-const DICT_CATEGORIES = {
-    vitals: '💓 علامات حيوية', body: '🫀 أعضاء الجسم', symptoms: '🤒 أعراض',
-    diseases: '🩹 أمراض', nursing_actions: '👩‍⚕️ مهام تمريضية', equipment: '🧰 أدوات',
-    pharmacy: '💊 صيدلة', departments: '🏥 أقسام', emergency: '🚨 طوارئ',
-    admin: '📋 توثيق', abbreviations: '🔤 اختصارات',
-    clinical_procedures: '🩺 إجراءات إكلينيكية', diagnostics: '🔬 تشخيص وأشعة',
-    mental_health: '🧠 صحة نفسية وكبار سن', infection_control: '🧼 مكافحة عدوى',
-    general_oet: '📘 مصطلحات OET عامة', obstetrics_pediatrics: '👶 توليد وأطفال',
-    anatomy_extra: '🦴 تشريح إضافي', patient_instructions: '🗣️ تعليمات للمريض',
-    procedures_extra: '⚙️ إجراءات وأدوات', phone_communication: '📞 اتصال تليفوني',
-    lab_values: '🧪 تحاليل معملية', cardiology: '❤️ القلب', respiratory: '🫁 الجهاز التنفسي',
-    gastrointestinal: '🍽️ الجهاز الهضمي', orthopedics: '🦵 العظام والمفاصل',
-    dermatology: '🧴 الجلد', ent_ophthalmology: '👁️ عين/أذن/أنف/حنجرة',
-    endocrine_general: '⚗️ الغدد الصماء', discharge_instructions: '📤 تعليمات الخروج',
-    oncology: '🎗️ الأورام', surgery: '🔪 الجراحة', nutrition_diet: '🥗 التغذية والحمية',
-    mobility_positions: '🛏️ الوضعيات والحركة', documentation_extra: '🗂️ توثيق إضافي',
-    patient_education: '🎓 توعية المريض', common_verbs: '🔁 أفعال تمريضية شائعة',
-    descriptive_conditions: '🩻 وصف الحالة', abbreviations_extra: '🔡 اختصارات إضافية',
-    renal_urology: '🚰 الكلى والمسالك البولية', diabetes_management: '🩸 إدارة السكري',
-    allergy_immunology: '🌿 الحساسية والمناعة', equipment_extra: '🧴 معدات إضافية',
-    admin_extra: '🗃️ إدارة إضافية', nclex_general: '📗 مصطلحات NCLEX عامة',
-    infectious_diseases: '🦠 أمراض معدية', rehab_speech: '🗨️ تأهيل ونطق',
-    radiology_extra: '📡 أشعة وفحوصات', general_adjectives: '📏 صفات وصفية',
-    interaction_phrases: '💬 عبارات تفاعلية'
+// إطار المجموعات: 111 قسم دقيق (data) بيتجمّعوا في ~18 مجموعة واضحة (UI) عشان
+// شريط الفلاتر يفضل عملي وسهل التصفح حتى مع قاموس بالحجم الكبير ده.
+const CATEGORY_GROUP_MAP = {
+    vitals: 'measurements', measurement_terms: 'measurements', lab_values: 'measurements',
+    body: 'anatomy', anatomy_extra: 'anatomy', anatomy_detailed: 'anatomy', body_systems: 'anatomy', vital_processes: 'anatomy', neuro_sensory: 'anatomy',
+    symptoms: 'symptoms_pain', pain_management: 'symptoms_pain', critical_warning_signs: 'symptoms_pain',
+    diseases: 'diseases', common_diseases_more: 'diseases', infectious_diseases: 'diseases', cardiology: 'diseases', respiratory: 'diseases', gastrointestinal: 'diseases', orthopedics: 'diseases', dermatology: 'diseases', ent_ophthalmology: 'diseases', ophthalmology_more: 'diseases', endocrine_general: 'diseases', hematology: 'diseases', dental: 'diseases', food_allergies: 'diseases', allergy_immunology: 'diseases', renal_urology: 'diseases',
+    nursing_actions: 'actions', common_verbs: 'actions', common_verbs_more: 'actions', mobility_positions: 'actions', physical_exam_more: 'actions', clinical_exam_extra: 'actions', assessment_phrases: 'actions',
+    equipment: 'equipment', equipment_extra: 'equipment', equipment_more: 'equipment', medical_supplies: 'equipment', medical_technology: 'equipment', bed_room_types: 'equipment',
+    pharmacy: 'pharmacy', medication_classes: 'pharmacy', common_drug_names: 'pharmacy', diabetes_management: 'pharmacy', vaccination_more: 'pharmacy',
+    departments: 'admin_dept', admin: 'admin_dept', admin_extra: 'admin_dept', admin_more: 'admin_dept', admission_process: 'admin_dept', prioritization: 'admin_dept',
+    emergency: 'emergency', injuries_accidents: 'emergency', first_aid_phrases: 'emergency',
+    documentation_extra: 'documentation', legal_documentation: 'documentation', patient_history_terms: 'documentation', nursing_roles_education: 'documentation', nursing_slang: 'documentation', professional_communication: 'documentation', professional_qualities: 'documentation', continuing_education: 'documentation',
+    abbreviations: 'abbreviations', abbreviations_extra: 'abbreviations', clinical_abbreviations: 'abbreviations',
+    clinical_procedures: 'procedures', procedures_extra: 'procedures', surgery: 'procedures', surgical_terms_more: 'procedures', pre_post_test: 'procedures', radiology_extra: 'procedures', diagnostics: 'procedures',
+    mental_health: 'mental_geriatric', mental_health_more: 'mental_geriatric', geriatric_more: 'mental_geriatric', palliative_more: 'mental_geriatric',
+    infection_control: 'prevention', preventive_care: 'prevention',
+    obstetrics_pediatrics: 'maternal_child', pregnancy_more: 'maternal_child', pediatric_more: 'maternal_child',
+    nutrition_diet: 'nutrition', nutrition_more: 'nutrition', wound_care_more: 'nutrition',
+    patient_instructions: 'patient_talk', patient_emotions: 'patient_talk', emotional_support_more: 'patient_talk', reassurance_phrases: 'patient_talk', consent_refusal: 'patient_talk', interpreter_communication: 'patient_talk', health_survey_phrases: 'patient_talk', education_phrases_more: 'patient_talk', closing_phrases: 'patient_talk', test_communication: 'patient_talk', phone_communication: 'patient_talk',
+    general_oet: 'oet_general', nclex_general: 'oet_general', general_adjectives: 'oet_general', descriptive_conditions: 'oet_general', medical_time_words: 'oet_general', discharge_instructions: 'oet_general', discharge_more: 'oet_general', healthcare_team: 'oet_general', oncology: 'oet_general', interaction_phrases: 'oet_general', rehab_more: 'oet_general', rehab_speech: 'oet_general'
 };
+const GROUP_LABELS = {
+    measurements: '💓 علامات وقياسات', anatomy: '🫀 التشريح والأجهزة', symptoms_pain: '🤒 أعراض وألم',
+    diseases: '🩹 الأمراض والتخصصات', actions: '👩‍⚕️ مهام وأفعال تمريضية', equipment: '🧰 أدوات ومعدات',
+    pharmacy: '💊 صيدلة وأدوية', admin_dept: '🏥 أقسام وإدارة', emergency: '🚨 طوارئ وإصابات',
+    documentation: '📋 توثيق ومهنة', abbreviations: '🔤 اختصارات', procedures: '🩺 إجراءات وجراحة',
+    mental_geriatric: '🧠 نفسية وكبار سن', prevention: '🧼 مكافحة عدوى ووقاية', maternal_child: '👶 توليد وأطفال',
+    nutrition: '🥗 تغذية وجروح', patient_talk: '🗣️ تواصل مع المريض', oet_general: '📘 مصطلحات OET عامة'
+};
+function getEntryGroup(entry) { return CATEGORY_GROUP_MAP[entry.category] || 'oet_general'; }
+
 let dictActiveCategory = 'all';
 let dictSearchQuery = '';
 let dictRenderLimit = 60; // pagination: منعرضش الـ 1000 كلمة كلها مرة واحدة عشان الأداء
@@ -941,13 +997,16 @@ function initDictControls() {
     if (typeof MEDICAL_DICTIONARY === 'undefined') return;
     updateDictCountBadge();
     const catsBox = document.getElementById('dictCats');
-    const cats = ['all', ...new Set(MEDICAL_DICTIONARY.map(e => e.category))];
+    const groups = ['all', ...Object.keys(GROUP_LABELS)];
     const counts = {};
-    MEDICAL_DICTIONARY.forEach(e => { counts[e.category] = (counts[e.category] || 0) + 1; });
-    catsBox.innerHTML = cats.map(c => {
-        const label = c === 'all' ? '🔎 الكل' : (DICT_CATEGORIES[c] || c);
-        const count = c === 'all' ? MEDICAL_DICTIONARY.length : (counts[c] || 0);
-        return `<button class="dict-cat-chip ${c === dictActiveCategory ? 'active' : ''}" data-cat="${c}">${label} (${count})</button>`;
+    MEDICAL_DICTIONARY.forEach(e => {
+        const g = getEntryGroup(e);
+        counts[g] = (counts[g] || 0) + 1;
+    });
+    catsBox.innerHTML = groups.map(g => {
+        const label = g === 'all' ? '🔎 الكل' : GROUP_LABELS[g];
+        const count = g === 'all' ? MEDICAL_DICTIONARY.length : (counts[g] || 0);
+        return `<button class="dict-cat-chip ${g === dictActiveCategory ? 'active' : ''}" data-cat="${g}">${label} (${count})</button>`;
     }).join('');
     catsBox.querySelectorAll('.dict-cat-chip').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -955,19 +1014,23 @@ function initDictControls() {
             dictRenderLimit = 60;
             initDictControls();
             renderDictBody();
-            catsBox.scrollTo({ left: 0 });
+            // القسم اللي دايس عليه يفضل ظاهر في شريط الفلاتر (يتحرك ليه لو خارج الشاشة)
+            btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            // القائمة تبدأ من أول كلمة في القسم الجديد (مش فاضلة في نص السكرول القديم)
+            document.getElementById('dictPanelBody').scrollTop = 0;
         });
     });
     document.getElementById('dictSearch').oninput = (e) => {
         dictSearchQuery = e.target.value.trim().toLowerCase();
         dictRenderLimit = 60;
         renderDictBody();
+        document.getElementById('dictPanelBody').scrollTop = 0;
     };
 }
 
 function getFilteredDictItems() {
     let items = MEDICAL_DICTIONARY;
-    if (dictActiveCategory !== 'all') items = items.filter(e => e.category === dictActiveCategory);
+    if (dictActiveCategory !== 'all') items = items.filter(e => getEntryGroup(e) === dictActiveCategory);
     if (dictSearchQuery) {
         items = items.filter(e =>
             e.word.toLowerCase().includes(dictSearchQuery) || e.meaning.includes(dictSearchQuery)
@@ -991,10 +1054,10 @@ function renderDictBody() {
         const idx = MEDICAL_DICTIONARY.indexOf(e);
         return `
         <div class="dict-entry">
-            <div class="de-word">${escapeHtml(e.word)} <button class="tts-btn" data-word="${escapeHtml(e.word)}" title="نطق"><i class="fas fa-volume-high"></i></button></div>
+            <div class="de-word">${escapeHtml(e.word)} <button class="tts-btn" data-word="${escapeHtml(e.word)}" title="نطق الكلمة"><i class="fas fa-volume-high"></i></button></div>
             <div class="de-ipa">${escapeHtml(e.ipa)}</div>
             <div class="de-meaning">${escapeHtml(e.meaning)}</div>
-            <div class="de-example">${escapeHtml(e.exampleEn)}</div>
+            <div class="de-example"><button class="tts-btn" data-word="${escapeHtml(e.exampleEn)}" title="نطق الجملة"><i class="fas fa-volume-high"></i></button> ${escapeHtml(e.exampleEn)}</div>
             <button class="de-add ${myWords.has(e.word.toLowerCase()) ? 'added' : ''}" data-idx="${idx}">
                 ${myWords.has(e.word.toLowerCase()) ? '✅ في دفترك' : '+ أضف لدفتري'}
             </button>
@@ -1109,6 +1172,7 @@ async function init(silentRefresh) {
         const data = await api('/api/english-pro/state');
         allVocabulary = data.vocabulary || [];
         allGrammarNotes = data.grammarNotes || [];
+        lastCompletedLevelsCount = (data.completedLevels || []).length; // منمنعش احتفال وهمي أول ما الصفحة تفتح
         renderPlan(data.plan, data.level, data.currentUnitId);
         renderVocabBook();
         renderGrammarBook();
@@ -1121,8 +1185,29 @@ async function init(silentRefresh) {
     }
 }
 
+function checkLevelCompletion(completedLevels) {
+    if (completedLevels.length > lastCompletedLevelsCount) {
+        const latest = completedLevels[completedLevels.length - 1];
+        showLevelCompleteModal(latest);
+    }
+    lastCompletedLevelsCount = completedLevels.length;
+}
+
+function showLevelCompleteModal(levelInfo) {
+    const modal = document.getElementById('levelCompleteModal');
+    document.getElementById('levelCompleteTitle').textContent = `🎉 خلّصت مستوى ${levelInfo.level} بجدارة!`;
+    document.getElementById('levelCompleteUnits').textContent = `${levelInfo.unitsCount || 0} وحدة كاملة`;
+    document.getElementById('levelCompleteSummary').textContent = levelInfo.summary || '';
+    modal.classList.add('show');
+    fireConfetti();
+    setTimeout(fireConfetti, 400);
+    playChime();
+}
+
 function autoGrow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
 function handleKeydown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+
+let lastCompletedLevelsCount = 0;
 
 async function send() {
     const input = document.getElementById('input');
@@ -1143,6 +1228,7 @@ async function send() {
         renderVocabBook();
         renderGrammarBook();
         renderPlan(data.plan, data.level, data.currentUnitId);
+        checkLevelCompletion(data.completedLevels || []);
         // لو رد المعلم اتقطع (حد الطول) وميتاداتاه معطلت، الخطة/التقدم بيفضلوا
         // زي ما هما من غير تحديث في الرد ده — بنعيد نجيب الحالة الرسمية من
         // السيرفر بهدوء عشان أي رسالة جاية تبدأ من الوضع الصح.
