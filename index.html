@@ -1220,6 +1220,7 @@
                 <button class="icon-btn" id="groupChatBtn" style="display:none;" title="غرفة مذاكرة جماعية" aria-label="غرفة مذاكرة جماعية" onclick="openGroupChatList()"><i class="fas fa-user-group"></i></button>
                 <button class="icon-btn" id="academicProfileBtn" style="display:none;" title="البروفايل الأكاديمي (Premium)" aria-label="البروفايل الأكاديمي" onclick="openAcademicProfile()"><i class="fas fa-id-card-clip"></i></button>
                 <button class="icon-btn" id="germanProBtn" style="display:none;" title="German Pro — الألمانية الاحترافية للتمريض (Premium)" aria-label="German Pro" onclick="window.open('german-pro.html', '_blank')">🇩🇪</button>
+                <button class="icon-btn" id="englishProBtn" style="display:none;" title="English Pro — الإنجليزية الاحترافية للتمريض (Premium)" aria-label="English Pro" onclick="window.open('english-pro.html', '_blank')">🇬🇧</button>
                 <button class="icon-btn" aria-label="الإعدادات" onclick="openModal('settingsModal')"><i class="fas fa-gear"></i></button>
             </div>
         </aside>
@@ -2928,7 +2929,8 @@
             premium_lecture_audio: { icon: '🎙️', title: 'ملخص صوتي للمحاضرات', desc: 'سجّل المحاضرة بصوتك، وهيتحول لنص وملخص منظم بالنقاط تلقائيًا.' },
             premium_skills: { icon: '🧩', title: 'مهارات مخصصة (Skills)', desc: 'اعمل مهارات خاصة بيك (تعليمات ثابتة يلتزم بيها المساعد)، وهو يستخدمها تلقائي في ردوده وقت ما تكون مناسبة.' },
             premium_academic_profile: { icon: '📊', title: 'البروفايل الأكاديمي الموحّد', desc: 'كل حاجة عن أدائك (حضور، نتائج امتحانات، واجبات، مخالفات) في شاشة واحدة، بدل ما تكون متفرقة.' },
-            premium_german_pro: { icon: '🇩🇪', title: 'German Pro — الألمانية الاحترافية للتمريض', desc: 'مدرّس ألماني ذكي بيبنيلك خطة تعلّم شخصية (أساسيات + محادثات يومية + Fachsprache Pflege/التمريض) ويمشي معاك خطوة بخطوة مع مراجعة مستمرة عشان متنساش.' }
+            premium_german_pro: { icon: '🇩🇪', title: 'German Pro — الألمانية الاحترافية للتمريض', desc: 'مدرّس ألماني ذكي بيبنيلك خطة تعلّم شخصية (أساسيات + محادثات يومية + Fachsprache Pflege/التمريض) ويمشي معاك خطوة بخطوة مع مراجعة مستمرة عشان متنساش.' },
+            premium_english_pro: { icon: '🇬🇧', title: 'English Pro — الإنجليزية الاحترافية للتمريض', desc: 'مدرّس إنجليزي ذكي بيبنيلك خطة تعلّم شخصية (أساسيات + محادثات يومية + إنجليزية التمريض/OET-IELTS) مع قاموس طبي وتمريضي وصيدلي كامل، ويمشي معاك خطوة بخطوة.' }
         };
         // الأدمن (type === 'admin' جاية من بيانات School X) عنده كل مميزات Premium تلقائيًا
         // من غير ما يحتاج يفعّلها لنفسه — طبيعي إنه يقدر يجرب أي حاجة بيفعّلها للطلاب.
@@ -7646,6 +7648,8 @@
             if (academicProfileBtn) academicProfileBtn.style.display = hasPremium('premium_academic_profile') ? 'flex' : 'none';
             const germanProBtn = document.getElementById('germanProBtn');
             if (germanProBtn) germanProBtn.style.display = hasPremium('premium_german_pro') ? 'flex' : 'none';
+            const englishProBtn = document.getElementById('englishProBtn');
+            if (englishProBtn) englishProBtn.style.display = hasPremium('premium_english_pro') ? 'flex' : 'none';
 
             // قسم موديلات Premium (Cerebras و Claude Opus): بنخفي القسم كله من القايمة
             // لو الطالب مش مستحق (اسم القسم نفسه بيختفي كمان، مش بس الموديلات جواه)،
