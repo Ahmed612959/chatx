@@ -150,10 +150,15 @@ body {
     width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border);
     background: var(--bg); color: var(--text-1); font-family: var(--font); font-size: 13px; margin-bottom: 10px;
 }
-.dict-cats { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 10px; }
+.dict-cats {
+    display: flex; flex-wrap: nowrap; gap: 6px; padding-bottom: 10px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.dict-cats::-webkit-scrollbar { display: none; }
 .dict-cat-chip {
-    padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg);
+    padding: 6px 13px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg);
     color: var(--text-2); font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+    flex-shrink: 0; white-space: nowrap;
 }
 .dict-cat-chip.active { background: var(--grad-bold); color: #fff; border-color: transparent; }
 .dict-entry {
@@ -169,6 +174,13 @@ body {
 }
 .dict-entry .de-add:hover { background: var(--accent); color: #fff; }
 .dict-entry .de-add.added { border-color: var(--success); color: var(--success); pointer-events: none; }
+.dict-load-more {
+    grid-column: 1 / -1; padding: 10px; border-radius: 10px; border: 1px dashed var(--border-accent);
+    background: transparent; color: var(--accent); font-family: var(--font); font-size: 12px; font-weight: 700;
+    cursor: pointer; margin-top: 4px;
+}
+.dict-load-more:hover { background: rgba(99, 102, 241, 0.08); }
+.dict-result-count { grid-column: 1 / -1; font-size: 11px; color: var(--text-3); padding: 2px 2px 6px; }
 
 /* -------- TTS pronunciation button inside bot bubbles -------- */
 .tts-btn {
@@ -289,6 +301,13 @@ body {
     background: var(--bg-glass); border: 1px solid var(--border); font-size: 11.5px; font-weight: 700; color: var(--text-2);
 }
 .welcome-feature i { color: var(--gold); font-size: 11px; }
+.wotd-card {
+    margin-top: 20px; padding: 14px 18px; border-radius: 14px; background: var(--bg-glass);
+    border: 1px solid var(--gold-glow); max-width: 340px; text-align: right; cursor: pointer;
+}
+.wotd-card .wotd-label { font-size: 10px; color: var(--gold); font-weight: 800; margin-bottom: 6px; }
+.wotd-card .wotd-word { direction: ltr; text-align: left; font-size: 16px; font-weight: 800; color: var(--accent); display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.wotd-card .wotd-meaning { font-size: 12.5px; margin-top: 4px; font-weight: 700; }
 
 .message { display: flex; gap: 10px; max-width: 90%; animation: floatIn 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
 @media (min-width: 768px) { .message { max-width: 78%; gap: 12px; } }
@@ -435,6 +454,7 @@ body {
                     <div class="welcome-feature"><i class="fas fa-volume-high"></i> نطق دقيق لكل كلمة</div>
                     <div class="welcome-feature"><i class="fas fa-brain"></i> يفتكر تقدّمك دايمًا</div>
                 </div>
+                <div class="wotd-card" id="wotdCard" style="display:none"></div>
             </div>
         </div>
 
@@ -524,6 +544,7 @@ if (!token || (!isAdminUser && !premiumFeatures.includes('premium_english_pro'))
 } else {
     document.getElementById('appContainer').style.display = 'flex';
     init();
+    updateDictCountBadge();
 }
 
 async function api(path, opts = {}) {
@@ -859,35 +880,92 @@ const DICT_CATEGORIES = {
     admin: '📋 توثيق', abbreviations: '🔤 اختصارات',
     clinical_procedures: '🩺 إجراءات إكلينيكية', diagnostics: '🔬 تشخيص وأشعة',
     mental_health: '🧠 صحة نفسية وكبار سن', infection_control: '🧼 مكافحة عدوى',
-    general_oet: '📘 مصطلحات OET عامة'
+    general_oet: '📘 مصطلحات OET عامة', obstetrics_pediatrics: '👶 توليد وأطفال',
+    anatomy_extra: '🦴 تشريح إضافي', patient_instructions: '🗣️ تعليمات للمريض',
+    procedures_extra: '⚙️ إجراءات وأدوات', phone_communication: '📞 اتصال تليفوني',
+    lab_values: '🧪 تحاليل معملية', cardiology: '❤️ القلب', respiratory: '🫁 الجهاز التنفسي',
+    gastrointestinal: '🍽️ الجهاز الهضمي', orthopedics: '🦵 العظام والمفاصل',
+    dermatology: '🧴 الجلد', ent_ophthalmology: '👁️ عين/أذن/أنف/حنجرة',
+    endocrine_general: '⚗️ الغدد الصماء', discharge_instructions: '📤 تعليمات الخروج',
+    oncology: '🎗️ الأورام', surgery: '🔪 الجراحة', nutrition_diet: '🥗 التغذية والحمية',
+    mobility_positions: '🛏️ الوضعيات والحركة', documentation_extra: '🗂️ توثيق إضافي',
+    patient_education: '🎓 توعية المريض', common_verbs: '🔁 أفعال تمريضية شائعة',
+    descriptive_conditions: '🩻 وصف الحالة', abbreviations_extra: '🔡 اختصارات إضافية',
+    renal_urology: '🚰 الكلى والمسالك البولية', diabetes_management: '🩸 إدارة السكري',
+    allergy_immunology: '🌿 الحساسية والمناعة', equipment_extra: '🧴 معدات إضافية',
+    admin_extra: '🗃️ إدارة إضافية', nclex_general: '📗 مصطلحات NCLEX عامة',
+    infectious_diseases: '🦠 أمراض معدية', rehab_speech: '🗨️ تأهيل ونطق',
+    radiology_extra: '📡 أشعة وفحوصات', general_adjectives: '📏 صفات وصفية',
+    interaction_phrases: '💬 عبارات تفاعلية'
 };
 let dictActiveCategory = 'all';
 let dictSearchQuery = '';
+let dictRenderLimit = 60; // pagination: منعرضش الـ 1000 كلمة كلها مرة واحدة عشان الأداء
+
+function updateDictCountBadge() {
+    if (typeof MEDICAL_DICTIONARY === 'undefined') return;
+    const el = document.getElementById('dictCount');
+    if (el) el.textContent = MEDICAL_DICTIONARY.length;
+}
+
+function renderWordOfTheDay() {
+    if (typeof MEDICAL_DICTIONARY === 'undefined' || !MEDICAL_DICTIONARY.length) return;
+    const card = document.getElementById('wotdCard');
+    if (!card) return;
+    // نفس الكلمة طول اليوم للطالب كله، وبتتغيّر تلقائي بكرة (متوقفة على تاريخ اليوم)
+    const dayNumber = Math.floor(Date.now() / 86400000);
+    const entry = MEDICAL_DICTIONARY[dayNumber % MEDICAL_DICTIONARY.length];
+    card.style.display = 'block';
+    card.innerHTML = `
+        <div class="wotd-label">📌 كلمة اليوم</div>
+        <div class="wotd-word">${escapeHtml(entry.word)} <button class="tts-btn" data-word="${escapeHtml(entry.word)}" title="نطق"><i class="fas fa-volume-high"></i></button></div>
+        <div class="wotd-meaning">${escapeHtml(entry.meaning)}</div>
+    `;
+    card.querySelector('.tts-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        speakText(e.currentTarget, entry.word);
+    });
+    card.onclick = () => {
+        dictActiveCategory = 'all';
+        dictSearchQuery = entry.word;
+        dictRenderLimit = 60;
+        initDictControls();
+        document.getElementById('dictSearch').value = entry.word;
+        renderDictBody();
+        document.getElementById('dictModal').classList.add('show');
+    };
+}
+renderWordOfTheDay();
 
 function initDictControls() {
     if (typeof MEDICAL_DICTIONARY === 'undefined') return;
-    document.getElementById('dictCount').textContent = MEDICAL_DICTIONARY.length;
+    updateDictCountBadge();
     const catsBox = document.getElementById('dictCats');
     const cats = ['all', ...new Set(MEDICAL_DICTIONARY.map(e => e.category))];
-    catsBox.innerHTML = cats.map(c =>
-        `<button class="dict-cat-chip ${c === dictActiveCategory ? 'active' : ''}" data-cat="${c}">${c === 'all' ? '🔎 الكل' : (DICT_CATEGORIES[c] || c)}</button>`
-    ).join('');
+    const counts = {};
+    MEDICAL_DICTIONARY.forEach(e => { counts[e.category] = (counts[e.category] || 0) + 1; });
+    catsBox.innerHTML = cats.map(c => {
+        const label = c === 'all' ? '🔎 الكل' : (DICT_CATEGORIES[c] || c);
+        const count = c === 'all' ? MEDICAL_DICTIONARY.length : (counts[c] || 0);
+        return `<button class="dict-cat-chip ${c === dictActiveCategory ? 'active' : ''}" data-cat="${c}">${label} (${count})</button>`;
+    }).join('');
     catsBox.querySelectorAll('.dict-cat-chip').forEach(btn => {
         btn.addEventListener('click', () => {
             dictActiveCategory = btn.getAttribute('data-cat');
+            dictRenderLimit = 60;
             initDictControls();
             renderDictBody();
+            catsBox.scrollTo({ left: 0 });
         });
     });
     document.getElementById('dictSearch').oninput = (e) => {
         dictSearchQuery = e.target.value.trim().toLowerCase();
+        dictRenderLimit = 60;
         renderDictBody();
     };
 }
 
-function renderDictBody() {
-    if (typeof MEDICAL_DICTIONARY === 'undefined') return;
-    const body = document.getElementById('dictPanelBody');
+function getFilteredDictItems() {
     let items = MEDICAL_DICTIONARY;
     if (dictActiveCategory !== 'all') items = items.filter(e => e.category === dictActiveCategory);
     if (dictSearchQuery) {
@@ -895,28 +973,44 @@ function renderDictBody() {
             e.word.toLowerCase().includes(dictSearchQuery) || e.meaning.includes(dictSearchQuery)
         );
     }
-    if (!items.length) {
+    return items;
+}
+
+function renderDictBody() {
+    if (typeof MEDICAL_DICTIONARY === 'undefined') return;
+    const body = document.getElementById('dictPanelBody');
+    const allItems = getFilteredDictItems();
+    if (!allItems.length) {
         body.innerHTML = '<div class="vocab-empty">مفيش نتايج مطابقة.</div>';
         return;
     }
+    const items = allItems.slice(0, dictRenderLimit);
     const myWords = new Set(allVocabulary.map(v => (v.word || '').toLowerCase()));
-    body.innerHTML = items.map((e, i) => `
+    let html = `<div class="dict-result-count">${allItems.length} كلمة${dictActiveCategory !== 'all' || dictSearchQuery ? ' مطابقة' : ' في القاموس'}</div>`;
+    html += items.map((e) => {
+        const idx = MEDICAL_DICTIONARY.indexOf(e);
+        return `
         <div class="dict-entry">
             <div class="de-word">${escapeHtml(e.word)} <button class="tts-btn" data-word="${escapeHtml(e.word)}" title="نطق"><i class="fas fa-volume-high"></i></button></div>
             <div class="de-ipa">${escapeHtml(e.ipa)}</div>
             <div class="de-meaning">${escapeHtml(e.meaning)}</div>
             <div class="de-example">${escapeHtml(e.exampleEn)}</div>
-            <button class="de-add ${myWords.has(e.word.toLowerCase()) ? 'added' : ''}" data-idx="${i}">
+            <button class="de-add ${myWords.has(e.word.toLowerCase()) ? 'added' : ''}" data-idx="${idx}">
                 ${myWords.has(e.word.toLowerCase()) ? '✅ في دفترك' : '+ أضف لدفتري'}
             </button>
         </div>
-    `).join('');
+    `;
+    }).join('');
+    if (allItems.length > items.length) {
+        html += `<button class="dict-load-more" id="dictLoadMoreBtn">تحميل ${Math.min(60, allItems.length - items.length)} كلمة تانية ⬇️</button>`;
+    }
+    body.innerHTML = html;
     body.querySelectorAll('.tts-btn[data-word]').forEach(btn => {
         btn.addEventListener('click', () => speakText(btn, btn.getAttribute('data-word')));
     });
     body.querySelectorAll('.de-add').forEach(btn => {
         btn.addEventListener('click', async () => {
-            const entry = items[parseInt(btn.getAttribute('data-idx'), 10)];
+            const entry = MEDICAL_DICTIONARY[parseInt(btn.getAttribute('data-idx'), 10)];
             btn.disabled = true;
             try {
                 const data = await api('/api/english-pro/vocabulary/add', {
@@ -932,6 +1026,10 @@ function renderDictBody() {
                 btn.disabled = false;
             }
         });
+    });
+    document.getElementById('dictLoadMoreBtn')?.addEventListener('click', () => {
+        dictRenderLimit += 60;
+        renderDictBody();
     });
 }
 
