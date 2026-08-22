@@ -17,9 +17,16 @@ import { EdgeTTS } from 'edge-tts-universal';
 
 // المهلة الافتراضية لـ Vercel Serverless Functions (Node) هي 10 ثواني على خطة
 // Hobby — كانت كافية للرسايل القصيرة بس مش للطويلة (خدمة Edge TTS بترجع الصوت
-// كامل مرة واحدة، مش Streaming، فكل ما النص يطول كل ما وقت التوليد يزيد). الزيادة
-// دي بتسمح للفانكشن نفسه إنه يفضل شغال لحد 60 ثانية بدل ما Vercel يقفله بالقوة.
-export const config = { maxDuration: 60 };
+// كامل مرة واحدة، مش Streaming، فكل ما النص يطول كل ما وقت التوليد يزيد). رفعتها
+// لـ 5 دقايق بناءً على طلبك.
+//
+// ⚠️ ملحوظة مهمة: خطة Vercel Hobby (المجانية) بيبقى أقصى حد فيها 60 ثانية بس —
+// إلا لو مفعّل عندك "Fluid Compute" من إعدادات المشروع على Vercel (لو مفعّل،
+// الحد بيوصل لـ 300 ثانية حتى على Hobby). لو النشر (deploy) فشل برسالة خطأ فيها
+// "maxDuration" أو "invalid maxDuration value for plan hobby"، يبقى Fluid Compute
+// مش مفعّل عندك — إما تفعّليه من Project Settings → Functions، أو ترجعي الرقم
+// تحت لـ 60 (اللي هو الحد الآمن المضمون على Hobby من غير أي إعداد إضافي).
+export const config = { maxDuration: 300 };
 
 const VOICES = {
   salma: 'ar-EG-SalmaNeural',
@@ -42,17 +49,17 @@ export default async function handler(request, response) {
     }
 
     const { text, voice: voiceParam } = request.body || {};
-    const cleanText = (text || '').toString().trim().slice(0, 2000);
+    const cleanText = (text || '').toString().trim().slice(0, 6000);
     if (!cleanText) {
       return response.status(400).json({ error: 'لا يوجد نص لتحويله لصوت' });
     }
 
     const voiceName = VOICES[voiceParam] || VOICES.salma;
 
-    // مهلة يدوية بتتحسب حسب طول النص (بدل رقم ثابت كان بيفشل مع الرسايل الطويلة
-    // ويخلي الفرونت إند يتحول لـ Azure كل مرة). متوسط سرعة القراءة حوالي 15
-    // حرف/ثانية، وبنضيف هامش أمان كويس فوق كده، مع حد أدنى وأقصى معقولين.
-    const estimatedMs = Math.min(55000, Math.max(9000, cleanText.length * 90));
+    // مهلة يدوية بتتحسب حسب طول النص، لحد أقصى 4 دقايق و50 ثانية (سايبة هامش 10
+    // ثواني قبل حد الـ 5 دقايق بتاع الفانكشن نفسه فوق، عشان دايمًا الرسالة اللي
+    // بترجع تبقى واضحة "فشل Edge TTS" بدل ما Vercel يقفل الفانكشن فجأة من غير رد).
+    const estimatedMs = Math.min(290000, Math.max(9000, cleanText.length * 90));
 
     const tts = new EdgeTTS(cleanText, voiceName, { rate: '-4%', volume: '+0%', pitch: '+0Hz' });
     const result = await withTimeout(tts.synthesize(), estimatedMs);
