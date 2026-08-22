@@ -6516,6 +6516,7 @@
                 localStorage.setItem('sx_school_user', JSON.stringify(schoolUser));
                 document.getElementById('schoolPasswordInput').value = '';
                 status.innerHTML = '<span style="color:var(--success)">تم تسجيل الدخول ✓</span>';
+                startSchoolHeartbeat();
                 updateSchoolLoginUI();
                 await fetchSchoolProfile(true); // force=true: نجيب بيانات جديدة فورًا (منتجنبش استخدام كاش حساب قديم)
                 showToast('تم ربط حسابك بمنصة School X', 'success');
@@ -6525,6 +6526,18 @@
         }
 
         function schoolLogout() {
+            // نبلّغ السيرفر بالخروج الصريح ده الأول (قبل ما نمسح schoolToken محليًا) —
+            // ده اللي بيمسح الجلسة الشغالة فورًا من الداتابيز، عشان جهاز تاني يقدر
+            // يدخل بنفس الحساب على طول من غير ما يستنى انتهاء نافذة الـ heartbeat.
+            // "fire and forget": مش بنستنى الرد ولا بنوقف الخروج المحلي لو فشل الطلب —
+            // لو فشل، الجلسة هتنتهي لوحدها بعد كام دقيقة أصلاً (شوف heartbeat تحت).
+            if (schoolToken) {
+                fetch(`${FIXED_SCHOOL_API_URL}/api/logout`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                }).catch(() => {});
+            }
+            stopSchoolHeartbeat();
             schoolToken = null;
             schoolUser = null;
             schoolContext = '';
@@ -6543,6 +6556,33 @@
             updateSchoolLoginUI();
             showToast('تم تسجيل الخروج من School X', 'success');
         }
+
+        // ====================== نبضة حياة الجلسة (heartbeat) ======================
+        // بتبعت كل شوية للسيرفر عشان تقوله "لسه فاتح التطبيق على الجهاز ده" — ده
+        // اللي بيمنع جهاز تاني إنه يدخل بنفس الحساب طول ما الجهاز ده شغال فعلاً.
+        // لو الجهاز ده قفل التاب من غير تسجيل خروج، الـ heartbeat بيوقف تلقائيًا
+        // (مفيش حد بيبعته)، وبعد كام دقيقة السيرفر بيعتبر الجلسة ماتت ويسمح لجهاز
+        // تاني يدخل — يعني مفيش قفل دائم للحساب لو حد نسي يعمل logout.
+        let schoolHeartbeatInterval = null;
+        function startSchoolHeartbeat() {
+            if (schoolHeartbeatInterval) return; // شغالة أصلاً
+            const sendHeartbeat = () => {
+                if (!schoolToken) { stopSchoolHeartbeat(); return; }
+                fetch(`${FIXED_SCHOOL_API_URL}/api/heartbeat`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                }).catch(() => {}); // فشل مؤقت في الشبكة مش مبرر نوقف كل حاجة
+            };
+            sendHeartbeat(); // نبعت واحدة فورًا عند فتح التطبيق، مش نستنى أول interval
+            schoolHeartbeatInterval = setInterval(sendHeartbeat, 2 * 60 * 1000); // كل دقيقتين
+        }
+        function stopSchoolHeartbeat() {
+            if (schoolHeartbeatInterval) { clearInterval(schoolHeartbeatInterval); schoolHeartbeatInterval = null; }
+        }
+        // لو الطالب فاتح Chat X أصلاً ومربوط بحساب School X من قبل (توكن محفوظ في
+        // localStorage من زيارة سابقة)، لازم نبدأ الـ heartbeat على طول من غير ما
+        // ننتظر منه يعمل تسجيل دخول تاني — وإلا هيتعتبر "مش شغال" غلط بعد 5 دقايق.
+        if (schoolToken) startSchoolHeartbeat();
 
         // ====================== تواصل الطلاب مع الأدمن ======================
         // نقطة مهمة جدًا لازم تتحترم في التنفيذ ده: لو الطالب اختار "من غير اسمي"، مبنبعتش
