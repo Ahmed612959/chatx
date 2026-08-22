@@ -2769,9 +2769,14 @@
         //           الموقع). بنطلبه بوضع geminiOnly عشان نعرف فورًا لو فشل بدل ما ننتظر
         //           السيرفر يجرب صوت احتياطي إحنا مش هنستخدمه أصلاً.
         //   كل المستخدمين (Premium وعادي) بيوصلوا هنا لو الطبقة اللي فوق مش موجودة/فشلت:
-        //     └─(2) Azure Neural TTS (/api/tts-neural) → صوت رسمي واقعي كويس، محتاج
-        //           AZURE_SPEECH_KEY. لو مش متحط أو فشل، ننزل للطبقة الأخيرة.
-        //     └─(3) Google Translate TTS (/api/tts) → أقل جودة (صوت آلي واضح لكن مش طبيعي)
+        //     └─(2) Edge TTS (/api/tts-edge) → نفس كتالوج أصوات Azure Neural بالظبط
+        //           (سلمى/شاكر/زارية/حامد)، مجاني وغير محدود، من غير أي مفتاح API.
+        //           غير رسمية من مايكروسوفت فمش مضمونة الاستقرار 100%، فهي أولوية
+        //           لكن مش الاعتماد الوحيد.
+        //     └─(3) Azure Neural TTS الرسمي (/api/tts-neural) → صوت رسمي واقعي كويس،
+        //           محتاج AZURE_SPEECH_KEY ومحدود بـ 500 ألف حرف/شهر. شبكة أمان لو
+        //           Edge TTS فشلت.
+        //     └─(4) Google Translate TTS (/api/tts) → أقل جودة (صوت آلي واضح لكن مش طبيعي)
         //           لكنه مضمون الشغل دايمًا من غير أي مفتاح API خالص، فهو "شبكة الأمان"
         //           النهائية اللي التطبيق بيرجعلها لو كل حاجة تانية فشلت.
         //
@@ -2976,6 +2981,17 @@
                     /* الطبقة (1) فشلت — نكمل عادي للطبقة (2) */
                 }
             }
+            // (2) Edge TTS — مجاني وغير محدود، نفس كتالوج أصوات Azure الرسمي بالظبط
+            // (سلمى/شاكر/زارية/حامد) لكن من غير سقف الـ 500 ألف حرف شهريًا. لو فشلت
+            // (نادر — الخدمة مش رسمية) بنكمل فورًا لطبقة Azure الرسمية تحت كشبكة أمان.
+            try {
+                const res = await fetch('/api/tts-edge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, voice: voiceKey }) });
+                if (res.ok) {
+                    const blob = await res.blob();
+                    ttsIdbSet(idbKey, blob);
+                    return blob;
+                }
+            } catch (err) { /* الطبقة (2) فشلت — نكمل للطبقة (3) */ }
             try {
                 const res = await fetch('/api/tts-neural', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, voice: voiceKey }) });
                 if (res.ok) {
@@ -2983,9 +2999,9 @@
                     ttsIdbSet(idbKey, blob);
                     return blob;
                 }
-            } catch (err) { /* الطبقة (2) فشلت — نكمل للطبقة (3) الأخيرة والمضمونة */ }
+            } catch (err) { /* الطبقة (3) فشلت — نكمل للطبقة (4) الأخيرة والمضمونة */ }
             const res = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, lang: 'ar' }) });
-            if (!res.ok) throw new Error('tts-request-failed'); // الطبقة (3) نفسها فشلت — هنا بس نستسلم فعليًا
+            if (!res.ok) throw new Error('tts-request-failed'); // الطبقة (4) نفسها فشلت — هنا بس نستسلم فعليًا
             const blob = await res.blob();
             ttsIdbSet(idbKey, blob); // صوت Google Translate برضه بيتكاش عشان مايتطلبش تاني لنفس النص
             return blob;
