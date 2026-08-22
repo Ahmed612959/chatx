@@ -32,7 +32,7 @@
     <meta property="og:image" content="/icons/og-image.png">
     <meta property="og:type" content="website">
 
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Righteous&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Cairo:wght@300;400;500;600;700;800;900&family=Righteous&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
@@ -542,20 +542,37 @@
         .pinned-chip button { background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 10px; flex-shrink: 0; }
         .pinned-chip button:hover { color: var(--danger); }
 
-        /* Typing Indicator */
+        /* Typing Indicator — النقط التلاتة الكلاسيكية هي الافتراضي دايمًا. لو ثيم
+           "كليني هادي" مفعّل، بتتبدّل بموجة نبض قلب (ECG) بدل منها — العنصر
+           المميز (signature) بتاع الثيم ده بس، مش شكل عام للتطبيق كله. */
         .typing-indicator { display: none; gap: 10px; max-width: 80%; margin-bottom: 16px; }
         .typing-indicator.active { display: flex; }
-        .typing-dots { 
-            display: flex; gap: 4px; padding: 14px 18px; background: var(--bg-glass); 
-            border: 1px solid var(--border); border-radius: 16px; 
+        .typing-dots {
+            display: flex; align-items: center; gap: 4px; padding: 14px 18px; background: var(--bg-glass);
+            border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
         }
-        .typing-dots span { 
-            width: 7px; height: 7px; background: var(--accent); border-radius: 50%; 
-            animation: bounce 1.4s infinite ease-in-out both; 
+        .typing-dots span {
+            width: 7px; height: 7px; background: var(--accent); border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
         }
         .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
         .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
         @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        .typing-dots svg { display: none; width: 64px; height: 22px; }
+        .typing-dots .ecg-line {
+            fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+            stroke-dasharray: 220; stroke-dashoffset: 220;
+            animation: ecgDraw 1.8s linear infinite;
+        }
+        .typing-dots .ecg-dot { fill: var(--accent); animation: ecgBlip 1.8s linear infinite; }
+        @keyframes ecgDraw { 0% { stroke-dashoffset: 220; } 60% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -20; } }
+        @keyframes ecgBlip { 0%, 55% { opacity: 0; } 58% { opacity: 1; } 68% { opacity: 0; } 100% { opacity: 0; } }
+        body.clinical-theme-on .typing-dots svg { display: block; }
+        body.clinical-theme-on .typing-dots span { display: none; }
+        @media (prefers-reduced-motion: reduce) {
+            .typing-dots .ecg-line, .typing-dots .ecg-dot { animation: none !important; stroke-dashoffset: 0; opacity: .7; }
+        }
 
         /* شارة "تم إيقاف الرد" — بتظهر جوه فقاعة الرد لما الطالب يوقف البوت وهو لسه بيكتب،
            عشان يبان بوضوح إن الرد اتقطع عمدًا مش إنه ناقص أو فيه خطأ. */
@@ -915,6 +932,17 @@
         body.premium-theme-on {
             --accent: #d4af37; --accent-2: #f0c869; --accent-3: #b8860b;
             --accent-glow: rgba(212, 175, 55, 0.35); --border-accent: rgba(212, 175, 55, 0.5);
+        }
+
+        /* ====================== ثيم "كليني هادي" (اختياري من الإعدادات) ======================
+           هوية بصرية مبنية على عالم التمريض نفسه (بني/كهرماني دافئ زي صبغة اليود
+           المطهّرة، بدل تدرج indigo→violet→pink العام) — overlay إضافي بيغيّر لون
+           التمييز والخط بس، بنفس أسلوب ثيم Premium الذهبي فوق، وبيشتغل فوق الوضع
+           الليلي أو النهاري (مش بديل عنهم). */
+        body.clinical-theme-on {
+            --accent: #c17817; --accent-2: #e0a458; --accent-3: #8a5a1f;
+            --accent-glow: rgba(193, 120, 23, 0.32); --border-accent: rgba(193, 120, 23, 0.4);
+            --font: 'IBM Plex Sans Arabic', 'Cairo', sans-serif;
         }
         .premium-card {
             background: var(--bg-glass); border: 1px solid var(--border); border-radius: var(--radius);
@@ -1292,6 +1320,11 @@
                 <button class="icon-btn" id="academicProfileBtn" style="display:none;" title="البروفايل الأكاديمي (Premium)" aria-label="البروفايل الأكاديمي" onclick="openAcademicProfile()"><i class="fas fa-id-card-clip"></i></button>
                 <button class="icon-btn" id="germanProBtn" style="display:none;" title="German Pro — الألمانية الاحترافية للتمريض (Premium)" aria-label="German Pro" onclick="window.open('german-pro.html', '_blank')">🇩🇪</button>
                 <button class="icon-btn" id="englishProBtn" style="display:none;" title="English Pro — الإنجليزية الاحترافية للتمريض (Premium)" aria-label="English Pro" onclick="window.open('english-pro.html', '_blank')">🇬🇧</button>
+                <button class="icon-btn" aria-label="سؤال اليوم من زميل" title="سؤال اليوم من زميل" onclick="openSharedQuestionsModal()"><i class="fas fa-users-line"></i></button>
+                <button class="icon-btn" aria-label="الإعلانات" onclick="openAnnouncementsModal()" style="position:relative;">
+                    <i class="fas fa-bullhorn"></i>
+                    <span id="announcementsBadge" style="display:none;position:absolute;top:2px;left:2px;width:9px;height:9px;border-radius:50%;background:var(--danger);border:1.5px solid var(--bg-2);"></span>
+                </button>
                 <button class="icon-btn" aria-label="الإعدادات" onclick="openModal('settingsModal')"><i class="fas fa-gear"></i></button>
             </div>
         </aside>
@@ -1357,12 +1390,17 @@
                             <h4>القسم الديني</h4>
                             <p>قرآن، أذكار، تسبيح</p>
                         </div>
+                        <div class="quick-card" onclick="openSharedQuestionsModal()">
+                            <i class="fas fa-users-line"></i>
+                            <h4>سؤال اليوم من زميل</h4>
+                            <p>أسئلة شائعة مجهولة</p>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="typing-indicator" id="typingIndicator">
                     <div class="msg-avatar" style="background: var(--grad-bold); color: white;"><i class="fas fa-graduation-cap"></i></div>
-                    <div class="typing-dots"><span></span><span></span><span></span></div>
+                    <div class="typing-dots"><span></span><span></span><span></span><svg viewBox="0 0 64 22" xmlns="http://www.w3.org/2000/svg"><path class="ecg-line" d="M0,11 L14,11 L18,4 L22,18 L26,11 L40,11 L44,6 L48,16 L52,11 L64,11"/><circle class="ecg-dot" cx="22" cy="18" r="2"/></svg></div>
                 </div>
             </div>
 
@@ -1392,6 +1430,7 @@
                         <optgroup label="✨ موديلات Premium" id="premiumModelsGroup">
                             <option value="cerebras" id="cerebrasModelOption">🧠 Cerebras</option>
                             <option value="claude-opus" id="claudeOpusModelOption">✨ Claude Opus</option>
+                            <option value="examiner" id="examinerModelOption">🎓 الممتحن الشرس</option>
                         </optgroup>
                         <optgroup label="الموديلات العامة">
                             <option value="groq">⚡ Groq</option>
@@ -1451,6 +1490,33 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="sharedQuestionsModal">
+        <div class="modal-content" style="max-width:480px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-users-line"></i> سؤال اليوم من زميل</h3>
+                <button class="close-modal" aria-label="إغلاق نافذة الأسئلة الشائعة" onclick="closeModal('sharedQuestionsModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="padding:0 16px;font-size:11px;color:var(--text-2);line-height:1.7;">
+                أسئلة سألها أكتر من طالب في آخر كام يوم — مجهولة تمامًا، مفيش أسماء ولا حسابات مربوطة بيها. دوس على أي سؤال عشان تشوف آخر إجابة معروفة له.
+            </p>
+            <div id="sharedQuestionsList" style="padding:16px;max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
+                <p style="text-align:center;color:var(--text-3);font-size:12.5px;">جاري التحميل...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="announcementsModal">
+        <div class="modal-content" style="max-width:480px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-bullhorn"></i> الإعلانات</h3>
+                <button class="close-modal" aria-label="إغلاق نافذة الإعلانات" onclick="closeModal('announcementsModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="announcementsList" style="padding:16px;max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
+                <p style="text-align:center;color:var(--text-3);font-size:12.5px;">جاري التحميل...</p>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="settingsModal">
         <div class="modal">
             <div class="modal-header">
@@ -1490,6 +1556,21 @@
                     <span style="font-size:12.5px;color:var(--text-2);">تذكير الصلاة على النبي والاستغفار كل 10 دقايق</span>
                     <input type="checkbox" id="duaReminderToggle" onchange="toggleDuaReminders(this.checked)" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;">
                 </label>
+            </div>
+
+            <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-palette"></i> نمط الألوان</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    "كليني هادي" هوية بديلة مستوحاة من عالم التمريض (بني/كهرماني دافئ) بدل الألوان الافتراضية.
+                </p>
+                <div id="colorwayOptions" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <label class="colorway-opt" data-colorway="default" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;">
+                        <input type="radio" name="colorwayRadio" value="default" style="accent-color:var(--accent);"> الافتراضي
+                    </label>
+                    <label class="colorway-opt" data-colorway="clinical" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;">
+                        <input type="radio" name="colorwayRadio" value="clinical" style="accent-color:var(--accent);"> كليني هادي
+                    </label>
+                </div>
             </div>
 
             <div class="tool-section">
@@ -1601,6 +1682,15 @@
                 <div class="tool-title"><i class="fas fa-inbox"></i> الرسايل الواردة من الطلاب</div>
                 <button class="btn-calc" style="margin-bottom:10px;background:var(--bg-2);color:var(--text-2);" onclick="loadAdminInbox()"><i class="fas fa-rotate"></i> تحديث</button>
                 <div id="adminInboxList" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;"></div>
+            </div>
+
+            <div class="tool-section" id="adminSharingSection" style="display:none;">
+                <div class="tool-title"><i class="fas fa-user-secret"></i> كشف مشاركة الحسابات</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    مرتبين حسب درجة الشك (محاولات دخول اتمنعت + اختلاف بصمة جهاز على نفس التوكن + عدد الأجهزة المختلفة). درجة شك عالية مش دليل قاطع لوحدها — راجعي تفاصيل الأجهزة بعينك قبل أي إجراء.
+                </p>
+                <button class="btn-calc" style="margin-bottom:10px;background:var(--bg-2);color:var(--text-2);" onclick="loadAccountSharingReport()"><i class="fas fa-rotate"></i> تحديث</button>
+                <div id="adminSharingList" style="display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto;"></div>
             </div>
 
             <div class="tool-section" id="adminReviewSection" style="display:none;">
@@ -2915,6 +3005,34 @@
             });
         });
 
+        // ثيم "كليني هادي" — overlay اختياري فوق الوضع الليلي/النهاري العادي (زي ثيم
+        // Premium الذهبي بالظبط)، متخزن في localStorage ومستقل تمامًا عنه.
+        function getSelectedColorway() {
+            return localStorage.getItem('chatx_colorway') || 'default';
+        }
+        function setSelectedColorway(colorway) {
+            localStorage.setItem('chatx_colorway', colorway);
+            document.body.classList.toggle('clinical-theme-on', colorway === 'clinical');
+            syncColorwayOptionsUI();
+        }
+        function syncColorwayOptionsUI() {
+            const current = getSelectedColorway();
+            document.querySelectorAll('#colorwayOptions .colorway-opt').forEach(label => {
+                const radio = label.querySelector('input[type="radio"]');
+                const isActive = label.dataset.colorway === current;
+                if (radio) radio.checked = isActive;
+                label.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
+                label.style.background = isActive ? 'var(--bg-glass)' : 'transparent';
+            });
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.classList.toggle('clinical-theme-on', getSelectedColorway() === 'clinical');
+            syncColorwayOptionsUI();
+            document.querySelectorAll('#colorwayOptions .colorway-opt').forEach(label => {
+                label.addEventListener('click', () => setSelectedColorway(label.dataset.colorway));
+            });
+        });
+
         function stripMarkdownForSpeech(text) {
             return (text || '')
                 .replace(/```[\s\S]*?```/g, ' ')
@@ -3147,6 +3265,61 @@
         settings.schoolApiUrl = FIXED_SCHOOL_API_URL; // بنفرضه دايمًا حتى لو كان متخزن قديم مختلف
         // بيانات ربط School X (مشروع منفصل تماماً بدومين ومتغيرات بيئة مختلفة)
         let schoolToken = localStorage.getItem('sx_school_token') || null;
+
+        // ====================== بصمة الجهاز (لكشف مشاركة الحسابات) ======================
+        // بتتحسب مرة واحدة وتتخزن محليًا (مش بتتغيّر كل مرة تفتح فيها الصفحة) عشان
+        // تفضل ثابتة لنفس الجهاز عبر الوقت — لو حسبناها من الصفر كل مرة، أي تغيير
+        // بسيط (فتح نافذة تصفح خفي مثلاً) كان هيدّي بصمة مختلفة ويطلع نتيجة كشف غلط.
+        // العناصر المستخدمة كلها مقروءة من غير أي إذن (permission) من المستخدم:
+        // دقة الشاشة، عدد أنوية المعالج، المنطقة الزمنية، دعم اللمس، وبصمة Canvas
+        // (رسمة بسيطة بتختلف نتيجتها شكليًا حسب كارت الشاشة/التعريفات، معيار قياسي
+        // ومعروف لزيادة دقة تمييز الأجهزة عن بعضها).
+        async function computeDeviceFingerprint() {
+            const cached = localStorage.getItem('sx_device_fp');
+            if (cached) return cached;
+            try {
+                let canvasSig = '';
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 200; canvas.height = 40;
+                    const ctx = canvas.getContext('2d');
+                    ctx.textBaseline = 'top';
+                    ctx.font = '14px Arial';
+                    ctx.fillStyle = '#f60';
+                    ctx.fillRect(0, 0, 100, 20);
+                    ctx.fillStyle = '#069';
+                    ctx.fillText('chatx-fp-🩺', 2, 15);
+                    canvasSig = canvas.toDataURL();
+                } catch (e) { /* بعض المتصفحات بتمنع Canvas API — مش مشكلة، بنكمل من غيرها */ }
+
+                const parts = [
+                    navigator.userAgent || '',
+                    navigator.platform || '',
+                    navigator.language || '',
+                    String(screen.width) + 'x' + String(screen.height) + 'x' + String(screen.colorDepth),
+                    String(window.devicePixelRatio || 1),
+                    Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+                    String(navigator.hardwareConcurrency || 0),
+                    String(navigator.maxTouchPoints || 0),
+                    canvasSig
+                ].join('||');
+
+                let hash;
+                try {
+                    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(parts));
+                    hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 32);
+                } catch (e) {
+                    // بيئة من غير crypto.subtle (نادر) — هاش أبسط أقل دقة لكن كافي كخط أخير
+                    let h = 0;
+                    for (let i = 0; i < parts.length; i++) h = (h * 31 + parts.charCodeAt(i)) >>> 0;
+                    hash = 'k' + h;
+                }
+                localStorage.setItem('sx_device_fp', hash);
+                return hash;
+            } catch (e) {
+                return 'unknown';
+            }
+        }
         let schoolUser = JSON.parse(localStorage.getItem('sx_school_user') || 'null');
         let schoolContext = localStorage.getItem('sx_school_context') || '';
         let isGenerating = false;
@@ -4048,7 +4221,7 @@
             // تلقائي لموديل معيّن. اللي بيتفحص هنا هو بس إن الطالب اللي مش مشترك ميقدرش
             // يستخدم الموديلات دي حتى لو القيمة اتحطت بأي طريقة (اختيار قديم متخزّن،
             // تلاعب في القايمة من الـ devtools، إلخ) — نرجعها لـ "تلقائي".
-            const premiumOnlyModels = ['cerebras', 'claude-opus'];
+            const premiumOnlyModels = ['cerebras', 'claude-opus', 'examiner'];
             if (premiumOnlyModels.includes(model) && !hasPremium('premium_ai')) {
                 model = 'auto';
             }
@@ -4056,7 +4229,7 @@
             // Groq/OpenRouter/Cerebras/Mistral/Qwen are text-only — if the user attached a photo,
             // routing to them would silently ignore it. Force a vision-capable model instead
             // so an attached image always actually gets looked at.
-            if (hasImage && model !== 'gemini' && model !== 'zimage' && model !== 'german-teacher') {
+            if (hasImage && model !== 'gemini' && model !== 'zimage' && model !== 'german-teacher' && model !== 'examiner') {
                 model = 'zimage';
             }
 
@@ -4070,6 +4243,9 @@
                 } else if (model === 'german-teacher') {
                     source = 'gemini';
                     await streamGemini(chat.messages, abortController.signal, GERMAN_TEACHER_SYSTEM_PROMPT);
+                } else if (model === 'examiner') {
+                    source = 'gemini';
+                    await streamGemini(chat.messages, abortController.signal, EXAMINER_SYSTEM_PROMPT);
                 } else if (model === 'zimage') {
                     source = 'zimage';
                     await streamZimage(chat.messages, abortController.signal);
@@ -4161,6 +4337,12 @@
                 } else {
                     await respondLocally(fallbackText, chat, abortController.signal);
                 }
+                // ====================== بنك الأسئلة الشائعة ======================
+                // بعد أي رد ناجح (وصلنا هنا يبقى معدّيش استثناء)، نبعت السؤال وآخر
+                // رد للبنك المشترك — مجهول تمامًا (مفيش توكن ولا اسم مستخدم في
+                // الطلب ده خالص). "fire and forget": مش بنستنى النتيجة ولا بنوقف
+                // ظهور الرد للطالب لو الطلب ده فشل أو اتأخر.
+                submitToSharedQuestionBank(fallbackText, chat.messages[chat.messages.length - 1]);
             } catch (error) {
                 if (error.name === 'AbortError') {
                     showToast('تم إيقاف الرد', 'error');
@@ -4182,6 +4364,68 @@
                 document.getElementById('typingIndicator').classList.remove('active');
                 updateCharCount();
             }
+        }
+
+        // ====================== بنك الأسئلة الشائعة (سؤال اليوم من زميل) ======================
+        // إرسال مجهول تمامًا: من غير Authorization header ومن غير أي معرّف للطالب،
+        // فمفيش وسيلة تقنية تربط السؤال بصاحبه لا عند الإرسال ولا بعد كده.
+        function submitToSharedQuestionBank(question, lastMsg) {
+            try {
+                const q = String(question || '').trim();
+                if (!q || q.length < 8) return; // أسئلة قصيرة جدًا (زي "تمام" أو "شكرا") مش مفيدة في البنك
+                const answer = (lastMsg && lastMsg.role === 'bot') ? stripMarkdownForSpeech(lastMsg.content).slice(0, 2000) : '';
+                fetch(`${FIXED_SCHOOL_API_URL}/api/shared-questions/submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: q, answer })
+                }).catch(() => {});
+            } catch (e) { /* ميزة مساعدة — فشلها مايأثرش على المحادثة نفسها */ }
+        }
+
+        let sharedQuestionsCache = [];
+        async function fetchSharedQuestions() {
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/shared-questions/top`);
+                if (!res.ok) return;
+                const data = await res.json();
+                sharedQuestionsCache = (data && data.questions) || [];
+            } catch (e) { sharedQuestionsCache = []; }
+        }
+        function renderSharedQuestionsList() {
+            const container = document.getElementById('sharedQuestionsList');
+            if (!container) return;
+            if (!sharedQuestionsCache.length) {
+                container.innerHTML = '<p style="text-align:center;color:var(--text-3);font-size:12.5px;">مفيش أسئلة شائعة كفاية دلوقتي — لسه بدري</p>';
+                return;
+            }
+            container.innerHTML = sharedQuestionsCache.map((q, i) => `
+                <div class="shared-q-item" data-idx="${i}" style="background:var(--bg-glass);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                        <p style="font-size:13px;line-height:1.6;margin:0;flex:1;">${escapeHtml(q.displayText || '')}</p>
+                        <span style="font-size:10.5px;color:var(--accent);background:var(--accent-glow);padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0;">سألها ${q.askCount} طلاب</span>
+                    </div>
+                    <div class="shared-q-answer" id="sharedQAnswer${i}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12.5px;line-height:1.7;color:var(--text-2);white-space:pre-wrap;"></div>
+                </div>
+            `).join('');
+            container.querySelectorAll('.shared-q-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const idx = Number(item.dataset.idx);
+                    const answerEl = document.getElementById(`sharedQAnswer${idx}`);
+                    const q = sharedQuestionsCache[idx];
+                    if (!answerEl) return;
+                    if (answerEl.style.display === 'none') {
+                        answerEl.textContent = q.answerText || 'مفيش إجابة محفوظة لسؤال زي ده، جرّب تسأله بنفسك في المحادثة.';
+                        answerEl.style.display = 'block';
+                    } else {
+                        answerEl.style.display = 'none';
+                    }
+                });
+            });
+        }
+        function openSharedQuestionsModal() {
+            openModal('sharedQuestionsModal');
+            renderSharedQuestionsList();
+            fetchSharedQuestions().then(renderSharedQuestionsList);
         }
 
         function setSendButtonState(generating) {
@@ -5948,6 +6192,35 @@
 - خلّي أسلوبك صبور، ودود، ومشجّع طول الوقت، ومتدرج فى الصعوبة حسب رد الطالب.
 - لو الطالب سأل سؤال مالوش علاقة باللغة الألمانية، جاوبه بإيجاز ورجّعه بلطف لموضوع تعلم الألمانية.`;
 
+        // "الممتحن الشرس" — امتحان شفهي تفاعلي مبني حصريًا على ملف/نص بيرفعه الطالب
+        // (بيستخدم نفس آلية استخراج النص من المرفقات الموجودة أصلاً فى formatAttachmentForMessage
+        // — النص الكامل بيتحط فعليًا فى الرسالة، مش مجرد اسم الملف، فالموديل بيقرأه
+        // بالكامل زي أي نص تاني فى المحادثة). القواعد هنا مصممة عشان الأسئلة تبقى
+        // مبنية على محتوى الملف فعلاً (مش عامة)، والمتابعة (follow-up) تبقى مبنية
+        // على إجابة الطالب الفعلية (مش سؤال عشوائي تانى من الملف) — ده اللي بيدّي
+        // إحساس "فاهم بيسأل ازاي" بدل أسئلة مقطوعة عن بعض.
+        const EXAMINER_SYSTEM_PROMPT = `أنت "الممتحن الشرس" — دكتور/مشرف تمريض صارم بيعمل امتحان شفهي (Oral Exam) حقيقي للطالب، مش مساعد بيشرح.
+
+## القاعدة الأهم: الملف هو مصدرك الوحيد
+- أول رسالة من الطالب هتحتوي على نص مرفق (ملف/محاضرة) داخل قسم "مرفق". اقرأه بالكامل وبعناية قبل ما تسأل أي سؤال.
+- كل سؤال تسأله لازم يكون عن معلومة موجودة فعليًا في النص ده. ممنوع تختلق معلومة أو تسأل عن حاجة مش مذكورة فيه.
+- لو الطالب بعت رسالة من غير ملف مرفق، قوله بوضوح إنك محتاج ملف/محاضرة الأول عشان تمتحنه فيها، ومتبدأش تمتحن من غير مصدر.
+
+## طريقة الامتحان
+- سؤال واحد بس فى كل رد — زي امتحان شفهي حقيقي، مش قائمة أسئلة.
+- بعد إجابة الطالب، قيّمها فورًا وبصراحة (صح / ناقص / غلط) فى سطر أو سطرين، من غير لف ودوران.
+- سؤال المتابعة (follow-up) لازم يكون مبني تحديدًا على اللي الطالب قاله هو فى إجابته دي — مش سؤال عشوائي تاني من الملف. لو قال معلومة، اسأله "ليه؟" أو "وإيه لو..." عليها بالذات.
+
+## التصعيد الذكي
+- لو جاوب صح وبسهولة: صعّب السؤال الجاي — حالة استثنائية، سيناريو معقد، أو تعارض بين حاجتين فى الملف.
+- لو جاوب غلط أو ناقص: وضّح الصح بسرعة (سطرين بالكتير)، وبعدين ارجع تمتحنه فى نفس النقطة من زاوية مختلفة — متسبهاش وتنتقل لحاجة تانية على طول.
+- لو مسكت تناقض بين إجابته دلوقتي وإجابة قالها قبل كده فى نفس المحادثة، واجهه بيه صراحةً: "قولت قبل كده كذا، ودلوقتي بتقول كذا — أنهي الكلام صح؟"
+
+## الأسلوب
+- مباشر وصارم لكن مش مهين خالص — زي دكتور بيدرّبك على امتحان حقيقي، مش بيسخر منك. ضغط بنّاء، مش تنمر.
+- من غير مجاملات زيادة ("رائع!"، "ممتاز جدًا!") إلا لو الإجابة فعلاً كانت كاملة ودقيقة.
+- لو الطالب قال "كفاية" أو "وقف" أو طلب ينهي الجلسة، اديله ملخص سريع: النقط اللي كان قوي فيها، والنقط اللي محتاجة مراجعة أكتر — وبس، من غير سؤال جديد بعده.`;
+
         async function streamGemini(messages, signal, systemPrompt) {
             const lastUserMsg = [...messages].reverse().find(m => m.role === 'user') || messages[messages.length - 1];
             const parts = [{ text: lastUserMsg.content }];
@@ -6302,7 +6575,10 @@
         }
 
         function applyTheme(theme) {
-            document.body.className = theme === 'light' ? 'light' : '';
+            // بنستخدم classList بدل className= المباشرة (اللي كانت بتمسح أي كلاس تاني
+            // على الـ body زي premium-theme-on أو clinical-theme-on عند كل تبديل وضع
+            // ليلي/نهاري) — كده الثيمات الإضافية بتفضل شغالة مهما بدّلنا الوضع.
+            document.body.classList.toggle('light', theme === 'light');
             document.getElementById('themeIcon').className = theme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
         }
 
@@ -6461,6 +6737,11 @@
                 }
                 const adminPremiumPanelSection = document.getElementById('adminPremiumPanelSection');
                 if (adminPremiumPanelSection) adminPremiumPanelSection.style.display = isAdmin ? 'block' : 'none';
+                const adminSharingSection = document.getElementById('adminSharingSection');
+                if (adminSharingSection) {
+                    adminSharingSection.style.display = isAdmin ? 'block' : 'none';
+                    if (isAdmin) loadAccountSharingReport();
+                }
             } else {
                 if (loggedOutBox && loggedInBox) {
                     loggedOutBox.style.display = 'block';
@@ -6500,10 +6781,11 @@
             if (!username || !password) { status.innerHTML = '<span style="color:var(--danger)">اكتب اسم المستخدم وكلمة المرور</span>'; return; }
             status.innerHTML = 'جاري تسجيل الدخول...';
             try {
+                const deviceFingerprint = await computeDeviceFingerprint();
                 const res = await fetch(`${apiUrl}/api/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ username, password, deviceFingerprint })
                 });
                 const data = await res.json();
                 if (!res.ok || !data.success) {
@@ -6568,10 +6850,13 @@
             if (schoolHeartbeatInterval) return; // شغالة أصلاً
             const sendHeartbeat = () => {
                 if (!schoolToken) { stopSchoolHeartbeat(); return; }
-                fetch(`${FIXED_SCHOOL_API_URL}/api/heartbeat`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${schoolToken}` }
-                }).catch(() => {}); // فشل مؤقت في الشبكة مش مبرر نوقف كل حاجة
+                computeDeviceFingerprint().then(deviceFingerprint => {
+                    fetch(`${FIXED_SCHOOL_API_URL}/api/heartbeat`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${schoolToken}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ deviceFingerprint })
+                    }).catch(() => {}); // فشل مؤقت في الشبكة مش مبرر نوقف كل حاجة
+                });
             };
             sendHeartbeat(); // نبعت واحدة فورًا عند فتح التطبيق، مش نستنى أول interval
             schoolHeartbeatInterval = setInterval(sendHeartbeat, 2 * 60 * 1000); // كل دقيقتين
@@ -6622,6 +6907,46 @@
                 showToast('اتبعتت رسالتك للأدمن', 'success');
             } catch (e) {
                 statusEl.innerHTML = '<span style="color:var(--danger)">تعذر الإرسال — جرب تاني كمان شوية. لو المشكلة استمرت يبقى endpoint الرسايل لسه مش متاح على سيرفر School X.</span>';
+            }
+        }
+
+        // ====================== كشف مشاركة الحسابات (أدمن فقط) ======================
+        async function loadAccountSharingReport() {
+            const listEl = document.getElementById('adminSharingList');
+            if (!schoolToken || !listEl) return;
+            listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">جارٍ التحليل...</div>';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/admin/account-sharing?days=14`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+                const students = data.students || [];
+                if (!students.length) {
+                    listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش حسابات مشبوهة في آخر 14 يوم</div>';
+                    return;
+                }
+                listEl.innerHTML = students.map(s => {
+                    const riskColor = s.riskScore >= 10 ? 'var(--danger)' : s.riskScore >= 5 ? 'var(--warning)' : 'var(--text-3)';
+                    const devicesHtml = s.deviceList.map(d => `<span style="display:inline-block;background:var(--bg-2);border:1px solid var(--border);border-radius:20px;padding:2px 10px;font-size:10.5px;margin:2px;">${escapeHtml(d)}</span>`).join('');
+                    return `
+                        <div style="background:var(--bg-glass);border:1px solid var(--border);border-right:3px solid ${riskColor};border-radius:10px;padding:12px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                                <b style="font-size:13px;">${escapeHtml(s.username)}</b>
+                                <span style="font-size:11px;font-weight:700;color:${riskColor};">درجة شك: ${s.riskScore}</span>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;color:var(--text-2);margin-bottom:8px;">
+                                <span>🚫 محاولات اتمنعت: <b>${s.blockedAttempts}</b></span>
+                                <span>⚠️ اختلاف بصمة: <b>${s.sessionMismatches}</b></span>
+                                <span>📱 أجهزة مختلفة: <b>${s.distinctFingerprints}</b></span>
+                                <span>🕐 آخر ظهور: ${new Date(s.lastSeen).toLocaleString('ar-EG')}</span>
+                            </div>
+                            <div>${devicesHtml}</div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">تعذر تحميل التقرير</div>';
             }
         }
 
@@ -7705,7 +8030,7 @@
             const el = document.getElementById('groupChatTypingIndicator');
             if (!el) return;
             if (typingUsernames.length > 0) {
-                el.innerHTML = '<div class="typing-dots" style="padding:8px 12px;display:inline-flex;"><span></span><span></span><span></span></div>';
+                el.innerHTML = '<div class="typing-dots" style="padding:8px 12px;display:inline-flex;"><span></span><span></span><span></span><svg viewBox="0 0 64 22" xmlns="http://www.w3.org/2000/svg"><path class="ecg-line" d="M0,11 L14,11 L18,4 L22,18 L26,11 L40,11 L44,6 L48,16 L52,11 L64,11"/><circle class="ecg-dot" cx="22" cy="18" r="2"/></svg></div>';
                 el.style.display = 'block';
             } else {
                 el.style.display = 'none';
@@ -7906,6 +8231,57 @@
             } catch (e) { /* السيرفر مش متاح دلوقتي، هنستخدم آخر نسخة متخزنة */ }
         }
 
+        // ====================== الإعلانات (نصية + استماع صوتي) ======================
+        // بتستخدم /api/notifications الموجود أصلاً (endpoint عام، من غير أي شرط
+        // ربط بحساب School X — الإعلانات عامة لكل الطلاب بغض النظر عن حالة الربط).
+        let announcementsCache = [];
+        async function fetchAnnouncements() {
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/notifications`);
+                if (!res.ok) return;
+                const list = await res.json();
+                announcementsCache = Array.isArray(list) ? list : [];
+                updateAnnouncementsBadge();
+            } catch (e) { /* السيرفر مش متاح دلوقتي — الجرس هيفضل عادي من غير نقطة */ }
+        }
+        function updateAnnouncementsBadge() {
+            if (!announcementsCache.length) return;
+            const lastSeenAt = localStorage.getItem('sx_last_seen_announcement_at') || '';
+            const newest = announcementsCache[0]; // الـ API بيرجعهم الأحدث الأول (sort createdAt: -1)
+            const hasNew = newest && newest.createdAt && newest.createdAt > lastSeenAt;
+            const badge = document.getElementById('announcementsBadge');
+            if (badge) badge.style.display = hasNew ? 'block' : 'none';
+        }
+        function renderAnnouncementsList() {
+            const container = document.getElementById('announcementsList');
+            if (!announcementsCache.length) {
+                container.innerHTML = '<p style="text-align:center;color:var(--text-3);font-size:12.5px;">مفيش إعلانات دلوقتي</p>';
+                return;
+            }
+            container.innerHTML = announcementsCache.slice(0, 30).map((n, i) => `
+                <div style="background:var(--bg-glass);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">
+                    <p style="font-size:13px;line-height:1.7;margin-bottom:8px;white-space:pre-wrap;">${escapeHtml(n.text || '')}</p>
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:10.5px;color:var(--text-3);">${escapeHtml(n.date || '')}</span>
+                        <button class="icon-btn" style="width:30px;height:30px;font-size:12px;" aria-label="استماع للإعلان" onclick="speakText(${JSON.stringify(n.text || '')}, this)"><i class="fas fa-volume-high"></i></button>
+                    </div>
+                </div>
+            `).join('');
+            // آخر إعلان اتفتح له اللستة يتعتبر "مقروء" — بيشيل نقطة التنبيه الحمرا
+            if (announcementsCache[0]?.createdAt) {
+                localStorage.setItem('sx_last_seen_announcement_at', announcementsCache[0].createdAt);
+                updateAnnouncementsBadge();
+            }
+        }
+        function openAnnouncementsModal() {
+            openModal('announcementsModal');
+            renderAnnouncementsList();
+            fetchAnnouncements().then(renderAnnouncementsList); // نحدّث اللستة لو فيه جديد من وقت آخر تحميل
+        }
+        // نجيب الإعلانات مرة عند فتح التطبيق عشان نقطة التنبيه تبان لو فيه جديد،
+        // من غير ما الطالب يحتاج يفتح الجرس الأول عشان يعرف.
+        fetchAnnouncements();
+
         // ====================== Premium: تتبّع المميزات المفعّلة وتهنئة الطالب لما ميزة جديدة تتفتحله ======================
         function handlePremiumFeaturesUpdate(newFeatures) {
             const previouslyKnown = new Set(myPremiumFeatures);
@@ -7942,12 +8318,14 @@
             const premiumGroup = document.getElementById('premiumModelsGroup');
             const cerebrasOpt = document.getElementById('cerebrasModelOption');
             const claudeOpusOpt = document.getElementById('claudeOpusModelOption');
+            const examinerOpt = document.getElementById('examinerModelOption');
             const entitled = hasPremium('premium_ai');
             if (premiumGroup) premiumGroup.style.display = entitled ? '' : 'none';
             if (cerebrasOpt) cerebrasOpt.style.display = entitled ? '' : 'none';
             if (claudeOpusOpt) claudeOpusOpt.style.display = entitled ? '' : 'none';
+            if (examinerOpt) examinerOpt.style.display = entitled ? '' : 'none';
             const modelSelect = document.getElementById('modelSelect');
-            if (modelSelect && (modelSelect.value === 'cerebras' || modelSelect.value === 'claude-opus') && !entitled) {
+            if (modelSelect && (modelSelect.value === 'cerebras' || modelSelect.value === 'claude-opus' || modelSelect.value === 'examiner') && !entitled) {
                 modelSelect.value = 'auto';
                 saveModelChoice();
             }
