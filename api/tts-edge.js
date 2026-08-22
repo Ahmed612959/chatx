@@ -42,6 +42,47 @@ function withTimeout(promise, ms) {
   ]);
 }
 
+// PRNG بسيط بـ seed ثابت من النص نفسه — نفس نفس التقنية المستخدمة في
+// tts-neural.js، عشان نفس الجملة تدّي نفس التنويع دايمًا (يفيد أي كاش مستقبلي)
+// بدل Math.random() اللي كانت هتخلي كل توليد مختلف حتى لنفس النص بالظبط.
+function seededRandom(seedStr) {
+  let seed = 0;
+  for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+  return function () {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+}
+
+// بيقسّم النص لجمل وبيديلها rate/pitch مختلف حسب نوع الجملة (سؤال/تعجب/عادية)
+// بالظبط زي منطق SSML في tts-neural.js — بس هنا Edge TTS مش بتاخد SSML خالص،
+// بتاخد نص عادي + خيارات (rate/pitch/volume) على مستوى الطلب كله. عشان نقدر
+// نطبّق تنويع لكل جملة لوحدها، بنقسّم النص ونعمل طلب توليد صوت منفصل لكل جملة
+// بإعدادات مختلفة شوية، وبعدين نلزّق الصوت الناتج مع بعضه في ملف واحد.
+function splitSentences(text) {
+  return text
+    .split(/(?<=[.!?؟])\s+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+function prosodyFor(sentence, rand) {
+  const isQuestion = /[؟?]$/.test(sentence);
+  const isExclaim = /!$/.test(sentence);
+  const jitter = Math.round((rand() - 0.5) * 4); // -2..+2
+  let ratePct = -4 + jitter;
+  let pitchHz = 0;
+  if (isQuestion) { pitchHz = 8; ratePct += 1; }
+  else if (isExclaim) { ratePct += 4; pitchHz = 4; }
+  return { rate: `${ratePct >= 0 ? '+' : ''}${ratePct}%`, pitch: `${pitchHz >= 0 ? '+' : ''}${pitchHz}Hz` };
+}
+
+async function synthesizeSentence(sentence, voiceName, prosody, timeoutMs) {
+  const tts = new EdgeTTS(sentence, voiceName, { rate: prosody.rate, volume: '+0%', pitch: prosody.pitch });
+  const result = await withTimeout(tts.synthesize(), timeoutMs);
+  return Buffer.from(await result.audio.arrayBuffer());
+}
+
 export default async function handler(request, response) {
   try {
     if (request.method !== 'POST') {
@@ -55,16 +96,21 @@ export default async function handler(request, response) {
     }
 
     const voiceName = VOICES[voiceParam] || VOICES.salma;
+    const rand = seededRandom(cleanText.slice(0, 120));
+    const sentences = splitSentences(cleanText);
 
-    // مهلة يدوية بتتحسب حسب طول النص، لحد أقصى 4 دقايق و50 ثانية (سايبة هامش 10
-    // ثواني قبل حد الـ 5 دقايق بتاع الفانكشن نفسه فوق، عشان دايمًا الرسالة اللي
-    // بترجع تبقى واضحة "فشل Edge TTS" بدل ما Vercel يقفل الفانكشن فجأة من غير رد).
-    const estimatedMs = Math.min(290000, Math.max(9000, cleanText.length * 90));
+    // مهلة كل جملة على حدة — بدل ما نحسب مهلة واحدة ضخمة للنص كله زي الأول،
+    // كل جملة بتاخد مهلة تتناسب مع طولها هي بس (مع حد أدنى وأقصى معقولين)، وده
+    // بيسيب هامش أمان إجمالي أكبر داخل حد الـ 5 دقايق بتاع الفانكشن نفسها فوق.
+    const buffers = [];
+    for (const sentence of (sentences.length ? sentences : [cleanText])) {
+      const prosody = prosodyFor(sentence, rand);
+      const perSentenceTimeout = Math.min(60000, Math.max(6000, sentence.length * 120));
+      const buf = await synthesizeSentence(sentence, voiceName, prosody, perSentenceTimeout);
+      if (buf && buf.length) buffers.push(buf);
+    }
 
-    const tts = new EdgeTTS(cleanText, voiceName, { rate: '-4%', volume: '+0%', pitch: '+0Hz' });
-    const result = await withTimeout(tts.synthesize(), estimatedMs);
-
-    const audioBuffer = Buffer.from(await result.audio.arrayBuffer());
+    const audioBuffer = Buffer.concat(buffers);
     if (!audioBuffer || !audioBuffer.length) {
       throw new Error('empty-audio-response');
     }
