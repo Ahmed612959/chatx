@@ -15,6 +15,12 @@
 
 import { EdgeTTS } from 'edge-tts-universal';
 
+// المهلة الافتراضية لـ Vercel Serverless Functions (Node) هي 10 ثواني على خطة
+// Hobby — كانت كافية للرسايل القصيرة بس مش للطويلة (خدمة Edge TTS بترجع الصوت
+// كامل مرة واحدة، مش Streaming، فكل ما النص يطول كل ما وقت التوليد يزيد). الزيادة
+// دي بتسمح للفانكشن نفسه إنه يفضل شغال لحد 60 ثانية بدل ما Vercel يقفله بالقوة.
+export const config = { maxDuration: 60 };
+
 const VOICES = {
   salma: 'ar-EG-SalmaNeural',
   shakir: 'ar-EG-ShakirNeural',
@@ -43,11 +49,13 @@ export default async function handler(request, response) {
 
     const voiceName = VOICES[voiceParam] || VOICES.salma;
 
-    // مهلة يدوية (٩ ثواني) — لو خدمة Edge بطيئة أو معلّقة، نفشل بسرعة ونسيب
-    // الفرونت إند يكمل على Azure الرسمي بدل ما يستنى لحد ما الـ serverless
-    // function نفسها تعمل timeout (اللي ممكن ياخد وقت أطول بكتير).
+    // مهلة يدوية بتتحسب حسب طول النص (بدل رقم ثابت كان بيفشل مع الرسايل الطويلة
+    // ويخلي الفرونت إند يتحول لـ Azure كل مرة). متوسط سرعة القراءة حوالي 15
+    // حرف/ثانية، وبنضيف هامش أمان كويس فوق كده، مع حد أدنى وأقصى معقولين.
+    const estimatedMs = Math.min(55000, Math.max(9000, cleanText.length * 90));
+
     const tts = new EdgeTTS(cleanText, voiceName, { rate: '-4%', volume: '+0%', pitch: '+0Hz' });
-    const result = await withTimeout(tts.synthesize(), 9000);
+    const result = await withTimeout(tts.synthesize(), estimatedMs);
 
     const audioBuffer = Buffer.from(await result.audio.arrayBuffer());
     if (!audioBuffer || !audioBuffer.length) {
