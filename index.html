@@ -1492,6 +1492,27 @@
                 </label>
             </div>
 
+            <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-microphone-lines"></i> الصوت الطبيعي للردود</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    اختار الشخصية الصوتية اللي هتستخدمها زراير "استمع" والتحميل الصوتي. التغيير بيتطبق على أي رد جديد تسمعه.
+                </p>
+                <div id="ttsVoiceOptions" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <label class="tts-voice-opt" data-voice="salma" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;">
+                        <input type="radio" name="ttsVoiceRadio" value="salma" style="accent-color:var(--accent);"> سلمى (مصري)
+                    </label>
+                    <label class="tts-voice-opt" data-voice="shakir" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;">
+                        <input type="radio" name="ttsVoiceRadio" value="shakir" style="accent-color:var(--accent);"> شاكر (مصري)
+                    </label>
+                    <label class="tts-voice-opt" data-voice="zariyah" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;">
+                        <input type="radio" name="ttsVoiceRadio" value="zariyah" style="accent-color:var(--accent);"> زارية (سعودي)
+                    </label>
+                    <label class="tts-voice-opt" data-voice="hamed" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;">
+                        <input type="radio" name="ttsVoiceRadio" value="hamed" style="accent-color:var(--accent);"> حامد (سعودي)
+                    </label>
+                </div>
+            </div>
+
             <div class="tool-section" id="pushNotifSection" style="display:none;">
                 <div class="tool-title"><i class="fas fa-bell-concierge"></i> إشعارات الرسايل والغرف الجماعية</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -2771,6 +2792,124 @@
         // ====================================================================================
         const ttsPrefetchCache = new Map(); // msg.id -> Promise<Blob>
 
+        // ====================================================================================
+        // كاش دائم للصوت (IndexedDB) — الكاش القديم (ttsPrefetchCache فوق) بيتصفّر لما
+        // الصفحة تتقفل أو تتعمل reload، فلو الطالب فتح نفس المحادثة تاني وداس "استمع" على
+        // رد قراه قبل كده، كان بيطلب الصوت من Azure/Gemini من جديد بالمجان — استهلاك كوتة
+        // من غير أي فايدة حقيقية لإن الصوت هو نفسه بالظبط. الكاش ده بيخزّن الـ Blob على
+        // جهاز الطالب نفسه (IndexedDB، مش السيرفر) مربوط بـ hash(النص + الصوت المختار)،
+        // فأي إعادة استماع لنفس الرد — حتى بعد يوم أو reload — بتيجي فورًا من غير أي طلب
+        // شبكة خالص. الكاش محدود بعدد أقصى من العناصر (الأقدم بيتشال أول ما نوصل للحد).
+        // ====================================================================================
+        const TTS_IDB_NAME = 'chatx-tts-cache';
+        const TTS_IDB_STORE = 'audio';
+        const TTS_IDB_MAX_ENTRIES = 150;
+        let ttsIdbPromise = null;
+
+        function openTtsIdb() {
+            if (ttsIdbPromise) return ttsIdbPromise;
+            ttsIdbPromise = new Promise((resolve, reject) => {
+                if (!window.indexedDB) { reject(new Error('no-indexeddb')); return; }
+                const req = indexedDB.open(TTS_IDB_NAME, 1);
+                req.onupgradeneeded = () => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains(TTS_IDB_STORE)) {
+                        db.createObjectStore(TTS_IDB_STORE, { keyPath: 'key' });
+                    }
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            }).catch(err => { ttsIdbPromise = null; throw err; });
+            return ttsIdbPromise;
+        }
+
+        async function ttsHashKey(text, voice) {
+            const input = voice + '::' + text;
+            try {
+                const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(input));
+                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+            } catch (e) {
+                // بيئة من غير crypto.subtle (نادر) — مفتاح أبسط أقل أمانًا لكن كافي هنا
+                let h = 0;
+                for (let i = 0; i < input.length; i++) h = (h * 31 + input.charCodeAt(i)) >>> 0;
+                return 'k' + h;
+            }
+        }
+
+        async function ttsIdbGet(key) {
+            try {
+                const db = await openTtsIdb();
+                return await new Promise((resolve) => {
+                    const tx = db.transaction(TTS_IDB_STORE, 'readonly');
+                    const req = tx.objectStore(TTS_IDB_STORE).get(key);
+                    req.onsuccess = () => resolve(req.result ? req.result.blob : null);
+                    req.onerror = () => resolve(null);
+                });
+            } catch (e) { return null; }
+        }
+
+        async function ttsIdbSet(key, blob) {
+            try {
+                const db = await openTtsIdb();
+                await new Promise((resolve) => {
+                    const tx = db.transaction(TTS_IDB_STORE, 'readwrite');
+                    tx.objectStore(TTS_IDB_STORE).put({ key, blob, ts: Date.now() });
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => resolve();
+                });
+                await ttsIdbPrune();
+            } catch (e) { /* الكاش الدائم اختياري — أي فشل هنا ميوقفش تشغيل الصوت نفسه */ }
+        }
+
+        async function ttsIdbPrune() {
+            try {
+                const db = await openTtsIdb();
+                const tx = db.transaction(TTS_IDB_STORE, 'readonly');
+                const countReq = tx.objectStore(TTS_IDB_STORE).count();
+                countReq.onsuccess = async () => {
+                    if (countReq.result <= TTS_IDB_MAX_ENTRIES) return;
+                    const db2 = await openTtsIdb();
+                    const tx2 = db2.transaction(TTS_IDB_STORE, 'readwrite');
+                    const store = tx2.objectStore(TTS_IDB_STORE);
+                    const cursorReq = store.openCursor();
+                    let toDelete = countReq.result - TTS_IDB_MAX_ENTRIES;
+                    cursorReq.onsuccess = () => {
+                        const cursor = cursorReq.result;
+                        if (cursor && toDelete > 0) {
+                            store.delete(cursor.primaryKey);
+                            toDelete--;
+                            cursor.continue();
+                        }
+                    };
+                };
+            } catch (e) { /* تنظيف اختياري، مش مشكلة لو فشل */ }
+        }
+
+        // الصوت المختار من الإعدادات (يتخزن في localStorage) — افتراضيًا "سلمى" (مصري).
+        function getSelectedTtsVoice() {
+            return localStorage.getItem('chatx_tts_voice') || 'salma';
+        }
+        function setSelectedTtsVoice(voiceKey) {
+            localStorage.setItem('chatx_tts_voice', voiceKey);
+            syncTtsVoiceOptionsUI();
+        }
+        function syncTtsVoiceOptionsUI() {
+            const current = getSelectedTtsVoice();
+            document.querySelectorAll('#ttsVoiceOptions .tts-voice-opt').forEach(label => {
+                const radio = label.querySelector('input[type="radio"]');
+                const isActive = label.dataset.voice === current;
+                if (radio) radio.checked = isActive;
+                label.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
+                label.style.background = isActive ? 'var(--bg-glass)' : 'transparent';
+            });
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            syncTtsVoiceOptionsUI();
+            document.querySelectorAll('#ttsVoiceOptions .tts-voice-opt').forEach(label => {
+                label.addEventListener('click', () => setSelectedTtsVoice(label.dataset.voice));
+            });
+        });
+
         function stripMarkdownForSpeech(text) {
             return (text || '')
                 .replace(/```[\s\S]*?```/g, ' ')
@@ -2808,10 +2947,22 @@
         }
 
         async function fetchTtsAudioBlob(text) {
+            const voiceKey = getSelectedTtsVoice();
+
+            // كاش دائم أولاً: نفس النص + نفس الصوت المختار قبل كده على الجهاز ده؟ رجّعه
+            // فورًا من غير أي طلب شبكة (يفيد في إعادة سماع نفس الرد بعد reload أو في يوم تاني).
+            const idbKey = await ttsHashKey(text, voiceKey);
+            const cachedBlob = await ttsIdbGet(idbKey);
+            if (cachedBlob) return cachedBlob;
+
             if (hasPremium('premium_voice')) {
                 try {
                     const res = await fetch('/api/tts-gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, geminiOnly: true }) });
-                    if (res.ok) return await res.blob();
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        ttsIdbSet(idbKey, blob);
+                        return blob;
+                    }
                     // الطبقة (1) رجّعت خطأ من السيرفر (مش استثناء شبكة) — ده أكتر سبب شائع
                     // لصوت Gemini اللي "مبيجيش خالص" مع إن الميزة مفعّلة: مفتاح API غلط/منتهي،
                     // أو الموديل رافض الطلب، أو الكوتة خلصت. كنا بنتجاهل التفاصيل دي بصمت
@@ -2826,12 +2977,18 @@
                 }
             }
             try {
-                const res = await fetch('/api/tts-neural', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, gender: 'female' }) });
-                if (res.ok) return await res.blob();
+                const res = await fetch('/api/tts-neural', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, voice: voiceKey }) });
+                if (res.ok) {
+                    const blob = await res.blob();
+                    ttsIdbSet(idbKey, blob);
+                    return blob;
+                }
             } catch (err) { /* الطبقة (2) فشلت — نكمل للطبقة (3) الأخيرة والمضمونة */ }
             const res = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, lang: 'ar' }) });
             if (!res.ok) throw new Error('tts-request-failed'); // الطبقة (3) نفسها فشلت — هنا بس نستسلم فعليًا
-            return await res.blob();
+            const blob = await res.blob();
+            ttsIdbSet(idbKey, blob); // صوت Google Translate برضه بيتكاش عشان مايتطلبش تاني لنفس النص
+            return blob;
         }
 
         // بتتنادى لما المستخدم يدوس زرار "استمع" (🔊) تحت أي رسالة رد من الذكاء الاصطناعي
