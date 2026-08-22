@@ -372,12 +372,22 @@
             (s.studentCode || '').toLowerCase().includes(q)
         );
         const list = document.getElementById('studentList');
+        if (!list.dataset.delegatedClick) {
+            // event delegation آمن بدل onclick inline: بنقرا القيمة من data-* attribute
+            // (نص خام من dataset، مش بيتفسّر كـ HTML/JS خالص) بدل ما نحقنها جوه
+            // سطر onclick نصي كان ممكن ينكسر لو studentCode فيه علامة اقتباس.
+            list.addEventListener('click', (e) => {
+                const row = e.target.closest('[data-student-code]');
+                if (row) openEditSheet(row.dataset.studentCode);
+            });
+            list.dataset.delegatedClick = '1';
+        }
         document.getElementById('emptyState').style.display = filtered.length ? 'none' : 'block';
         list.innerHTML = filtered.slice(0, 200).map(s => {
             const count = (s.premiumFeatures || []).length;
             const initial = (s.fullName || s.username || '?').trim().charAt(0);
             return `
-                <div class="student-row" onclick='openEditSheet(${JSON.stringify(s.studentCode)})'>
+                <div class="student-row" data-student-code="${escapeHtml(s.studentCode || '')}">
                     <div class="student-avatar">${initial}</div>
                     <div class="student-info">
                         <div class="student-name">${escapeHtml(s.fullName || s.username)}</div>

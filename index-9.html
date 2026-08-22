@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://schoolx-eta.vercel.app https://chat-x.vercel.app https://api.alquran.cloud https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com wss://*.firebaseio.com; frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self';">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#6366f1">
@@ -34,6 +35,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Righteous&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -4726,7 +4728,7 @@
 
         function finalizeBotMessage(msgDiv, botMsg) {
             const bubbleDiv = msgDiv.querySelector('.msg-bubble');
-            bubbleDiv.innerHTML = marked.parse(botMsg.content);
+            bubbleDiv.innerHTML = DOMPurify.sanitize(marked.parse(botMsg.content));
             bubbleDiv.classList.toggle('pinned-msg', !!botMsg.pinned);
             enhanceCodeBlocks(bubbleDiv);
             const timeSpan = msgDiv.querySelector('.msg-time');
@@ -4749,7 +4751,7 @@
             div.className = `message ${msg.role}`;
             div.id = msg.id || `msg-${Date.now()}`;
             
-            const contentHTML = marked.parse(msg.content);
+            const contentHTML = DOMPurify.sanitize(marked.parse(msg.content));
             const time = new Date(msg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
 
             const avatar = document.createElement('div');
@@ -9141,7 +9143,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             chat.messages.forEach(msg => {
                 const block = document.createElement('div');
                 block.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:10px;background:' + (msg.role === 'user' ? '#eef2ff' : '#f8fafc') + ';border:1px solid #e2e8f0;';
-                block.innerHTML = `<strong>${msg.role === 'user' ? 'أنت' : 'Chat X'}:</strong><div>${marked.parse(msg.content)}</div>`;
+                block.innerHTML = `<strong>${msg.role === 'user' ? 'أنت' : 'Chat X'}:</strong><div>${DOMPurify.sanitize(marked.parse(msg.content))}</div>`;
                 printable.appendChild(block);
             });
 

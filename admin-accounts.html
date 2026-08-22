@@ -510,13 +510,23 @@
         else if (currentFilter === 'suspended') filtered = filtered.filter(s => s.suspended);
 
         const list = document.getElementById('studentList');
+        if (!list.dataset.delegatedClick) {
+            // event delegation آمن بدل onclick inline: بنقرا القيمة من data-* attribute
+            // (نص خام من dataset، مش بيتفسّر كـ HTML/JS خالص) بدل ما نحقنها جوه
+            // سطر onclick نصي كان ممكن ينكسر لو studentCode فيه علامة اقتباس.
+            list.addEventListener('click', (e) => {
+                const row = e.target.closest('[data-student-code]');
+                if (row) openEditSheet(row.dataset.studentCode);
+            });
+            list.dataset.delegatedClick = '1';
+        }
         document.getElementById('emptyState').style.display = filtered.length ? 'none' : 'block';
         list.innerHTML = filtered.slice(0, 300).map(s => {
             const count = (s.premiumFeatures || []).length;
             const initial = (s.fullName || s.username || '?').trim().charAt(0);
             const status = formatLastSeen(s);
             return `
-                <div class="student-row ${s.suspended ? 'is-suspended' : ''}" onclick='openEditSheet(${JSON.stringify(s.studentCode)})'>
+                <div class="student-row ${s.suspended ? 'is-suspended' : ''}" data-student-code="${escapeHtml(s.studentCode || '')}">
                     <div class="avatar-wrap">
                         <div class="student-avatar">${initial}</div>
                         <div class="online-dot ${s.online ? 'on' : ''}"></div>

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://schoolx-eta.vercel.app https://chat-x.vercel.app https://api.alquran.cloud https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com wss://*.firebaseio.com; frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self';">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#6366f1">
@@ -9,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 <script src="english-medical-dictionary.js"></script>
 
 <style>
@@ -730,7 +732,7 @@ function addMessage(role, content) {
     } else {
         wrap.className = 'message ' + (role === 'user' ? 'user' : 'bot');
         const avatar = role === 'user' ? '<i class="fas fa-user"></i>' : '🇬🇧';
-        const bubbleHtml = role === 'user' ? escapeHtml(content) : marked.parse(content);
+        const bubbleHtml = role === 'user' ? escapeHtml(content) : DOMPurify.sanitize(marked.parse(content));
         const toolbar = role === 'bot'
             ? `<div class="msg-toolbar">
                  <button class="tts-btn" title="استماع للنطق"><i class="fas fa-volume-high"></i></button>
@@ -901,7 +903,7 @@ function renderGrammarBook() {
     body.innerHTML = allGrammarNotes.slice().reverse().map(g => `
         <div class="grammar-card">
             <h4>${escapeHtml(g.title)}</h4>
-            <div class="gc-body">${marked.parse(g.explanation || '')}</div>
+            <div class="gc-body">${DOMPurify.sanitize(marked.parse(g.explanation || ''))}</div>
         </div>
     `).join('');
 }
@@ -1149,7 +1151,7 @@ document.getElementById('downloadVocabBtn')?.addEventListener('click', () => {
 document.getElementById('downloadGrammarBtn')?.addEventListener('click', () => {
     if (!allGrammarNotes.length) { alert('دفتر القواعد لسه فاضي.'); return; }
     const html = allGrammarNotes.map(g => `
-        <div class="item"><h4>${escapeHtml(g.title)}</h4>${marked.parse(g.explanation || '')}</div>
+        <div class="item"><h4>${escapeHtml(g.title)}</h4>${DOMPurify.sanitize(marked.parse(g.explanation || ''))}</div>
     `).join('');
     openPrintWindow('🧩 دفتر قواعد English Pro', html);
 });

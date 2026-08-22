@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://schoolx-eta.vercel.app https://chat-x.vercel.app https://api.alquran.cloud https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com wss://*.firebaseio.com; frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self';">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#6366f1">
@@ -34,6 +35,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Righteous&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -1162,6 +1164,48 @@
     </style>
 </head>
 <body>
+    <div id="chatxSplash" aria-hidden="true">
+      <div class="chatx-splash-inner">
+        <img src="/icons/icon-192.png" alt="" class="chatx-splash-logo">
+        <h1 class="chatx-splash-title" id="chatxSplashTitle"></h1>
+      </div>
+    </div>
+    <style>
+      #chatxSplash { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 40%, #1b1f3b 0%, #0c0e1f 70%); transition: opacity .5s ease, visibility .5s ease; }
+      #chatxSplash.chatx-hide { opacity: 0; visibility: hidden; pointer-events: none; }
+      .chatx-splash-inner { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+      .chatx-splash-logo { width: 72px; height: 72px; border-radius: 20px; box-shadow: 0 10px 30px rgba(99,102,241,.45); animation: chatxLogoPop .6s cubic-bezier(.34,1.56,.64,1) both; }
+      @keyframes chatxLogoPop { 0% { transform: scale(.4); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+      .chatx-splash-title { direction: ltr; font-family: 'Poppins','Tajawal',Arial,sans-serif; font-weight: 800; font-size: clamp(28px, 8vw, 44px); letter-spacing: 1px; margin: 0; background: linear-gradient(90deg,#818cf8,#c084fc,#818cf8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .chatx-splash-title .chatx-letter { display: inline-block; opacity: 0; transform: translateY(14px) scale(.85); animation: chatxLetterIn .45s cubic-bezier(.2,.9,.3,1.3) forwards; }
+      .chatx-splash-title .chatx-letter.chatx-space { width: .35em; }
+      @keyframes chatxLetterIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+    </style>
+    <script>
+    (function () {
+      var splashEl = document.getElementById('chatxSplash');
+      var titleEl  = document.getElementById('chatxSplashTitle');
+      if (!splashEl || !titleEl) return;
+      var APP_NAME = 'Chat X';
+      var LETTER_DELAY_MS = 55;
+      var HOLD_MS = 550;
+      var SESSION_KEY = 'chatx_splash_shown';
+      if (sessionStorage.getItem(SESSION_KEY)) { splashEl.remove(); return; }
+      sessionStorage.setItem(SESSION_KEY, '1');
+      APP_NAME.split('').forEach(function (ch, i) {
+        var span = document.createElement('span');
+        span.className = 'chatx-letter' + (ch === ' ' ? ' chatx-space' : '');
+        span.textContent = ch === ' ' ? '\u00A0' : ch;
+        span.style.animationDelay = (i * LETTER_DELAY_MS) + 'ms';
+        titleEl.appendChild(span);
+      });
+      var totalMs = APP_NAME.length * LETTER_DELAY_MS + 450 + HOLD_MS;
+      setTimeout(function () {
+        splashEl.classList.add('chatx-hide');
+        setTimeout(function () { splashEl.remove(); }, 550);
+      }, totalMs);
+    })();
+    </script>
     <noscript>
         <div style="max-width:640px;margin:40px auto;padding:24px;font-family:Tahoma,Arial,sans-serif;line-height:1.9;direction:rtl;text-align:right;">
             <h1>Chat X — المساعد الأكاديمي الذكي لطلاب معاهد التمريض</h1>
@@ -5033,7 +5077,7 @@
 
         function finalizeBotMessage(msgDiv, botMsg) {
             const bubbleDiv = msgDiv.querySelector('.msg-bubble');
-            bubbleDiv.innerHTML = marked.parse(botMsg.content);
+            bubbleDiv.innerHTML = DOMPurify.sanitize(marked.parse(botMsg.content));
             bubbleDiv.classList.toggle('pinned-msg', !!botMsg.pinned);
             enhanceCodeBlocks(bubbleDiv);
             const timeSpan = msgDiv.querySelector('.msg-time');
@@ -5056,7 +5100,7 @@
             div.className = `message ${msg.role}`;
             div.id = msg.id || `msg-${Date.now()}`;
             
-            const contentHTML = marked.parse(msg.content);
+            const contentHTML = DOMPurify.sanitize(marked.parse(msg.content));
             const time = new Date(msg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
 
             const avatar = document.createElement('div');
@@ -9868,7 +9912,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             chat.messages.forEach(msg => {
                 const block = document.createElement('div');
                 block.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:10px;background:' + (msg.role === 'user' ? '#eef2ff' : '#f8fafc') + ';border:1px solid #e2e8f0;';
-                block.innerHTML = `<strong>${msg.role === 'user' ? 'أنت' : 'Chat X'}:</strong><div>${marked.parse(msg.content)}</div>`;
+                block.innerHTML = `<strong>${msg.role === 'user' ? 'أنت' : 'Chat X'}:</strong><div>${DOMPurify.sanitize(marked.parse(msg.content))}</div>`;
                 printable.appendChild(block);
             });
 
