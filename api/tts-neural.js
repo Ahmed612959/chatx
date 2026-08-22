@@ -1,21 +1,25 @@
 // Runs as a standard Node.js serverless function (not edge) — بسيطة كفاية إنها تشتغل
-// على أي runtime، لكن سايبينها Node زي ما كانت أصلاً عشان الفرونت إند مش محتاج أي تعديل.
+// على أي runtime، لكن سايبينها Node زي ما كانت أصلاً عشان الفرونت إند مش محتاج أي تعديل
+// جوهري (اللي اتضاف هو باراميتر "voice" اختياري، ولو ملوش قيمة بيرجع لنفس سلوك gender القديم).
 //
 // صوت "Azure AI Speech" الرسمي من مايكروسوفت (نفس كتالوج الأصوات اللي edge-tts-universal
 // كان بياخده بشكل غير رسمي، لكن دلوقتي عبر API رسمي ومستقر بمفتاح اشتراك حقيقي).
 // الفترة المجانية: 500 ألف حرف/شهر متجددة (F0 tier). لو المفتاح أو الـ region غلط، أو
-// الكوتة خلصت، بنرجّع 502 واضح والفرونت إند (index-11.html) بيرجع تلقائيًا لـ /api/tts
-// (Google Translate) وبعدها لصوت المتصفح — نفس 3 طبقات الأمان زي الأول.
+// الكوتة خلصت، بنرجّع 502 واضح والفرونت إند بيرجع تلقائيًا لـ /api/tts (Google Translate)
+// وبعدها لصوت المتصفح — نفس 3 طبقات الأمان زي الأول.
 
-const VOICE_MAP = {
-  female: 'ar-EG-SalmaNeural',
-  male: 'ar-EG-ShakirNeural'
+// أربع "شخصيات" صوت بدل صوت واحد بس — 2 مصري (الافتراضي، أقرب للهجة محتوى الموقع)
+// و2 سعودي (بديل لمين حابب طابع صوت مختلف). كل الأسماء دي أصوات Azure Neural رسمية
+// وموثّقة في كتالوج Azure نفسه، مفيش صوت مخترع هنا.
+const VOICES = {
+  salma:   { name: 'ar-EG-SalmaNeural',   lang: 'ar-EG', gender: 'Female', label: 'سلمى (مصري)' },
+  shakir:  { name: 'ar-EG-ShakirNeural',  lang: 'ar-EG', gender: 'Male',   label: 'شاكر (مصري)' },
+  zariyah: { name: 'ar-SA-ZariyahNeural', lang: 'ar-SA', gender: 'Female', label: 'زارية (سعودي)' },
+  hamed:   { name: 'ar-SA-HamedNeural',   lang: 'ar-SA', gender: 'Male',   label: 'حامد (سعودي)' }
 };
 
-const GENDER_MAP = {
-  female: 'Female',
-  male: 'Male'
-};
+// توافق مع الاستدعاءات القديمة اللي بتبعت gender بس من غير voice.
+const GENDER_FALLBACK = { female: 'salma', male: 'shakir' };
 
 function escapeSsml(text) {
   return text
@@ -26,30 +30,64 @@ function escapeSsml(text) {
     .replace(/'/g, '&apos;');
 }
 
-// بيبني SSML أغنى بدل بلوك نص واحد مسطّح:
-// - بيقسّم الكلام لجمل (على . ! ؟ ?) ويحطها في <s> منفصلة — ده بيخلي محرك النطق
-//   يحسب التنغيم الصحيح لكل جملة لوحدها (نبرة نازلة آخر الجملة) بدل ما يتعامل مع
-//   الفقرة كلها كجملة واحدة طويلة فيها تنغيم مسطّح.
-// - <break> متغيّر الطول بين الجمل: وقفة أطول بعد علامات النهاية (تنفّس طبيعي)،
-//   ووقفة أقصر بعد الفواصل جوه نفس الجملة (بدل ما ينطق الفاصلة كأنها آخر الجملة).
-// - <prosody rate/pitch> بسيطة تكسر الرتابة الآلية من غير ما توصل لحد المبالغة.
-// ملحوظة صراحة: أصوات ar-EG معندهاش دعم لـ mstts:express-as (أساليب التعبير زي
-// "cheerful"/"sad") على عكس أصوات إنجليزي/صيني معينة — الدعم ده مش موجود لأي صوت
-// عربي حاليًا على Azure، فمش بنستخدمه هنا عشان ميتجاهلش بصمت.
-function buildSsml(text, voice, ssmlGender) {
+// PRNG بسيط بـ seed ثابت من النص نفسه — عشان نفس الجملة تدّي نفس التنويع دايمًا
+// (يفيد الكاش تحت) بدل Math.random() اللي كانت هتخلي كل توليد للنص ده مختلف عن اللي قبله.
+function seededRandom(seedStr) {
+  let seed = 0;
+  for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+  return function () {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+}
+
+// بيبني SSML أغنى بدل بلوك نص واحد مسطّح أو حتى مقارنةً بالنسخة القديمة اللي كانت
+// بتدّي نفس rate/pitch الثابتين لكل الجمل. التحسينات هنا:
+// - كل جملة بتتقسم في <s> منفصلة (زي الأول) عشان تنغيم صحيح لكل جملة لوحدها.
+// - نوع الجملة بيتحدد (سؤال / تعجب / عادية) وبياخد pitch/rate مختلف يناسبه: السؤال
+//   بينتهي بنبرة أعلى شوية (زي ما بيحصل فعليًا وقت السؤال)، والتعجب بيتقال بسرعة
+//   وحدة أعلى شوية، والجملة العادية تفضل عند الإعداد الأساسي.
+// - تنويع طفيف عشوائي (لكن ثابت لنفس النص بفضل الـ seed) في كل جملة (±2% rate)
+//   عشان يكسر الرتابة الآلية اللي بتبان لما كل جملة مضبوطة بالظبط بنفس الرقم.
+// - وقفة متغيّرة الطول: أطول بعد نقطة/سؤال (تنفّس طبيعي)، أقصر بعد فاصلة جوه الجملة.
+// ملحوظة صراحة: أصوات ar-EG/ar-SA معندهاش دعم لـ mstts:express-as (أساليب التعبير
+// زي "cheerful"/"sad") على عكس أصوات إنجليزي/صيني معينة — مش موجود لأي صوت عربي
+// حاليًا على Azure، فمش بنستخدمه هنا عشان ميتجاهلش بصمت.
+function buildSsml(text, voice) {
+  const rand = seededRandom(text.slice(0, 120));
   const sentences = text
     .split(/(?<=[.!?؟])\s+/)
     .map(s => s.trim())
     .filter(Boolean);
 
   const body = (sentences.length ? sentences : [text]).map((sentence, i) => {
-    // فاصلة جوه الجملة نفسها → وقفة قصيرة بعدها (150ms) بدل ما تتقرا بسرعة روبوتية
     const withCommaBreaks = escapeSsml(sentence).replace(/،/g, '،<break time="150ms"/>');
     const isLast = i === sentences.length - 1;
-    return `<s>${withCommaBreaks}</s>` + (isLast ? '' : `<break time="380ms"/>`);
+
+    const isQuestion = /[؟?]$/.test(sentence);
+    const isExclaim = /!$/.test(sentence);
+    const jitter = Math.round((rand() - 0.5) * 4); // -2..+2
+    let rate = -4 + jitter;
+    let pitch = 1;
+    if (isQuestion) { pitch = 6; rate += 2; }
+    else if (isExclaim) { rate += 5; pitch = 3; }
+
+    const pauseAfter = isLast ? '' : (isQuestion || isExclaim) ? '<break time="420ms"/>' : '<break time="360ms"/>';
+    return `<prosody rate='${rate}%' pitch='+${pitch}%'><s>${withCommaBreaks}</s></prosody>${pauseAfter}`;
   }).join('');
 
-  return `<speak version='1.0' xml:lang='ar-EG'><voice xml:lang='ar-EG' xml:gender='${ssmlGender}' name='${voice}'><prosody rate='-4%' pitch='+1%'>${body}</prosody></voice></speak>`;
+  return `<speak version='1.0' xml:lang='${voice.lang}'><voice xml:lang='${voice.lang}' xml:gender='${voice.gender}' name='${voice.name}'>${body}</voice></speak>`;
+}
+
+// كاش داخل ذاكرة الـ lambda نفسها — مش دائم (بيتصفّر مع أي cold start)، لكن طول ما
+// الـ instance دافي (طلبات متقاربة من طلاب مختلفين بيسألوا نفس السؤال الشائع، أو نفس
+// الطالب بيعيد سماع نفس الرد) بيوفّر نداءات فعلية لـ Azure ويقلل استهلاك الكوتة
+// الشهرية المجانية من غير ما نحتاج نضيف قاعدة بيانات أو تخزين خارجي جديد للمشروع.
+const memoryCache = new Map();
+const MAX_CACHE_ENTRIES = 60;
+
+function cacheKey(text, voiceKey) {
+  return voiceKey + '::' + text;
 }
 
 export default async function handler(request, response) {
@@ -64,16 +102,26 @@ export default async function handler(request, response) {
       return response.status(500).json({ error: 'AZURE_SPEECH_KEY غير مضبوط في Environment Variables' });
     }
 
-    const { text, gender } = request.body || {};
+    const { text, gender, voice: voiceParam } = request.body || {};
     const cleanText = (text || '').toString().trim().slice(0, 2000);
     if (!cleanText) {
       return response.status(400).json({ error: 'لا يوجد نص لتحويله لصوت' });
     }
-    const genderKey = VOICE_MAP[gender] ? gender : 'female';
-    const voice = VOICE_MAP[genderKey];
-    const ssmlGender = GENDER_MAP[genderKey];
 
-    const ssml = buildSsml(cleanText, voice, ssmlGender);
+    let voiceKey = voiceParam && VOICES[voiceParam] ? voiceParam : null;
+    if (!voiceKey) voiceKey = GENDER_FALLBACK[gender] || 'salma';
+    const voice = VOICES[voiceKey];
+
+    const key = cacheKey(cleanText, voiceKey);
+    const cached = memoryCache.get(key);
+    if (cached) {
+      response.setHeader('Content-Type', 'audio/mpeg');
+      response.setHeader('Cache-Control', 'no-cache');
+      response.setHeader('X-TTS-Cache', 'hit');
+      return response.status(200).send(cached);
+    }
+
+    const ssml = buildSsml(cleanText, voice);
 
     let upstream;
     try {
@@ -106,8 +154,15 @@ export default async function handler(request, response) {
       throw new Error('empty-audio-response');
     }
 
+    if (memoryCache.size >= MAX_CACHE_ENTRIES) {
+      const oldestKey = memoryCache.keys().next().value;
+      memoryCache.delete(oldestKey);
+    }
+    memoryCache.set(key, audioBuffer);
+
     response.setHeader('Content-Type', 'audio/mpeg');
     response.setHeader('Cache-Control', 'no-cache');
+    response.setHeader('X-TTS-Cache', 'miss');
     return response.status(200).send(audioBuffer);
   } catch (err) {
     return response.status(502).json({ error: 'تعذر توليد الصوت الطبيعي', detail: String(err).slice(0, 200) });
