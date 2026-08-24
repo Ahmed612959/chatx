@@ -3085,6 +3085,7 @@
             if (cachedBlob) return cachedBlob;
 
             if (hasPremium('premium_voice')) {
+                reportFeatureUsage('premium_voice');
                 try {
                     const res = await fetch('/api/tts-gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, geminiOnly: true }) });
                     if (res.ok) {
@@ -4349,6 +4350,7 @@
                 // الطلب ده خالص). "fire and forget": مش بنستنى النتيجة ولا بنوقف
                 // ظهور الرد للطالب لو الطلب ده فشل أو اتأخر.
                 submitToSharedQuestionBank(fallbackText, chat.messages[chat.messages.length - 1]);
+                reportFeatureUsage('main_chat', source);
             } catch (error) {
                 if (error.name === 'AbortError') {
                     showToast('تم إيقاف الرد', 'error');
@@ -7057,6 +7059,7 @@
         async function openAcademicProfile() {
             const contentEl = document.getElementById('academicProfileContent');
             if (!contentEl) return;
+            reportFeatureUsage('premium_academic_profile');
             openModal('academicProfileModal');
             if (!schoolToken) {
                 contentEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px;">لازم تكون مسجّل دخول بحساب School X عشان تشوف البروفايل ده.</div>';
@@ -7269,6 +7272,24 @@
                     })
                 });
             } catch (e) { /* متجاهلينها بهدوء لو حصل خطأ شبكة */ }
+        }
+
+        // ====================== تتبّع استخدام الميزات (للوحة متابعة الأدمن) ======================
+        // بتبعت "استخدمت الميزة دي" للسيرفر — نفس فلسفة pingActivity بالظبط (fire & forget،
+        // مفيش تأثير على تجربة الطالب لو الطلب فشل أو اتأخر). متقيّدة بحد أقصى مرة كل 15 ثانية
+        // لنفس (الميزة+الموديل) عشان منزنقش السيرفر لو الطالب بيستخدم الميزة بسرعة ومتكرر.
+        let lastUsageReportAt = {};
+        function reportFeatureUsage(feature, model) {
+            if (!schoolToken) return;
+            const key = feature + '|' + (model || '');
+            const now = Date.now();
+            if (lastUsageReportAt[key] && now - lastUsageReportAt[key] < 15000) return;
+            lastUsageReportAt[key] = now;
+            fetch(`${FIXED_SCHOOL_API_URL}/api/usage/track`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                body: JSON.stringify({ feature, model: model || undefined })
+            }).catch(() => {});
         }
 
         function openLeaderboard() {
@@ -8366,7 +8387,7 @@
 
         function togglePremiumTheme() {
             const isOff = localStorage.getItem('sx_premium_theme_off') === '1';
-            if (isOff) localStorage.removeItem('sx_premium_theme_off');
+            if (isOff) { localStorage.removeItem('sx_premium_theme_off'); reportFeatureUsage('premium_theme'); }
             else localStorage.setItem('sx_premium_theme_off', '1');
             applyPremiumGatesUI();
         }
@@ -9055,6 +9076,7 @@ ${r.pathSummary}
         function usePromptTemplate(i) {
             const p = PREMIUM_PROMPTS[i];
             if (!p) return;
+            reportFeatureUsage('premium_prompts');
             const input = document.getElementById('messageInput');
             input.value = p.text;
             autoResize(input);
@@ -9213,6 +9235,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         function insertSkillTag(id) {
             const skill = getCustomSkills().find(s => s.id === id);
             if (!skill) return;
+            reportFeatureUsage('premium_skills');
             const input = document.getElementById('messageInput');
             const tag = `/${slugifySkillName(skill.name)} `;
             const already = input.value.trim();
@@ -9239,6 +9262,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         // ====================== Premium: امتحان محاكاة شامل (كذا فصل مع بعض + تقرير أداء) ======================
         function openMockExamBuilder() {
             if (!hasPremium('premium_mock_exams')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            reportFeatureUsage('premium_mock_exams');
             populateMockSubjects();
             renderMockExamChapterList();
             document.getElementById('mockExamStatus').innerHTML = '';
@@ -9415,6 +9439,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         }
         function openDrugLibrary() {
             if (!hasPremium('premium_drug_library')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            reportFeatureUsage('premium_drug_library');
             const grid = document.getElementById('drugLibraryGrid');
             const empty = document.getElementById('drugLibraryEmpty');
             if (!drugLibrary.length) { grid.innerHTML = ''; empty.style.display = 'block'; }
@@ -9583,6 +9608,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         // ====================== محاكي المواقف الإكلينيكية ======================
         function openClinicalSimPicker() {
             if (!hasPremium('premium_clinical_sim')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            reportFeatureUsage('premium_clinical_sim');
             openModal('clinicalSimPickerModal');
         }
         function startClinicalSim(specialty) {
@@ -9761,6 +9787,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 
         async function openVideoSimList() {
             if (!hasPremium('premium_video_sim')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            reportFeatureUsage('premium_video_sim');
             const seen = JSON.parse(localStorage.getItem('sx_video_sim_endings') || '{}');
             const wrap = document.getElementById('videoSimListWrap');
             wrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>';
@@ -9825,6 +9852,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         let scenarioFormAiRandom = false;
         function openCustomScenarioForm(aiRandom) {
             if (!hasPremium('premium_video_sim')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            reportFeatureUsage('premium_video_sim');
             scenarioFormAiRandom = Boolean(aiRandom);
             closeModal('scenarioStudioModal');
             document.getElementById('customScenarioFormTitle').textContent = scenarioFormAiRandom ? 'توليد حالة عشوائية' : 'أضف حالة بنفسك';
@@ -9852,6 +9880,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         // ====================== استخراج من بنك أسئلة المواقف ======================
         function openBankScenarioPicker() {
             if (!hasPremium('premium_video_sim')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            reportFeatureUsage('premium_video_sim');
             closeModal('scenarioStudioModal');
             const sel = document.getElementById('bankScenarioSubjectSelect');
             if (!sel.dataset.filled) {
@@ -10176,6 +10205,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 
         function openLectureRecorder() {
             if (!hasPremium('premium_lecture_audio')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            reportFeatureUsage('premium_lecture_audio');
             lectureRecSeconds = 0;
             document.getElementById('lectureRecTimer').textContent = '00:00';
             document.getElementById('lectureRecStatus').textContent = 'دوس تسجيل وابدأ سجّل صوت المحاضر';

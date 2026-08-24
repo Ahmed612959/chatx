@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>لوحة المتابعة الشاملة | School X</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+    :root {
+        --bg: #0a0e1a; --bg-2: #131827; --bg-glass: rgba(19, 24, 39, 0.75); --bg-3: #1a2032;
+        --accent: #6366f1; --accent-2: #8b5cf6;
+        --gold: #d4af37; --gold-2: #f0c869;
+        --text-1: #f1f5f9; --text-2: #94a3b8; --text-3: #64748b;
+        --border: rgba(255, 255, 255, 0.08);
+        --success: #10b981; --danger: #ef4444; --warn: #f59e0b;
+        --radius: 16px; --radius-sm: 10px;
+    }
+    body.light {
+        --bg: #f8fafc; --bg-2: #ffffff; --bg-glass: rgba(255, 255, 255, 0.85); --bg-3: #f1f5f9;
+        --accent: #4f46e5; --accent-2: #7c3aed;
+        --gold: #b8860b; --gold-2: #d4af37;
+        --text-1: #0f172a; --text-2: #475569; --text-3: #94a3b8;
+        --border: rgba(0, 0, 0, 0.08);
+        --success: #059669; --danger: #dc2626; --warn: #b45309;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text-1);
+        min-height: 100vh; display: flex; flex-direction: column;
+    }
+    #themeToggleFloating { position: fixed; top: 14px; left: 14px; z-index: 50; }
+    .btn-plain {
+        background: var(--bg-3); color: var(--text-2); border: 1px solid var(--border);
+        border-radius: 50%; cursor: pointer; font-family: inherit;
+    }
+    /* ====================== شاشة تسجيل الدخول ====================== */
+    #loginScreen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .login-card {
+        background: var(--bg-glass); border: 1px solid var(--border); border-radius: var(--radius);
+        padding: 32px 26px; width: 100%; max-width: 360px; text-align: center;
+    }
+    .login-crown { font-size: 34px; margin-bottom: 6px; }
+    .login-card h1 { font-size: 18px; margin-bottom: 4px; }
+    .login-card p { font-size: 12.5px; color: var(--text-2); margin-bottom: 22px; }
+    .field { text-align: right; margin-bottom: 12px; }
+    .field label { font-size: 11.5px; color: var(--text-2); display: block; margin-bottom: 5px; }
+    .field input {
+        width: 100%; padding: 11px 13px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+        background: var(--bg-3); color: var(--text-1); font-family: inherit; font-size: 14px;
+    }
+    .field input:focus { outline: none; border-color: var(--gold); }
+    .btn {
+        width: 100%; padding: 12px; border: none; border-radius: var(--radius-sm);
+        background: linear-gradient(120deg, var(--gold), var(--gold-2)); color: #1a1400;
+        font-family: inherit; font-weight: 800; font-size: 14px; cursor: pointer; margin-top: 6px;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    #loginError { color: var(--danger); font-size: 12px; margin-top: 10px; display: none; }
+
+    /* ====================== الشاشة الرئيسية ====================== */
+    #mainScreen { display: none; flex: 1; flex-direction: column; }
+    header {
+        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        padding: 14px 18px; border-bottom: 1px solid var(--border); background: var(--bg-2);
+        position: sticky; top: 0; z-index: 20; flex-wrap: wrap;
+    }
+    header h1 { font-size: 15.5px; display: flex; align-items: center; gap: 8px; }
+    header h1 span.count { font-size: 11.5px; color: var(--text-2); font-weight: 400; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+    .icon-btn {
+        width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border);
+        background: var(--bg-3); color: var(--text-2); cursor: pointer; display: flex;
+        align-items: center; justify-content: center; font-size: 13px;
+    }
+    .icon-btn:hover { color: var(--text-1); }
+
+    .toolbar {
+        display: flex; gap: 10px; padding: 12px 18px; flex-wrap: wrap; align-items: center;
+        border-bottom: 1px solid var(--border); background: var(--bg);
+    }
+    .toolbar input[type=text] {
+        flex: 1; min-width: 180px; padding: 9px 13px; border-radius: var(--radius-sm);
+        border: 1px solid var(--border); background: var(--bg-3); color: var(--text-1);
+        font-family: inherit; font-size: 13px;
+    }
+    .toolbar select {
+        padding: 9px 11px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+        background: var(--bg-3); color: var(--text-1); font-family: inherit; font-size: 12.5px;
+    }
+    .stat-chip {
+        font-size: 11.5px; color: var(--text-2); background: var(--bg-3); border: 1px solid var(--border);
+        padding: 6px 11px; border-radius: 20px; white-space: nowrap;
+    }
+
+    #tableWrap { flex: 1; overflow: auto; padding: 0 0 30px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1400px; }
+    thead th {
+        position: sticky; top: 0; background: var(--bg-2); color: var(--text-2);
+        font-weight: 700; text-align: right; padding: 10px 12px; border-bottom: 1px solid var(--border);
+        font-size: 11.5px; white-space: nowrap; cursor: pointer; user-select: none; z-index: 5;
+    }
+    thead th:hover { color: var(--text-1); }
+    thead th i.fa-sort { opacity: .35; font-size: 9px; margin-right: 4px; }
+    tbody td {
+        padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; white-space: nowrap;
+    }
+    tbody tr:hover { background: var(--bg-glass); }
+    .student-name { font-weight: 700; font-size: 13px; }
+    .student-sub { font-size: 10.5px; color: var(--text-3); margin-top: 2px; }
+    .cell-stack { display: flex; flex-direction: column; gap: 2px; }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 4px; max-width: 260px; white-space: normal; }
+    .model-badge {
+        font-size: 10px; background: var(--bg-3); border: 1px solid var(--border); color: var(--text-2);
+        padding: 2px 8px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .model-badge b { color: var(--accent-2); font-weight: 800; }
+    .feature-badge {
+        font-size: 10px; padding: 2px 8px; border-radius: 20px; display: inline-flex; align-items: center;
+        gap: 4px; border: 1px solid var(--border); cursor: default;
+    }
+    .feature-badge.on { background: rgba(16,185,129,.12); color: var(--success); border-color: rgba(16,185,129,.3); }
+    .feature-badge.off { background: transparent; color: var(--text-3); opacity: .55; }
+    .level-pill {
+        font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 20px;
+        background: rgba(99,102,241,.15); color: var(--accent);
+    }
+    .muted { color: var(--text-3); font-size: 11.5px; }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-3); }
+    .loader { text-align: center; padding: 60px 20px; color: var(--text-2); font-size: 13px; }
+    .loader i { animation: spin 1s linear infinite; margin-left: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast {
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
+        background: var(--bg-2); border: 1px solid var(--border); padding: 11px 20px; border-radius: 12px;
+        font-size: 12.5px; opacity: 0; pointer-events: none; transition: .25s; z-index: 100; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { border-color: var(--danger); color: var(--danger); }
+    .toast.success { border-color: var(--success); color: var(--success); }
+
+    /* ====================== الموبايل: كروت بدل جدول ====================== */
+    @media (max-width: 880px) {
+        #tableWrap { padding: 12px; }
+        table, thead { display: none; }
+        tbody, tr, td { display: block; width: 100%; }
+        tbody tr {
+            background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius);
+            margin-bottom: 12px; padding: 6px 4px; white-space: normal;
+        }
+        tbody td { border: none; padding: 8px 12px; white-space: normal; }
+        tbody td::before { content: attr(data-label); display: block; font-size: 10px; color: var(--text-3); margin-bottom: 3px; font-weight: 700; }
+        tbody td:empty { display: none; }
+    }
+</style>
+</head>
+<body>
+
+<button id="themeToggleFloating" class="btn-plain" style="width:34px;height:34px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;" aria-label="تبديل الوضع الليلي والنهاري" onclick="toggleTheme()"><i class="fas fa-moon" id="themeIcon"></i></button>
+
+<div class="toast" id="toast"></div>
+
+<!-- ====================== شاشة تسجيل الدخول ====================== -->
+<div id="loginScreen">
+    <div class="login-card">
+        <div class="login-crown">📊</div>
+        <h1>لوحة المتابعة الشاملة</h1>
+        <p>ادخل بحساب الأدمن بتاعك في School X</p>
+        <div class="field">
+            <label>اسم المستخدم</label>
+            <input type="text" id="loginUsername" autocomplete="username">
+        </div>
+        <div class="field">
+            <label>كلمة المرور</label>
+            <input type="password" id="loginPassword" autocomplete="current-password">
+        </div>
+        <button class="btn" id="loginBtn" onclick="doLogin()">دخول</button>
+        <div id="loginError"></div>
+    </div>
+</div>
+
+<!-- ====================== الشاشة الرئيسية ====================== -->
+<div id="mainScreen">
+    <header>
+        <h1><i class="fas fa-chart-line"></i> لوحة المتابعة الشاملة <span class="count" id="countLabel"></span></h1>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="loadDashboard()" title="تحديث"><i class="fas fa-rotate"></i></button>
+            <button class="icon-btn" onclick="doLogout()" title="تسجيل خروج"><i class="fas fa-arrow-right-from-bracket"></i></button>
+        </div>
+    </header>
+
+    <div class="toolbar">
+        <input type="text" id="searchBox" placeholder="ابحث بالاسم أو الكود..." oninput="renderTable()">
+        <select id="featureFilter" onchange="renderTable()">
+            <option value="">كل الطلاب</option>
+        </select>
+        <select id="sortSelect" onchange="renderTable()">
+            <option value="lastSeen">ترتيب: آخر نشاط</option>
+            <option value="totalMessages">ترتيب: إجمالي الرسائل</option>
+            <option value="name">ترتيب: الاسم</option>
+        </select>
+        <span class="stat-chip" id="onlineChip">—</span>
+    </div>
+
+    <div id="tableWrap">
+        <div class="loader" id="loaderEl"><i class="fas fa-spinner"></i> جارٍ تحميل بيانات الطلاب...</div>
+        <table id="dataTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th onclick="setSort('name')">الطالب</th>
+                    <th onclick="setSort('lastSeen')">آخر نشاط</th>
+                    <th onclick="setSort('totalMessages')">الشات الرئيسي</th>
+                    <th>الموديلات المستخدمة</th>
+                    <th>English Pro</th>
+                    <th>German Pro</th>
+                    <th>الميزات البريميوم</th>
+                    <th onclick="setSort('totalQuestions')">إجمالي الأسئلة</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+        <div class="empty-state" id="emptyState" style="display:none;">
+            <i class="fas fa-inbox" style="font-size:32px;opacity:.4;"></i>
+            <p style="margin-top:10px;">مفيش طلاب مطابقين للبحث/الفلتر ده</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = 'https://schoolx-eta.vercel.app';
+    const TOKEN_KEY = 'sx_admin_panel_token'; // نفس مفتاح التوكن المستخدم في admin-accounts.html (تسجيل دخول واحد يخدم كل صفحات الأدمن)
+    const THEME_KEY = 'sx_admin_theme';
+
+    const FEATURE_LABELS = {
+        premium_ai: '🧠 موديلات متقدمة', premium_mock_exams: '📝 امتحانات محاكاة',
+        premium_prompts: '⚡ برومبتس', premium_theme: '👑 ثيم ذهبي',
+        premium_drug_library: '💊 مكتبة أدوية', premium_clinical_sim: '🩺 محاكي إكلينيكي',
+        premium_lecture_audio: '🎙️ ملخص محاضرات', premium_video_sim: '🎬 فيديو متفرّع',
+        premium_voice: '🎧 صوت واقعي', premium_skills: '🧩 مهارات مخصصة',
+        premium_academic_profile: '📊 بروفايل أكاديمي'
+    };
+
+    function getPreferredTheme() {
+        const saved = localStorage.getItem(THEME_KEY);
+        if (saved === 'light' || saved === 'dark') return saved;
+        const systemLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+        return systemLight ? 'light' : 'dark';
+    }
+    function applyTheme(theme) {
+        document.body.classList.toggle('light', theme === 'light');
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.className = theme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+    function toggleTheme() {
+        const next = document.body.classList.contains('light') ? 'dark' : 'light';
+        localStorage.setItem(THEME_KEY, next);
+        applyTheme(next);
+    }
+    applyTheme(getPreferredTheme());
+
+    let token = localStorage.getItem(TOKEN_KEY) || '';
+    let rawStudents = [];
+    let sortKey = 'lastSeen';
+
+    function showToast(msg, type) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'toast show ' + (type || '');
+        setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    async function apiFetch(path, options = {}) {
+        const res = await fetch(API + path, {
+            ...options,
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...(options.headers || {}) }
+        });
+        if (res.status === 401 || res.status === 403) {
+            doLogout();
+            throw new Error('الجلسة منتهية، سجّل دخول تاني');
+        }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'حصل خطأ');
+        return data;
+    }
+
+    async function doLogin() {
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const errBox = document.getElementById('loginError');
+        const btn = document.getElementById('loginBtn');
+        errBox.style.display = 'none';
+        if (!username || !password) { errBox.textContent = 'اكتب اسم المستخدم وكلمة المرور'; errBox.style.display = 'block'; return; }
+        btn.disabled = true; btn.textContent = 'جاري الدخول...';
+        try {
+            const res = await fetch(API + '/api/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'بيانات غير صحيحة');
+            if (data.user.type !== 'admin') throw new Error('الحساب ده مش حساب أدمن — اللوحة دي للأدمن بس');
+            token = data.token;
+            localStorage.setItem(TOKEN_KEY, token);
+            enterMainScreen();
+        } catch (e) {
+            errBox.textContent = e.message;
+            errBox.style.display = 'block';
+        } finally {
+            btn.disabled = false; btn.textContent = 'دخول';
+        }
+    }
+
+    function doLogout() {
+        localStorage.removeItem(TOKEN_KEY);
+        token = '';
+        document.getElementById('mainScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+    }
+
+    function enterMainScreen() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainScreen').style.display = 'flex';
+        populateFeatureFilter();
+        loadDashboard();
+    }
+
+    function populateFeatureFilter() {
+        const sel = document.getElementById('featureFilter');
+        sel.innerHTML = '<option value="">كل الطلاب</option>' +
+            Object.entries(FEATURE_LABELS).map(([k, label]) => `<option value="${k}">مفعّل: ${label}</option>`).join('');
+    }
+
+    async function loadDashboard() {
+        document.getElementById('loaderEl').style.display = 'block';
+        document.getElementById('dataTable').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'none';
+        try {
+            const data = await apiFetch('/api/admin/dashboard/overview');
+            rawStudents = data.students || [];
+            document.getElementById('countLabel').textContent = `(${rawStudents.length} طالب)`;
+            const onlineCount = rawStudents.filter(s => isOnline(s.mainChat?.lastSeen)).length;
+            document.getElementById('onlineChip').innerHTML = `<i class="fas fa-circle" style="color:var(--success);font-size:7px;"></i> ${onlineCount} متصل الآن`;
+            renderTable();
+        } catch (e) {
+            showToast(e.message, 'error');
+        } finally {
+            document.getElementById('loaderEl').style.display = 'none';
+        }
+    }
+
+    function isOnline(lastSeen) {
+        if (!lastSeen) return false;
+        return (Date.now() - new Date(lastSeen).getTime()) < 90 * 1000;
+    }
+
+    function setSort(key) {
+        sortKey = key;
+        renderTable();
+    }
+
+    function timeAgo(dateStr) {
+        if (!dateStr) return '<span class="muted">لسه مفيش نشاط</span>';
+        const diffMs = Date.now() - new Date(dateStr).getTime();
+        const mins = Math.floor(diffMs / 60000);
+        if (mins < 1) return '<b style="color:var(--success)">دلوقتي</b>';
+        if (mins < 60) return `من ${mins} دقيقة`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `من ${hrs} ساعة`;
+        const days = Math.floor(hrs / 24);
+        if (days < 30) return `من ${days} يوم`;
+        return new Date(dateStr).toLocaleDateString('ar-EG');
+    }
+
+    function renderTable() {
+        const q = document.getElementById('searchBox').value.trim().toLowerCase();
+        const featureFilter = document.getElementById('featureFilter').value;
+        sortKey = document.getElementById('sortSelect').value;
+
+        let rows = rawStudents.filter(s => {
+            if (q && !(`${s.fullName} ${s.studentCode} ${s.username}`.toLowerCase().includes(q))) return false;
+            if (featureFilter && !(s.premiumFeatures || []).includes(featureFilter)) return false;
+            return true;
+        });
+
+        rows.sort((a, b) => {
+            if (sortKey === 'name') return (a.fullName || '').localeCompare(b.fullName || '', 'ar');
+            if (sortKey === 'totalMessages') return (b.mainChat?.totalMessages || 0) - (a.mainChat?.totalMessages || 0);
+            if (sortKey === 'totalQuestions') return (b.mainChat?.totalQuestions || 0) - (a.mainChat?.totalQuestions || 0);
+            // lastSeen (افتراضي)
+            const at = a.mainChat?.lastSeen ? new Date(a.mainChat.lastSeen).getTime() : 0;
+            const bt = b.mainChat?.lastSeen ? new Date(b.mainChat.lastSeen).getTime() : 0;
+            return bt - at;
+        });
+
+        const tbody = document.getElementById('tableBody');
+        document.getElementById('dataTable').style.display = rows.length ? 'table' : 'none';
+        document.getElementById('emptyState').style.display = rows.length ? 'none' : 'block';
+        if (!rows.length) { tbody.innerHTML = ''; return; }
+
+        tbody.innerHTML = rows.map(s => {
+            const modelsHtml = Object.entries(s.mainChat?.models || {}).sort((a, b) => b[1] - a[1])
+                .map(([m, c]) => `<span class="model-badge">${escapeHtml(m)} <b>×${c}</b></span>`).join('') ||
+                '<span class="muted">لسه مفيش رسايل</span>';
+
+            const featuresHtml = (s.premiumFeatures || []).length
+                ? (s.premiumFeatures || []).map(key => {
+                    const detail = s.featuresDetail?.[key];
+                    const label = FEATURE_LABELS[key] || key;
+                    const countTxt = detail && detail.usedCount ? ` ×${detail.usedCount}` : '';
+                    const lastTxt = detail && detail.lastUsedAt ? ` — ${timeAgoPlain(detail.lastUsedAt)}` : '';
+                    return `<span class="feature-badge on" title="${escapeHtml(label)}${countTxt}${lastTxt}">${escapeHtml(label)}${countTxt}</span>`;
+                }).join('')
+                : '<span class="muted">مفيش ميزات مفعّلة</span>';
+
+            const eng = s.englishPro
+                ? `<div class="cell-stack"><span class="level-pill">${escapeHtml(s.englishPro.level || 'A0')}</span>
+                     <span class="muted">${s.englishPro.wordCount} كلمة · ${s.englishPro.totalMessages} رسالة</span>
+                     <span class="muted">${timeAgo(s.englishPro.lastActivity)}</span></div>`
+                : '<span class="muted">لسه مبدأش</span>';
+
+            const ger = s.germanPro
+                ? `<div class="cell-stack"><span class="level-pill">${escapeHtml(s.germanPro.level || 'A0')}</span>
+                     <span class="muted">${s.germanPro.wordCount} كلمة · ${s.germanPro.totalMessages} رسالة</span>
+                     <span class="muted">${timeAgo(s.germanPro.lastActivity)}</span></div>`
+                : '<span class="muted">لسه مبدأش</span>';
+
+            return `<tr>
+                <td data-label="الطالب">
+                    <div class="student-name">${escapeHtml(s.fullName || '')} ${isOnline(s.mainChat?.lastSeen) ? '<i class="fas fa-circle" style="color:var(--success);font-size:7px;"></i>' : ''}</div>
+                    <div class="student-sub">${escapeHtml(s.studentCode || '')} · @${escapeHtml(s.username || '')}</div>
+                </td>
+                <td data-label="آخر نشاط">${timeAgo(s.mainChat?.lastSeen)}</td>
+                <td data-label="الشات الرئيسي"><div class="cell-stack"><b>${s.mainChat?.totalMessages || 0}</b> <span class="muted">رسالة إجمالي</span></div></td>
+                <td data-label="الموديلات المستخدمة"><div class="badge-row">${modelsHtml}</div></td>
+                <td data-label="English Pro">${eng}</td>
+                <td data-label="German Pro">${ger}</td>
+                <td data-label="الميزات البريميوم"><div class="badge-row">${featuresHtml}</div></td>
+                <td data-label="إجمالي الأسئلة"><b>${s.mainChat?.totalQuestions || 0}</b></td>
+            </tr>`;
+        }).join('');
+    }
+
+    function timeAgoPlain(dateStr) {
+        // نسخة بدون HTML عشان تستخدم جوه attribute title
+        if (!dateStr) return '';
+        const diffMs = Date.now() - new Date(dateStr).getTime();
+        const mins = Math.floor(diffMs / 60000);
+        if (mins < 1) return 'دلوقتي';
+        if (mins < 60) return `من ${mins} دقيقة`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `من ${hrs} ساعة`;
+        const days = Math.floor(hrs / 24);
+        return `من ${days} يوم`;
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str == null ? '' : String(str);
+        return div.innerHTML;
+    }
+
+    // تحديث تلقائي كل دقيقة طول ما الأدمن فاتح اللوحة
+    setInterval(() => { if (token && document.visibilityState === 'visible') loadDashboard(); }, 60000);
+
+    if (token) enterMainScreen();
+</script>
+</body>
+</html>
