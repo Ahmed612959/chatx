@@ -1790,11 +1790,35 @@
             </div>
             <div id="groupChatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
             <div id="groupChatTypingIndicator" style="display:none;padding:0 14px 6px;font-size:11px;color:var(--text-3);"></div>
-            <div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;">
-                <input type="text" id="groupChatInput" class="tool-input" placeholder="اكتب رسالتك..." style="flex:1;" oninput="notifyTypingInGroupChat()" onkeydown="if(event.key==='Enter'){event.preventDefault();sendGroupChatMessage();}">
-                <button class="btn-calc" style="width:auto;padding:0 16px;" onclick="sendGroupChatMessage()"><i class="fas fa-paper-plane"></i></button>
+
+            <input type="file" id="groupChatImageInput" accept="image/*" style="display:none;" onchange="handleGroupChatImageSelect(this.files[0]); this.value='';">
+            <div id="groupChatPendingImageChip" style="display:none;padding:8px 12px 0;align-items:center;gap:8px;"></div>
+
+            <div id="groupChatInputRow" style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;align-items:center;">
+                <button class="action-btn" style="width:38px;height:38px;flex-shrink:0;" aria-label="إرفاق صورة" onclick="document.getElementById('groupChatImageInput').click()"><i class="fas fa-image"></i></button>
+                <input type="text" id="groupChatInput" class="tool-input" placeholder="اكتب رسالتك..." style="flex:1;" oninput="notifyTypingInGroupChat();updateGroupChatSendButton();" onkeydown="if(event.key==='Enter'){event.preventDefault();sendGroupChatMessage();}">
+                <button class="btn-calc" id="groupChatSendBtn" style="width:auto;padding:0 16px;flex-shrink:0;display:none;" onclick="sendGroupChatMessage()"><i class="fas fa-paper-plane"></i></button>
+                <button class="btn-calc" id="groupChatMicBtn" style="width:auto;padding:0 16px;flex-shrink:0;" aria-label="تسجيل رسالة صوتية" onclick="startGroupVoiceRecording()"><i class="fas fa-microphone"></i></button>
+            </div>
+
+            <!-- شريط التسجيل الصوتي — بيظهر بدل شريط الكتابة العادي أثناء التسجيل، زي واتساب بالظبط -->
+            <div id="groupChatRecordingRow" style="display:none;padding:12px;border-top:1px solid var(--border);align-items:center;gap:10px;flex-shrink:0;">
+                <button class="action-btn" style="width:38px;height:38px;color:var(--danger);flex-shrink:0;" aria-label="إلغاء التسجيل" onclick="cancelGroupVoiceRecording()"><i class="fas fa-trash"></i></button>
+                <div style="flex:1;display:flex;align-items:center;gap:8px;">
+                    <span style="width:9px;height:9px;border-radius:50%;background:var(--danger);animation:glowPulse 1.2s ease-in-out infinite;flex-shrink:0;"></span>
+                    <span id="groupChatRecTimer" style="font-size:13px;font-variant-numeric:tabular-nums;">00:00</span>
+                    <span style="font-size:11px;color:var(--text-3);">بيسجّل صوتي...</span>
+                </div>
+                <button class="btn-calc" style="width:auto;padding:0 16px;flex-shrink:0;" aria-label="إرسال" onclick="stopAndSendGroupVoiceRecording()"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
+    </div>
+
+    <!-- عارض صور بملء الشاشة — بديل window.open(dataURL) اللي المتصفحات الحديثة بترفضه
+         (بيرجع صفحة سودة/فاضية لأي data: URL كـ navigation مباشر). العرض هنا داخلي 100%. -->
+    <div id="imageLightbox" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);align-items:center;justify-content:center;cursor:zoom-out;" onclick="closeImageLightbox()">
+        <img id="imageLightboxImg" style="max-width:92vw;max-height:92vh;border-radius:8px;object-fit:contain;cursor:default;" onclick="event.stopPropagation()">
+        <button onclick="closeImageLightbox()" aria-label="إغلاق" style="position:absolute;top:16px;left:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:18px;cursor:pointer;">✕</button>
     </div>
 
     <!-- Tools Modal -->
@@ -5575,7 +5599,7 @@
                 img.src = `data:${msg.image.mimeType};base64,${msg.image.base64}`;
                 img.alt = msg.image.name || 'صورة مرفقة';
                 img.loading = 'lazy';
-                img.addEventListener('click', () => window.open(img.src, '_blank'));
+                img.addEventListener('click', () => openImageLightbox(img.src));
                 bubble.appendChild(img);
             }
             const textWrap = document.createElement('div');
@@ -6425,10 +6449,17 @@
             };
 
             recognition.onerror = (event) => {
+                // الرسائل دي بقت مبنية على نوع الخطأ الحقيقي من محرك التعرف على الصوت نفسه
+                // (مش تخمين)، وخصوصًا 'not-allowed': الرسالة القديمة كانت بتقول "سمح بيه من
+                // إعدادات المتصفح" من غير ما تحدد فين بالظبط — والمشكلة إن كروم بمجرد ما ترفض
+                // الإذن مرة واحدة (حتى بالغلط) بيوقف يسأل تاني للأبد لنفس الموقع، فالطالب
+                // بيفتكر إنه "مفعّل" لأنه شايف إذن الميكروفون عمومًا مفعّل من إعدادات
+                // الموبايل (على مستوى التطبيق كله)، من غير ما يعرف إن فيه إذن منفصل خاص
+                // بكل موقع بالظبط، وده اللي محتاج يتغيّر من أيقونة القفل 🔒 جنب رابط الموقع.
                 const messages = {
-                    'not-allowed': 'رفضت إذن الميكروفون — سمح بيه من إعدادات المتصفح وجرب تاني',
+                    'not-allowed': 'الإذن مرفوض لموقع Chat X تحديدًا (مش إعدادات الميكروفون العامة للموبايل) — دوس على أيقونة 🔒 أو (i) جنب رابط الموقع فوق ← إعدادات الموقع ← الميكروفون ← اسمح، وبعدها اعمل تحديث للصفحة',
                     'service-not-allowed': 'خدمة التعرف على الصوت مرفوضة من المتصفح',
-                    'audio-capture': 'مفيش ميكروفون متاح على الجهاز',
+                    'audio-capture': 'مفيش ميكروفون متاح، أو هو مستخدم دلوقتي في تطبيق/تاب تاني — اقفله وجرب تاني',
                     'network': 'مشكلة في الاتصال بخدمة التعرف على الصوت'
                 };
                 if (messages[event.error]) showToast(messages[event.error], 'error');
@@ -6457,18 +6488,14 @@
                 return;
             }
 
-            // Explicitly request mic permission first so denial/no-device errors show a clear
-            // message immediately, instead of recognition failing silently a moment later.
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    stream.getTracks().forEach(t => t.stop());
-                } catch (e) {
-                    showToast('محتاج إذن الميكروفون عشان الميزة دي تشتغل', 'error');
-                    return;
-                }
-            }
-
+            // ⚠️ مقصود عمدًا إننا مانعملش getUserMedia({audio:true}) هنا "كفحص مبدئي" قبل
+            // recognition.start() — ده كان بيسبب باج حقيقي: بنطلب المايك، نوقفه فورًا
+            // (stream.getTracks().forEach(t => t.stop()))، وبعدين recognition.start() بتطلب
+            // المايك تاني لوحدها من غير ما تستخدم الـ stream اللي أخدناه أصلًا. الفتح والقفل
+            // السريع ده كان أحيانًا بيمنع المتصفح من تسليم المايك تاني فورًا (خصوصًا موبايل)،
+            // فبيرجع خطأ "مرفوض" حتى لو الإذن فعليًا ممنوح — والطالب يفتكر إن المشكلة إذن
+            // وهي مش كده. دلوقتي recognition.start() بتطلب المايك مرة واحدة بس، ورسائل
+            // onerror فوق بقت دقيقة بما يكفي (بتفرّق بين "مرفوض فعلاً" و"مستخدم في مكان تاني").
             try {
                 recognition.start();
             } catch (e) {
@@ -7831,6 +7858,9 @@
             lastKnownReadBy = {};
             document.getElementById('groupChatRoomTitle').textContent = title || 'غرفة مذاكرة';
             document.getElementById('groupChatMessages').innerHTML = '';
+            document.getElementById('groupChatInput').value = '';
+            removeGroupPendingImage();
+            updateGroupChatSendButton();
             closeModal('groupChatListModal');
             openModal('groupChatRoomModal');
             loadGroupChatMessages(true);
@@ -7841,6 +7871,7 @@
         function closeGroupChatRoom() {
             closeModal('groupChatRoomModal');
             if (groupChatPollTimer) { clearInterval(groupChatPollTimer); groupChatPollTimer = null; }
+            cancelGroupVoiceRecording(); // لو الطالب قفل الغرفة وهو لسه بيسجّل، نوقف الميكروفون ونلغي بهدوء
             activeGroupChatId = null;
             currentGroupChatOtherUsername = null;
             lastKnownReadBy = {};
@@ -7876,19 +7907,107 @@
 
         const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
+        // ====================== عارض الصور بملء الشاشة (Lightbox) ======================
+        // بديل window.open(dataURL) اللي المتصفحات الحديثة بترفضه كـ navigation مباشر
+        // لـ data: URL وبترجع صفحة سودة فاضية بدل الصورة — العرض هنا داخل نفس الصفحة.
+        function openImageLightbox(src) {
+            const modal = document.getElementById('imageLightbox');
+            const img = document.getElementById('imageLightboxImg');
+            if (!modal || !img) { window.open(src, '_blank'); return; } // fallback نادر جدًا لو الـ HTML مش موجود لأي سبب
+            img.src = src;
+            modal.style.display = 'flex';
+            document.addEventListener('keydown', imageLightboxEscHandler);
+        }
+        function closeImageLightbox() {
+            const modal = document.getElementById('imageLightbox');
+            if (modal) modal.style.display = 'none';
+            document.removeEventListener('keydown', imageLightboxEscHandler);
+        }
+        function imageLightboxEscHandler(e) { if (e.key === 'Escape') closeImageLightbox(); }
+
+        // مشغّل رسالة صوتية بسيط (زر تشغيل/إيقاف + شريط تقدّم + المدة) — زي واتساب،
+        // مبني على عنصر <audio> حقيقي بس بواجهة مخصصة بدل الكونترولز الافتراضية.
+        function buildVoiceMessagePlayer(src, durationSeconds, isMe) {
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'display:flex;align-items:center;gap:10px;min-width:190px;padding:2px 4px;';
+
+            const audio = new Audio(src);
+            const playBtn = document.createElement('button');
+            playBtn.type = 'button';
+            playBtn.style.cssText = `width:34px;height:34px;border-radius:50%;border:none;flex-shrink:0;cursor:pointer;background:${isMe ? 'rgba(255,255,255,.22)' : 'var(--bg-3)'};color:inherit;display:flex;align-items:center;justify-content:center;font-size:13px;`;
+            playBtn.innerHTML = '<i class="fas fa-play"></i>';
+
+            const barOuter = document.createElement('div');
+            barOuter.style.cssText = `flex:1;height:4px;border-radius:4px;background:${isMe ? 'rgba(255,255,255,.3)' : 'var(--border)'};overflow:hidden;cursor:pointer;`;
+            const barInner = document.createElement('div');
+            barInner.style.cssText = `height:100%;width:0%;background:${isMe ? '#fff' : 'var(--accent-2)'};transition:width .1s linear;`;
+            barOuter.appendChild(barInner);
+
+            const timeLabel = document.createElement('span');
+            timeLabel.style.cssText = 'font-size:10.5px;font-variant-numeric:tabular-nums;flex-shrink:0;min-width:32px;';
+            const fmtTime = (s) => { s = Math.max(0, Math.round(s || 0)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
+            timeLabel.textContent = fmtTime(durationSeconds);
+
+            playBtn.onclick = () => {
+                // نوقف أي رسالة صوتية تانية شغالة دلوقتي — زي واتساب بالظبط (تشغيل واحد بس في المرة)
+                document.querySelectorAll('audio[data-group-voice="1"]').forEach(a => { if (a !== audio) a.pause(); });
+                if (audio.paused) audio.play().catch(() => showToast('تعذر تشغيل الرسالة الصوتية', 'error'));
+                else audio.pause();
+            };
+            audio.dataset.groupVoice = '1';
+            audio.addEventListener('play', () => { playBtn.innerHTML = '<i class="fas fa-pause"></i>'; });
+            audio.addEventListener('pause', () => { playBtn.innerHTML = '<i class="fas fa-play"></i>'; });
+            audio.addEventListener('ended', () => { playBtn.innerHTML = '<i class="fas fa-play"></i>'; barInner.style.width = '0%'; });
+            audio.addEventListener('timeupdate', () => {
+                if (audio.duration) barInner.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+                timeLabel.textContent = fmtTime(audio.duration ? (audio.duration - audio.currentTime) : durationSeconds);
+            });
+            barOuter.addEventListener('click', (e) => {
+                if (!audio.duration) return;
+                const rect = barOuter.getBoundingClientRect();
+                const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+                audio.currentTime = ratio * audio.duration;
+            });
+
+            wrap.appendChild(playBtn);
+            wrap.appendChild(barOuter);
+            wrap.appendChild(timeLabel);
+            return wrap;
+        }
+
         function buildGroupChatBubble(m, isMe) {
             const bubble = document.createElement('div');
             bubble.dataset.isMe = isMe ? '1' : '0';
             bubble.dataset.createdAt = m.createdAt;
             bubble.dataset.msgId = m.id || '';
-            bubble.style.cssText = `position:relative;max-width:78%;align-self:${isMe ? 'flex-end' : 'flex-start'};padding:10px 14px;border-radius:14px;background:${isMe ? 'var(--grad-bold)' : 'var(--bg-2)'};color:${isMe ? '#fff' : 'var(--text-1)'};font-size:13px;line-height:1.7;`;
+            const hasMedia = (m.image && m.image.base64) || (m.audio && m.audio.base64);
+            bubble.style.cssText = `position:relative;max-width:${hasMedia ? '82%' : '78%'};align-self:${isMe ? 'flex-end' : 'flex-start'};padding:${m.image && m.image.base64 ? '6px' : '10px 14px'};border-radius:14px;background:${isMe ? 'var(--grad-bold)' : 'var(--bg-2)'};color:${isMe ? '#fff' : 'var(--text-1)'};font-size:13px;line-height:1.7;`;
 
-            const textSpan = document.createElement('span');
-            textSpan.textContent = m.text;
-            bubble.appendChild(textSpan);
+            if (m.image && m.image.base64) {
+                const imgSrc = `data:${m.image.mimeType || 'image/jpeg'};base64,${m.image.base64}`;
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.alt = m.image.name || 'صورة';
+                img.loading = 'lazy';
+                img.style.cssText = 'max-width:100%;max-height:320px;border-radius:10px;display:block;cursor:zoom-in;object-fit:cover;';
+                img.addEventListener('click', () => openImageLightbox(imgSrc));
+                bubble.appendChild(img);
+            }
+
+            if (m.audio && m.audio.base64) {
+                const audioSrc = `data:${m.audio.mimeType || 'audio/webm'};base64,${m.audio.base64}`;
+                bubble.appendChild(buildVoiceMessagePlayer(audioSrc, m.audio.durationSeconds || 0, isMe));
+            }
+
+            if (m.text) {
+                const textSpan = document.createElement('span');
+                textSpan.textContent = m.text;
+                textSpan.style.cssText = (m.image && m.image.base64) ? 'display:block;padding:8px 8px 0;' : '';
+                bubble.appendChild(textSpan);
+            }
 
             const metaRow = document.createElement('div');
-            metaRow.style.cssText = `display:flex;gap:6px;align-items:center;margin-top:3px;font-size:10px;opacity:.75;${isMe ? 'justify-content:flex-end;' : ''}`;
+            metaRow.style.cssText = `display:flex;gap:6px;align-items:center;margin-top:3px;font-size:10px;opacity:.75;${isMe ? 'justify-content:flex-end;' : ''}${(m.image && m.image.base64) ? 'padding:0 8px 4px;' : ''}`;
             const timeSpan = document.createElement('span');
             timeSpan.textContent = formatMsgTime(m.createdAt);
             metaRow.appendChild(timeSpan);
@@ -8100,20 +8219,62 @@
             }
         }
 
+        // ====================== إرفاق صورة في المحادثة الجماعية ======================
+        let pendingGroupImage = null; // { base64, mimeType, name } — الصورة المختارة قبل الإرسال
+
+        function updateGroupChatSendButton() {
+            const hasText = document.getElementById('groupChatInput').value.trim().length > 0;
+            const showSend = hasText || !!pendingGroupImage;
+            document.getElementById('groupChatSendBtn').style.display = showSend ? '' : 'none';
+            document.getElementById('groupChatMicBtn').style.display = showSend ? 'none' : '';
+        }
+
+        function handleGroupChatImageSelect(file) {
+            if (!file) return;
+            compressImageFile(file).then((compressedFile) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    pendingGroupImage = { base64: reader.result.split(',')[1], mimeType: compressedFile.type, name: file.name };
+                    const chip = document.getElementById('groupChatPendingImageChip');
+                    chip.style.display = 'flex';
+                    chip.innerHTML = `
+                        <img src="${reader.result}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;">
+                        <span style="font-size:11.5px;color:var(--text-2);flex:1;">جاهزة للإرسال</span>
+                        <button onclick="removeGroupPendingImage()" aria-label="إلغاء الصورة" style="background:none;border:none;color:var(--text-3);font-size:15px;cursor:pointer;padding:6px;"><i class="fas fa-times"></i></button>`;
+                    updateGroupChatSendButton();
+                };
+                reader.onerror = () => showToast('تعذرت قراءة الصورة', 'error');
+                reader.readAsDataURL(compressedFile);
+            });
+        }
+        function removeGroupPendingImage() {
+            pendingGroupImage = null;
+            const chip = document.getElementById('groupChatPendingImageChip');
+            chip.style.display = 'none';
+            chip.innerHTML = '';
+            updateGroupChatSendButton();
+        }
+
         async function sendGroupChatMessage() {
             const input = document.getElementById('groupChatInput');
             const text = input.value.trim();
-            if (!text || !activeGroupChatId) return;
+            const image = pendingGroupImage;
+            if (!text && !image) return;
+            if (!activeGroupChatId) return;
             input.value = '';
+            removeGroupPendingImage();
+            updateGroupChatSendButton();
 
             // Optimistic UI: نضيف الرسالة على الشاشة فورًا من غير ما نستنى رد السيرفر —
-            // ده اللي بيخلي الإرسال حاسس إنه فوري. لما رد السيرفر يوصل من الـ poll الجاي،
-            // بنستبدلها بالنسخة الحقيقية (فيها الـ id وread receipts) عبر data-optimistic-text.
+            // ده اللي بيخلي الإرسال حاسس إنه فوري. لما رد السيرفر يوصل، بنشيل النسخة
+            // المؤقتة دي بالـ id بتاعها مباشرة (مش هنستنى تلقيها تاني من الـ poll).
             const box = document.getElementById('groupChatMessages');
+            const optimisticId = 'opt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
             const optimisticBubble = buildGroupChatBubble(
-                { text, createdAt: Date.now(), senderUsername: schoolUser?.username, reactions: {} },
+                { text, image, createdAt: Date.now(), senderUsername: schoolUser?.username, reactions: {} },
                 true
             );
+            optimisticBubble.dataset.optimisticId = optimisticId;
             optimisticBubble.dataset.optimisticText = text;
             optimisticBubble.style.opacity = '0.6';
             box.appendChild(optimisticBubble);
@@ -8123,19 +8284,121 @@
                 const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats/${activeGroupChatId}/messages`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
-                    body: JSON.stringify({ text })
+                    body: JSON.stringify({ text, image: image || undefined })
                 });
                 if (!res.ok) throw new Error('failed');
-                await loadGroupChatMessages(false); // بيستبدل النسخة الـ optimistic بالحقيقية
+                document.querySelector(`[data-optimistic-id="${CSS.escape(optimisticId)}"]`)?.remove();
+                await loadGroupChatMessages(false); // بيجيب النسخة الحقيقية (فيها الـ id وread receipts)
                 pingActivity(); // إرسال رسالة في الغرفة = نشاط حقيقي، لازم يحدّث حالة "متصل"
             } catch (e) {
                 optimisticBubble.remove();
                 input.value = text; // نرجّع النص للمستخدم بدل ما يضيع لو الإرسال فشل
+                if (image) { pendingGroupImage = image; document.getElementById('groupChatPendingImageChip').style.display = 'flex'; }
+                updateGroupChatSendButton();
                 showToast('تعذر إرسال الرسالة', 'error');
             }
         }
 
+        // ====================== تسجيل رسالة صوتية في المحادثة الجماعية (زي واتساب) ======================
+        let groupVoiceRecorder = null;
+        let groupVoiceChunks = [];
+        let groupVoiceStream = null;
+        let groupVoiceSeconds = 0;
+        let groupVoiceTimerInterval = null;
+        const GROUP_VOICE_MAX_SECONDS = 180; // 3 دقايق حد أقصى للتسجيل الواحد
+
+        async function startGroupVoiceRecording() {
+            if (!activeGroupChatId) return;
+            try {
+                groupVoiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (e) {
+                showToast('محتاجين إذن الميكروفون عشان تبعت رسالة صوتية', 'error');
+                return;
+            }
+            groupVoiceChunks = [];
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
+            groupVoiceRecorder = new MediaRecorder(groupVoiceStream, mimeType ? { mimeType } : undefined);
+            groupVoiceRecorder.ondataavailable = (e) => { if (e.data.size > 0) groupVoiceChunks.push(e.data); };
+            groupVoiceRecorder.start();
+
+            groupVoiceSeconds = 0;
+            document.getElementById('groupChatRecTimer').textContent = '00:00';
+            document.getElementById('groupChatInputRow').style.display = 'none';
+            document.getElementById('groupChatRecordingRow').style.display = 'flex';
+            groupVoiceTimerInterval = setInterval(() => {
+                groupVoiceSeconds++;
+                const m = String(Math.floor(groupVoiceSeconds / 60)).padStart(2, '0');
+                const s = String(groupVoiceSeconds % 60).padStart(2, '0');
+                document.getElementById('groupChatRecTimer').textContent = `${m}:${s}`;
+                if (groupVoiceSeconds >= GROUP_VOICE_MAX_SECONDS) {
+                    showToast('وصلت للحد الأقصى (3 دقايق) — هيتبعت التسجيل تلقائي', 'error');
+                    stopAndSendGroupVoiceRecording();
+                }
+            }, 1000);
+        }
+
+        function stopGroupVoiceRecordingInternal() {
+            if (groupVoiceTimerInterval) { clearInterval(groupVoiceTimerInterval); groupVoiceTimerInterval = null; }
+            if (groupVoiceStream) { groupVoiceStream.getTracks().forEach(t => t.stop()); groupVoiceStream = null; }
+            document.getElementById('groupChatRecordingRow').style.display = 'none';
+            document.getElementById('groupChatInputRow').style.display = 'flex';
+        }
+
+        function cancelGroupVoiceRecording() {
+            if (groupVoiceRecorder && groupVoiceRecorder.state !== 'inactive') {
+                groupVoiceRecorder.onstop = null;
+                groupVoiceRecorder.stop();
+            }
+            stopGroupVoiceRecordingInternal();
+        }
+
+        function stopAndSendGroupVoiceRecording() {
+            if (!groupVoiceRecorder || groupVoiceRecorder.state === 'inactive') { stopGroupVoiceRecordingInternal(); return; }
+            const finalSeconds = groupVoiceSeconds;
+            groupVoiceRecorder.onstop = async () => {
+                stopGroupVoiceRecordingInternal();
+                const blob = new Blob(groupVoiceChunks, { type: groupVoiceRecorder.mimeType || 'audio/webm' });
+                if (blob.size < 800) { showToast('التسجيل قصير جدًا، جرب تاني', 'error'); return; }
+                const reader = new FileReader();
+                reader.onload = () => sendGroupVoiceMessage(reader.result.split(',')[1], blob.type, finalSeconds);
+                reader.onerror = () => showToast('تعذر تجهيز التسجيل', 'error');
+                reader.readAsDataURL(blob);
+            };
+            groupVoiceRecorder.stop();
+        }
+
+        async function sendGroupVoiceMessage(base64, mimeType, durationSeconds) {
+            if (!activeGroupChatId) return;
+            const box = document.getElementById('groupChatMessages');
+            const optimisticId = 'opt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+            const audioObj = { base64, mimeType, durationSeconds };
+            const optimisticBubble = buildGroupChatBubble(
+                { audio: audioObj, createdAt: Date.now(), senderUsername: schoolUser?.username, reactions: {} },
+                true
+            );
+            optimisticBubble.dataset.optimisticId = optimisticId;
+            optimisticBubble.style.opacity = '0.6';
+            box.appendChild(optimisticBubble);
+            box.scrollTop = box.scrollHeight;
+
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats/${activeGroupChatId}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ audio: audioObj })
+                });
+                if (!res.ok) throw new Error('failed');
+                document.querySelector(`[data-optimistic-id="${CSS.escape(optimisticId)}"]`)?.remove();
+                await loadGroupChatMessages(false);
+                pingActivity();
+            } catch (e) {
+                optimisticBubble.remove();
+                showToast('تعذر إرسال الرسالة الصوتية', 'error');
+            }
+        }
+
         // ====================== إشعارات البوش (Firebase Cloud Messaging) ======================
+
         // ⚠️ محتاج تحط بيانات مشروع Firebase بتاعك هنا (Project settings → General → Web app)
         // وتحط VAPID key اللي هتجيبه من Project settings → Cloud Messaging.
         const FIREBASE_CONFIG = {
@@ -10382,6 +10645,11 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         }
 
         function openDrugScanner() {
+            // تنظيف احترازي: لو فيه جلسة كاميرا قديمة اتسابت شغالة من غير إغلاق صحيح
+            // (مثلاً الطالب بدّل تطبيق فجأة من غير ما يقفل المودال بالزرار)، الكاميرا
+            // بتفضل ماسكة الجهاز فعليًا، وأي محاولة فتح جديدة بترجع خطأ "مرفوض" وهمي —
+            // فبنقفل أي حاجة قديمة الأول قبل ما نبدأ من جديد.
+            stopDrugScanner();
             drugScanCapturedImage = null;
             drugScanDecodedCode = null;
             document.getElementById('drugScanLiveWrap').style.display = 'block';
@@ -10426,8 +10694,20 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                 ).then(() => {
                     drugScannerActive = true;
                     statusEl.textContent = 'الكاميرا شغالة — لما الكود يتقرا هيظهر فوق. اضغط "التقط صورة" في أي وقت.';
-                }).catch(() => {
-                    statusEl.textContent = 'تعذر فتح الكاميرا. تأكد إنك سمحت للموقع بالوصول للكاميرا، أو جرب من متصفح تاني.';
+                }).catch((err) => {
+                    // الرسالة القديمة كانت بتقول "تأكد إنك سمحت" لأي خطأ يحصل — حتى لو الإذن
+                    // ممنوح فعلاً والمشكلة إن الكاميرا مستخدمة في تاب/تطبيق تاني دلوقتي (السبب
+                    // الأشهر عمليًا). دلوقتي بنفرّق حسب النوع الحقيقي للخطأ اللي المتصفح بيرجّعه.
+                    const name = (err && (err.name || err)) + '';
+                    let msg = 'تعذر فتح الكاميرا. جرب تاني أو من متصفح تاني.';
+                    if (/NotAllowedError|Permission/i.test(name)) {
+                        msg = 'الإذن مرفوض لموقع Chat X تحديدًا — دوس على أيقونة 🔒 أو (i) جنب رابط الموقع فوق ← إعدادات الموقع ← الكاميرا ← اسمح، وبعدها اعمل تحديث للصفحة';
+                    } else if (/NotReadableError|TrackStartError/i.test(name)) {
+                        msg = 'الكاميرا مستخدمة دلوقتي في تاب أو تطبيق تاني على جهازك — اقفله وجرب تاني';
+                    } else if (/NotFoundError|OverconstrainedError/i.test(name)) {
+                        msg = 'مفيش كاميرا خلفية متاحة على الجهاز ده';
+                    }
+                    statusEl.textContent = msg;
                 });
             } catch (e) {
                 statusEl.textContent = 'تعذر تشغيل الماسح. لسه ممكن تلتقط الصورة يدويًا.';
@@ -10441,6 +10721,12 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             drugScannerActive = false;
             drugScannerInstance = null;
         }
+
+        // لو الطالب بدّل تطبيق أو تاب والكاميرا لسه شغالة، بنقفلها بنفسنا — غير كده ممكن
+        // تفضل ماسكة الجهاز في الخلفية وأي محاولة فتح جديدة بعدين ترجع "مرفوض" وهمي.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden' && drugScannerActive) stopDrugScanner();
+        });
 
         // بياخد فريم من فيديو الكاميرا الحالي (اللي المكتبة نفسها حاطاه جوه drugScannerView)
         // ويحوله لصورة JPEG مضغوطة، بنفس منطق الأبعاد/الجودة المستخدم في رفع الصور العادي.
