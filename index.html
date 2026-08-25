@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://schoolx-eta.vercel.app https://chat-x.vercel.app https://api.alquran.cloud https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com wss://*.firebaseio.com; frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: data: https:; connect-src 'self' https://schoolx-eta.vercel.app https://chat-x.vercel.app https://api.alquran.cloud https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com wss://*.firebaseio.com; frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self';">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#6366f1">
@@ -8133,6 +8133,9 @@
                     }
                     const isMe = m.senderUsername === schoolUser?.username;
                     if (!isMe && !isFirstLoad) receivedNewFromOther = true;
+                    // 🔍 لوج تشخيصي مؤقت — بيوريني هل GET رجّع الميديا فعلاً ولا الرسالة وصلت
+                    // من غير base64 خالص (يعني المشكلة في التخزين/القراءة مش في العرض). شيله بعدين.
+                    console.log('📥 incoming group-chat msg:', { id: m.id, isMe, hasText: !!m.text, hasImage: !!(m.image && m.image.base64), hasAudio: !!(m.audio && m.audio.base64) });
                     // لو الرسالة دي كانت optimistic (اتبعتت محليًا واستنينا تأكيد السيرفر)، امسح النسخة
                     // المؤقتة واستبدلها بالنسخة الحقيقية بدل ما تتكرر على الشاشة.
                     if (isMe) {
@@ -8222,6 +8225,13 @@
         // ====================== إرفاق صورة في المحادثة الجماعية ======================
         let pendingGroupImage = null; // { base64, mimeType, name } — الصورة المختارة قبل الإرسال
 
+        // سقف أمان لطول الـ base64 (بالحروف) قبل الإرسال. حاطينه أقل بكتير من حد
+        // الـ 8 مليون حرف المسموح في السيرفر، عشان نضمن إن حجم الـ request body
+        // (JSON) يفضل تحت سقف Vercel الصارم للـ Serverless Functions (4.5MB) —
+        // 3 مليون حرف base64 ≈ 2.2MB بيانات فعلية، ده هيسيب هامش أمان كويس حتى
+        // مع أي overhead تاني في الـ request.
+        const GROUP_MEDIA_BASE64_SAFE_LIMIT = 3_000_000;
+
         function updateGroupChatSendButton() {
             const hasText = document.getElementById('groupChatInput').value.trim().length > 0;
             const showSend = hasText || !!pendingGroupImage;
@@ -8231,10 +8241,20 @@
 
         function handleGroupChatImageSelect(file) {
             if (!file) return;
-            compressImageFile(file).then((compressedFile) => {
+            // ضغط أقوى شوية من الافتراضي (كان 1600px/0.82) عشان نقلل احتمال تخطي حد
+            // الـ body بتاع Vercel — 1280px وجودة 0.72 كافيين جدًا لمحادثة نصية وبيقللوا
+            // حجم الصورة بشكل ملحوظ من غير ما الجودة تبقى واضحة إنها ضعيفة.
+            compressImageFile(file, 1280, 0.72).then((compressedFile) => {
                 const reader = new FileReader();
                 reader.onload = () => {
-                    pendingGroupImage = { base64: reader.result.split(',')[1], mimeType: compressedFile.type, name: file.name };
+                    const base64 = reader.result.split(',')[1];
+                    // لو الصورة لسه كبيرة بعد الضغط (نادر، بس ممكن يحصل مع صور فيها تفاصيل
+                    // كتير جدًا)، منسيبهاش تتبعت وتفشل بصمت — نوقف الطالب ونوضحله ليه.
+                    if (base64.length > GROUP_MEDIA_BASE64_SAFE_LIMIT) {
+                        showToast('الصورة كبيرة قوي حتى بعد الضغط — جرب صورة تانية أو قصّها شوية', 'error');
+                        return;
+                    }
+                    pendingGroupImage = { base64, mimeType: compressedFile.type, name: file.name };
                     const chip = document.getElementById('groupChatPendingImageChip');
                     chip.style.display = 'flex';
                     chip.innerHTML = `
@@ -8286,7 +8306,12 @@
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
                     body: JSON.stringify({ text, image: image || undefined })
                 });
-                if (!res.ok) throw new Error('failed');
+                if (!res.ok) {
+                    // 🔍 لوج تشخيصي مؤقت — بيوريني status code والرد الحقيقي من السيرفر/Vercel
+                    // بدل ما الخطأ يتبلع في رسالة عامة. شيله بعد حل المشكلة.
+                    console.error('group-chat send failed:', res.status, await res.text().catch(() => '(no body)'));
+                    throw new Error('failed');
+                }
                 document.querySelector(`[data-optimistic-id="${CSS.escape(optimisticId)}"]`)?.remove();
                 await loadGroupChatMessages(false); // بيجيب النسخة الحقيقية (فيها الـ id وread receipts)
                 pingActivity(); // إرسال رسالة في الغرفة = نشاط حقيقي، لازم يحدّث حالة "متصل"
@@ -8305,7 +8330,15 @@
         let groupVoiceStream = null;
         let groupVoiceSeconds = 0;
         let groupVoiceTimerInterval = null;
-        const GROUP_VOICE_MAX_SECONDS = 180; // 3 دقايق حد أقصى للتسجيل الواحد
+        // نزّلنا الحد الأقصى من 180 ثانية (3 دقايق) لـ 90 ثانية (دقيقة ونص) — التسجيل
+        // الطويل كان بيقرّب أوي من (أو بيعدي) حد الـ 4.5MB بتاع Vercel لطلبات الـ
+        // Serverless Functions، فكان بيتسبب في رفض الطلب بصمت من غير ما السيرفر يشوفه
+        // أصلاً. دقيقة ونص كافية جدًا لرسالة صوتية عادية.
+        const GROUP_VOICE_MAX_SECONDS = 90;
+        // بت ريت ثابت ومنخفض للتسجيل (24kbps) بدل ما نسيب المتصفح يختار bitrate
+        // افتراضي (بيختلف من متصفح لمتصفح وممكن يوصل 64-128kbps) — ده بيقلل حجم
+        // التسجيل بشكل كبير وبيضمن إننا تحت سقف Vercel حتى لو المستخدم سجل لآخر وقت.
+        const GROUP_VOICE_BITRATE = 24000;
 
         async function startGroupVoiceRecording() {
             if (!activeGroupChatId) return;
@@ -8317,7 +8350,10 @@
             }
             groupVoiceChunks = [];
             const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
-            groupVoiceRecorder = new MediaRecorder(groupVoiceStream, mimeType ? { mimeType } : undefined);
+            groupVoiceRecorder = new MediaRecorder(groupVoiceStream, {
+                ...(mimeType ? { mimeType } : {}),
+                audioBitsPerSecond: GROUP_VOICE_BITRATE
+            });
             groupVoiceRecorder.ondataavailable = (e) => { if (e.data.size > 0) groupVoiceChunks.push(e.data); };
             groupVoiceRecorder.start();
 
@@ -8331,7 +8367,7 @@
                 const s = String(groupVoiceSeconds % 60).padStart(2, '0');
                 document.getElementById('groupChatRecTimer').textContent = `${m}:${s}`;
                 if (groupVoiceSeconds >= GROUP_VOICE_MAX_SECONDS) {
-                    showToast('وصلت للحد الأقصى (3 دقايق) — هيتبعت التسجيل تلقائي', 'error');
+                    showToast('وصلت للحد الأقصى (دقيقة ونص) — هيتبعت التسجيل تلقائي', 'error');
                     stopAndSendGroupVoiceRecording();
                 }
             }, 1000);
@@ -8360,7 +8396,17 @@
                 const blob = new Blob(groupVoiceChunks, { type: groupVoiceRecorder.mimeType || 'audio/webm' });
                 if (blob.size < 800) { showToast('التسجيل قصير جدًا، جرب تاني', 'error'); return; }
                 const reader = new FileReader();
-                reader.onload = () => sendGroupVoiceMessage(reader.result.split(',')[1], blob.type, finalSeconds);
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1];
+                    // نفس سقف الأمان اللي في الصور — حماية إضافية لو الـ bitrate الفعلي
+                    // طلع أعلى من المتوقع لأي سبب (بعض المتصفحات مبتحترمش audioBitsPerSecond
+                    // بدقة كاملة).
+                    if (base64.length > GROUP_MEDIA_BASE64_SAFE_LIMIT) {
+                        showToast('التسجيل كبير قوي — جرب تسجيل أقصر', 'error');
+                        return;
+                    }
+                    sendGroupVoiceMessage(base64, blob.type, finalSeconds);
+                };
                 reader.onerror = () => showToast('تعذر تجهيز التسجيل', 'error');
                 reader.readAsDataURL(blob);
             };
@@ -8387,11 +8433,16 @@
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
                     body: JSON.stringify({ audio: audioObj })
                 });
-                if (!res.ok) throw new Error('failed');
+                if (!res.ok) {
+                    // 🔍 لوج تشخيصي مؤقت — نفس فكرة الصور. شيله بعد حل المشكلة.
+                    console.error('group-chat voice send failed:', res.status, await res.text().catch(() => '(no body)'));
+                    throw new Error('failed');
+                }
                 document.querySelector(`[data-optimistic-id="${CSS.escape(optimisticId)}"]`)?.remove();
                 await loadGroupChatMessages(false);
                 pingActivity();
             } catch (e) {
+                console.error('group-chat voice send exception:', e);
                 optimisticBubble.remove();
                 showToast('تعذر إرسال الرسالة الصوتية', 'error');
             }
