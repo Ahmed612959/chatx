@@ -1,5 +1,6 @@
 export const config = { runtime: 'edge' };
 import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
+import { reportApiUsage } from './_usageTrack.js';
 
 export default async function handler(request) {
   try {
@@ -36,6 +37,10 @@ export default async function handler(request) {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    // استدعاء فعلي وصل لـ Gemini (حتى لو رجّع خطأ لاحقًا) — نسجّله لعدّاد التكلفة
+    // التقريبية الشهرية في لوحة الأدمن.
+    await reportApiUsage('gemini', body.length);
 
     if (!upstream.ok || !upstream.body) {
       // Not streaming yet (auth/quota/bad-request errors arrive as a normal JSON

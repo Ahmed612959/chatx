@@ -1,5 +1,6 @@
 export const config = { runtime: 'edge' };
 import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
+import { reportApiUsage } from './_usageTrack.js';
 
 export default async function handler(request) {
   try {
@@ -36,6 +37,9 @@ export default async function handler(request) {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    // استدعاء فعلي وصل للمزود (حتى لو رجّع خطأ لاحقًا) — نسجّله لعدّاد التكلفة التقريبية الشهرية.
+    await reportApiUsage('mistral', body.length);
 
     if (!upstream.ok || !upstream.body) {
       return new Response(upstream.body, {

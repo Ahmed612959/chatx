@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' };
 import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
 import { isEntitled, extractBearerToken } from './_premiumCheck.js';
+import { reportApiUsage } from './_usageTrack.js';
 
 // ⚠️ الموديل ده مخصص للطلاب المشتركين في premium_ai بس. الفرونت إند بيتحقق من
 // الاشتراك قبل ما يظهر الاختيار ده أصلاً، لكن ده مش كافي وحده — أي حد يقدر يفتح
@@ -103,6 +104,10 @@ export default async function handler(request) {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    // استدعاء فعلي وصل للموديل (حتى لو رجّع خطأ لاحقًا) — نسجّله لعدّاد التكلفة
+    // التقريبية الشهرية. الموديل ده تحديدًا هو الأغلى في التطبيق (premium_ai فقط).
+    await reportApiUsage('claude-opus', forwardBody.length);
 
     if (!upstream.ok || !upstream.body) {
       // مش استريمنج لسه (أخطاء المصادقة/الحصة/الطلب الغلط بتوصل كـ JSON عادي) —

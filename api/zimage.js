@@ -1,5 +1,6 @@
 export const config = { runtime: 'edge' };
 import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
+import { reportApiUsage } from './_usageTrack.js';
 
 // Handles image analysis. Uses DashScope's OpenAI-compatible chat/completions endpoint with a
 // vision-capable Qwen-VL model, so it can accept the same {role, content:[{type:'image_url',...}]}
@@ -44,6 +45,9 @@ export default async function handler(request) {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    // استدعاء فعلي وصل للمزود (حتى لو رجّع خطأ لاحقًا) — نسجّله لعدّاد التكلفة التقريبية الشهرية.
+    await reportApiUsage('zimage', body.length);
 
     if (!upstream.ok || !upstream.body) {
       // Not streaming yet (auth/quota/bad-request errors arrive as a normal JSON

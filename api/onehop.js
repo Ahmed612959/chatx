@@ -1,5 +1,6 @@
 export const config = { runtime: 'edge' };
 import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
+import { reportApiUsage } from './_usageTrack.js';
 
 // ⚠️ الملف ده كان بينادي على OneHop (موديل DeepSeek)، ودلوقتي بينادي على
 // OpenRouter بدل كده — نفس اسم متغير البيئة (ONEHOP_API_KEY) اتسيب زي ما هو
@@ -70,6 +71,9 @@ export default async function handler(request) {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    // استدعاء فعلي وصل للموديل (حتى لو رجّع خطأ لاحقًا) — نسجّله لعدّاد التكلفة التقريبية الشهرية.
+    await reportApiUsage('onehop', forwardBody.length);
 
     if (!upstream.ok || !upstream.body) {
       // لسه مش بدأ الـ streaming (أخطاء auth/quota/bad-request بترجع كـ JSON عادي) —

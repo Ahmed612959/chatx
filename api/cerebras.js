@@ -5,6 +5,7 @@
 
 import { checkRateLimit } from './_rateLimit.js';
 import { isEntitled, extractBearerToken } from './_premiumCheck.js';
+import { reportApiUsage } from './_usageTrack.js';
 
 export default async function handler(request, response) {
   try {
@@ -32,6 +33,7 @@ export default async function handler(request, response) {
       return response.status(500).json({ error: 'CEREBRAS_API_KEY غير مضبوط في Environment Variables' });
     }
 
+    const forwardBody = JSON.stringify(request.body);
     let upstream;
     try {
       upstream = await fetch('https://api.cerebras.ai/v1/chat/completions', {
@@ -42,11 +44,15 @@ export default async function handler(request, response) {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
           'Accept': 'application/json, text/event-stream'
         },
-        body: JSON.stringify(request.body)
+        body: forwardBody
       });
     } catch (err) {
       return response.status(502).json({ error: 'تعذر الوصول لـ Cerebras' });
     }
+
+    // استدعاء فعلي وصل لـ Cerebras (حتى لو رجّع خطأ لاحقًا) — نسجّله لعدّاد التكلفة
+    // التقريبية الشهرية. الموديل ده تحديدًا (premium_ai) من الأغلى في التطبيق.
+    await reportApiUsage('cerebras', forwardBody.length);
 
     if (!upstream.ok) {
       const text = await upstream.text();
