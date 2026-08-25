@@ -3405,6 +3405,11 @@
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
             }
 
+            // بانر توجيه لطلاب الأيفون (تثبيت PWA) — لازم قبل استدعاء enablePushNotifications
+            // القادم تحت، عشان أكبر عدد ممكن يعرف السبب الحقيقي من أول لحظة، مش بس اللي
+            // هيدوس على زرار "تفعيل الإشعارات" في الإعدادات بنفسه.
+            setTimeout(() => maybeShowIOSInstallBanner(), 3500);
+
             // لو الطالب سبق ووافق على الإشعارات في جلسة قبل كده، لازم نعيد تسجيل هاندلر
             // الفوجراوند (onMessage) من جديد كل مرة يفتح فيها الصفحة — لأنه بيعيش في ذاكرة
             // الصفحة بس ومش بيفضل محفوظ بعد الريفريش، حتى لو الموافقة والتوكن نفسهم متسجلين.
@@ -8142,6 +8147,65 @@
         };
         const FIREBASE_VAPID_KEY = "BKnW1R_cQxU4fuDX3iJiC9UFU0i4vlagq_Kd2HJq-1E4_ILfb9RW-NH2Muevv6KjGZZ0ZEvQAAVLKQDmXxVvePM";
 
+        // ====================== كشف "أيفون بدون تثبيت PWA" ======================
+        // السبب الأشهر لشكوى "الإشعارات مش بتوصل والتطبيق مقفول": أبل بتمنع Web Push
+        // نهائيًا في تاب سفاري عادي — لازم الموقع يتثبّت كـ"تطبيق" (إضافة للشاشة
+        // الرئيسية) الأول. طلب الإذن (Notification.requestPermission) ممكن حتى ينجح
+        // ظاهريًا في تاب عادي من غير ما يوصل أي إشعار فعلي وقت الخلفية — فبنكشف الحالة
+        // دي ونوجّه الطالب للخطوة الصح بدل ما نسيبه يفتكر إن الإشعار "اتفعّل" وهو
+        // مش هيوصله حاجة فعلاً.
+        function isIOSDevice() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // آيباد حديث بيبعت User-Agent ماك
+        }
+        // ⚠️ ملحوظة أمانة: مفيش طريقة موثوقة نكتشف بيها ماركة الجهاز (Xiaomi/Huawei/...)
+        // من الـ User-Agent — كروم بيوحّد الـ UA بغض النظر عن نظام تخصيص الشركة المصنّعة
+        // (MIUI, EMUI...)، فمحاولة الفلترة بالماركة هتفوّت معظم الأجهزة فعليًا. بدل ما
+        // نخمّن، بنعرض التلميح ده لكل أجهزة الأندرويد عمومًا — مفيدة لأي حد بغض النظر
+        // عن ماركة جهازه، وده أدق من محاولة فلترة غير موثوقة.
+        function isAndroidDevice() {
+            return /Android/i.test(navigator.userAgent || '');
+        }
+        function isStandalonePWA() {
+            return window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+        }
+        function iosInstallInstructionsHTML() {
+            return `📲 <b>الإشعارات على الأيفون محتاجة خطوة واحدة الأول:</b><br>
+                1. دوس على أيقونة المشاركة <i class="fas fa-arrow-up-from-bracket"></i> تحت في سفاري<br>
+                2. اختار <b>"إضافة إلى الشاشة الرئيسية" (Add to Home Screen)</b><br>
+                3. افتح Chat X من الأيقونة الجديدة اللي هتظهر في شاشتك، وفعّل الإشعارات من جوّه`;
+        }
+
+        // بانر بسيط قابل للإغلاق بيفضل معروض لحد ما الطالب يقفله بنفسه (وبعدين مابيرجعش
+        // يظهر إلا بعد أسبوع) — عشان نوصل لأكبر عدد ممكن من طلاب الأيفون اللي أصلاً
+        // هيفوتهم زرار "تفعيل الإشعارات" في الإعدادات لو ماشافوش البانر ده.
+        function maybeShowIOSInstallBanner() {
+            if (!isIOSDevice() || isStandalonePWA()) return;
+            if (document.getElementById('iosInstallBanner')) return;
+            const dismissedAt = Number(localStorage.getItem('sx_ios_install_banner_dismissed') || 0);
+            if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
+
+            const el = document.createElement('div');
+            el.id = 'iosInstallBanner';
+            el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:var(--bg-2,#131827);border-top:1px solid var(--border,rgba(255,255,255,.1));padding:12px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 -4px 20px rgba(0,0,0,.25);';
+            el.innerHTML = `
+                <div style="font-size:20px;flex-shrink:0;">📲</div>
+                <div style="flex:1;font-size:11.5px;line-height:1.7;color:var(--text-1,#fff);">
+                    <b>عشان توصلك الإشعارات حتى لو التطبيق مقفول:</b>
+                    دوس على أيقونة المشاركة <i class="fas fa-arrow-up-from-bracket"></i> تحت في سفاري، واختار
+                    <b>"إضافة إلى الشاشة الرئيسية"</b>.
+                </div>
+                <button onclick="dismissIOSInstallBanner()" style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:16px;cursor:pointer;padding:6px;flex-shrink:0;">
+                    <i class="fas fa-times"></i>
+                </button>`;
+            document.body.appendChild(el);
+        }
+        function dismissIOSInstallBanner() {
+            localStorage.setItem('sx_ios_install_banner_dismissed', String(Date.now()));
+            const el = document.getElementById('iosInstallBanner');
+            if (el) el.remove();
+        }
+
         // إشعارات الفوجراوند: Service Worker (sw.js → onBackgroundMessage) بيتصرف بس لما التاب
         // مقفول/في الخلفية تمامًا. لكن لو الطالب فاتح التطبيق فعلاً بس مش داخل غرفة المذاكرة
         // المحددة اللي جاتله فيها رسالة (زي ما اتوصف: "برة غرفة المذاكرة")، المتصفح بيوجّه
@@ -8184,6 +8248,13 @@
                 statusEl.innerHTML = '<span style="color:var(--danger)">لسه محتاج تحط بيانات Firebase في الكود (FIREBASE_CONFIG) قبل ما الزرار ده يشتغل</span>';
                 return;
             }
+            // لازم قبل أي حاجة تانية: طلب الإذن جوه تاب سفاري عادي (مش تطبيق مثبّت) ممكن
+            // "ينجح" ظاهريًا من غير ما يوصّل أي إشعار فعلي وقت التطبيق مقفول — فبنوقف هنا
+            // ونوضح السبب الحقيقي بدل ما نسيب الطالب يفتكر إن التفعيل "نجح" ورايح ماشي.
+            if (isIOSDevice() && !isStandalonePWA()) {
+                statusEl.innerHTML = `<div style="color:var(--warning);line-height:1.7;">${iosInstallInstructionsHTML()}</div>`;
+                return;
+            }
             if (!('Notification' in window)) {
                 statusEl.innerHTML = '<span style="color:var(--danger)">المتصفح ده مش بيدعم الإشعارات</span>';
                 return;
@@ -8216,7 +8287,15 @@
                     try { serverMsg = (await subRes.json()).error || ''; } catch (_) {}
                     throw new Error(`السيرفر رفض الطلب (${subRes.status}) ${serverMsg}`);
                 }
-                statusEl.innerHTML = '<span style="color:var(--success)">تم تفعيل الإشعارات ✓</span>';
+                const androidBatteryTip = isAndroidDevice()
+                    ? `<div style="margin-top:8px;font-size:11px;color:var(--text-2);line-height:1.7;">
+                        💡 لو حسّيت إن الإشعارات بتتأخر أو مش بتوصل والموبايل قافل فترة طويلة:
+                        بعض الأندرويدات (Xiaomi، Huawei، Samsung...) بتوقف المتصفح تلقائيًا في
+                        الخلفية لتوفير البطارية. روح إعدادات الموبايل → البطارية → استثنِ المتصفح
+                        (Chrome مثلًا) من "تحسين البطارية" عشان يفضل يستقبل الإشعارات دايمًا.
+                       </div>`
+                    : '';
+                statusEl.innerHTML = `<span style="color:var(--success)">تم تفعيل الإشعارات ✓</span>${androidBatteryTip}`;
             } catch (e) {
                 console.error('enablePushNotifications error:', e);
                 // "Registration failed - push service error" مش باج في الكود بتاعنا — ده قيد معروف
