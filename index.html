@@ -882,6 +882,64 @@
         }
         .close-modal:hover { color: var(--danger); border-color: var(--danger); }
 
+        /* ====================== ثيمات غرفة المذاكرة ====================== */
+        /* كل ثيم بيعرّف مجموعة متغيرات CSS محلية (--gc-*) بتتغطى على القيم الافتراضية
+           في buildGroupChatBubble وخلفية #groupChatMessages. التغيير فوري لأي فقاعات
+           موجودة بالفعل على الشاشة لأنها بتستخدم var(--gc-...) في الـ inline style بتاعها،
+           والمتغيرات دي "حيّة" (live) — تغيير قيمتها على العنصر الأب بيترجم فورًا. */
+        #groupChatRoomModal.gc-theme-whatsapp {
+            --gc-bg: #e5ddd5;
+            --gc-bg-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23d3c9bb' stroke-width='1.4' opacity='0.55'%3E%3Cpath d='M20 24c4-6 12-6 16 0s-2 12-8 12-12-6-8-12z'/%3E%3Cpath d='M90 18v20M84 24l6-6 6 6'/%3E%3Ccircle cx='115' cy='55' r='9'/%3E%3Cpath d='M108 55h14M115 48v14'/%3E%3Cpath d='M25 85c0-8 18-8 18 0 0 6-9 10-9 16'/%3E%3Ccircle cx='34' cy='108' r='1.6' fill='%23d3c9bb' stroke='none'/%3E%3Cpath d='M70 95l24 0M82 83l0 24M76 89l12 12M88 89l-12 12'/%3E%3Cpath d='M110 100c5-5 13-5 13 3s-8 9-13 14'/%3E%3C/g%3E%3C/svg%3E");
+            --gc-out-bg: #dcf8c6;
+            --gc-out-text: #111b21;
+            --gc-in-bg: #ffffff;
+            --gc-in-text: #111b21;
+            --gc-header-bg: #075e54;
+        }
+        #groupChatRoomModal.gc-theme-midnight {
+            --gc-bg: #0b141a;
+            --gc-bg-image: none;
+            --gc-out-bg: linear-gradient(135deg, #2b5876, #4e4376);
+            --gc-out-text: #f1f5f9;
+            --gc-in-bg: #1f2c34;
+            --gc-in-text: #e2e8f0;
+        }
+        #groupChatRoomModal.gc-theme-sunset {
+            --gc-bg: #fff2e6;
+            --gc-bg-image: linear-gradient(180deg, #ffe8d6 0%, #ffd9c2 100%);
+            --gc-out-bg: linear-gradient(135deg, #ff9a76, #ff6f91);
+            --gc-out-text: #fff;
+            --gc-in-bg: #ffffff;
+            --gc-in-text: #6b3f2a;
+        }
+        #groupChatRoomModal.gc-theme-ocean {
+            --gc-bg: #eaf6fb;
+            --gc-bg-image: linear-gradient(180deg, #dcf1fa 0%, #cbeaf6 100%);
+            --gc-out-bg: linear-gradient(135deg, #2193b0, #6dd5ed);
+            --gc-out-text: #fff;
+            --gc-in-bg: #ffffff;
+            --gc-in-text: #14424f;
+        }
+        #groupChatThemeMenu {
+            position: absolute; top: 46px; left: 12px; z-index: 20; display: none;
+            background: var(--bg-glass-heavy); border: 1px solid var(--border); border-radius: 12px;
+            padding: 8px; box-shadow: 0 10px 30px -8px rgba(0,0,0,.4); min-width: 176px;
+        }
+        #groupChatThemeMenu.active { display: block; }
+        .gc-theme-option {
+            display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 8px;
+            cursor: pointer; font-size: 12.5px; color: var(--text-1);
+        }
+        .gc-theme-option:hover { background: var(--bg-2); }
+        .gc-theme-swatch { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0,0,0,.15); }
+
+        /* ====================== محرر تعديل الصورة قبل الإرسال ====================== */
+        .gi-handle {
+            position: absolute; width: 16px; height: 16px; background: #fff;
+            border: 2px solid var(--accent); border-radius: 50%; touch-action: none; z-index: 2;
+        }
+        #giCropBox { touch-action: none; }
+
         .tool-section { margin-bottom: 16px; padding: 16px; background: var(--bg-2); border-radius: 14px; border: 1px solid var(--border); }
         .tool-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--accent); }
         .input-group { margin-bottom: 12px; }
@@ -1777,18 +1835,36 @@
 
     <!-- Group Study Chat Room Modal -->
     <div class="modal-overlay" id="groupChatRoomModal">
-        <div class="modal" style="display:flex;flex-direction:column;height:80vh;max-height:640px;">
+        <div class="modal" style="display:flex;flex-direction:column;height:80vh;max-height:640px;position:relative;">
             <div class="modal-header">
                 <div>
                     <div class="modal-title"><i class="fas fa-user-group"></i> <span id="groupChatRoomTitle">غرفة مذاكرة</span></div>
                     <div id="groupChatOnlineStatus" style="font-size:11px;margin-top:2px;"></div>
                 </div>
                 <div style="display:flex;align-items:center;gap:4px;">
+                    <button class="action-btn" style="width:32px;height:32px;font-size:12px;" aria-label="ثيمات الشات" onclick="toggleGroupChatThemeMenu()"><i class="fas fa-palette"></i></button>
                     <button class="action-btn" style="width:32px;height:32px;font-size:12px;" aria-label="مسح كل الرسايل" onclick="clearGroupChat()"><i class="fas fa-trash"></i></button>
                     <button class="close-modal" aria-label="إغلاق" onclick="closeGroupChatRoom()"><i class="fas fa-times"></i></button>
                 </div>
             </div>
-            <div id="groupChatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+            <div id="groupChatThemeMenu">
+                <div class="gc-theme-option" onclick="setGroupChatTheme('default')">
+                    <span class="gc-theme-swatch" style="background:var(--grad-bold);"></span> الافتراضي
+                </div>
+                <div class="gc-theme-option" onclick="setGroupChatTheme('whatsapp')">
+                    <span class="gc-theme-swatch" style="background:#dcf8c6;"></span> واتساب
+                </div>
+                <div class="gc-theme-option" onclick="setGroupChatTheme('midnight')">
+                    <span class="gc-theme-swatch" style="background:#1f2c34;"></span> داكن ليلي
+                </div>
+                <div class="gc-theme-option" onclick="setGroupChatTheme('sunset')">
+                    <span class="gc-theme-swatch" style="background:linear-gradient(135deg,#ff9a76,#ff6f91);"></span> غروب دافئ
+                </div>
+                <div class="gc-theme-option" onclick="setGroupChatTheme('ocean')">
+                    <span class="gc-theme-swatch" style="background:linear-gradient(135deg,#2193b0,#6dd5ed);"></span> محيط هادئ
+                </div>
+            </div>
+            <div id="groupChatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background-color:var(--gc-bg,transparent);background-image:var(--gc-bg-image,none);background-size:140px;"></div>
             <div id="groupChatTypingIndicator" style="display:none;padding:0 14px 6px;font-size:11px;color:var(--text-3);"></div>
 
             <input type="file" id="groupChatImageInput" accept="image/*" style="display:none;" onchange="handleGroupChatImageSelect(this.files[0]); this.value='';">
@@ -1811,6 +1887,39 @@
                 </div>
                 <button class="btn-calc" style="width:auto;padding:0 16px;flex-shrink:0;" aria-label="إرسال" onclick="stopAndSendGroupVoiceRecording()"><i class="fas fa-paper-plane"></i></button>
             </div>
+        </div>
+    </div>
+
+    <!-- محرر تعديل الصورة قبل إرسالها في غرفة المذاكرة: تدوير / عكس أفقي / سطوع / قص -->
+    <div class="modal-overlay" id="groupImageEditModal">
+        <div class="modal" style="max-width:420px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-crop-simple"></i> تعديل الصورة</div>
+                <button class="close-modal" aria-label="إلغاء" onclick="giCancelEdit()"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="giEditorStage" style="position:relative;width:100%;aspect-ratio:4/3;background:#000;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;touch-action:none;">
+                <canvas id="giCanvas" style="max-width:100%;max-height:100%;display:block;"></canvas>
+                <div id="giCropBox" style="position:absolute;border:2px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.45);cursor:move;" onpointerdown="giCropPointerDown(event,'move')">
+                    <div class="gi-handle" style="top:-8px;right:-8px;cursor:nesw-resize;" onpointerdown="giCropPointerDown(event,'ne')"></div>
+                    <div class="gi-handle" style="top:-8px;left:-8px;cursor:nwse-resize;" onpointerdown="giCropPointerDown(event,'nw')"></div>
+                    <div class="gi-handle" style="bottom:-8px;right:-8px;cursor:nwse-resize;" onpointerdown="giCropPointerDown(event,'se')"></div>
+                    <div class="gi-handle" style="bottom:-8px;left:-8px;cursor:nesw-resize;" onpointerdown="giCropPointerDown(event,'sw')"></div>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                <button class="action-btn" style="width:38px;height:38px;" aria-label="تدوير لليسار" onclick="giRotateLeft()"><i class="fas fa-rotate-left"></i></button>
+                <button class="action-btn" style="width:38px;height:38px;" aria-label="تدوير لليمين" onclick="giRotateRight()"><i class="fas fa-rotate-right"></i></button>
+                <button class="action-btn" style="width:38px;height:38px;" aria-label="عكس أفقي" onclick="giToggleFlip()"><i class="fas fa-arrows-left-right"></i></button>
+                <button class="action-btn" style="width:38px;height:38px;" aria-label="استرجاع الوضع الافتراضي" onclick="giResetEdits()"><i class="fas fa-rotate-left" style="opacity:.6;"></i></button>
+            </div>
+            <div style="margin-top:10px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);">
+                    <i class="fas fa-sun" style="width:16px;flex-shrink:0;"></i>
+                    <input type="range" id="giBrightnessRange" min="-60" max="60" value="0" style="flex:1;" oninput="giSetBrightness(this.value)">
+                </label>
+            </div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:6px;">اسحب المربع الأبيض عشان تحدد جزء الصورة، وحرّك زواياه عشان تكبّر أو تصغّر منطقة القص</div>
+            <button class="btn-calc" style="margin-top:14px;" onclick="giConfirmEdit()"><i class="fas fa-check"></i> استخدام الصورة</button>
         </div>
     </div>
 
@@ -7861,6 +7970,7 @@
             document.getElementById('groupChatInput').value = '';
             removeGroupPendingImage();
             updateGroupChatSendButton();
+            applyGroupChatTheme(getSavedGroupChatTheme());
             closeModal('groupChatListModal');
             openModal('groupChatRoomModal');
             loadGroupChatMessages(true);
@@ -7870,6 +7980,7 @@
 
         function closeGroupChatRoom() {
             closeModal('groupChatRoomModal');
+            document.getElementById('groupChatThemeMenu').classList.remove('active');
             if (groupChatPollTimer) { clearInterval(groupChatPollTimer); groupChatPollTimer = null; }
             cancelGroupVoiceRecording(); // لو الطالب قفل الغرفة وهو لسه بيسجّل، نوقف الميكروفون ونلغي بهدوء
             activeGroupChatId = null;
@@ -7879,6 +7990,40 @@
             const statusEl = document.getElementById('groupChatOnlineStatus');
             if (statusEl) statusEl.innerHTML = '';
         }
+
+        // ====================== ثيمات غرفة المذاكرة ======================
+        const GROUP_CHAT_THEME_KEY = 'groupChatThemeV1';
+        const GROUP_CHAT_THEME_CLASSES = ['gc-theme-whatsapp', 'gc-theme-midnight', 'gc-theme-sunset', 'gc-theme-ocean'];
+
+        function getSavedGroupChatTheme() {
+            try { return localStorage.getItem(GROUP_CHAT_THEME_KEY) || 'default'; } catch (e) { return 'default'; }
+        }
+
+        function applyGroupChatTheme(theme) {
+            const modal = document.getElementById('groupChatRoomModal');
+            if (!modal) return;
+            modal.classList.remove(...GROUP_CHAT_THEME_CLASSES);
+            if (theme && theme !== 'default') modal.classList.add(`gc-theme-${theme}`);
+        }
+
+        function setGroupChatTheme(theme) {
+            applyGroupChatTheme(theme);
+            try { localStorage.setItem(GROUP_CHAT_THEME_KEY, theme); } catch (e) { /* localStorage ممكن يكون متعطّل، مش مشكلة */ }
+            document.getElementById('groupChatThemeMenu').classList.remove('active');
+            showToast('اتغيّر شكل الشات', 'success');
+        }
+
+        function toggleGroupChatThemeMenu() {
+            document.getElementById('groupChatThemeMenu').classList.toggle('active');
+        }
+
+        // قفل قائمة الثيمات لو المستخدم داس بره منها
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('groupChatThemeMenu');
+            const btn = e.target.closest('[aria-label="ثيمات الشات"]');
+            if (!menu || !menu.classList.contains('active')) return;
+            if (!menu.contains(e.target) && !btn) menu.classList.remove('active');
+        });
 
         let lastGroupMsgAt = 0;
         let lastKnownReadBy = {};
@@ -7981,7 +8126,7 @@
             bubble.dataset.createdAt = m.createdAt;
             bubble.dataset.msgId = m.id || '';
             const hasMedia = (m.image && m.image.base64) || (m.audio && m.audio.base64);
-            bubble.style.cssText = `position:relative;max-width:${hasMedia ? '82%' : '78%'};align-self:${isMe ? 'flex-end' : 'flex-start'};padding:${m.image && m.image.base64 ? '6px' : '10px 14px'};border-radius:14px;background:${isMe ? 'var(--grad-bold)' : 'var(--bg-2)'};color:${isMe ? '#fff' : 'var(--text-1)'};font-size:13px;line-height:1.7;`;
+            bubble.style.cssText = `position:relative;max-width:${hasMedia ? '82%' : '78%'};align-self:${isMe ? 'flex-end' : 'flex-start'};padding:${m.image && m.image.base64 ? '6px' : '10px 14px'};border-radius:14px;background:${isMe ? 'var(--gc-out-bg, var(--grad-bold))' : 'var(--gc-in-bg, var(--bg-2))'};color:${isMe ? 'var(--gc-out-text, #fff)' : 'var(--gc-in-text, var(--text-1))'};font-size:13px;line-height:1.7;`;
 
             if (m.image && m.image.base64) {
                 const imgSrc = `data:${m.image.mimeType || 'image/jpeg'};base64,${m.image.base64}`;
@@ -8124,7 +8269,12 @@
                 const msgs = data.messages || [];
                 lastKnownReadBy = data.lastReadBy || lastKnownReadBy;
                 const box = document.getElementById('groupChatMessages');
+                // بنسجّل هل المستخدم كان "تحت" أصلاً (قريب من آخر الشات) قبل ما نضيف أي حاجة —
+                // ده اللي بيحدد هل نعمل auto-scroll بعدين ولا لأ. الفرق (80px) بيسمح بهامش
+                // بسيط عشان مايتصرفش وكأنه "مش تحت" لمجرد بكسل واحد فرق.
+                const wasNearBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 80;
                 let receivedNewFromOther = false;
+                let appendedAny = false;
                 msgs.forEach(m => {
                     // حماية إضافية: لو الرسالة دي (بنفس الـ id) موجودة على الشاشة أصلاً، متتضافش تاني.
                     if (m.id && box.querySelector(`[data-msg-id="${CSS.escape(String(m.id))}"]`)) {
@@ -8143,9 +8293,15 @@
                         if (optimisticEl) optimisticEl.remove();
                     }
                     box.appendChild(buildGroupChatBubble(m, isMe));
+                    appendedAny = true;
                     lastGroupMsgAt = Math.max(lastGroupMsgAt, m.createdAt || 0);
                 });
-                box.scrollTop = box.scrollHeight;
+                // ننزّل تلقائيًا لآخر الشات بس لو: أول فتح للغرفة، أو المستخدم كان أصلاً
+                // قريب من الآخر (يعني بيتابع لحظيًا)، أو الرسالة الجديدة هي رسالتي أنا
+                // (بعتّها وطبيعي أشوفها). لو المستخدم طالع فوق يقرا رسايل قديمة، منلمسوش.
+                if (appendedAny && (isFirstLoad || wasNearBottom)) {
+                    box.scrollTop = box.scrollHeight;
+                }
                 if (receivedNewFromOther) playGroupChatNotifySound();
                 updateReadReceiptTicks();
                 updateTypingIndicator(data.typingUsernames || []);
@@ -8244,35 +8400,222 @@
             // ضغط أقوى شوية من الافتراضي (كان 1600px/0.82) عشان نقلل احتمال تخطي حد
             // الـ body بتاع Vercel — 1280px وجودة 0.72 كافيين جدًا لمحادثة نصية وبيقللوا
             // حجم الصورة بشكل ملحوظ من غير ما الجودة تبقى واضحة إنها ضعيفة.
+            // بدل ما نبعتها على طول، بنفتح محرر بسيط (تدوير/عكس/سطوع/قص) قبل التأكيد.
             compressImageFile(file, 1280, 0.72).then((compressedFile) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const base64 = reader.result.split(',')[1];
-                    // لو الصورة لسه كبيرة بعد الضغط (نادر، بس ممكن يحصل مع صور فيها تفاصيل
-                    // كتير جدًا)، منسيبهاش تتبعت وتفشل بصمت — نوقف الطالب ونوضحله ليه.
-                    if (base64.length > GROUP_MEDIA_BASE64_SAFE_LIMIT) {
-                        showToast('الصورة كبيرة قوي حتى بعد الضغط — جرب صورة تانية أو قصّها شوية', 'error');
-                        return;
-                    }
-                    pendingGroupImage = { base64, mimeType: compressedFile.type, name: file.name };
-                    const chip = document.getElementById('groupChatPendingImageChip');
-                    chip.style.display = 'flex';
-                    chip.innerHTML = `
-                        <img src="${reader.result}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;">
-                        <span style="font-size:11.5px;color:var(--text-2);flex:1;">جاهزة للإرسال</span>
-                        <button onclick="removeGroupPendingImage()" aria-label="إلغاء الصورة" style="background:none;border:none;color:var(--text-3);font-size:15px;cursor:pointer;padding:6px;"><i class="fas fa-times"></i></button>`;
-                    updateGroupChatSendButton();
-                };
-                reader.onerror = () => showToast('تعذرت قراءة الصورة', 'error');
-                reader.readAsDataURL(compressedFile);
+                openGroupImageEditor(compressedFile, file.name);
             });
         }
+
+        // بيتنادى من المحرر (giConfirmEdit) وبردو ممكن يتنادى مباشرة لو حبينا نتخطى
+        // التعديل — بيعمل نفس فحص الحجم الأمان اللي كان في handleGroupChatImageSelect
+        // الأصلية، وبيحدّث الـ chip اللي فيه معاينة الصورة وزرار تعديل/إلغاء.
+        function finalizePendingGroupImage(base64, mimeType, name, previewDataUrl) {
+            if (base64.length > GROUP_MEDIA_BASE64_SAFE_LIMIT) {
+                showToast('الصورة كبيرة قوي حتى بعد التعديل — جرب تصغّر منطقة القص', 'error');
+                return false;
+            }
+            pendingGroupImage = { base64, mimeType, name };
+            const chip = document.getElementById('groupChatPendingImageChip');
+            chip.style.display = 'flex';
+            chip.innerHTML = `
+                <img src="${previewDataUrl}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;">
+                <span style="font-size:11.5px;color:var(--text-2);flex:1;">جاهزة للإرسال</span>
+                <button onclick="reopenGroupImageEditor()" aria-label="تعديل الصورة" style="background:none;border:none;color:var(--text-3);font-size:14px;cursor:pointer;padding:6px;"><i class="fas fa-crop-simple"></i></button>
+                <button onclick="removeGroupPendingImage()" aria-label="إلغاء الصورة" style="background:none;border:none;color:var(--text-3);font-size:15px;cursor:pointer;padding:6px;"><i class="fas fa-times"></i></button>`;
+            updateGroupChatSendButton();
+            return true;
+        }
+
         function removeGroupPendingImage() {
             pendingGroupImage = null;
             const chip = document.getElementById('groupChatPendingImageChip');
             chip.style.display = 'none';
             chip.innerHTML = '';
             updateGroupChatSendButton();
+        }
+
+        // ====================== محرر تعديل الصورة (تدوير / عكس / سطوع / قص) ======================
+        let giSourceImg = null;       // عنصر Image محمّل بالصورة الأصلية (بعد الضغط)
+        let giRotation = 0;           // 0 / 90 / 180 / 270
+        let giFlipH = false;
+        let giBrightness = 0;         // -60..60
+        let giOriginalName = 'image.jpg';
+        let giCrop = { x: 0.06, y: 0.06, w: 0.88, h: 0.88 }; // نسب من أبعاد الكانفاس (0..1)
+        let giDrag = null;
+
+        function giClamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+
+        function openGroupImageEditor(file, originalName) {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                giSourceImg = img;
+                giOriginalName = originalName || 'image.jpg';
+                giRotation = 0; giFlipH = false; giBrightness = 0;
+                giCrop = { x: 0.06, y: 0.06, w: 0.88, h: 0.88 };
+                document.getElementById('giBrightnessRange').value = 0;
+                openModal('groupImageEditModal');
+                requestAnimationFrame(() => { giRedrawCanvas(); giSyncCropBoxUI(); });
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); showToast('تعذر فتح الصورة للتعديل', 'error'); };
+            img.src = url;
+        }
+
+        // بيسمح للطالب يفتح نفس الصورة اللي جاهزة للإرسال تاني عشان يعدّل فيها زودة
+        function reopenGroupImageEditor() {
+            if (!pendingGroupImage) return;
+            const dataUrl = `data:${pendingGroupImage.mimeType};base64,${pendingGroupImage.base64}`;
+            const img = new Image();
+            img.onload = () => {
+                giSourceImg = img;
+                giOriginalName = pendingGroupImage.name || 'image.jpg';
+                giRotation = 0; giFlipH = false; giBrightness = 0;
+                giCrop = { x: 0.04, y: 0.04, w: 0.92, h: 0.92 };
+                document.getElementById('giBrightnessRange').value = 0;
+                openModal('groupImageEditModal');
+                requestAnimationFrame(() => { giRedrawCanvas(); giSyncCropBoxUI(); });
+            };
+            img.onerror = () => showToast('تعذر فتح الصورة للتعديل', 'error');
+            img.src = dataUrl;
+        }
+
+        function giRedrawCanvas() {
+            if (!giSourceImg) return;
+            const canvas = document.getElementById('giCanvas');
+            const swap = (giRotation === 90 || giRotation === 270);
+            const iw = giSourceImg.naturalWidth, ih = giSourceImg.naturalHeight;
+            canvas.width = swap ? ih : iw;
+            canvas.height = swap ? iw : ih;
+            const ctx = canvas.getContext('2d');
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(giRotation * Math.PI / 180);
+            if (giFlipH) ctx.scale(-1, 1);
+            ctx.drawImage(giSourceImg, -iw / 2, -ih / 2, iw, ih);
+            ctx.restore();
+            canvas.style.filter = `brightness(${100 + giBrightness}%)`;
+        }
+
+        function giSyncCropBoxUI() {
+            const canvas = document.getElementById('giCanvas');
+            const box = document.getElementById('giCropBox');
+            const stage = document.getElementById('giEditorStage');
+            const rect = canvas.getBoundingClientRect();
+            const stageRect = stage.getBoundingClientRect();
+            const offX = rect.left - stageRect.left, offY = rect.top - stageRect.top;
+            box.style.left = (offX + giCrop.x * rect.width) + 'px';
+            box.style.top = (offY + giCrop.y * rect.height) + 'px';
+            box.style.width = (giCrop.w * rect.width) + 'px';
+            box.style.height = (giCrop.h * rect.height) + 'px';
+        }
+
+        function giRotateLeft() {
+            giRotation = (giRotation + 270) % 360;
+            giCrop = { x: 0.06, y: 0.06, w: 0.88, h: 0.88 };
+            giRedrawCanvas(); giSyncCropBoxUI();
+        }
+        function giRotateRight() {
+            giRotation = (giRotation + 90) % 360;
+            giCrop = { x: 0.06, y: 0.06, w: 0.88, h: 0.88 };
+            giRedrawCanvas(); giSyncCropBoxUI();
+        }
+        function giToggleFlip() { giFlipH = !giFlipH; giRedrawCanvas(); }
+        function giSetBrightness(val) {
+            giBrightness = Number(val);
+            document.getElementById('giCanvas').style.filter = `brightness(${100 + giBrightness}%)`;
+        }
+        function giResetEdits() {
+            giRotation = 0; giFlipH = false; giBrightness = 0;
+            giCrop = { x: 0.06, y: 0.06, w: 0.88, h: 0.88 };
+            document.getElementById('giBrightnessRange').value = 0;
+            giRedrawCanvas(); giSyncCropBoxUI();
+        }
+
+        function giCropPointerDown(e, mode) {
+            e.preventDefault();
+            e.stopPropagation();
+            const canvas = document.getElementById('giCanvas');
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+            giDrag = {
+                mode,
+                startX: e.clientX, startY: e.clientY,
+                startCrop: { ...giCrop },
+                rectW: rect.width, rectH: rect.height
+            };
+            document.addEventListener('pointermove', giCropPointerMove);
+            document.addEventListener('pointerup', giCropPointerUp);
+        }
+        function giCropPointerMove(e) {
+            if (!giDrag) return;
+            const dxFrac = (e.clientX - giDrag.startX) / giDrag.rectW;
+            const dyFrac = (e.clientY - giDrag.startY) / giDrag.rectH;
+            let { x, y, w, h } = giDrag.startCrop;
+            const minSize = 0.12;
+            if (giDrag.mode === 'move') {
+                x = giClamp(x + dxFrac, 0, 1 - w);
+                y = giClamp(y + dyFrac, 0, 1 - h);
+            } else {
+                if (giDrag.mode.includes('w')) {
+                    const newX = giClamp(x + dxFrac, 0, x + w - minSize);
+                    w = (x + w) - newX; x = newX;
+                }
+                if (giDrag.mode.includes('e')) {
+                    w = giClamp(w + dxFrac, minSize, 1 - x);
+                }
+                if (giDrag.mode.includes('n')) {
+                    const newY = giClamp(y + dyFrac, 0, y + h - minSize);
+                    h = (y + h) - newY; y = newY;
+                }
+                if (giDrag.mode.includes('s')) {
+                    h = giClamp(h + dyFrac, minSize, 1 - y);
+                }
+            }
+            giCrop = { x, y, w, h };
+            giSyncCropBoxUI();
+        }
+        function giCropPointerUp() {
+            giDrag = null;
+            document.removeEventListener('pointermove', giCropPointerMove);
+            document.removeEventListener('pointerup', giCropPointerUp);
+        }
+        window.addEventListener('resize', () => {
+            const modal = document.getElementById('groupImageEditModal');
+            if (modal && modal.classList.contains('active')) giSyncCropBoxUI();
+        });
+
+        function giConfirmEdit() {
+            const canvas = document.getElementById('giCanvas');
+            const sx = Math.round(giCrop.x * canvas.width);
+            const sy = Math.round(giCrop.y * canvas.height);
+            const sw = Math.max(1, Math.round(giCrop.w * canvas.width));
+            const sh = Math.max(1, Math.round(giCrop.h * canvas.height));
+            const outCanvas = document.createElement('canvas');
+            outCanvas.width = sw; outCanvas.height = sh;
+            const outCtx = outCanvas.getContext('2d');
+            // بنطبّق السطوع فعليًا هنا (مش بس preview بصري) عشان يتحفظ داخل الصورة النهائية.
+            outCtx.filter = `brightness(${100 + giBrightness}%)`;
+            outCtx.drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+            outCanvas.toBlob((blob) => {
+                if (!blob) { showToast('تعذر حفظ التعديلات', 'error'); return; }
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1];
+                    const ok = finalizePendingGroupImage(base64, 'image/jpeg', giOriginalName, reader.result);
+                    if (ok) closeModal('groupImageEditModal');
+                };
+                reader.onerror = () => showToast('تعذر حفظ التعديلات', 'error');
+                reader.readAsDataURL(blob);
+            }, 'image/jpeg', 0.85);
+        }
+
+        function giCancelEdit() {
+            closeModal('groupImageEditModal');
+            giSourceImg = null;
+            // لو كانت دي أول صورة للطالب ومفيش صورة سابقة جاهزة، سيبها من غير حاجة معلّقة.
+            if (!pendingGroupImage) removeGroupPendingImage();
         }
 
         async function sendGroupChatMessage() {
