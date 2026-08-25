@@ -95,6 +95,34 @@
         padding: 6px 11px; border-radius: 20px; white-space: nowrap;
     }
 
+    .cost-panel {
+        margin: 0 18px 12px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius);
+        overflow: hidden;
+    }
+    .cost-summary {
+        display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;
+        cursor: pointer; gap: 10px; flex-wrap: wrap;
+    }
+    .cost-summary-left { display: flex; align-items: center; gap: 10px; }
+    .cost-summary-left i.fa-chart-simple { color: var(--gold); font-size: 15px; }
+    .cost-total { font-size: 16px; font-weight: 800; color: var(--text-1); }
+    .cost-total small { font-size: 11px; font-weight: 400; color: var(--text-3); }
+    .cost-warn { font-size: 10.5px; color: var(--warn); background: rgba(245,158,11,.12); padding: 3px 9px; border-radius: 20px; }
+    .cost-month-select { padding: 6px 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-3); color: var(--text-1); font-family: inherit; font-size: 12px; }
+    .cost-details { display: none; padding: 4px 16px 14px; border-top: 1px solid var(--border); }
+    .cost-details.open { display: block; }
+    .cost-row {
+        display: flex; align-items: center; justify-content: space-between; padding: 8px 4px;
+        border-bottom: 1px dashed var(--border); font-size: 12.5px; gap: 10px;
+    }
+    .cost-row:last-child { border-bottom: none; }
+    .cost-row-label { display: flex; flex-direction: column; gap: 1px; }
+    .cost-row-label b { font-size: 12.5px; }
+    .cost-row-label span { font-size: 10.5px; color: var(--text-3); }
+    .cost-row-val { text-align: left; white-space: nowrap; }
+    .cost-row-val b { font-size: 13px; }
+    .cost-row-val .unknown { color: var(--text-3); font-size: 11px; }
+
     #tableWrap { flex: 1; overflow: auto; padding: 0 0 30px; }
     table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1400px; }
     thead th {
@@ -203,6 +231,21 @@
             <option value="name">ترتيب: الاسم</option>
         </select>
         <span class="stat-chip" id="onlineChip">—</span>
+    </div>
+
+    <div class="cost-panel">
+        <div class="cost-summary" onclick="toggleCostDetails()">
+            <div class="cost-summary-left">
+                <i class="fas fa-chart-simple"></i>
+                <div class="cost-total" id="costTotalLabel">جارٍ التحميل...</div>
+                <span class="cost-warn" id="costWarnBadge" style="display:none;"><i class="fas fa-triangle-exclamation"></i> فيه مزودين سعرهم غير مؤكد</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <select class="cost-month-select" id="costMonthSelect" onclick="event.stopPropagation()" onchange="loadApiCosts()"></select>
+                <i class="fas fa-chevron-down" id="costChevron"></i>
+            </div>
+        </div>
+        <div class="cost-details" id="costDetails"></div>
     </div>
 
     <div id="tableWrap">
@@ -324,7 +367,9 @@
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainScreen').style.display = 'flex';
         populateFeatureFilter();
+        populateCostMonths();
         loadDashboard();
+        loadApiCosts();
     }
 
     function populateFeatureFilter() {
@@ -372,6 +417,46 @@
         const days = Math.floor(hrs / 24);
         if (days < 30) return `من ${days} يوم`;
         return new Date(dateStr).toLocaleDateString('ar-EG');
+    }
+
+    // ====================== مراقبة تكلفة الـ API ======================
+    function populateCostMonths() {
+        const sel = document.getElementById('costMonthSelect');
+        const now = new Date();
+        const opts = [];
+        for (let i = 0; i < 6; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            const label = d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+            opts.push(`<option value="${key}">${i === 0 ? 'الشهر الحالي — ' : ''}${label}</option>`);
+        }
+        sel.innerHTML = opts.join('');
+    }
+
+    function toggleCostDetails() {
+        const el = document.getElementById('costDetails');
+        const chevron = document.getElementById('costChevron');
+        el.classList.toggle('open');
+        chevron.style.transform = el.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0)';
+    }
+
+    async function loadApiCosts() {
+        const monthKey = document.getElementById('costMonthSelect').value;
+        try {
+            const data = await apiFetch(`/api/admin/dashboard/api-costs?month=${encodeURIComponent(monthKey)}`);
+            const costLabel = document.getElementById('costTotalLabel');
+            costLabel.innerHTML = `<b>${data.totalCalls}</b> استدعاء هذا الشهر <small>· تقريبًا</small> $${data.totalKnownCostUsd}`;
+            document.getElementById('costWarnBadge').style.display = data.hasUnknownPricing ? 'inline-flex' : 'none';
+
+            const details = document.getElementById('costDetails');
+            details.innerHTML = data.rows.map(r => `
+                <div class="cost-row">
+                    <div class="cost-row-label"><b>${escapeHtml(r.label)}</b><span>${r.callCount} استدعاء · ~${(r.estInputTokens / 1000).toFixed(1)}k توكن دخول</span></div>
+                    <div class="cost-row-val">${r.priceKnown ? `<b>$${r.estCostUsd}</b>` : '<span class="unknown">السعر غير مؤكد</span>'}</div>
+                </div>`).join('') || '<div class="muted" style="padding:10px 4px;">مفيش بيانات للشهر ده</div>';
+        } catch (e) {
+            document.getElementById('costTotalLabel').textContent = 'تعذر تحميل بيانات التكلفة';
+        }
     }
 
     function renderTable() {
