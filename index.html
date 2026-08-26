@@ -2152,6 +2152,28 @@
         </div>
     </div>
 
+    <!-- اختبار سريع اتولّد تلقائيًا من محتوى ملف بالمكتبة المشتركة (فيتشر 1) -->
+    <div class="modal-overlay" id="summaryQuizModal">
+        <div class="modal" style="max-width:440px;max-height:82vh;display:flex;flex-direction:column;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-list-check"></i> <span id="sqTitle">اختبار سريع</span></div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('summaryQuizModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="sqBody" style="overflow-y:auto;flex:1;"></div>
+        </div>
+    </div>
+
+    <!-- تلخيص تلقائي لملف من المكتبة المشتركة (فيتشر 5) -->
+    <div class="modal-overlay" id="summaryTLDRModal">
+        <div class="modal" style="max-width:440px;max-height:80vh;display:flex;flex-direction:column;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-wand-magic-sparkles"></i> <span id="stTitle">تلخيص</span></div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('summaryTLDRModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="stBody" style="overflow-y:auto;flex:1;"></div>
+        </div>
+    </div>
+
     <!-- القسم الديني: قرآن، تسبيح واستغفار، أذكار الصباح والمساء، قصص الأنبياء، أسماء الله الحسنى -->
     <div class="modal-overlay" id="religionModal">
         <div class="modal">
@@ -7351,7 +7373,9 @@
                         </div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
                             <button onclick="openFilePreview('${f._id}')" style="font-size:11.5px;color:var(--accent);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0;"><i class="fas fa-eye"></i> معاينة الملف</button>
+                            <button onclick="checkSummarySimilarity('${f._id}')" style="font-size:11.5px;color:var(--accent);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0;"><i class="fas fa-clone"></i> فحص التشابه</button>
                         </div>
+                        <div id="simResult_${f._id}" style="display:none;font-size:11px;background:var(--bg-2);border-radius:8px;padding:8px 10px;margin-bottom:6px;line-height:1.8;"></div>
                         <div style="display:flex;gap:6px;">
                             <button class="btn-calc" style="flex:1;background:var(--success);" onclick="reviewSharedSummary('${f._id}', 'approve')"><i class="fas fa-check"></i> قبول</button>
                             <button class="btn-calc" style="flex:1;background:var(--danger);" onclick="reviewSharedSummary('${f._id}', 'reject')"><i class="fas fa-times"></i> رفض</button>
@@ -7361,6 +7385,38 @@
                 });
             } catch (e) {
                 listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل قائمة المراجعة</div>';
+            }
+        }
+
+        // فيتشر 6: فحص تشابه الملف اللي بيراجعه الأدمن مع باقي ملفات نفس الصف
+        // والمادة (TF-IDF عن طريق خدمة بايثون) — بيساعد يكتشف نسخ/تكرار قبل القبول.
+        async function checkSummarySimilarity(id) {
+            const box = document.getElementById(`simResult_${id}`);
+            if (!box) return;
+            box.style.display = 'block';
+            box.innerHTML = '<span style="color:var(--text-3);"><span class="btn-spinner"></span> جارٍ فحص التشابه...</span>';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/shared-summaries/${id}/check-similarity`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'فشل الفحص');
+
+                if (data.note) { box.innerHTML = `<span style="color:var(--text-3);">${escapeHtml(data.note)}</span>`; return; }
+                if (!data.matches || !data.matches.length) {
+                    box.innerHTML = '<span style="color:var(--success);"><i class="fas fa-check"></i> مفيش تشابه ملحوظ مع ملفات تانية</span>';
+                    return;
+                }
+                const statusLabels = { pending: 'تحت المراجعة', approved: 'معتمد' };
+                box.innerHTML = '<div style="font-weight:700;margin-bottom:4px;color:var(--warning);"><i class="fas fa-triangle-exclamation"></i> فيه تشابه مع:</div>' +
+                    data.matches.map(m => `
+                        <div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0;">
+                            <span>${escapeHtml(m.topic)} <span style="color:var(--text-3);">(${escapeHtml(statusLabels[m.status] || m.status)})</span></span>
+                            <span style="font-weight:700;color:${m.score >= 0.6 ? 'var(--danger)' : 'var(--warning)'};">${Math.round(m.score * 100)}%</span>
+                        </div>`).join('');
+            } catch (e) {
+                box.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر فحص التشابه')}</span>`;
             }
         }
 
@@ -7705,10 +7761,14 @@
                         <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;">
                             ${escapeHtml(f.subject)} · ${gradeLabels[f.grade] || f.grade} · رفعه ${escapeHtml(f.uploadedByName || f.uploadedBy)}
                         </div>
-                        <div style="display:flex;gap:6px;">
+                        <div style="display:flex;gap:6px;margin-bottom:6px;">
                             <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:6px 10px;font-size:12px;" onclick="openFilePreview('${f._id}')"><i class="fas fa-eye"></i> معاينة</button>
                             <button class="btn-calc" style="flex:1;padding:6px 10px;font-size:12px;" id="dlBtn_${f._id}" onclick="downloadSharedSummary('${f._id}', '${escapeAttr(f.name)}')"><i class="fas fa-download"></i> تحميل</button>
                             ${schoolUser?.type === 'admin' ? `<button class="btn-calc" style="flex:none;width:auto;padding:6px 10px;font-size:12px;background:var(--danger);color:#fff;" onclick="deleteLibraryFile('${f._id}')"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:6px 10px;font-size:12px;" onclick="openSummaryQuiz('${f._id}', '${escapeAttr(f.topic)}')"><i class="fas fa-list-check"></i> اختبرني</button>
+                            <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:6px 10px;font-size:12px;" onclick="openSummaryTLDR('${f._id}', '${escapeAttr(f.topic)}')"><i class="fas fa-wand-magic-sparkles"></i> لخّصهولي</button>
                         </div>
                         <div class="upload-progress-wrap" id="dlProgressWrap_${f._id}"><div class="upload-progress-bar" id="dlProgressBar_${f._id}"></div></div>
                         <div class="upload-progress-text" id="dlProgressText_${f._id}"></div>
@@ -7723,6 +7783,122 @@
         // عشان نحط اسم فيه " أو ' جوه onclick="" من غير ما يبوظ الـ HTML
         function escapeAttr(str) {
             return String(str || '').replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+        }
+
+        // ====================== فيتشر 1: اختبار سريع مُولّد تلقائيًا من ملف ======================
+        let sqCurrentQuestions = [];
+        let sqCurrentIndex = 0;
+        let sqScore = 0;
+        let sqAnswered = false;
+
+        async function openSummaryQuiz(summaryId, topic) {
+            document.getElementById('sqTitle').textContent = `اختبار: ${topic}`;
+            const body = document.getElementById('sqBody');
+            body.innerHTML = '<div style="text-align:center;padding:30px 10px;color:var(--text-3);font-size:12.5px;"><span class="btn-spinner"></span><br><br>جارٍ توليد الأسئلة من الملف...</div>';
+            openModal('summaryQuizModal');
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/gemini/questions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ summaryId, count: 5 })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'فشل توليد الأسئلة');
+                if (!data.questions || !data.questions.length) throw new Error('مفيش أسئلة اتولّدت من الملف ده');
+                sqCurrentQuestions = data.questions;
+                sqCurrentIndex = 0;
+                sqScore = 0;
+                renderSqQuestion();
+            } catch (e) {
+                body.innerHTML = `<div style="text-align:center;padding:30px 10px;color:var(--danger);font-size:12.5px;">${escapeHtml(e.message || 'تعذر توليد الأسئلة')}</div>`;
+            }
+        }
+
+        function renderSqQuestion() {
+            const body = document.getElementById('sqBody');
+            if (sqCurrentIndex >= sqCurrentQuestions.length) {
+                const pct = Math.round((sqScore / sqCurrentQuestions.length) * 100);
+                body.innerHTML = `
+                    <div style="text-align:center;padding:24px 10px;">
+                        <div style="font-size:34px;margin-bottom:6px;">${pct >= 70 ? '🎉' : pct >= 40 ? '💪' : '📚'}</div>
+                        <div style="font-size:16px;font-weight:800;">نتيجتك: ${sqScore} من ${sqCurrentQuestions.length}</div>
+                        <div style="font-size:12.5px;color:var(--text-3);margin-top:4px;">${pct}%</div>
+                        <button class="btn-calc" style="margin-top:16px;" onclick="closeModal('summaryQuizModal')">تمام</button>
+                    </div>`;
+                return;
+            }
+            sqAnswered = false;
+            const q = sqCurrentQuestions[sqCurrentIndex];
+            body.innerHTML = `
+                <div style="padding:4px 2px 14px;">
+                    <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;">سؤال ${sqCurrentIndex + 1} من ${sqCurrentQuestions.length}</div>
+                    <div style="font-size:14px;font-weight:700;margin-bottom:12px;line-height:1.7;">${escapeHtml(q.q)}</div>
+                    <div id="sqOptions" style="display:flex;flex-direction:column;gap:8px;"></div>
+                    <div id="sqExplain" style="display:none;margin-top:10px;font-size:12px;color:var(--text-2);background:var(--bg-2);border-radius:8px;padding:8px 10px;line-height:1.7;"></div>
+                    <button class="btn-calc" id="sqNextBtn" style="margin-top:14px;display:none;" onclick="sqNext()">${sqCurrentIndex === sqCurrentQuestions.length - 1 ? 'إنهاء' : 'التالي'}</button>
+                </div>`;
+            const optsEl = document.getElementById('sqOptions');
+            q.options.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-calc';
+                btn.style.cssText = 'background:var(--bg-2);color:var(--text-1);text-align:right;padding:10px 12px;font-size:12.5px;';
+                btn.textContent = opt;
+                btn.onclick = () => sqSelectOption(i);
+                optsEl.appendChild(btn);
+            });
+        }
+
+        function sqSelectOption(index) {
+            if (sqAnswered) return;
+            sqAnswered = true;
+            const q = sqCurrentQuestions[sqCurrentIndex];
+            if (index === q.correctIndex) sqScore++;
+            Array.from(document.getElementById('sqOptions').children).forEach((b, i) => {
+                b.disabled = true;
+                if (i === q.correctIndex) { b.style.background = 'var(--success)'; b.style.color = '#fff'; }
+                else if (i === index) { b.style.background = 'var(--danger)'; b.style.color = '#fff'; }
+            });
+            if (q.explanation) {
+                const exp = document.getElementById('sqExplain');
+                exp.style.display = 'block';
+                exp.innerHTML = `<i class="fas fa-circle-info"></i> ${escapeHtml(q.explanation)}`;
+            }
+            document.getElementById('sqNextBtn').style.display = 'block';
+        }
+
+        function sqNext() {
+            sqCurrentIndex++;
+            renderSqQuestion();
+        }
+
+        // ====================== فيتشر 5: تلخيص تلقائي لملف ======================
+        async function openSummaryTLDR(summaryId, topic) {
+            document.getElementById('stTitle').textContent = `تلخيص: ${topic}`;
+            const body = document.getElementById('stBody');
+            body.innerHTML = '<div style="text-align:center;padding:30px 10px;color:var(--text-3);font-size:12.5px;"><span class="btn-spinner"></span><br><br>جارٍ تلخيص الملف...</div>';
+            openModal('summaryTLDRModal');
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/gemini/file`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ summaryId })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'فشل التلخيص');
+                let html = '<div style="padding:4px 2px;">';
+                if (data.bulletPoints?.length) {
+                    html += '<div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--text-2);">أهم النقط:</div><ul style="margin:0 0 14px;padding-inline-start:20px;font-size:13px;line-height:2;">' +
+                        data.bulletPoints.map(b => `<li>${escapeHtml(b)}</li>`).join('') + '</ul>';
+                }
+                if (data.keyTerms?.length) {
+                    html += '<div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--text-2);">مصطلحات مهمة:</div><div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+                        data.keyTerms.map(t => `<span style="background:var(--bg-2);border-radius:20px;padding:4px 10px;font-size:11.5px;">${escapeHtml(t)}</span>`).join('') + '</div>';
+                }
+                html += '</div>';
+                body.innerHTML = html || '<div style="text-align:center;padding:30px 10px;color:var(--text-3);font-size:12.5px;">مفيش تلخيص متاح</div>';
+            } catch (e) {
+                body.innerHTML = `<div style="text-align:center;padding:30px 10px;color:var(--danger);font-size:12.5px;">${escapeHtml(e.message || 'تعذر تلخيص الملف')}</div>`;
+            }
         }
 
         async function downloadSharedSummary(id, displayName) {
