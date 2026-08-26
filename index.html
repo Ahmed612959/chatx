@@ -882,6 +882,21 @@
         }
         .close-modal:hover { color: var(--danger); border-color: var(--danger); }
 
+        /* ====================== تابات المكتبة المشتركة (كل المكتبة / ملفاتي) ====================== */
+        .lib-tab {
+            flex: 1; padding: 11px 8px; background: none; border: none; cursor: pointer;
+            font-size: 12.5px; font-weight: 700; color: var(--text-3);
+            border-bottom: 2px solid transparent; transition: color .15s, border-color .15s;
+        }
+        .lib-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .lib-status-badge {
+            display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px;
+            border-radius: 20px; margin-inline-start: 6px;
+        }
+        .lib-status-pending { background: rgba(234,179,8,.15); color: #b58900; }
+        .lib-status-approved { background: rgba(34,197,94,.15); color: var(--success); }
+        .lib-status-rejected { background: rgba(239,68,68,.15); color: var(--danger); }
+
         /* ====================== ثيمات غرفة المذاكرة ====================== */
         /* كل ثيم بيعرّف مجموعة متغيرات CSS محلية (--gc-*) بتتغطى على القيم الافتراضية
            في buildGroupChatBubble وخلفية #groupChatMessages. التغيير فوري لأي فقاعات
@@ -1406,7 +1421,7 @@
                     <button class="action-btn" aria-label="تبديل الوضع الليلي والنهاري" onclick="toggleTheme(event)"><i class="fas fa-moon" id="themeIcon"></i></button>
                     <button class="action-btn" aria-label="القسم الديني" onclick="openReligionSection()"><i class="fas fa-mosque"></i></button>
                     <button class="action-btn" aria-label="مميزات Premium" onclick="openPremiumHub()"><i class="fas fa-crown"></i></button>
-                    <button class="action-btn" aria-label="المكتبة المشتركة" onclick="openModal('sharedLibraryModal'); loadSharedLibrary();"><i class="fas fa-layer-group"></i></button>
+                    <button class="action-btn" aria-label="المكتبة المشتركة" onclick="openModal('sharedLibraryModal'); switchLibraryTab('all');"><i class="fas fa-layer-group"></i></button>
                     <button class="action-btn" aria-label="فتح الأدوات" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
                 </div>
             </div>
@@ -2006,7 +2021,7 @@
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
                     شوف ملخصات زمايلك في المعهد، أو شارك ملخص بتاعك — هيتم مراجعة محتواه من الأدمن الأول قبل ما يظهر للباقي.
                 </p>
-                <button class="btn-calc" onclick="closeModal('toolsModal'); openModal('sharedLibraryModal'); loadSharedLibrary();"><i class="fas fa-book-open"></i> تصفح المكتبة</button>
+                <button class="btn-calc" onclick="closeModal('toolsModal'); openModal('sharedLibraryModal'); switchLibraryTab('all');"><i class="fas fa-book-open"></i> تصفح المكتبة</button>
                 <button class="btn-calc" style="background:var(--bg-2);color:var(--text-2);margin-top:6px;" onclick="closeModal('toolsModal'); openModal('uploadSummaryModal');"><i class="fas fa-cloud-upload-alt"></i> شارك ملخص</button>
             </div>
         </div>
@@ -2128,7 +2143,11 @@
                 <div class="modal-title"><i class="fas fa-layer-group"></i> المكتبة المشتركة</div>
                 <button class="close-modal" aria-label="إغلاق المكتبة المشتركة" onclick="closeModal('sharedLibraryModal')"><i class="fas fa-times"></i></button>
             </div>
-            <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border);">
+            <div style="display:flex;border-bottom:1px solid var(--border);">
+                <button id="libTabAll" class="lib-tab active" onclick="switchLibraryTab('all')">كل المكتبة</button>
+                <button id="libTabMine" class="lib-tab" onclick="switchLibraryTab('mine')">ملفاتي <span id="libMineCount" style="display:none;"></span></button>
+            </div>
+            <div id="libraryFiltersRow" style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border);">
                 <select id="libraryGradeFilter" class="tool-input" style="flex:1;min-width:120px;" onchange="loadSharedLibrary()">
                     <option value="">كل الصفوف</option>
                     <option value="first">الأول الثانوي</option>
@@ -7728,8 +7747,51 @@
             openModal('filePreviewModal');
         }
 
+        let currentLibraryTab = 'all';
+
+        function switchLibraryTab(tab) {
+            currentLibraryTab = tab;
+            document.getElementById('libTabAll').classList.toggle('active', tab === 'all');
+            document.getElementById('libTabMine').classList.toggle('active', tab === 'mine');
+            // فلتر الصف ومعاه زرار "شارك ملخص" منطقيين بس في تبويب المكتبة العامة —
+            // في "ملفاتي" الطالب أصلاً شايف كل ملفاته هو بغض النظر عن الصف.
+            document.getElementById('libraryFiltersRow').style.display = tab === 'all' ? 'flex' : 'none';
+            if (tab === 'all') loadSharedLibrary(); else loadMySummaries();
+        }
+
+        // بترجع HTML صف واحد للملف — بتتستخدم في المكتبة العامة و"ملفاتي" مع بعض
+        // عشان زراير الأسئلة/التلخيص تفضل واحدة في المكانين (مفيش تكرار كود).
+        function buildLibraryRowHtml(f, opts) {
+            opts = opts || {};
+            const statusBadges = {
+                pending: '<span class="lib-status-badge lib-status-pending"><i class="fas fa-clock"></i> تحت المراجعة</span>',
+                approved: '<span class="lib-status-badge lib-status-approved"><i class="fas fa-check"></i> معتمد</span>',
+                rejected: '<span class="lib-status-badge lib-status-rejected"><i class="fas fa-xmark"></i> مرفوض</span>'
+            };
+            const gradeLabels = { first: 'الأول الثانوي', second: 'الثاني الثانوي', third: 'الثالث الثانوي' };
+            return `
+                <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${escapeHtml(f.topic)} ${opts.showStatus ? (statusBadges[f.status] || '') : ''}</div>
+                <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;">
+                    ${escapeHtml(f.subject)} · ${gradeLabels[f.grade] || f.grade}${opts.showStatus ? '' : ' · رفعه ' + escapeHtml(f.uploadedByName || f.uploadedBy)}
+                </div>
+                ${f.status === 'rejected' && f.rejectionReason ? `<div style="font-size:11px;color:var(--danger);margin-bottom:8px;"><i class="fas fa-circle-info"></i> سبب الرفض: ${escapeHtml(f.rejectionReason)}</div>` : ''}
+                <div style="display:flex;gap:6px;margin-bottom:6px;">
+                    <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:6px 10px;font-size:12px;" onclick="openFilePreview('${f._id}')"><i class="fas fa-eye"></i> معاينة</button>
+                    <button class="btn-calc" style="flex:1;padding:6px 10px;font-size:12px;" id="dlBtn_${f._id}" onclick="downloadSharedSummary('${f._id}', '${escapeAttr(f.name)}')"><i class="fas fa-download"></i> تحميل</button>
+                    ${schoolUser?.type === 'admin' && !opts.hideAdminDelete ? `<button class="btn-calc" style="flex:none;width:auto;padding:6px 10px;font-size:12px;background:var(--danger);color:#fff;" onclick="deleteLibraryFile('${f._id}')"><i class="fas fa-trash"></i></button>` : ''}
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:6px 10px;font-size:12px;" onclick="openSummaryQuiz('${f._id}', '${escapeAttr(f.topic)}')"><i class="fas fa-list-check"></i> اختبرني</button>
+                    <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:6px 10px;font-size:12px;" onclick="openSummaryTLDR('${f._id}', '${escapeAttr(f.topic)}')"><i class="fas fa-wand-magic-sparkles"></i> لخّصهولي</button>
+                </div>
+                <div class="upload-progress-wrap" id="dlProgressWrap_${f._id}"><div class="upload-progress-bar" id="dlProgressBar_${f._id}"></div></div>
+                <div class="upload-progress-text" id="dlProgressText_${f._id}"></div>
+            `;
+        }
+
         async function loadSharedLibrary() {
             const listEl = document.getElementById('sharedLibraryList');
+            document.getElementById('libTabMine').style.display = schoolUser?.type === 'student' ? '' : 'none';
             if (!schoolToken) {
                 listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">لازم تسجّل دخول School X الأول</div>';
                 return;
@@ -7749,34 +7811,57 @@
                     listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">لسه مفيش ملخصات متاحة في القسم ده</div>';
                     return;
                 }
-                const gradeLabels = { first: 'الأول الثانوي', second: 'الثاني الثانوي', third: 'الثالث الثانوي' };
                 listEl.innerHTML = '';
                 files.forEach(f => {
                     registerPreviewFile(f._id, f.url, f.name);
                     const row = document.createElement('div');
                     row.id = `libItem_${f._id}`;
                     row.style.cssText = 'padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;';
-                    row.innerHTML = `
-                        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${escapeHtml(f.topic)}</div>
-                        <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;">
-                            ${escapeHtml(f.subject)} · ${gradeLabels[f.grade] || f.grade} · رفعه ${escapeHtml(f.uploadedByName || f.uploadedBy)}
-                        </div>
-                        <div style="display:flex;gap:6px;margin-bottom:6px;">
-                            <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:6px 10px;font-size:12px;" onclick="openFilePreview('${f._id}')"><i class="fas fa-eye"></i> معاينة</button>
-                            <button class="btn-calc" style="flex:1;padding:6px 10px;font-size:12px;" id="dlBtn_${f._id}" onclick="downloadSharedSummary('${f._id}', '${escapeAttr(f.name)}')"><i class="fas fa-download"></i> تحميل</button>
-                            ${schoolUser?.type === 'admin' ? `<button class="btn-calc" style="flex:none;width:auto;padding:6px 10px;font-size:12px;background:var(--danger);color:#fff;" onclick="deleteLibraryFile('${f._id}')"><i class="fas fa-trash"></i></button>` : ''}
-                        </div>
-                        <div style="display:flex;gap:6px;">
-                            <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:6px 10px;font-size:12px;" onclick="openSummaryQuiz('${f._id}', '${escapeAttr(f.topic)}')"><i class="fas fa-list-check"></i> اختبرني</button>
-                            <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:6px 10px;font-size:12px;" onclick="openSummaryTLDR('${f._id}', '${escapeAttr(f.topic)}')"><i class="fas fa-wand-magic-sparkles"></i> لخّصهولي</button>
-                        </div>
-                        <div class="upload-progress-wrap" id="dlProgressWrap_${f._id}"><div class="upload-progress-bar" id="dlProgressBar_${f._id}"></div></div>
-                        <div class="upload-progress-text" id="dlProgressText_${f._id}"></div>
-                    `;
+                    row.innerHTML = buildLibraryRowHtml(f, { showStatus: false });
                     listEl.appendChild(row);
                 });
             } catch (e) {
                 listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل المكتبة المشتركة</div>';
+            }
+        }
+
+        // ====================== "ملفاتي" — ملفات الطالب نفسه بكل حالاتها ======================
+        // ده اللي بيسمح للطالب يطلّع أسئلة/تلخيص من ملف رفعه هو بنفسه حتى لو
+        // لسه تحت مراجعة الأدمن (مش لازم يستنى الموافقة عشان يستفيد من محتواه).
+        async function loadMySummaries() {
+            const listEl = document.getElementById('sharedLibraryList');
+            if (!schoolToken) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">لازم تسجّل دخول School X الأول</div>';
+                return;
+            }
+            listEl.innerHTML = Array.from({ length: 3 }).map(() =>
+                `<div class="skeleton-row"><div class="skeleton-line long"></div><div class="skeleton-line short"></div></div>`
+            ).join('');
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/shared-summaries/mine`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const files = await res.json();
+                const countEl = document.getElementById('libMineCount');
+                if (files.length) { countEl.textContent = `(${files.length})`; countEl.style.display = ''; }
+                else countEl.style.display = 'none';
+
+                if (!files.length) {
+                    listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">لسه مارفعتش أي ملف — دوس "شارك ملخص" عشان تبدأ</div>';
+                    return;
+                }
+                listEl.innerHTML = '';
+                files.forEach(f => {
+                    registerPreviewFile(f._id, f.url, f.name);
+                    const row = document.createElement('div');
+                    row.id = `libItem_${f._id}`;
+                    row.style.cssText = 'padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;';
+                    row.innerHTML = buildLibraryRowHtml(f, { showStatus: true, hideAdminDelete: true });
+                    listEl.appendChild(row);
+                });
+            } catch (e) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل ملفاتك</div>';
             }
         }
 
