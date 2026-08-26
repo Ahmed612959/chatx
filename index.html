@@ -8116,7 +8116,7 @@
                     if (xhr.status >= 200 && xhr.status < 300) resolve();
                     else reject(new Error('فشل رفع الملف على التخزين (كود ' + xhr.status + ')'));
                 };
-                xhr.onerror = () => reject(new Error('خطأ في الشبكة أثناء الرفع'));
+                xhr.onerror = () => reject(new Error('تعذر الرفع مباشرة على التخزين — الاحتمال الأكبر إن إعدادات CORS في باكت R2 مش سامحة بطلبات PUT من دومين الموقع ده (افتح Console في المتصفح هتلاقي سطر أحمر بيقول CORS policy لو ده السبب)'));
                 xhr.send(file);
             });
         }
