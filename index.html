@@ -7651,14 +7651,18 @@
         function openFilePreview(id) {
             const f = filePreviewRegistry[id];
             if (!f) return;
-            previewFile(f.url, f.name);
+            previewFile(f.url, f.name, id);
         }
 
-        // معاينة فعلية للملف حسب نوعه (مش مجرد رابط تحميل) — بتفتح مباشرة من رابط
-        // R2 العام، من غير ما تعدي على السيرفر بتاعنا خالص.
+        // معاينة فعلية للملف حسب نوعه (مش مجرد رابط تحميل).
         // بيرندر الـ PDF صفحة صفحة على canvas داخل مودال المعاينة — بديل عن iframe
         // عشان كروم بالموبايل بيرفض يعرض PDF جوه iframe وبيوجّه لتحميل بدل كده.
-        async function renderPdfPreview(url, name) {
+        // بنجيب بايتس الملف عن طريق بروكسي السيرفر بتاعنا (/api/shared-summaries/preview/:id)
+        // مش من رابط R2 مباشرة — كده معتمدين على CORS الخاص بدومين الـ API بتاعنا
+        // (اللي أصلاً بيشتغل مع باقي الموقع) بدل ما نعتمد على إعدادات CORS في باكت
+        // R2 نفسه واللي ممكن تكون مش مضبوطة. لو مفيش id (حالة نادرة)، بنرجع لمحاولة
+        // الرابط المباشر كـ fallback أخير.
+        async function renderPdfPreview(url, name, id) {
             const body = document.getElementById('filePreviewBody');
             body.innerHTML = '<div style="color:var(--text-3);font-size:12px;text-align:center;padding:20px;">جارٍ تحميل الـ PDF...</div>';
 
@@ -7673,7 +7677,27 @@
                 if (pdfjsLib.GlobalWorkerOptions && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
                     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
                 }
-                const pdf = await pdfjsLib.getDocument({ url }).promise;
+
+                let pdf;
+                if (id) {
+                    // بنجيب البايتس من السيرفر بتاعنا (نفس الدومين اللي كل الـ API
+                    // بيشتغل عليه) بدل ما نطلب من pdf.js يجيبها هو من R2 مباشرة —
+                    // كده مش محتاجين R2 يبقى مضبوط عليه CORS خالص.
+                    const fileRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/shared-summaries/preview/${id}`, {
+                        headers: { 'Authorization': `Bearer ${schoolToken}` }
+                    });
+                    if (!fileRes.ok) {
+                        let msg = 'تعذر تحميل الملف للمعاينة';
+                        try { const d = await fileRes.json(); if (d?.error) msg = d.error; } catch (_) {}
+                        throw new Error(msg);
+                    }
+                    const buffer = await fileRes.arrayBuffer();
+                    pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+                } else {
+                    // fallback نادر — مفيش id (ملف مش من المكتبة المشتركة مثلًا)،
+                    // نرجع للمحاولة القديمة بالرابط المباشر.
+                    pdf = await pdfjsLib.getDocument({ url }).promise;
+                }
 
                 const wrap = document.createElement('div');
                 wrap.style.cssText = 'width:100%;height:100%;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px 0;';
@@ -7704,14 +7728,15 @@
                     wrap.appendChild(note);
                 }
             } catch (e) {
+                console.error('PDF preview failed:', e);
                 body.innerHTML = `<div style="text-align:center;color:var(--text-2);font-size:13px;line-height:2;">
-                    تعذرت معاينة الملف جوه التطبيق.<br>
+                    ${escapeHtml(e.message && e.message !== 'Failed to fetch' ? e.message : 'تعذرت معاينة الملف جوه التطبيق')}.<br>
                     <a href="${url}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;">افتح الملف في تاب جديد</a>
                 </div>`;
             }
         }
 
-        function previewFile(url, name) {
+        function previewFile(url, name, id) {
             const body = document.getElementById('filePreviewBody');
             const titleEl = document.getElementById('filePreviewTitle');
             titleEl.innerHTML = `<i class="fas fa-eye"></i> ${escapeHtml(name || 'معاينة الملف')}`;
@@ -7726,7 +7751,7 @@
                 // للموبايل (بيعتبره "ملف يتحمّل" مش صفحة تتعرض). عشان كده بنرندر
                 // الـ PDF بنفسنا على canvas بمكتبة pdf.js (موجودة أصلاً في المشروع) —
                 // كده العرض مضمون في أي متصفح، من غير ما نعتمد على سلوك المتصفح نفسه.
-                renderPdfPreview(url, name);
+                renderPdfPreview(url, name, id);
             } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
                 // معاينة ملفات الأوفيس عن طريق Google Docs Viewer (محتاج الرابط يكون عام — وهو كذلك)
                 const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
@@ -8107,15 +8132,22 @@
             const bar = document.getElementById('summaryUploadProgressBar');
             const progText = document.getElementById('summaryUploadProgressText');
 
-            if (!schoolToken) { statusEl.innerHTML = '<span style="color:var(--danger);">لازم تسجّل دخول School X الأول</span>'; return; }
+            // statusEl عنده class="calc-result" واللي افتراضيًا display:none، ومحتاج
+            // class="show" عشان يظهر (زي أي عنصر calc-result تاني في الموقع). ده
+            // اللي كان بيخلي رسائل الخطأ/النجاح كلها تتكتب فعليًا بس متبقاش ظاهرة
+            // على الشاشة — يعني دوسة "رفع" كانت بتبان وكأنها "مش بتعمل حاجة".
+            const showStatus = (html) => { statusEl.innerHTML = html; statusEl.classList.add('show'); };
+
+            if (!schoolToken) { showStatus('<span style="color:var(--danger);">لازم تسجّل دخول School X الأول</span>'); return; }
             const file = fileInput.files[0];
-            if (!file) { statusEl.innerHTML = '<span style="color:var(--danger);">اختار ملف الأول</span>'; return; }
-            if (!topic) { statusEl.innerHTML = '<span style="color:var(--danger);">اكتب موضوع الملف</span>'; return; }
-            if (!subject) { statusEl.innerHTML = '<span style="color:var(--danger);">اكتب اسم المادة</span>'; return; }
-            if (file.size > 500 * 1024 * 1024) { statusEl.innerHTML = '<span style="color:var(--danger);">حجم الملف كبير جدًا</span>'; return; }
+            if (!file) { showStatus('<span style="color:var(--danger);">اختار ملف الأول</span>'); return; }
+            if (!topic) { showStatus('<span style="color:var(--danger);">اكتب موضوع الملف</span>'); return; }
+            if (!subject) { showStatus('<span style="color:var(--danger);">اكتب اسم المادة</span>'); return; }
+            if (file.size > 500 * 1024 * 1024) { showStatus('<span style="color:var(--danger);">حجم الملف كبير جدًا</span>'); return; }
 
             btn.disabled = true;
             statusEl.innerHTML = '';
+            statusEl.classList.remove('show');
             wrap.style.display = 'block';
             bar.style.width = '0%';
             progText.textContent = 'جارٍ التحضير...';
@@ -8155,14 +8187,14 @@
 
                 bar.style.width = '100%';
                 progText.textContent = 'تم الرفع بنجاح ✅';
-                statusEl.innerHTML = '<span style="color:var(--success);">تم رفع الملف بنجاح، هيتم مراجعة محتواه لكي يظهر على الصفحة من قبل الأدمن ✅</span>';
+                showStatus('<span style="color:var(--success);">تم رفع الملف بنجاح، هيتم مراجعة محتواه لكي يظهر على الصفحة من قبل الأدمن ✅</span>');
                 fileInput.value = '';
                 document.getElementById('summaryTopicInput').value = '';
                 document.getElementById('summarySubjectInput').value = '';
                 showToast('تم الرفع، هيتم مراجعته من الأدمن قبل ما يظهر', 'success');
                 setTimeout(() => { wrap.style.display = 'none'; progText.textContent = ''; bar.style.width = '0%'; }, 2000);
             } catch (e) {
-                statusEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر رفع الملف، حاول تاني')}</span>`;
+                showStatus(`<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر رفع الملف، حاول تاني')}</span>`);
                 wrap.style.display = 'none';
                 progText.textContent = '';
             } finally {
