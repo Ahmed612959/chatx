@@ -2024,6 +2024,13 @@
                 <button class="btn-calc" onclick="closeModal('toolsModal'); openModal('sharedLibraryModal'); switchLibraryTab('all');"><i class="fas fa-book-open"></i> تصفح المكتبة</button>
                 <button class="btn-calc" style="background:var(--bg-2);color:var(--text-2);margin-top:6px;" onclick="closeModal('toolsModal'); openModal('uploadSummaryModal');"><i class="fas fa-cloud-upload-alt"></i> شارك ملخص</button>
             </div>
+            <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-wand-magic-sparkles"></i> استوديو الصور الذكي 👑</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    حلّل أي صورة برؤية ذكاء اصطناعي حقيقية (مش استخراج نص بس)، أو أنشئ صورة من وصف نصي. ميزة Premium.
+                </p>
+                <button class="btn-calc" onclick="closeModal('toolsModal'); openImageStudio();"><i class="fas fa-image"></i> افتح استوديو الصور</button>
+            </div>
         </div>
     </div>
 
@@ -2190,6 +2197,53 @@
                 <button class="close-modal" aria-label="إغلاق" onclick="closeModal('summaryTLDRModal')"><i class="fas fa-times"></i></button>
             </div>
             <div id="stBody" style="overflow-y:auto;flex:1;"></div>
+        </div>
+    </div>
+
+    <!-- استوديو الصور الذكي (Premium): تحليل صورة برؤية AI حقيقية + إنشاء صورة من وصف نصي -->
+    <div class="modal-overlay" id="imageStudioModal">
+        <div class="modal" style="max-width:460px;max-height:85vh;display:flex;flex-direction:column;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-wand-magic-sparkles"></i> استوديو الصور الذكي</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('imageStudioModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;">
+                <button id="isTabAnalyze" class="lib-tab active" onclick="switchImageStudioTab('analyze')"><i class="fas fa-magnifying-glass"></i> حلّل صورة</button>
+                <button id="isTabGenerate" class="lib-tab" onclick="switchImageStudioTab('generate')"><i class="fas fa-paintbrush"></i> أنشئ صورة</button>
+            </div>
+
+            <!-- تبويب: تحليل صورة -->
+            <div id="isPaneAnalyze" style="overflow-y:auto;flex:1;">
+                <input type="file" id="isAnalyzeFileInput" accept="image/*" style="display:none;" onchange="handleImageStudioFileSelect(this.files[0])">
+                <div id="isAnalyzePreviewWrap" style="display:none;text-align:center;margin-bottom:12px;">
+                    <img id="isAnalyzePreviewImg" style="max-width:100%;max-height:220px;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);">
+                </div>
+                <button class="btn-calc" style="background:var(--bg-2);color:var(--text-2);margin-bottom:10px;" onclick="document.getElementById('isAnalyzeFileInput').click()">
+                    <i class="fas fa-camera"></i> اختر صورة أو صوّرها
+                </button>
+                <div class="input-group">
+                    <label>سؤالك عن الصورة (اختياري)</label>
+                    <input type="text" id="isAnalyzeQuestion" class="tool-input" placeholder="مثلًا: اشرحلي الرسم التوضيحي ده">
+                </div>
+                <button class="btn-calc" id="isAnalyzeBtn" onclick="runImageStudioAnalyze()"><i class="fas fa-magnifying-glass"></i> حلّل الصورة</button>
+                <div class="calc-result" id="isAnalyzeResult" style="text-align:right;line-height:1.9;"></div>
+            </div>
+
+            <!-- تبويب: إنشاء صورة -->
+            <div id="isPaneGenerate" style="display:none;overflow-y:auto;flex:1;">
+                <div class="input-group">
+                    <label>اوصف الصورة اللي عايزها</label>
+                    <input type="text" id="isGeneratePrompt" class="tool-input" placeholder="مثلًا: رسم توضيحي لجهاز الدوران في جسم الإنسان">
+                </div>
+                <button class="btn-calc" id="isGenerateBtn" onclick="runImageStudioGenerate()"><i class="fas fa-paintbrush"></i> أنشئ الصورة</button>
+                <div id="isGenerateResultWrap" style="display:none;text-align:center;margin-top:14px;">
+                    <img id="isGenerateResultImg" style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);" onerror="handleImageStudioGenerateError()">
+                    <div style="margin-top:8px;">
+                        <a id="isGenerateDownloadLink" download="ai-image.jpg" class="btn-calc" style="display:inline-flex;background:var(--bg-2);color:var(--text-2);width:auto;padding:8px 16px;"><i class="fas fa-download"></i> تحميل الصورة</a>
+                    </div>
+                </div>
+                <div class="calc-result" id="isGenerateStatus"></div>
+            </div>
         </div>
     </div>
 
@@ -3528,7 +3582,8 @@
             premium_skills: { icon: '🧩', title: 'مهارات مخصصة (Skills)', desc: 'اعمل مهارات خاصة بيك (تعليمات ثابتة يلتزم بيها المساعد)، وهو يستخدمها تلقائي في ردوده وقت ما تكون مناسبة.' },
             premium_academic_profile: { icon: '📊', title: 'البروفايل الأكاديمي الموحّد', desc: 'كل حاجة عن أدائك (حضور، نتائج امتحانات، واجبات، مخالفات) في شاشة واحدة، بدل ما تكون متفرقة.' },
             premium_german_pro: { icon: '🇩🇪', title: 'German Pro — الألمانية الاحترافية للتمريض', desc: 'مدرّس ألماني ذكي بيبنيلك خطة تعلّم شخصية (أساسيات + محادثات يومية + Fachsprache Pflege/التمريض) ويمشي معاك خطوة بخطوة مع مراجعة مستمرة عشان متنساش.' },
-            premium_english_pro: { icon: '🇬🇧', title: 'English Pro — الإنجليزية الاحترافية للتمريض', desc: 'مدرّس إنجليزي ذكي بيبنيلك خطة تعلّم شخصية (أساسيات + محادثات يومية + إنجليزية التمريض/OET-IELTS) مع قاموس طبي وتمريضي وصيدلي كامل، ويمشي معاك خطوة بخطوة.' }
+            premium_english_pro: { icon: '🇬🇧', title: 'English Pro — الإنجليزية الاحترافية للتمريض', desc: 'مدرّس إنجليزي ذكي بيبنيلك خطة تعلّم شخصية (أساسيات + محادثات يومية + إنجليزية التمريض/OET-IELTS) مع قاموس طبي وتمريضي وصيدلي كامل، ويمشي معاك خطوة بخطوة.' },
+            premium_image_studio: { icon: '🖼️', title: 'استوديو الصور الذكي', desc: 'حلّل أي صورة (صفحة كتاب، رسم تشريحي، جهاز، تحليل) بدقة عالية عن طريق رؤية ذكاء اصطناعي حقيقية — مش OCR بس. وكمان أنشئ أي صورة توضيحية تتخيلها من وصف نصي.' }
         };
         // الأدمن (type === 'admin' جاية من بيانات School X) عنده كل مميزات Premium تلقائيًا
         // من غير ما يحتاج يفعّلها لنفسه — طبيعي إنه يقدر يجرب أي حاجة بيفعّلها للطلاب.
@@ -10130,6 +10185,113 @@ ${r.pathSummary}
         function saveCustomSkills(skills) {
             localStorage.setItem('sx_custom_skills', JSON.stringify(skills));
         }
+        // ====================== استوديو الصور الذكي (Premium): تحليل + إنشاء ======================
+        let isAnalyzeImage = null; // { base64, mimeType } للصورة المختارة للتحليل
+
+        function openImageStudio() {
+            if (!hasPremium('premium_image_studio')) {
+                closeModal('toolsModal');
+                showToast('ميزة استوديو الصور محتاجة تفعيل Premium من الأدمن', 'error');
+                return;
+            }
+            if (!schoolToken) { showToast('لازم تسجّل دخول School X الأول', 'error'); return; }
+            // تصفير الحالة كل ما نفتح الاستوديو من جديد
+            isAnalyzeImage = null;
+            document.getElementById('isAnalyzePreviewWrap').style.display = 'none';
+            document.getElementById('isAnalyzeQuestion').value = '';
+            document.getElementById('isAnalyzeResult').classList.remove('show');
+            document.getElementById('isAnalyzeResult').innerHTML = '';
+            document.getElementById('isGeneratePrompt').value = '';
+            document.getElementById('isGenerateResultWrap').style.display = 'none';
+            document.getElementById('isGenerateStatus').classList.remove('show');
+            switchImageStudioTab('analyze');
+            openModal('imageStudioModal');
+        }
+
+        function switchImageStudioTab(tab) {
+            document.getElementById('isTabAnalyze').classList.toggle('active', tab === 'analyze');
+            document.getElementById('isTabGenerate').classList.toggle('active', tab === 'generate');
+            document.getElementById('isPaneAnalyze').style.display = tab === 'analyze' ? 'block' : 'none';
+            document.getElementById('isPaneGenerate').style.display = tab === 'generate' ? 'block' : 'none';
+        }
+
+        function handleImageStudioFileSelect(file) {
+            if (!file) return;
+            // نفس الضغط المستخدم في كل مكان تاني بالموقع — كافي جدًا لدقة تحليل عالية
+            // ومنيّح لينا حجم الـ request للـ API.
+            compressImageFile(file, 1280, 0.8).then((compressedFile) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    isAnalyzeImage = { base64: reader.result.split(',')[1], mimeType: compressedFile.type };
+                    document.getElementById('isAnalyzePreviewImg').src = reader.result;
+                    document.getElementById('isAnalyzePreviewWrap').style.display = 'block';
+                };
+                reader.onerror = () => showToast('تعذرت قراءة الصورة', 'error');
+                reader.readAsDataURL(compressedFile);
+            });
+        }
+
+        async function runImageStudioAnalyze() {
+            if (!isAnalyzeImage) { showToast('اختار صورة الأول', 'error'); return; }
+            const btn = document.getElementById('isAnalyzeBtn');
+            const resultEl = document.getElementById('isAnalyzeResult');
+            const question = document.getElementById('isAnalyzeQuestion').value.trim();
+            btn.disabled = true;
+            resultEl.innerHTML = '<span class="btn-spinner"></span> جارٍ تحليل الصورة بدقة...';
+            resultEl.classList.add('show');
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/vision-analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ image: isAnalyzeImage, question })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'فشل تحليل الصورة');
+                resultEl.innerHTML = escapeHtml(data.analysis).replace(/\n/g, '<br>');
+            } catch (e) {
+                resultEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر تحليل الصورة')}</span>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function handleImageStudioGenerateError() {
+            document.getElementById('isGenerateResultWrap').style.display = 'none';
+            const statusEl = document.getElementById('isGenerateStatus');
+            statusEl.classList.add('show');
+            statusEl.innerHTML = '<span style="color:var(--danger);">تعذر تحميل الصورة، جرب تاني</span>';
+        }
+
+        async function runImageStudioGenerate() {
+            const prompt = document.getElementById('isGeneratePrompt').value.trim();
+            if (!prompt) { showToast('اكتب وصف الصورة الأول', 'error'); return; }
+            const btn = document.getElementById('isGenerateBtn');
+            const statusEl = document.getElementById('isGenerateStatus');
+            const resultWrap = document.getElementById('isGenerateResultWrap');
+            btn.disabled = true;
+            resultWrap.style.display = 'none';
+            statusEl.innerHTML = '<span class="btn-spinner"></span> جارٍ إنشاء الصورة... (ممكن تاخد لحظات)';
+            statusEl.classList.add('show');
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/generate-image`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ prompt })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'فشل إنشاء الصورة');
+                document.getElementById('isGenerateResultImg').src = data.imageUrl;
+                document.getElementById('isGenerateDownloadLink').href = data.imageUrl;
+                resultWrap.style.display = 'block';
+                statusEl.classList.remove('show');
+                statusEl.innerHTML = '';
+            } catch (e) {
+                statusEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر إنشاء الصورة')}</span>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
         function openPremiumSkills() {
             renderSkillsList();
             openModal('premiumSkillsModal');
