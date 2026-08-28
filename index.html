@@ -10287,7 +10287,12 @@ ${r.pathSummary}
                 document.getElementById('isGenerateDownloadLink').href = src;
                 resultWrap.style.display = 'block';
                 statusEl.classList.remove('show');
-                statusEl.innerHTML = data.fallback ? '<span style="color:var(--text-3);font-size:11px;">تم الإنشاء عن طريق خدمة بديلة مؤقتًا (Gemini كان مزدحم)</span>' : '';
+                const fallbackNote = data.fallbackProvider === 'cloudflare'
+                    ? 'تم الإنشاء عن طريق خدمة بديلة (Cloudflare) — Gemini كان مزدحم مؤقتًا'
+                    : data.fallbackProvider === 'pollinations'
+                        ? 'تم الإنشاء عن طريق خدمة بديلة (قد تكون النتيجة أقل التزامًا بالوصف)'
+                        : '';
+                statusEl.innerHTML = fallbackNote ? `<span style="color:var(--text-3);font-size:11px;">${fallbackNote}</span>` : '';
                 if (data.fallback) statusEl.classList.add('show');
             } catch (e) {
                 statusEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر إنشاء الصورة')}</span>`;
