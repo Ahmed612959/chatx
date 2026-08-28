@@ -10280,11 +10280,15 @@ ${r.pathSummary}
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'فشل إنشاء الصورة');
-                document.getElementById('isGenerateResultImg').src = data.imageUrl;
-                document.getElementById('isGenerateDownloadLink').href = data.imageUrl;
+                // Gemini بيرجّع بايتس الصورة (base64) مباشرة، بينما الـ fallback
+                // (Pollinations) بيرجّع رابط جاهز — نتعامل مع الاتنين.
+                const src = data.imageBase64 ? `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}` : data.imageUrl;
+                document.getElementById('isGenerateResultImg').src = src;
+                document.getElementById('isGenerateDownloadLink').href = src;
                 resultWrap.style.display = 'block';
                 statusEl.classList.remove('show');
-                statusEl.innerHTML = '';
+                statusEl.innerHTML = data.fallback ? '<span style="color:var(--text-3);font-size:11px;">تم الإنشاء عن طريق خدمة بديلة مؤقتًا (Gemini كان مزدحم)</span>' : '';
+                if (data.fallback) statusEl.classList.add('show');
             } catch (e) {
                 statusEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر إنشاء الصورة')}</span>`;
             } finally {
