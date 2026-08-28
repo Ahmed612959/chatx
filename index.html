@@ -2235,6 +2235,17 @@
                     <label>اوصف الصورة اللي عايزها</label>
                     <input type="text" id="isGeneratePrompt" class="tool-input" placeholder="مثلًا: رسم توضيحي لجهاز الدوران في جسم الإنسان">
                 </div>
+                <div class="input-group">
+                    <label>الموديل</label>
+                    <select id="isGenerateProvider" class="tool-input">
+                        <option value="auto">تلقائي (يجرب الأفضل المتاح)</option>
+                        <option value="qwen">Qwen</option>
+                        <option value="gemini">Gemini (Nano Banana)</option>
+                        <option value="together">Together AI (FLUX)</option>
+                        <option value="cloudflare">Cloudflare (FLUX)</option>
+                        <option value="pollinations">Pollinations</option>
+                    </select>
+                </div>
                 <button class="btn-calc" id="isGenerateBtn" onclick="runImageStudioGenerate()"><i class="fas fa-paintbrush"></i> أنشئ الصورة</button>
                 <div id="isGenerateResultWrap" style="display:none;text-align:center;margin-top:14px;">
                     <img id="isGenerateResultImg" style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);" onerror="handleImageStudioGenerateError()">
@@ -10202,6 +10213,7 @@ ${r.pathSummary}
             document.getElementById('isAnalyzeResult').classList.remove('show');
             document.getElementById('isAnalyzeResult').innerHTML = '';
             document.getElementById('isGeneratePrompt').value = '';
+            document.getElementById('isGenerateProvider').value = 'auto';
             document.getElementById('isGenerateResultWrap').style.display = 'none';
             document.getElementById('isGenerateStatus').classList.remove('show');
             switchImageStudioTab('analyze');
@@ -10265,6 +10277,7 @@ ${r.pathSummary}
         async function runImageStudioGenerate() {
             const prompt = document.getElementById('isGeneratePrompt').value.trim();
             if (!prompt) { showToast('اكتب وصف الصورة الأول', 'error'); return; }
+            const provider = document.getElementById('isGenerateProvider').value;
             const btn = document.getElementById('isGenerateBtn');
             const statusEl = document.getElementById('isGenerateStatus');
             const resultWrap = document.getElementById('isGenerateResultWrap');
@@ -10276,40 +10289,40 @@ ${r.pathSummary}
                 const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/generate-image`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
-                    body: JSON.stringify({ prompt })
+                    body: JSON.stringify({ prompt, provider })
                 });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'فشل إنشاء الصورة');
-                // Gemini بيرجّع بايتس الصورة (base64) مباشرة، بينما الـ fallback
-                // (Pollinations) بيرجّع رابط جاهز — نتعامل مع الاتنين.
+                if (!res.ok) {
+                    // لو الطالب اختار مزوّد بعينه وفشل، منعملش أي fallback تلقائي —
+                    // نوريه الخطأ صراحة عشان يقرر هو يجرب مزوّد تاني ولا لأ.
+                    const err = new Error(data.error || 'فشل إنشاء الصورة');
+                    if (data.debugAttempts) err.debugAttempts = data.debugAttempts;
+                    throw err;
+                }
+                // Gemini/Cloudflare بيرجّعوا بايتس الصورة (base64) مباشرة، بينما
+                // باقي المزوّدين بيرجّعوا رابط جاهز — نتعامل مع الاتنين.
                 const src = data.imageBase64 ? `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}` : data.imageUrl;
                 document.getElementById('isGenerateResultImg').src = src;
                 document.getElementById('isGenerateDownloadLink').href = src;
                 resultWrap.style.display = 'block';
                 statusEl.classList.remove('show');
-                const fallbackNote = data.fallbackProvider === 'gemini'
-                    ? 'تم الإنشاء عن طريق Gemini (Qwen كان مش متاح)'
-                    : data.fallbackProvider === 'together'
-                        ? 'تم الإنشاء عن طريق خدمة بديلة (Together AI)'
-                        : data.fallbackProvider === 'cloudflare'
-                            ? 'تم الإنشاء عن طريق خدمة بديلة (Cloudflare)'
-                            : data.fallbackProvider === 'pollinations'
-                                ? 'تم الإنشاء عن طريق خدمة بديلة (قد تكون النتيجة أقل التزامًا بالوصف)'
-                                : '';
-                statusEl.innerHTML = fallbackNote ? `<span style="color:var(--text-3);font-size:11px;">${fallbackNote}</span>` : '';
-                if (data.fallback) statusEl.classList.add('show');
-                // 🔍 تشخيصي (بيظهر للأدمن بس، من غير مستخدمين عاديين) — بيوضح
-                // بالظبط ليه Gemini/Cloudflare فشلوا بدل ما نفضل نخمّن.
-                if (data.debugAttempts) {
-                    console.log('🔍 image-gen debug attempts:', data.debugAttempts);
-                    const debugHtml = data.debugAttempts.map(a =>
+                const providerLabels = { qwen: 'Qwen', gemini: 'Gemini', together: 'Together AI', cloudflare: 'Cloudflare', pollinations: 'Pollinations' };
+                const usedLabel = providerLabels[data.usedProvider] || data.usedProvider;
+                statusEl.innerHTML = usedLabel
+                    ? `<span style="color:var(--text-3);font-size:11px;">تم الإنشاء عن طريق: ${usedLabel}${data.fallback ? ' (الموديل الأساسي كان مش متاح)' : ''}</span>`
+                    : '';
+                if (usedLabel) statusEl.classList.add('show');
+            } catch (e) {
+                statusEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر إنشاء الصورة')}</span>`;
+                // 🔍 تشخيصي (بيظهر للأدمن بس عن طريق debugAttempts القادمة من
+                // السيرفر) — بيوضح بالظبط ليه كل مزوّد فشل بدل ما نفضل نخمّن.
+                if (e.debugAttempts) {
+                    const debugHtml = e.debugAttempts.map(a =>
                         `<div>• ${a.provider}: ${a.reason || ('status ' + a.status)}${a.detail ? ' — ' + escapeHtml(a.detail) : ''}</div>`
                     ).join('');
                     statusEl.innerHTML += `<div style="margin-top:8px;font-size:10px;color:var(--text-3);text-align:right;direction:ltr;">${debugHtml}</div>`;
-                    statusEl.classList.add('show');
                 }
-            } catch (e) {
-                statusEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر إنشاء الصورة')}</span>`;
+                statusEl.classList.add('show');
             } finally {
                 btn.disabled = false;
             }
