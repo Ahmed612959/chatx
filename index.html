@@ -2242,6 +2242,8 @@
                         <option value="qwen">Qwen</option>
                         <option value="gemini">Gemini (Nano Banana)</option>
                         <option value="together">Together AI (FLUX)</option>
+                        <option value="huggingface">Hugging Face (Qwen)</option>
+                        <option value="openrouter_qwen">OpenRouter (Qwen)</option>
                         <option value="cloudflare">Cloudflare (FLUX)</option>
                         <option value="pollinations">Pollinations</option>
                     </select>
@@ -10306,7 +10308,7 @@ ${r.pathSummary}
                 document.getElementById('isGenerateDownloadLink').href = src;
                 resultWrap.style.display = 'block';
                 statusEl.classList.remove('show');
-                const providerLabels = { qwen: 'Qwen', gemini: 'Gemini', together: 'Together AI', cloudflare: 'Cloudflare', pollinations: 'Pollinations' };
+                const providerLabels = { qwen: 'Qwen', gemini: 'Gemini', together: 'Together AI', huggingface: 'Hugging Face (Qwen)', openrouter_qwen: 'OpenRouter (Qwen)', cloudflare: 'Cloudflare', pollinations: 'Pollinations' };
                 const usedLabel = providerLabels[data.usedProvider] || data.usedProvider;
                 statusEl.innerHTML = usedLabel
                     ? `<span style="color:var(--text-3);font-size:11px;">تم الإنشاء عن طريق: ${usedLabel}${data.fallback ? ' (الموديل الأساسي كان مش متاح)' : ''}</span>`
