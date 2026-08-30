@@ -2238,10 +2238,20 @@
                 <div class="input-group">
                     <label>الموديل</label>
                     <select id="isGenerateProvider" class="tool-input">
-                        <option value="auto">تلقائي (Qwen، وGrok وKling لو Qwen مش متاح)</option>
+                        <option value="auto">تلقائي (Qwen، وGrok وFlux لو Qwen مش متاح)</option>
                         <option value="qwen">Qwen</option>
                         <option value="grok">Grok</option>
-                        <option value="kling">Kling</option>
+                        <option value="flux">Flux 2 Max</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>أبعاد الصورة</label>
+                    <select id="isGenerateSize" class="tool-input">
+                        <option value="1024x1024">مربعة (1:1) — 1024×1024</option>
+                        <option value="1344x768">عريضة (16:9) — 1344×768</option>
+                        <option value="768x1344">طولية (9:16) — 768×1344</option>
+                        <option value="1024x768">عريضة (4:3) — 1024×768</option>
+                        <option value="768x1024">طولية (3:4) — 768×1024</option>
                     </select>
                 </div>
                 <button class="btn-calc" id="isGenerateBtn" onclick="runImageStudioGenerate()"><i class="fas fa-paintbrush"></i> أنشئ الصورة</button>
@@ -2250,7 +2260,7 @@
                     <div style="margin-top:8px;">
                         <a id="isGenerateDownloadLink" download="ai-image.jpg" class="btn-calc" style="display:inline-flex;background:var(--bg-2);color:var(--text-2);width:auto;padding:8px 16px;"><i class="fas fa-download"></i> تحميل الصورة</a>
                     </div>
-                    <!-- تعديل الصورة — متاح بس للمزوّدين اللي بيدعموا تعديل صور (Grok وKling) -->
+                    <!-- تعديل الصورة — متاح بس للمزوّدين اللي بيدعموا تعديل صور (Grok وFlux) -->
                     <div id="isEditSection" style="display:none;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
                         <div class="input-group">
                             <label><i class="fas fa-pen"></i> عدّل الصورة دي</label>
@@ -10220,6 +10230,7 @@ ${r.pathSummary}
             document.getElementById('isAnalyzeResult').innerHTML = '';
             document.getElementById('isGeneratePrompt').value = '';
             document.getElementById('isGenerateProvider').value = 'auto';
+            document.getElementById('isGenerateSize').value = '1024x1024';
             document.getElementById('isGenerateResultWrap').style.display = 'none';
             document.getElementById('isGenerateStatus').classList.remove('show');
             switchImageStudioTab('analyze');
@@ -10282,12 +10293,14 @@ ${r.pathSummary}
 
         let isLastGeneratedUrl = null; // لازم يكون رابط عام (مش base64) عشان التعديل يشتغل عليه
         let isLastGeneratedProvider = null; // المزوّد اللي أنشأ الصورة (لازم نستخدم نفسه في التعديل)
-        const EDIT_CAPABLE_PROVIDERS = ['grok', 'kling']; // مطابق لـ EDIT_PROVIDERS في index.js
+        let isLastGeneratedSize = null; // { width, height } — بنستخدمها تاني وقت التعديل عشان الأبعاد تفضل زي ما هي
+        const EDIT_CAPABLE_PROVIDERS = ['grok', 'flux']; // مطابق لـ EDIT_PROVIDERS في index.js
 
         async function runImageStudioGenerate() {
             const prompt = document.getElementById('isGeneratePrompt').value.trim();
             if (!prompt) { showToast('اكتب وصف الصورة الأول', 'error'); return; }
             const provider = document.getElementById('isGenerateProvider').value;
+            const [sizeWidth, sizeHeight] = document.getElementById('isGenerateSize').value.split('x').map(Number);
             const btn = document.getElementById('isGenerateBtn');
             const statusEl = document.getElementById('isGenerateStatus');
             const resultWrap = document.getElementById('isGenerateResultWrap');
@@ -10297,13 +10310,14 @@ ${r.pathSummary}
             editSection.style.display = 'none';
             isLastGeneratedUrl = null;
             isLastGeneratedProvider = null;
+            isLastGeneratedSize = null;
             statusEl.innerHTML = '<span class="btn-spinner"></span> جارٍ إنشاء الصورة... (ممكن تاخد لحظات)';
             statusEl.classList.add('show');
             try {
                 const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/generate-image`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
-                    body: JSON.stringify({ prompt, provider })
+                    body: JSON.stringify({ prompt, provider, width: sizeWidth, height: sizeHeight })
                 });
                 const data = await res.json();
                 if (!res.ok) {
@@ -10313,25 +10327,26 @@ ${r.pathSummary}
                     if (data.debugAttempts) err.debugAttempts = data.debugAttempts;
                     throw err;
                 }
-                // Qwen بيرجّع رابط جاهز، Grok وKling ممكن يرجّعوا رابط أو بايتس
+                // Qwen بيرجّع رابط جاهز، Grok وFlux ممكن يرجّعوا رابط أو بايتس
                 // (base64) حسب الرد — نتعامل مع الاتنين.
                 const src = data.imageBase64 ? `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}` : data.imageUrl;
                 document.getElementById('isGenerateResultImg').src = src;
                 document.getElementById('isGenerateDownloadLink').href = src;
                 resultWrap.style.display = 'block';
                 statusEl.classList.remove('show');
-                const providerLabels = { qwen: 'Qwen', grok: 'Grok', kling: 'Kling' };
+                const providerLabels = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max' };
                 const usedLabel = providerLabels[data.usedProvider] || data.usedProvider;
                 statusEl.innerHTML = usedLabel
                     ? `<span style="color:var(--text-3);font-size:11px;">تم الإنشاء عن طريق: ${usedLabel}${data.fallback ? ' (الموديل الأساسي كان مش متاح)' : ''}</span>`
                     : '';
                 if (usedLabel) statusEl.classList.add('show');
-                // تعديل الصورة متاح بس للمزوّدين اللي بيدعموا التعديل (Grok وKling)
+                // تعديل الصورة متاح بس للمزوّدين اللي بيدعموا التعديل (Grok وFlux)
                 // ولازم يكون رجّع رابط عام (مش base64) — endpoint التعديل محتاج
                 // رابط يقدر المزوّد يوصله.
                 if (EDIT_CAPABLE_PROVIDERS.includes(data.usedProvider) && data.imageUrl) {
                     isLastGeneratedUrl = data.imageUrl;
                     isLastGeneratedProvider = data.usedProvider;
+                    isLastGeneratedSize = { width: sizeWidth, height: sizeHeight };
                     editSection.style.display = 'block';
                 }
             } catch (e) {
@@ -10363,7 +10378,10 @@ ${r.pathSummary}
                 const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/edit-image`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
-                    body: JSON.stringify({ imageUrl: isLastGeneratedUrl, prompt: editPrompt, provider: isLastGeneratedProvider || 'grok' })
+                    body: JSON.stringify({
+                        imageUrl: isLastGeneratedUrl, prompt: editPrompt, provider: isLastGeneratedProvider || 'grok',
+                        width: isLastGeneratedSize?.width, height: isLastGeneratedSize?.height
+                    })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'فشل تعديل الصورة');

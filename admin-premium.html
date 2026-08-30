@@ -486,7 +486,7 @@
         activeStudent = null;
     }
 
-    // ====================== إدارة مفاتيح API (Qwen، Grok، Kling، ...) ======================
+    // ====================== إدارة مفاتيح API (Qwen، Grok، Flux، ...) ======================
     // المزوّدين المعروفين حاليًا بالكود — لو ضفت مزوّد جديد في index.js، ضيفه هنا
     // كمان عشان يظهر في اللوحة (اسم الحقل هنا لازم يطابق اسم الـ provider بالظبط).
     // كل مزوّد ممكن يكون ليه أكتر من مفتاح — لو مفتاح فشل، النظام بيتحول
@@ -494,7 +494,7 @@
     const KNOWN_PROVIDERS = [
         { key: 'qwen', label: 'Qwen', hint: 'مفتاح DashScope الرسمي — من dashscope.console.aliyun.com' },
         { key: 'grok', label: 'Grok (عن طريق CometAPI)', hint: 'مفتاح CometAPI — من api.cometapi.com — بيدعم تعديل صور' },
-        { key: 'kling', label: 'Kling (عن طريق CometAPI)', hint: 'مفتاح CometAPI — من api.cometapi.com — بيدعم تعديل صور' }
+        { key: 'flux', label: 'Flux 2 Max (عن طريق CometAPI)', hint: 'مفتاح CometAPI — من api.cometapi.com — بيدعم تعديل صور وتحديد أبعاد الصورة' }
     ];
 
     let revealedKeys = {}; // { "provider:keyId": "المفتاح الكامل" } — مؤقت في الذاكرة بس
