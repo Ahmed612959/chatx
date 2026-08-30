@@ -127,17 +127,45 @@
     #apiKeysOverlay.active { display: flex; }
     #apiKeysSheet {
         background: var(--bg-2); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
-        max-height: 88vh; overflow-y: auto; padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
-        animation: slideUp .2s ease;
+        max-height: 88vh; overflow-y: auto; overflow-x: hidden; padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+        animation: slideUp .2s ease; box-sizing: border-box;
     }
     .apikey-row {
         border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
+        box-sizing: border-box; max-width: 100%; overflow: hidden;
     }
-    .apikey-row .apikey-title { font-weight: 800; font-size: 13.5px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
-    .apikey-row .apikey-meta { font-size: 11px; color: var(--text-3); margin-bottom: 10px; }
+    .apikey-row .apikey-title {
+        font-weight: 800; font-size: 13.5px; margin-bottom: 6px; display: flex; align-items: center;
+        justify-content: space-between; gap: 8px; flex-wrap: wrap;
+    }
+    .apikey-row .apikey-meta { font-size: 11px; color: var(--text-3); margin-bottom: 10px; line-height: 1.6; }
     .apikey-row input {
-        width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border);
-        background: var(--bg-1); color: var(--text-1); font-size: 13px; margin-bottom: 8px; box-sizing: border-box;
+        width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+        background: var(--bg-1); color: var(--text-1); font-size: 16px; margin-bottom: 8px; box-sizing: border-box;
+    }
+    /* عناصر مفتاح واحد داخل قائمة مفاتيح المزوّد */
+    .apikey-item {
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--bg-1);
+        border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;
+    }
+    .apikey-item .apikey-value {
+        font-family: monospace; font-size: 11.5px; color: var(--text-2); word-break: break-all;
+        flex: 1 1 140px; min-width: 0;
+    }
+    .apikey-item .apikey-label { font-size: 10px; color: var(--text-3); flex-basis: 100%; }
+    .apikey-item .apikey-actions { display: flex; gap: 6px; flex-shrink: 0; margin-right: auto; }
+    .apikey-item .apikey-actions button {
+        width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-2);
+        color: var(--text-2); cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; padding: 0;
+    }
+    .apikey-item .apikey-fail { color: var(--danger); font-size: 10px; flex-basis: 100%; }
+    .apikey-add-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .apikey-add-row input { flex: 1 1 100%; margin-bottom: 6px; }
+    .apikey-add-row button { flex: 1 1 100%; margin-top: 0; }
+    @media (min-width: 380px) {
+        .apikey-add-row input { flex: 1 1 auto; margin-bottom: 0; }
+        .apikey-add-row button { flex: 0 0 auto; white-space: nowrap; padding-left: 14px; padding-right: 14px; }
     }
     #editSheet {
         background: var(--bg-2); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
@@ -458,21 +486,31 @@
         activeStudent = null;
     }
 
-    // ====================== إدارة مفاتيح API (Qwen، Grok، ...) ======================
+    // ====================== إدارة مفاتيح API (Qwen، Grok، Kling، ...) ======================
     // المزوّدين المعروفين حاليًا بالكود — لو ضفت مزوّد جديد في index.js، ضيفه هنا
     // كمان عشان يظهر في اللوحة (اسم الحقل هنا لازم يطابق اسم الـ provider بالظبط).
+    // كل مزوّد ممكن يكون ليه أكتر من مفتاح — لو مفتاح فشل، النظام بيتحول
+    // للمفتاح اللي بعده لنفس المزوّد تلقائيًا.
     const KNOWN_PROVIDERS = [
         { key: 'qwen', label: 'Qwen', hint: 'مفتاح DashScope الرسمي — من dashscope.console.aliyun.com' },
-        { key: 'grok', label: 'Grok (عن طريق CometAPI)', hint: 'مفتاح CometAPI — من api.cometapi.com' }
+        { key: 'grok', label: 'Grok (عن طريق CometAPI)', hint: 'مفتاح CometAPI — من api.cometapi.com — بيدعم تعديل صور' },
+        { key: 'kling', label: 'Kling (عن طريق CometAPI)', hint: 'مفتاح CometAPI — من api.cometapi.com — بيدعم تعديل صور' }
     ];
 
+    let revealedKeys = {}; // { "provider:keyId": "المفتاح الكامل" } — مؤقت في الذاكرة بس
+
     async function openApiKeysSheet() {
+        revealedKeys = {};
         document.getElementById('apiKeysOverlay').classList.add('active');
         await loadApiKeys();
     }
 
     function closeApiKeysSheet() {
         document.getElementById('apiKeysOverlay').classList.remove('active');
+    }
+
+    function escapeHtmlLocal(s) {
+        return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
     async function loadApiKeys() {
@@ -483,17 +521,33 @@
             const savedMap = new Map(saved.map(s => [s.provider, s]));
             listEl.innerHTML = KNOWN_PROVIDERS.map(p => {
                 const existing = savedMap.get(p.key);
+                const keys = existing?.keys || [];
+                const keysHtml = keys.length ? keys.map(k => {
+                    const revealKey = `${p.key}:${k.id}`;
+                    const shown = revealedKeys[revealKey];
+                    return `
+                        <div class="apikey-item">
+                            <span class="apikey-value" id="apikeyVal_${p.key}_${k.id}">${shown ? escapeHtmlLocal(shown) : k.maskedKey}</span>
+                            <div class="apikey-actions">
+                                <button title="${shown ? 'إخفاء' : 'إظهار كامل'}" onclick="toggleRevealKey('${p.key}','${k.id}')"><i class="fas ${shown ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
+                                <button title="حذف" onclick="deleteApiKey('${p.key}','${k.id}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                            ${k.label ? `<span class="apikey-label">${escapeHtmlLocal(k.label)}</span>` : ''}
+                            ${k.failCount > 0 ? `<span class="apikey-fail"><i class="fas fa-triangle-exclamation"></i> فشل ${k.failCount} مرة${k.lastError ? ' — ' + escapeHtmlLocal(k.lastError) : ''}</span>` : ''}
+                        </div>
+                    `;
+                }).join('') : '<div style="font-size:11px;color:var(--text-3);margin-bottom:8px;">مفيش مفاتيح مضبوطة</div>';
                 return `
                     <div class="apikey-row">
                         <div class="apikey-title">
                             <span>${p.label}</span>
-                            ${existing ? `<span style="font-size:10.5px;color:var(--text-3);font-family:monospace;">${existing.maskedKey}</span>` : '<span style="font-size:10.5px;color:var(--text-3);">مش مضبوط</span>'}
+                            <span style="font-size:10.5px;color:var(--text-3);">${keys.length} مفتاح</span>
                         </div>
                         <div class="apikey-meta">${p.hint}</div>
-                        <input type="text" id="apikeyInput_${p.key}" placeholder="${existing ? 'اكتب مفتاح جديد لتغييره...' : 'الصق المفتاح هنا...'}" autocomplete="off">
-                        <div style="display:flex;gap:8px;">
-                            <button class="btn" style="flex:1;margin-top:0;" onclick="saveApiKey('${p.key}')"><i class="fas fa-save"></i> حفظ</button>
-                            ${existing ? `<button class="btn btn-plain" style="flex:none;margin-top:0;" onclick="deleteApiKey('${p.key}')"><i class="fas fa-trash"></i></button>` : ''}
+                        ${keysHtml}
+                        <div class="apikey-add-row">
+                            <input type="text" id="apikeyInput_${p.key}" placeholder="الصق مفتاح جديد هنا..." autocomplete="off">
+                            <button class="btn" onclick="saveApiKey('${p.key}')"><i class="fas fa-plus"></i> إضافة</button>
                         </div>
                     </div>
                 `;
@@ -509,20 +563,39 @@
         if (!value) { showToast('اكتب المفتاح الأول', 'error'); return; }
         try {
             await apiFetch('/api/admin/api-keys', { method: 'POST', body: JSON.stringify({ provider, apiKey: value }) });
-            showToast('اتحفظ المفتاح بنجاح', 'success');
+            showToast('اتضاف المفتاح بنجاح', 'success');
             await loadApiKeys();
         } catch (e) {
             showToast(e.message || 'تعذر حفظ المفتاح', 'error');
         }
     }
 
-    async function deleteApiKey(provider) {
+    async function deleteApiKey(provider, keyId) {
         try {
-            await apiFetch(`/api/admin/api-keys/${provider}`, { method: 'DELETE' });
+            await apiFetch(`/api/admin/api-keys/${provider}/${keyId}`, { method: 'DELETE' });
+            delete revealedKeys[`${provider}:${keyId}`];
             showToast('اتمسح المفتاح', 'success');
             await loadApiKeys();
         } catch (e) {
             showToast(e.message || 'تعذر حذف المفتاح', 'error');
+        }
+    }
+
+    // إظهار/إخفاء المفتاح كامل — بيتخزن مؤقتًا في الذاكرة (revealedKeys) عشان
+    // مايتكررش الطلب للسيرفر كل مرة يعيد رسم القائمة.
+    async function toggleRevealKey(provider, keyId) {
+        const mapKey = `${provider}:${keyId}`;
+        if (revealedKeys[mapKey]) {
+            delete revealedKeys[mapKey];
+            await loadApiKeys();
+            return;
+        }
+        try {
+            const data = await apiFetch(`/api/admin/api-keys/${provider}/${keyId}/reveal`);
+            revealedKeys[mapKey] = data.apiKey;
+            await loadApiKeys();
+        } catch (e) {
+            showToast(e.message || 'تعذر إظهار المفتاح', 'error');
         }
     }
 

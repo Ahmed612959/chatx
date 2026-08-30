@@ -2238,9 +2238,10 @@
                 <div class="input-group">
                     <label>الموديل</label>
                     <select id="isGenerateProvider" class="tool-input">
-                        <option value="auto">تلقائي (Qwen، وGrok لو Qwen مش متاح)</option>
+                        <option value="auto">تلقائي (Qwen، وGrok وKling لو Qwen مش متاح)</option>
                         <option value="qwen">Qwen</option>
                         <option value="grok">Grok</option>
+                        <option value="kling">Kling</option>
                     </select>
                 </div>
                 <button class="btn-calc" id="isGenerateBtn" onclick="runImageStudioGenerate()"><i class="fas fa-paintbrush"></i> أنشئ الصورة</button>
@@ -2249,10 +2250,10 @@
                     <div style="margin-top:8px;">
                         <a id="isGenerateDownloadLink" download="ai-image.jpg" class="btn-calc" style="display:inline-flex;background:var(--bg-2);color:var(--text-2);width:auto;padding:8px 16px;"><i class="fas fa-download"></i> تحميل الصورة</a>
                     </div>
-                    <!-- تعديل الصورة — متاح بس لو Grok هو اللي أنشأها -->
+                    <!-- تعديل الصورة — متاح بس للمزوّدين اللي بيدعموا تعديل صور (Grok وKling) -->
                     <div id="isEditSection" style="display:none;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
                         <div class="input-group">
-                            <label><i class="fas fa-pen"></i> عدّل الصورة دي (Grok بس)</label>
+                            <label><i class="fas fa-pen"></i> عدّل الصورة دي</label>
                             <input type="text" id="isEditPrompt" class="tool-input" placeholder="مثلًا: حوّلها لرسم مائي">
                         </div>
                         <button class="btn-calc" id="isEditBtn" style="background:var(--bg-2);color:var(--text-2);" onclick="runImageStudioEdit()"><i class="fas fa-wand-magic-sparkles"></i> عدّل</button>
@@ -10279,7 +10280,9 @@ ${r.pathSummary}
             statusEl.innerHTML = '<span style="color:var(--danger);">تعذر تحميل الصورة، جرب تاني</span>';
         }
 
-        let isLastGeneratedUrl = null; // لازم يكون رابط عام (مش base64) عشان تعديل Grok يشتغل عليه
+        let isLastGeneratedUrl = null; // لازم يكون رابط عام (مش base64) عشان التعديل يشتغل عليه
+        let isLastGeneratedProvider = null; // المزوّد اللي أنشأ الصورة (لازم نستخدم نفسه في التعديل)
+        const EDIT_CAPABLE_PROVIDERS = ['grok', 'kling']; // مطابق لـ EDIT_PROVIDERS في index.js
 
         async function runImageStudioGenerate() {
             const prompt = document.getElementById('isGeneratePrompt').value.trim();
@@ -10293,6 +10296,7 @@ ${r.pathSummary}
             resultWrap.style.display = 'none';
             editSection.style.display = 'none';
             isLastGeneratedUrl = null;
+            isLastGeneratedProvider = null;
             statusEl.innerHTML = '<span class="btn-spinner"></span> جارٍ إنشاء الصورة... (ممكن تاخد لحظات)';
             statusEl.classList.add('show');
             try {
@@ -10309,23 +10313,25 @@ ${r.pathSummary}
                     if (data.debugAttempts) err.debugAttempts = data.debugAttempts;
                     throw err;
                 }
-                // Qwen بيرجّع رابط جاهز، Grok ممكن يرجّع رابط أو بايتس (base64)
-                // حسب الرد — نتعامل مع الاتنين.
+                // Qwen بيرجّع رابط جاهز، Grok وKling ممكن يرجّعوا رابط أو بايتس
+                // (base64) حسب الرد — نتعامل مع الاتنين.
                 const src = data.imageBase64 ? `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}` : data.imageUrl;
                 document.getElementById('isGenerateResultImg').src = src;
                 document.getElementById('isGenerateDownloadLink').href = src;
                 resultWrap.style.display = 'block';
                 statusEl.classList.remove('show');
-                const providerLabels = { qwen: 'Qwen', grok: 'Grok' };
+                const providerLabels = { qwen: 'Qwen', grok: 'Grok', kling: 'Kling' };
                 const usedLabel = providerLabels[data.usedProvider] || data.usedProvider;
                 statusEl.innerHTML = usedLabel
                     ? `<span style="color:var(--text-3);font-size:11px;">تم الإنشاء عن طريق: ${usedLabel}${data.fallback ? ' (الموديل الأساسي كان مش متاح)' : ''}</span>`
                     : '';
                 if (usedLabel) statusEl.classList.add('show');
-                // تعديل الصورة متاح بس لو Grok هو اللي ولّدها ورجّع رابط عام
-                // (مش base64) — endpoint التعديل محتاج رابط يقدر Grok يوصله.
-                if (data.usedProvider === 'grok' && data.imageUrl) {
+                // تعديل الصورة متاح بس للمزوّدين اللي بيدعموا التعديل (Grok وKling)
+                // ولازم يكون رجّع رابط عام (مش base64) — endpoint التعديل محتاج
+                // رابط يقدر المزوّد يوصله.
+                if (EDIT_CAPABLE_PROVIDERS.includes(data.usedProvider) && data.imageUrl) {
                     isLastGeneratedUrl = data.imageUrl;
+                    isLastGeneratedProvider = data.usedProvider;
                     editSection.style.display = 'block';
                 }
             } catch (e) {
@@ -10357,7 +10363,7 @@ ${r.pathSummary}
                 const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/edit-image`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
-                    body: JSON.stringify({ imageUrl: isLastGeneratedUrl, prompt: editPrompt })
+                    body: JSON.stringify({ imageUrl: isLastGeneratedUrl, prompt: editPrompt, provider: isLastGeneratedProvider || 'grok' })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'فشل تعديل الصورة');
