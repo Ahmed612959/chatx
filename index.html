@@ -2238,14 +2238,9 @@
                 <div class="input-group">
                     <label>الموديل</label>
                     <select id="isGenerateProvider" class="tool-input">
-                        <option value="auto">تلقائي (يجرب الأفضل المتاح)</option>
+                        <option value="auto">تلقائي (Qwen، وGrok لو Qwen مش متاح)</option>
                         <option value="qwen">Qwen</option>
-                        <option value="gemini">Gemini (Nano Banana)</option>
-                        <option value="together">Together AI (FLUX)</option>
-                        <option value="huggingface">Hugging Face (Qwen)</option>
-                        <option value="openrouter_qwen">OpenRouter (Qwen)</option>
-                        <option value="cloudflare">Cloudflare (FLUX)</option>
-                        <option value="pollinations">Pollinations</option>
+                        <option value="grok">Grok</option>
                     </select>
                 </div>
                 <button class="btn-calc" id="isGenerateBtn" onclick="runImageStudioGenerate()"><i class="fas fa-paintbrush"></i> أنشئ الصورة</button>
@@ -2253,6 +2248,14 @@
                     <img id="isGenerateResultImg" style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);" onerror="handleImageStudioGenerateError()">
                     <div style="margin-top:8px;">
                         <a id="isGenerateDownloadLink" download="ai-image.jpg" class="btn-calc" style="display:inline-flex;background:var(--bg-2);color:var(--text-2);width:auto;padding:8px 16px;"><i class="fas fa-download"></i> تحميل الصورة</a>
+                    </div>
+                    <!-- تعديل الصورة — متاح بس لو Grok هو اللي أنشأها -->
+                    <div id="isEditSection" style="display:none;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+                        <div class="input-group">
+                            <label><i class="fas fa-pen"></i> عدّل الصورة دي (Grok بس)</label>
+                            <input type="text" id="isEditPrompt" class="tool-input" placeholder="مثلًا: حوّلها لرسم مائي">
+                        </div>
+                        <button class="btn-calc" id="isEditBtn" style="background:var(--bg-2);color:var(--text-2);" onclick="runImageStudioEdit()"><i class="fas fa-wand-magic-sparkles"></i> عدّل</button>
                     </div>
                 </div>
                 <div class="calc-result" id="isGenerateStatus"></div>
@@ -10276,6 +10279,8 @@ ${r.pathSummary}
             statusEl.innerHTML = '<span style="color:var(--danger);">تعذر تحميل الصورة، جرب تاني</span>';
         }
 
+        let isLastGeneratedUrl = null; // لازم يكون رابط عام (مش base64) عشان تعديل Grok يشتغل عليه
+
         async function runImageStudioGenerate() {
             const prompt = document.getElementById('isGeneratePrompt').value.trim();
             if (!prompt) { showToast('اكتب وصف الصورة الأول', 'error'); return; }
@@ -10283,8 +10288,11 @@ ${r.pathSummary}
             const btn = document.getElementById('isGenerateBtn');
             const statusEl = document.getElementById('isGenerateStatus');
             const resultWrap = document.getElementById('isGenerateResultWrap');
+            const editSection = document.getElementById('isEditSection');
             btn.disabled = true;
             resultWrap.style.display = 'none';
+            editSection.style.display = 'none';
+            isLastGeneratedUrl = null;
             statusEl.innerHTML = '<span class="btn-spinner"></span> جارٍ إنشاء الصورة... (ممكن تاخد لحظات)';
             statusEl.classList.add('show');
             try {
@@ -10301,19 +10309,25 @@ ${r.pathSummary}
                     if (data.debugAttempts) err.debugAttempts = data.debugAttempts;
                     throw err;
                 }
-                // Gemini/Cloudflare بيرجّعوا بايتس الصورة (base64) مباشرة، بينما
-                // باقي المزوّدين بيرجّعوا رابط جاهز — نتعامل مع الاتنين.
+                // Qwen بيرجّع رابط جاهز، Grok ممكن يرجّع رابط أو بايتس (base64)
+                // حسب الرد — نتعامل مع الاتنين.
                 const src = data.imageBase64 ? `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}` : data.imageUrl;
                 document.getElementById('isGenerateResultImg').src = src;
                 document.getElementById('isGenerateDownloadLink').href = src;
                 resultWrap.style.display = 'block';
                 statusEl.classList.remove('show');
-                const providerLabels = { qwen: 'Qwen', gemini: 'Gemini', together: 'Together AI', huggingface: 'Hugging Face (Qwen)', openrouter_qwen: 'OpenRouter (Qwen)', cloudflare: 'Cloudflare', pollinations: 'Pollinations' };
+                const providerLabels = { qwen: 'Qwen', grok: 'Grok' };
                 const usedLabel = providerLabels[data.usedProvider] || data.usedProvider;
                 statusEl.innerHTML = usedLabel
                     ? `<span style="color:var(--text-3);font-size:11px;">تم الإنشاء عن طريق: ${usedLabel}${data.fallback ? ' (الموديل الأساسي كان مش متاح)' : ''}</span>`
                     : '';
                 if (usedLabel) statusEl.classList.add('show');
+                // تعديل الصورة متاح بس لو Grok هو اللي ولّدها ورجّع رابط عام
+                // (مش base64) — endpoint التعديل محتاج رابط يقدر Grok يوصله.
+                if (data.usedProvider === 'grok' && data.imageUrl) {
+                    isLastGeneratedUrl = data.imageUrl;
+                    editSection.style.display = 'block';
+                }
             } catch (e) {
                 statusEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر إنشاء الصورة')}</span>`;
                 // 🔍 تشخيصي (بيظهر للأدمن بس عن طريق debugAttempts القادمة من
@@ -10324,6 +10338,39 @@ ${r.pathSummary}
                     ).join('');
                     statusEl.innerHTML += `<div style="margin-top:8px;font-size:10px;color:var(--text-3);text-align:right;direction:ltr;">${debugHtml}</div>`;
                 }
+                statusEl.classList.add('show');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function runImageStudioEdit() {
+            const editPrompt = document.getElementById('isEditPrompt').value.trim();
+            if (!editPrompt) { showToast('اكتب وصف التعديل الأول', 'error'); return; }
+            if (!isLastGeneratedUrl) { showToast('مفيش صورة متاحة للتعديل عليها', 'error'); return; }
+            const btn = document.getElementById('isEditBtn');
+            const statusEl = document.getElementById('isGenerateStatus');
+            btn.disabled = true;
+            statusEl.innerHTML = '<span class="btn-spinner"></span> جارٍ تعديل الصورة...';
+            statusEl.classList.add('show');
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/edit-image`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ imageUrl: isLastGeneratedUrl, prompt: editPrompt })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'فشل تعديل الصورة');
+                const src = data.imageBase64 ? `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}` : data.imageUrl;
+                document.getElementById('isGenerateResultImg').src = src;
+                document.getElementById('isGenerateDownloadLink').href = src;
+                // لو الرد رجّع رابط جديد، نسمح بتعديل تاني فوق النسخة المعدّلة نفسها
+                if (data.imageUrl) isLastGeneratedUrl = data.imageUrl;
+                statusEl.innerHTML = '<span style="color:var(--success);font-size:11px;">تم التعديل ✅</span>';
+                statusEl.classList.add('show');
+                document.getElementById('isEditPrompt').value = '';
+            } catch (e) {
+                statusEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر تعديل الصورة')}</span>`;
                 statusEl.classList.add('show');
             } finally {
                 btn.disabled = false;

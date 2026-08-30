@@ -120,6 +120,25 @@
         justify-content: center; z-index: 50;
     }
     #editOverlay.active { display: flex; }
+    #apiKeysOverlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: flex-end;
+        justify-content: center; z-index: 50;
+    }
+    #apiKeysOverlay.active { display: flex; }
+    #apiKeysSheet {
+        background: var(--bg-2); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
+        max-height: 88vh; overflow-y: auto; padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+        animation: slideUp .2s ease;
+    }
+    .apikey-row {
+        border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
+    }
+    .apikey-row .apikey-title { font-weight: 800; font-size: 13.5px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+    .apikey-row .apikey-meta { font-size: 11px; color: var(--text-3); margin-bottom: 10px; }
+    .apikey-row input {
+        width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border);
+        background: var(--bg-1); color: var(--text-1); font-size: 13px; margin-bottom: 8px; box-sizing: border-box;
+    }
     #editSheet {
         background: var(--bg-2); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
         max-height: 88vh; overflow-y: auto; padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
@@ -201,6 +220,7 @@
             <div class="title">👑 لوحة تفعيل Premium</div>
             <div style="display:flex;align-items:center;gap:10px;">
                 <span class="who" id="whoAmI"></span>
+                <button class="btn btn-plain" onclick="openApiKeysSheet()"><i class="fas fa-key"></i> مفاتيح API</button>
                 <button class="btn btn-plain" onclick="doLogout()">خروج</button>
             </div>
         </header>
@@ -232,6 +252,21 @@
                 <button class="btn" id="saveBtn" onclick="savePremium()">حفظ التغييرات</button>
             </div>
             <div id="saveStatus"></div>
+        </div>
+    </div>
+
+    <!-- إدارة مفاتيح API لمزوّدين إنشاء/تحليل الصور (Qwen، Grok، ...) -->
+    <div id="apiKeysOverlay" onclick="if(event.target===this) closeApiKeysSheet()">
+        <div id="apiKeysSheet">
+            <div class="sheet-handle"></div>
+            <div class="sheet-head">
+                <div>
+                    <div class="name">🔑 مفاتيح API</div>
+                    <div class="code">Qwen، Grok، وأي مزوّد تاني — بيتحفظوا في الداتابيز، من غير ما تحتاج Redeploy</div>
+                </div>
+                <button class="close-sheet" onclick="closeApiKeysSheet()"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="apiKeysList"></div>
         </div>
     </div>
 
@@ -421,6 +456,74 @@
     function closeEditSheet() {
         document.getElementById('editOverlay').classList.remove('active');
         activeStudent = null;
+    }
+
+    // ====================== إدارة مفاتيح API (Qwen، Grok، ...) ======================
+    // المزوّدين المعروفين حاليًا بالكود — لو ضفت مزوّد جديد في index.js، ضيفه هنا
+    // كمان عشان يظهر في اللوحة (اسم الحقل هنا لازم يطابق اسم الـ provider بالظبط).
+    const KNOWN_PROVIDERS = [
+        { key: 'qwen', label: 'Qwen', hint: 'مفتاح DashScope الرسمي — من dashscope.console.aliyun.com' },
+        { key: 'grok', label: 'Grok (عن طريق CometAPI)', hint: 'مفتاح CometAPI — من api.cometapi.com' }
+    ];
+
+    async function openApiKeysSheet() {
+        document.getElementById('apiKeysOverlay').classList.add('active');
+        await loadApiKeys();
+    }
+
+    function closeApiKeysSheet() {
+        document.getElementById('apiKeysOverlay').classList.remove('active');
+    }
+
+    async function loadApiKeys() {
+        const listEl = document.getElementById('apiKeysList');
+        listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);"><i class="fas fa-spinner"></i></div>';
+        try {
+            const saved = await apiFetch('/api/admin/api-keys');
+            const savedMap = new Map(saved.map(s => [s.provider, s]));
+            listEl.innerHTML = KNOWN_PROVIDERS.map(p => {
+                const existing = savedMap.get(p.key);
+                return `
+                    <div class="apikey-row">
+                        <div class="apikey-title">
+                            <span>${p.label}</span>
+                            ${existing ? `<span style="font-size:10.5px;color:var(--text-3);font-family:monospace;">${existing.maskedKey}</span>` : '<span style="font-size:10.5px;color:var(--text-3);">مش مضبوط</span>'}
+                        </div>
+                        <div class="apikey-meta">${p.hint}</div>
+                        <input type="text" id="apikeyInput_${p.key}" placeholder="${existing ? 'اكتب مفتاح جديد لتغييره...' : 'الصق المفتاح هنا...'}" autocomplete="off">
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn" style="flex:1;margin-top:0;" onclick="saveApiKey('${p.key}')"><i class="fas fa-save"></i> حفظ</button>
+                            ${existing ? `<button class="btn btn-plain" style="flex:none;margin-top:0;" onclick="deleteApiKey('${p.key}')"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } catch (e) {
+            listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">${e.message}</div>`;
+        }
+    }
+
+    async function saveApiKey(provider) {
+        const input = document.getElementById(`apikeyInput_${provider}`);
+        const value = input.value.trim();
+        if (!value) { showToast('اكتب المفتاح الأول', 'error'); return; }
+        try {
+            await apiFetch('/api/admin/api-keys', { method: 'POST', body: JSON.stringify({ provider, apiKey: value }) });
+            showToast('اتحفظ المفتاح بنجاح', 'success');
+            await loadApiKeys();
+        } catch (e) {
+            showToast(e.message || 'تعذر حفظ المفتاح', 'error');
+        }
+    }
+
+    async function deleteApiKey(provider) {
+        try {
+            await apiFetch(`/api/admin/api-keys/${provider}`, { method: 'DELETE' });
+            showToast('اتمسح المفتاح', 'success');
+            await loadApiKeys();
+        } catch (e) {
+            showToast(e.message || 'تعذر حذف المفتاح', 'error');
+        }
     }
 
     function renderFeatureCards() {
