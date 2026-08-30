@@ -2210,6 +2210,7 @@
             <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;">
                 <button id="isTabAnalyze" class="lib-tab active" onclick="switchImageStudioTab('analyze')"><i class="fas fa-magnifying-glass"></i> حلّل صورة</button>
                 <button id="isTabGenerate" class="lib-tab" onclick="switchImageStudioTab('generate')"><i class="fas fa-paintbrush"></i> أنشئ صورة</button>
+                <button id="isTabLibrary" class="lib-tab" onclick="switchImageStudioTab('library')"><i class="fas fa-images"></i> مكتبتي</button>
             </div>
 
             <!-- تبويب: تحليل صورة -->
@@ -2271,8 +2272,38 @@
                 </div>
                 <div class="calc-result" id="isGenerateStatus"></div>
             </div>
+
+            <!-- تبويب: مكتبتي (الصور المحفوظة) -->
+            <div id="isPaneLibrary" style="display:none;overflow-y:auto;flex:1;">
+                <div id="isLibraryEmpty" style="display:none;text-align:center;color:var(--text-3);font-size:12px;padding:24px 0;">
+                    لسه مفيش صور محفوظة. أي صورة تنشئها من تبويب "أنشئ صورة" بتتحفظ هنا تلقائيًا.
+                </div>
+                <div id="isLibraryLoading" style="text-align:center;color:var(--text-3);font-size:12px;padding:24px 0;">
+                    <span class="btn-spinner"></span> جارٍ تحميل المكتبة...
+                </div>
+                <div id="isLibraryGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+            </div>
         </div>
     </div>
+
+    <!-- عرض صورة من المكتبة بالحجم الكامل -->
+    <div class="modal-overlay" id="libraryImageViewModal">
+        <div class="modal" style="max-width:460px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-image"></i> الصورة</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('libraryImageViewModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="text-align:center;">
+                <img id="libraryImageViewImg" style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);">
+                <div id="libraryImageViewPrompt" style="margin-top:10px;font-size:12px;color:var(--text-3);text-align:right;line-height:1.7;"></div>
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                    <a id="libraryImageViewDownload" download="ai-image.jpg" class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);"><i class="fas fa-download"></i> تحميل</a>
+                    <button class="btn-calc" style="flex:1;background:var(--danger);color:#fff;" onclick="deleteLibraryImage(currentLibraryViewId)"><i class="fas fa-trash"></i> حذف</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- القسم الديني: قرآن، تسبيح واستغفار، أذكار الصباح والمساء، قصص الأنبياء، أسماء الله الحسنى -->
     <div class="modal-overlay" id="religionModal">
@@ -10233,6 +10264,8 @@ ${r.pathSummary}
             document.getElementById('isGenerateSize').value = '1024x1024';
             document.getElementById('isGenerateResultWrap').style.display = 'none';
             document.getElementById('isGenerateStatus').classList.remove('show');
+            document.getElementById('isLibraryGrid').innerHTML = '';
+            document.getElementById('isLibraryEmpty').style.display = 'none';
             switchImageStudioTab('analyze');
             openModal('imageStudioModal');
         }
@@ -10240,8 +10273,11 @@ ${r.pathSummary}
         function switchImageStudioTab(tab) {
             document.getElementById('isTabAnalyze').classList.toggle('active', tab === 'analyze');
             document.getElementById('isTabGenerate').classList.toggle('active', tab === 'generate');
+            document.getElementById('isTabLibrary').classList.toggle('active', tab === 'library');
             document.getElementById('isPaneAnalyze').style.display = tab === 'analyze' ? 'block' : 'none';
             document.getElementById('isPaneGenerate').style.display = tab === 'generate' ? 'block' : 'none';
+            document.getElementById('isPaneLibrary').style.display = tab === 'library' ? 'block' : 'none';
+            if (tab === 'library') loadImageLibrary();
         }
 
         function handleImageStudioFileSelect(file) {
@@ -10336,8 +10372,9 @@ ${r.pathSummary}
                 statusEl.classList.remove('show');
                 const providerLabels = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max' };
                 const usedLabel = providerLabels[data.usedProvider] || data.usedProvider;
+                const savedNote = data.savedToLibrary ? ' • 📥 اتحفظت في مكتبتي' : '';
                 statusEl.innerHTML = usedLabel
-                    ? `<span style="color:var(--text-3);font-size:11px;">تم الإنشاء عن طريق: ${usedLabel}${data.fallback ? ' (الموديل الأساسي كان مش متاح)' : ''}</span>`
+                    ? `<span style="color:var(--text-3);font-size:11px;">تم الإنشاء عن طريق: ${usedLabel}${data.fallback ? ' (الموديل الأساسي كان مش متاح)' : ''}${savedNote}</span>`
                     : '';
                 if (usedLabel) statusEl.classList.add('show');
                 // تعديل الصورة متاح بس للمزوّدين اللي بيدعموا التعديل (Grok وFlux)
@@ -10390,7 +10427,7 @@ ${r.pathSummary}
                 document.getElementById('isGenerateDownloadLink').href = src;
                 // لو الرد رجّع رابط جديد، نسمح بتعديل تاني فوق النسخة المعدّلة نفسها
                 if (data.imageUrl) isLastGeneratedUrl = data.imageUrl;
-                statusEl.innerHTML = '<span style="color:var(--success);font-size:11px;">تم التعديل ✅</span>';
+                statusEl.innerHTML = `<span style="color:var(--success);font-size:11px;">تم التعديل ✅${data.savedToLibrary ? ' • اتحفظت في مكتبتي' : ''}</span>`;
                 statusEl.classList.add('show');
                 document.getElementById('isEditPrompt').value = '';
             } catch (e) {
@@ -10398,6 +10435,67 @@ ${r.pathSummary}
                 statusEl.classList.add('show');
             } finally {
                 btn.disabled = false;
+            }
+        }
+
+        // ====================== مكتبة صور استوديو الصور ======================
+        let currentLibraryViewId = null; // الصورة المفتوحة حاليًا في مودال العرض الكامل
+
+        async function loadImageLibrary() {
+            const grid = document.getElementById('isLibraryGrid');
+            const emptyEl = document.getElementById('isLibraryEmpty');
+            const loadingEl = document.getElementById('isLibraryLoading');
+            grid.innerHTML = '';
+            emptyEl.style.display = 'none';
+            loadingEl.style.display = 'block';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/image-library`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'تعذر تحميل المكتبة');
+                loadingEl.style.display = 'none';
+                if (!data.images || !data.images.length) {
+                    emptyEl.style.display = 'block';
+                    return;
+                }
+                const providerLabels = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max' };
+                grid.innerHTML = data.images.map(img => `
+                    <div class="prompt-card" style="padding:6px;cursor:pointer;" onclick='openLibraryImageView(${JSON.stringify(img).replace(/'/g, "&apos;")})'>
+                        <img src="${img.imageUrl}" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block;">
+                        <div style="font-size:10px;color:var(--text-3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(img.prompt || '')}</div>
+                        <div style="font-size:9px;color:var(--text-3);">${providerLabels[img.provider] || img.provider || ''}${img.source === 'edit' ? ' • معدّلة' : ''}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                loadingEl.style.display = 'none';
+                emptyEl.style.display = 'block';
+                emptyEl.textContent = e.message || 'تعذر تحميل المكتبة';
+            }
+        }
+
+        function openLibraryImageView(img) {
+            currentLibraryViewId = img._id;
+            document.getElementById('libraryImageViewImg').src = img.imageUrl;
+            document.getElementById('libraryImageViewDownload').href = img.imageUrl;
+            document.getElementById('libraryImageViewPrompt').textContent = img.prompt || '';
+            openModal('libraryImageViewModal');
+        }
+
+        async function deleteLibraryImage(id) {
+            if (!id) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/image-library/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'تعذر حذف الصورة');
+                closeModal('libraryImageViewModal');
+                showToast('تم حذف الصورة', 'success');
+                loadImageLibrary();
+            } catch (e) {
+                showToast(e.message || 'تعذر حذف الصورة', 'error');
             }
         }
 
