@@ -2232,9 +2232,30 @@
 
             <!-- تبويب: إنشاء صورة -->
             <div id="isPaneGenerate" style="display:none;overflow-y:auto;flex:1;">
+                <div id="isQuotaBadge" style="font-size:11px;color:var(--text-3);text-align:center;margin-bottom:10px;padding:6px;border-radius:8px;background:var(--bg-2);"></div>
+
+                <div class="input-group">
+                    <label>قوالب جاهزة (اختياري)</label>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <button type="button" class="btn-calc" style="width:auto;padding:6px 10px;font-size:11px;background:var(--bg-2);color:var(--text-2);" onclick="applyImagePromptTemplate('illustration')">🔬 رسم توضيحي علمي</button>
+                        <button type="button" class="btn-calc" style="width:auto;padding:6px 10px;font-size:11px;background:var(--bg-2);color:var(--text-2);" onclick="applyImagePromptTemplate('mindmap')">🧠 خريطة ذهنية</button>
+                        <button type="button" class="btn-calc" style="width:auto;padding:6px 10px;font-size:11px;background:var(--bg-2);color:var(--text-2);" onclick="applyImagePromptTemplate('comparison')">📊 جدول مقارنة</button>
+                    </div>
+                </div>
                 <div class="input-group">
                     <label>اوصف الصورة اللي عايزها</label>
                     <input type="text" id="isGeneratePrompt" class="tool-input" placeholder="مثلًا: رسم توضيحي لجهاز الدوران في جسم الإنسان">
+                    <button type="button" class="btn-calc" id="isImproveBtn" style="margin-top:6px;background:var(--bg-2);color:var(--text-2);font-size:12px;" onclick="runImproveImagePrompt()"><i class="fas fa-sparkles"></i> حسّن الوصف بالذكاء الاصطناعي</button>
+                </div>
+                <div class="input-group">
+                    <label>أسلوب الصورة</label>
+                    <select id="isGenerateStyle" class="tool-input">
+                        <option value="none">بدون أسلوب محدد</option>
+                        <option value="cartoon">رسم كرتوني</option>
+                        <option value="scientific">رسم علمي دقيق</option>
+                        <option value="photographic">فوتوغرافي واقعي</option>
+                        <option value="sketch">رسم يدوي (سكتش)</option>
+                    </select>
                 </div>
                 <div class="input-group">
                     <label>الموديل</label>
@@ -2258,8 +2279,9 @@
                 <button class="btn-calc" id="isGenerateBtn" onclick="runImageStudioGenerate()"><i class="fas fa-paintbrush"></i> أنشئ الصورة</button>
                 <div id="isGenerateResultWrap" style="display:none;text-align:center;margin-top:14px;">
                     <img id="isGenerateResultImg" style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);" onerror="handleImageStudioGenerateError()">
-                    <div style="margin-top:8px;">
-                        <a id="isGenerateDownloadLink" download="ai-image.jpg" class="btn-calc" style="display:inline-flex;background:var(--bg-2);color:var(--text-2);width:auto;padding:8px 16px;"><i class="fas fa-download"></i> تحميل الصورة</a>
+                    <div style="margin-top:8px;display:flex;gap:8px;">
+                        <a id="isGenerateDownloadLink" download="ai-image.jpg" class="btn-calc" style="display:inline-flex;background:var(--bg-2);color:var(--text-2);flex:1;padding:8px 12px;"><i class="fas fa-download"></i> تحميل</a>
+                        <button type="button" class="btn-calc" id="isRegenerateBtn" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:8px 12px;" onclick="runImageStudioGenerate()"><i class="fas fa-arrows-rotate"></i> جرّب تاني</button>
                     </div>
                     <!-- تعديل الصورة — متاح بس للمزوّدين اللي بيدعموا تعديل صور (Grok وFlux) -->
                     <div id="isEditSection" style="display:none;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
@@ -10262,6 +10284,9 @@ ${r.pathSummary}
             document.getElementById('isGeneratePrompt').value = '';
             document.getElementById('isGenerateProvider').value = 'auto';
             document.getElementById('isGenerateSize').value = '1024x1024';
+            document.getElementById('isGenerateStyle').value = 'none';
+            document.getElementById('isQuotaBadge').style.display = 'none';
+            document.getElementById('isQuotaBadge').innerHTML = '';
             document.getElementById('isGenerateResultWrap').style.display = 'none';
             document.getElementById('isGenerateStatus').classList.remove('show');
             document.getElementById('isLibraryGrid').innerHTML = '';
@@ -10278,6 +10303,90 @@ ${r.pathSummary}
             document.getElementById('isPaneGenerate').style.display = tab === 'generate' ? 'block' : 'none';
             document.getElementById('isPaneLibrary').style.display = tab === 'library' ? 'block' : 'none';
             if (tab === 'library') loadImageLibrary();
+            if (tab === 'generate') refreshImageQuotaBadge();
+        }
+
+        // قوالب برومبت جاهزة — بتحط نص scaffold في الخانة والطالب يكمّل الموضوع بعدها
+        const IMAGE_PROMPT_TEMPLATES = {
+            illustration: 'رسم توضيحي علمي دقيق وواضح يشرح: ',
+            mindmap: 'خريطة ذهنية منظمة وملوّنة توضح العلاقة بين عناصر: ',
+            comparison: 'جدول مقارنة واضح بعمودين يقارن بين: '
+        };
+        function applyImagePromptTemplate(key) {
+            const input = document.getElementById('isGeneratePrompt');
+            input.value = IMAGE_PROMPT_TEMPLATES[key] || '';
+            input.focus();
+            // نخلي مكان الكتابة في آخر النص عشان الطالب يكمل مباشرة
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
+
+        // لاحقة بتتضاف على وصف الصورة حسب الأسلوب المختار — الوصف الأساسي
+        // بيفضل زي ما هو، واللاحقة بس بتوجّه شكل الصورة النهائي.
+        const IMAGE_STYLE_SUFFIXES = {
+            none: '',
+            cartoon: '، بأسلوب رسم كرتوني ملوّن وبسيط',
+            scientific: '، بأسلوب رسم علمي دقيق وواقعي بالتفاصيل',
+            photographic: '، بأسلوب فوتوغرافي واقعي عالي الجودة',
+            sketch: '، بأسلوب رسم يدوي (سكتش) بالقلم الرصاص'
+        };
+
+        async function runImproveImagePrompt() {
+            const input = document.getElementById('isGeneratePrompt');
+            const prompt = input.value.trim();
+            if (!prompt) { showToast('اكتب وصف الصورة الأول', 'error'); return; }
+            const btn = document.getElementById('isImproveBtn');
+            btn.disabled = true;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<span class="btn-spinner"></span> جارٍ تحسين الوصف...';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/improve-image-prompt`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ prompt })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'تعذر تحسين الوصف');
+                input.value = data.improved;
+                showToast('تم تحسين الوصف ✨', 'success');
+            } catch (e) {
+                showToast(e.message || 'تعذر تحسين الوصف', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        }
+
+        // ====================== الحد اليومي لإنشاء الصور ======================
+        let lastImageQuotaEmpty = false; // آخر حالة معروفة للحد اليومي — بتستخدم عشان منفكّش الأزرار غلط في finally
+        function renderImageQuotaBadge(quota) {
+            const badge = document.getElementById('isQuotaBadge');
+            const genBtn = document.getElementById('isGenerateBtn');
+            const regenBtn = document.getElementById('isRegenerateBtn');
+            if (!quota || quota.unlimited) {
+                badge.style.display = 'none';
+                lastImageQuotaEmpty = false;
+                return;
+            }
+            badge.style.display = 'block';
+            const low = quota.remaining <= 2 && quota.remaining > 0;
+            const empty = quota.remaining <= 0;
+            lastImageQuotaEmpty = empty;
+            badge.style.color = empty ? 'var(--danger)' : low ? '#e67e22' : 'var(--text-3)';
+            badge.innerHTML = empty
+                ? `⚠️ وصلت للحد الأقصى (${quota.limit} صور اليوم) — هيتجدد بكرة`
+                : `متبقّي <b>${quota.remaining}</b> من ${quota.limit} صور النهاردة${low ? ' ⚠️ اقتربت من الحد' : ''}`;
+            if (genBtn) genBtn.disabled = empty;
+            if (regenBtn) regenBtn.disabled = empty;
+        }
+
+        async function refreshImageQuotaBadge() {
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/image-quota`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                const data = await res.json();
+                if (res.ok) renderImageQuotaBadge(data);
+            } catch (e) { /* غير حرج — لو فشل الطلب الطالب هيعرف من رد التوليد نفسه */ }
         }
 
         function handleImageStudioFileSelect(file) {
@@ -10333,15 +10442,19 @@ ${r.pathSummary}
         const EDIT_CAPABLE_PROVIDERS = ['grok', 'flux']; // مطابق لـ EDIT_PROVIDERS في index.js
 
         async function runImageStudioGenerate() {
-            const prompt = document.getElementById('isGeneratePrompt').value.trim();
-            if (!prompt) { showToast('اكتب وصف الصورة الأول', 'error'); return; }
+            const rawPrompt = document.getElementById('isGeneratePrompt').value.trim();
+            if (!rawPrompt) { showToast('اكتب وصف الصورة الأول', 'error'); return; }
             const provider = document.getElementById('isGenerateProvider').value;
+            const style = document.getElementById('isGenerateStyle').value;
+            const prompt = rawPrompt + (IMAGE_STYLE_SUFFIXES[style] || '');
             const [sizeWidth, sizeHeight] = document.getElementById('isGenerateSize').value.split('x').map(Number);
             const btn = document.getElementById('isGenerateBtn');
+            const regenBtn = document.getElementById('isRegenerateBtn');
             const statusEl = document.getElementById('isGenerateStatus');
             const resultWrap = document.getElementById('isGenerateResultWrap');
             const editSection = document.getElementById('isEditSection');
             btn.disabled = true;
+            if (regenBtn) regenBtn.disabled = true;
             resultWrap.style.display = 'none';
             editSection.style.display = 'none';
             isLastGeneratedUrl = null;
@@ -10356,6 +10469,7 @@ ${r.pathSummary}
                     body: JSON.stringify({ prompt, provider, width: sizeWidth, height: sizeHeight })
                 });
                 const data = await res.json();
+                if (typeof data.quotaRemaining === 'number') renderImageQuotaBadge({ used: data.quotaLimit - data.quotaRemaining, remaining: data.quotaRemaining, limit: data.quotaLimit });
                 if (!res.ok) {
                     // لو الطالب اختار مزوّد بعينه وفشل، منعملش أي fallback تلقائي —
                     // نوريه الخطأ صراحة عشان يقرر هو يجرب مزوّد تاني ولا لأ.
@@ -10398,7 +10512,8 @@ ${r.pathSummary}
                 }
                 statusEl.classList.add('show');
             } finally {
-                btn.disabled = false;
+                btn.disabled = lastImageQuotaEmpty;
+                if (regenBtn) regenBtn.disabled = lastImageQuotaEmpty;
             }
         }
 
@@ -10421,6 +10536,7 @@ ${r.pathSummary}
                     })
                 });
                 const data = await res.json();
+                if (typeof data.quotaRemaining === 'number') renderImageQuotaBadge({ used: data.quotaLimit - data.quotaRemaining, remaining: data.quotaRemaining, limit: data.quotaLimit });
                 if (!res.ok) throw new Error(data.error || 'فشل تعديل الصورة');
                 const src = data.imageBase64 ? `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}` : data.imageUrl;
                 document.getElementById('isGenerateResultImg').src = src;
@@ -10434,7 +10550,7 @@ ${r.pathSummary}
                 statusEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر تعديل الصورة')}</span>`;
                 statusEl.classList.add('show');
             } finally {
-                btn.disabled = false;
+                btn.disabled = lastImageQuotaEmpty;
             }
         }
 
