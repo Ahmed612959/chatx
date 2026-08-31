@@ -2246,6 +2246,14 @@
                     <label>اوصف الصورة اللي عايزها</label>
                     <input type="text" id="isGeneratePrompt" class="tool-input" placeholder="مثلًا: رسم توضيحي لجهاز الدوران في جسم الإنسان">
                     <button type="button" class="btn-calc" id="isImproveBtn" style="margin-top:6px;background:var(--bg-2);color:var(--text-2);font-size:12px;" onclick="runImproveImagePrompt()"><i class="fas fa-sparkles"></i> حسّن الوصف بالذكاء الاصطناعي</button>
+                    <div id="isImprovedPromptWrap" style="display:none;margin-top:8px;padding:10px;border-radius:8px;background:var(--bg-2);border:1px solid var(--border);">
+                        <div style="font-size:10px;color:var(--text-3);margin-bottom:4px;">✨ الوصف بعد التحسين:</div>
+                        <div id="isImprovedPromptText" style="font-size:12px;line-height:1.7;text-align:right;"></div>
+                        <div style="display:flex;gap:6px;margin-top:8px;">
+                            <button type="button" class="btn-calc" style="flex:1;background:var(--success);color:#fff;font-size:11px;padding:6px 10px;" onclick="useImprovedImagePrompt()"><i class="fas fa-check"></i> استخدم هذا الوصف</button>
+                            <button type="button" class="btn-calc" style="flex:1;background:var(--bg-1);color:var(--text-2);font-size:11px;padding:6px 10px;" onclick="dismissImprovedImagePrompt()"><i class="fas fa-xmark"></i> تجاهل</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="input-group">
                     <label>أسلوب الصورة</label>
@@ -10285,6 +10293,8 @@ ${r.pathSummary}
             document.getElementById('isGenerateProvider').value = 'auto';
             document.getElementById('isGenerateSize').value = '1024x1024';
             document.getElementById('isGenerateStyle').value = 'none';
+            document.getElementById('isImprovedPromptWrap').style.display = 'none';
+            lastImprovedPromptText = '';
             document.getElementById('isQuotaBadge').style.display = 'none';
             document.getElementById('isQuotaBadge').innerHTML = '';
             document.getElementById('isGenerateResultWrap').style.display = 'none';
@@ -10315,6 +10325,7 @@ ${r.pathSummary}
         function applyImagePromptTemplate(key) {
             const input = document.getElementById('isGeneratePrompt');
             input.value = IMAGE_PROMPT_TEMPLATES[key] || '';
+            document.getElementById('isImprovedPromptWrap').style.display = 'none';
             input.focus();
             // نخلي مكان الكتابة في آخر النص عشان الطالب يكمل مباشرة
             input.setSelectionRange(input.value.length, input.value.length);
@@ -10330,12 +10341,16 @@ ${r.pathSummary}
             sketch: '، بأسلوب رسم يدوي (سكتش) بالقلم الرصاص'
         };
 
+        let lastImprovedPromptText = ''; // آخر وصف محسّن — بنستخدمه لو الطالب دوس "استخدم هذا الوصف"
+
         async function runImproveImagePrompt() {
             const input = document.getElementById('isGeneratePrompt');
             const prompt = input.value.trim();
             if (!prompt) { showToast('اكتب وصف الصورة الأول', 'error'); return; }
             const btn = document.getElementById('isImproveBtn');
+            const wrap = document.getElementById('isImprovedPromptWrap');
             btn.disabled = true;
+            wrap.style.display = 'none';
             const originalHTML = btn.innerHTML;
             btn.innerHTML = '<span class="btn-spinner"></span> جارٍ تحسين الوصف...';
             try {
@@ -10346,14 +10361,26 @@ ${r.pathSummary}
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'تعذر تحسين الوصف');
-                input.value = data.improved;
-                showToast('تم تحسين الوصف ✨', 'success');
+                lastImprovedPromptText = data.improved;
+                document.getElementById('isImprovedPromptText').textContent = data.improved;
+                wrap.style.display = 'block';
             } catch (e) {
                 showToast(e.message || 'تعذر تحسين الوصف', 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHTML;
             }
+        }
+
+        function useImprovedImagePrompt() {
+            if (!lastImprovedPromptText) return;
+            document.getElementById('isGeneratePrompt').value = lastImprovedPromptText;
+            document.getElementById('isImprovedPromptWrap').style.display = 'none';
+            showToast('تم تطبيق الوصف المحسّن', 'success');
+        }
+
+        function dismissImprovedImagePrompt() {
+            document.getElementById('isImprovedPromptWrap').style.display = 'none';
         }
 
         // ====================== الحد اليومي لإنشاء الصور ======================
