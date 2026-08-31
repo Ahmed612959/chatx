@@ -2281,7 +2281,7 @@
                 <div id="isLibraryLoading" style="text-align:center;color:var(--text-3);font-size:12px;padding:24px 0;">
                     <span class="btn-spinner"></span> جارٍ تحميل المكتبة...
                 </div>
-                <div id="isLibraryGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+                <div id="isLibraryGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div>
             </div>
         </div>
     </div>
@@ -10459,12 +10459,9 @@ ${r.pathSummary}
                     emptyEl.style.display = 'block';
                     return;
                 }
-                const providerLabels = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max' };
                 grid.innerHTML = data.images.map(img => `
-                    <div class="prompt-card" style="padding:6px;cursor:pointer;" onclick='openLibraryImageView(${JSON.stringify(img).replace(/'/g, "&apos;")})'>
-                        <img src="${img.imageUrl}" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block;">
-                        <div style="font-size:10px;color:var(--text-3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(img.prompt || '')}</div>
-                        <div style="font-size:9px;color:var(--text-3);">${providerLabels[img.provider] || img.provider || ''}${img.source === 'edit' ? ' • معدّلة' : ''}</div>
+                    <div style="cursor:pointer;border-radius:8px;overflow:hidden;background:var(--bg-2);" title="${escapeHtml(img.prompt || '')}" onclick='openLibraryImageView(${JSON.stringify(img).replace(/'/g, "&apos;")})'>
+                        <img src="${img.imageUrl}" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
                     </div>
                 `).join('');
             } catch (e) {
@@ -10474,11 +10471,18 @@ ${r.pathSummary}
             }
         }
 
+        const IMAGE_PROVIDER_LABELS = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max' };
+
         function openLibraryImageView(img) {
             currentLibraryViewId = img._id;
             document.getElementById('libraryImageViewImg').src = img.imageUrl;
             document.getElementById('libraryImageViewDownload').href = img.imageUrl;
-            document.getElementById('libraryImageViewPrompt').textContent = img.prompt || '';
+            const providerLabel = IMAGE_PROVIDER_LABELS[img.provider] || img.provider || '';
+            const meta = [providerLabel, img.source === 'edit' ? 'معدّلة' : ''].filter(Boolean).join(' • ');
+            document.getElementById('libraryImageViewPrompt').innerHTML = `
+                ${escapeHtml(img.prompt || '')}
+                ${meta ? `<div style="margin-top:4px;font-size:10px;">${escapeHtml(meta)}</div>` : ''}
+            `;
             openModal('libraryImageViewModal');
         }
 
