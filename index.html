@@ -2259,10 +2259,15 @@
                     <label>أسلوب الصورة</label>
                     <select id="isGenerateStyle" class="tool-input">
                         <option value="none">بدون أسلوب محدد</option>
-                        <option value="cartoon">رسم كرتوني</option>
-                        <option value="scientific">رسم علمي دقيق</option>
-                        <option value="photographic">فوتوغرافي واقعي</option>
-                        <option value="sketch">رسم يدوي (سكتش)</option>
+                        <option value="cartoon">🎨 رسم كرتوني</option>
+                        <option value="scientific">🔬 رسم علمي تشريحي دقيق</option>
+                        <option value="photographic">📷 فوتوغرافي واقعي</option>
+                        <option value="sketch">✏️ رسم يدوي بالقلم (سكتش)</option>
+                        <option value="handmade">🧵 حرفي يدوي الصنع (Hand made)</option>
+                        <option value="watercolor">🎨 ألوان مائية</option>
+                        <option value="render3d">🧊 رندر ثلاثي الأبعاد</option>
+                        <option value="oil">🖼️ لوحة زيتية كلاسيكية</option>
+                        <option value="infographic">📊 إنفوجرافيك تعليمي مبسّط</option>
                     </select>
                 </div>
                 <div class="input-group">
@@ -10331,14 +10336,22 @@ ${r.pathSummary}
             input.setSelectionRange(input.value.length, input.value.length);
         }
 
-        // لاحقة بتتضاف على وصف الصورة حسب الأسلوب المختار — الوصف الأساسي
-        // بيفضل زي ما هو، واللاحقة بس بتوجّه شكل الصورة النهائي.
+        // بادئة (مش لاحقة) بتتحط في أول وصف الصورة حسب الأسلوب المختار — بادئة
+        // عشان: (1) الموديلات بتدي وزن أعلى للكلمات الأولى في الوصف عادةً،
+        // و(2) لو الوصف طويل واتقطع بسبب حد أقصى لعدد الحروف، الأسلوب يفضل
+        // موجود بدل ما يكون آخر حاجة في النص فيروح لو حصل قطع. كل أسلوب فيه
+        // وصف عربي + كلمات مفتاحية إنجليزية (الموديلات بتستجيب لها بدقة أعلى).
         const IMAGE_STYLE_SUFFIXES = {
             none: '',
-            cartoon: '، بأسلوب رسم كرتوني ملوّن وبسيط',
-            scientific: '، بأسلوب رسم علمي دقيق وواقعي بالتفاصيل',
-            photographic: '، بأسلوب فوتوغرافي واقعي عالي الجودة',
-            sketch: '، بأسلوب رسم يدوي (سكتش) بالقلم الرصاص'
+            cartoon: 'بأسلوب كرتوني ملوّن، ألوان مسطحة وخطوط سميكة واضحة (cartoon style, flat colors, bold outlines)، ',
+            scientific: 'بأسلوب رسم علمي تشريحي دقيق وواقعي بكل التفاصيل (scientific anatomical illustration, highly detailed, labeled)، ',
+            photographic: 'بأسلوب فوتوغرافي واقعي عالي الجودة، إضاءة طبيعية احترافية (photorealistic, professional photography)، ',
+            sketch: 'بأسلوب رسم يدوي بالقلم الرصاص (سكتش)، خطوط تظليل على ورق أبيض (pencil sketch, hand-drawn, black and white)، ',
+            handmade: 'بأسلوب حرفي يدوي الصنع، مجسمات مصنوعة يدويًا من ورق مقصوص أو لباد أو صلصال (handmade craft style, paper cutout / felt / clay diorama, textured)، ',
+            watercolor: 'بأسلوب ألوان مائية ناعمة، تدرجات شفافة وحواف طبيعية (soft watercolor painting, artistic)، ',
+            render3d: 'بأسلوب رندر ثلاثي الأبعاد ناعم وحديث (3D render, Pixar-style, soft lighting, smooth shading)، ',
+            oil: 'بأسلوب لوحة زيتية كلاسيكية بضربات فرشاة واضحة (classical oil painting, visible brush strokes)، ',
+            infographic: 'بأسلوب إنفوجرافيك تعليمي مبسّط وواضح، تنظيم بصري مرتّب (flat educational infographic, minimal, clean layout)، '
         };
 
         let lastImprovedPromptText = ''; // آخر وصف محسّن — بنستخدمه لو الطالب دوس "استخدم هذا الوصف"
@@ -10476,7 +10489,7 @@ ${r.pathSummary}
             if (!rawPrompt) { showToast('اكتب وصف الصورة الأول', 'error'); return; }
             const provider = document.getElementById('isGenerateProvider').value;
             const style = document.getElementById('isGenerateStyle').value;
-            const prompt = rawPrompt + (IMAGE_STYLE_SUFFIXES[style] || '');
+            const prompt = (IMAGE_STYLE_SUFFIXES[style] || '') + rawPrompt;
             const [sizeWidth, sizeHeight] = document.getElementById('isGenerateSize').value.split('x').map(Number);
             const btn = document.getElementById('isGenerateBtn');
             const regenBtn = document.getElementById('isRegenerateBtn');
