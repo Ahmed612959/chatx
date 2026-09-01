@@ -10448,7 +10448,10 @@ ${r.pathSummary}
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'فشل تحليل الصورة');
-                resultEl.innerHTML = escapeHtml(data.analysis).replace(/\n/g, '<br>');
+                const modelLabels = { gemini: 'Gemini', deepseek: 'DeepSeek', qwen: 'Qwen' };
+                const usedLabel = modelLabels[data.usedModel] || '';
+                resultEl.innerHTML = escapeHtml(data.analysis).replace(/\n/g, '<br>')
+                    + (usedLabel ? `<div style="margin-top:8px;font-size:10px;color:var(--text-3);">تم التحليل عن طريق: ${usedLabel}</div>` : '');
             } catch (e) {
                 resultEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر تحليل الصورة')}</span>`;
             } finally {
