@@ -2273,10 +2273,11 @@
                 <div class="input-group">
                     <label>الموديل</label>
                     <select id="isGenerateProvider" class="tool-input">
-                        <option value="auto">تلقائي (Qwen، وGrok وFlux لو Qwen مش متاح)</option>
+                        <option value="auto">تلقائي (يجرّب كل الموديلات لحد ما ينجح)</option>
                         <option value="qwen">Qwen</option>
                         <option value="grok">Grok</option>
                         <option value="flux">Flux 2 Max</option>
+                        <option value="gpt4o-image">GPT-4o Image</option>
                     </select>
                 </div>
                 <div class="input-group">
@@ -10482,7 +10483,7 @@ ${r.pathSummary}
         let isLastGeneratedUrl = null; // لازم يكون رابط عام (مش base64) عشان التعديل يشتغل عليه
         let isLastGeneratedProvider = null; // المزوّد اللي أنشأ الصورة (لازم نستخدم نفسه في التعديل)
         let isLastGeneratedSize = null; // { width, height } — بنستخدمها تاني وقت التعديل عشان الأبعاد تفضل زي ما هي
-        const EDIT_CAPABLE_PROVIDERS = ['grok', 'flux']; // مطابق لـ EDIT_PROVIDERS في index.js
+        const EDIT_CAPABLE_PROVIDERS = ['grok', 'flux', 'gpt4o-image']; // مطابق لـ EDIT_PROVIDERS في index.js
 
         async function runImageStudioGenerate() {
             const rawPrompt = document.getElementById('isGeneratePrompt').value.trim();
@@ -10527,7 +10528,7 @@ ${r.pathSummary}
                 document.getElementById('isGenerateDownloadLink').href = src;
                 resultWrap.style.display = 'block';
                 statusEl.classList.remove('show');
-                const providerLabels = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max' };
+                const providerLabels = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max', 'gpt4o-image': 'GPT-4o Image' };
                 const usedLabel = providerLabels[data.usedProvider] || data.usedProvider;
                 const savedNote = data.savedToLibrary ? ' • 📥 اتحفظت في مكتبتي' : '';
                 statusEl.innerHTML = usedLabel
@@ -10630,7 +10631,7 @@ ${r.pathSummary}
             }
         }
 
-        const IMAGE_PROVIDER_LABELS = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max' };
+        const IMAGE_PROVIDER_LABELS = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max', 'gpt4o-image': 'GPT-4o Image' };
 
         function openLibraryImageView(img) {
             currentLibraryViewId = img._id;
