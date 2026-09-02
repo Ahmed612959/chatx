@@ -2204,12 +2204,13 @@
     <div class="modal-overlay" id="imageStudioModal">
         <div class="modal" style="max-width:460px;max-height:85vh;display:flex;flex-direction:column;">
             <div class="modal-header">
-                <div class="modal-title"><i class="fas fa-wand-magic-sparkles"></i> استوديو الصور الذكي</div>
+                <div class="modal-title"><i class="fas fa-wand-magic-sparkles"></i> استوديو الوسائط الذكي</div>
                 <button class="close-modal" aria-label="إغلاق" onclick="closeModal('imageStudioModal')"><i class="fas fa-times"></i></button>
             </div>
             <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;">
-                <button id="isTabAnalyze" class="lib-tab active" onclick="switchImageStudioTab('analyze')"><i class="fas fa-magnifying-glass"></i> حلّل صورة</button>
-                <button id="isTabGenerate" class="lib-tab" onclick="switchImageStudioTab('generate')"><i class="fas fa-paintbrush"></i> أنشئ صورة</button>
+                <button id="isTabAnalyze" class="lib-tab active" onclick="switchImageStudioTab('analyze')"><i class="fas fa-magnifying-glass"></i> تحليل</button>
+                <button id="isTabGenerate" class="lib-tab" onclick="switchImageStudioTab('generate')"><i class="fas fa-paintbrush"></i> صورة</button>
+                <button id="isTabVideo" class="lib-tab" onclick="switchImageStudioTab('video')"><i class="fas fa-video"></i> فيديو</button>
                 <button id="isTabLibrary" class="lib-tab" onclick="switchImageStudioTab('library')"><i class="fas fa-images"></i> مكتبتي</button>
             </div>
 
@@ -2277,7 +2278,6 @@
                         <option value="qwen">Qwen</option>
                         <option value="grok">Grok</option>
                         <option value="flux">Flux 2 Max</option>
-                        <option value="gpt4o-image">GPT-4o Image</option>
                     </select>
                 </div>
                 <div class="input-group">
@@ -2309,15 +2309,98 @@
                 <div class="calc-result" id="isGenerateStatus"></div>
             </div>
 
-            <!-- تبويب: مكتبتي (الصور المحفوظة) -->
-            <div id="isPaneLibrary" style="display:none;overflow-y:auto;flex:1;">
-                <div id="isLibraryEmpty" style="display:none;text-align:center;color:var(--text-3);font-size:12px;padding:24px 0;">
-                    لسه مفيش صور محفوظة. أي صورة تنشئها من تبويب "أنشئ صورة" بتتحفظ هنا تلقائيًا.
+            <!-- تبويب: إنشاء فيديو -->
+            <div id="isPaneVideo" style="display:none;overflow-y:auto;flex:1;">
+                <div id="isVideoQuotaBadge" style="font-size:11px;color:var(--text-3);text-align:center;margin-bottom:10px;padding:6px;border-radius:8px;background:var(--bg-2);"></div>
+                <div style="font-size:11px;color:var(--text-3);background:var(--bg-2);border-radius:8px;padding:8px 10px;margin-bottom:12px;line-height:1.7;">
+                    ⏱️ كل فيديو مدته 10 ثواني بس (جودة 480p) — التوليد بياخد وقت (من دقيقة لكذا دقيقة)، سيب الصفحة مفتوحة لحد ما يخلص.
                 </div>
-                <div id="isLibraryLoading" style="text-align:center;color:var(--text-3);font-size:12px;padding:24px 0;">
+                <div class="input-group">
+                    <label>اوصف الفيديو اللي عايزه</label>
+                    <input type="text" id="isVideoPrompt" class="tool-input" placeholder="مثلًا: قلب بشري بينبض ويضخ الدم بشكل متحرك">
+                </div>
+                <div class="input-group">
+                    <label>صورة تبدأ منها الفيديو (اختياري)</label>
+                    <div id="isVideoImagePreviewWrap" style="display:none;margin-bottom:8px;position:relative;width:100px;">
+                        <img id="isVideoImagePreview" style="width:100px;height:100px;object-fit:cover;border-radius:8px;display:block;">
+                        <button type="button" onclick="clearVideoSourceImage()" style="position:absolute;top:-6px;left:-6px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;line-height:1;">✕</button>
+                    </div>
+                    <button type="button" class="btn-calc" style="background:var(--bg-2);color:var(--text-2);font-size:12px;" onclick="openVideoImagePicker()"><i class="fas fa-image"></i> اختر صورة من مكتبتي (اختياري)</button>
+                </div>
+                <div class="input-group">
+                    <label>أبعاد الفيديو</label>
+                    <select id="isVideoAspectRatio" class="tool-input">
+                        <option value="16:9">عريض (16:9)</option>
+                        <option value="9:16">طولي (9:16)</option>
+                        <option value="1:1">مربع (1:1)</option>
+                        <option value="4:3">عريض (4:3)</option>
+                        <option value="3:4">طولي (3:4)</option>
+                    </select>
+                </div>
+                <button class="btn-calc" id="isVideoGenerateBtn" onclick="runVideoStudioGenerate()"><i class="fas fa-video"></i> أنشئ الفيديو</button>
+                <div id="isVideoResultWrap" style="display:none;text-align:center;margin-top:14px;">
+                    <video id="isVideoResultPlayer" controls playsinline style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);"></video>
+                    <div style="margin-top:8px;">
+                        <a id="isVideoDownloadLink" download="ai-video.mp4" class="btn-calc" style="display:inline-flex;background:var(--bg-2);color:var(--text-2);width:auto;padding:8px 16px;"><i class="fas fa-download"></i> تحميل الفيديو</a>
+                    </div>
+                </div>
+                <div class="calc-result" id="isVideoStatus"></div>
+            </div>
+
+            <!-- تبويب: مكتبتي (الصور والفيديوهات المحفوظة) -->
+            <div id="isPaneLibrary" style="display:none;overflow-y:auto;flex:1;">
+                <div style="font-size:12px;color:var(--text-2);font-weight:600;margin-bottom:8px;">🖼️ الصور</div>
+                <div id="isLibraryEmpty" style="display:none;text-align:center;color:var(--text-3);font-size:12px;padding:16px 0;">
+                    لسه مفيش صور محفوظة. أي صورة تنشئها من تبويب "صورة" بتتحفظ هنا تلقائيًا.
+                </div>
+                <div id="isLibraryLoading" style="text-align:center;color:var(--text-3);font-size:12px;padding:16px 0;">
                     <span class="btn-spinner"></span> جارٍ تحميل المكتبة...
                 </div>
                 <div id="isLibraryGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div>
+
+                <div style="font-size:12px;color:var(--text-2);font-weight:600;margin:18px 0 8px;padding-top:14px;border-top:1px solid var(--border);">🎬 الفيديوهات</div>
+                <div id="isVideoLibraryEmpty" style="display:none;text-align:center;color:var(--text-3);font-size:12px;padding:16px 0;">
+                    لسه مفيش فيديوهات محفوظة. أي فيديو تنشئه من تبويب "فيديو" بيتحفظ هنا تلقائيًا.
+                </div>
+                <div id="isVideoLibraryLoading" style="text-align:center;color:var(--text-3);font-size:12px;padding:16px 0;">
+                    <span class="btn-spinner"></span> جارٍ تحميل مكتبة الفيديو...
+                </div>
+                <div id="isVideoLibraryGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- اختيار صورة من المكتبة كمصدر لفيديو -->
+    <div class="modal-overlay" id="videoImagePickerModal">
+        <div class="modal" style="max-width:420px;max-height:80vh;display:flex;flex-direction:column;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-image"></i> اختر صورة</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('videoImagePickerModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="isVideoPickerEmpty" style="display:none;text-align:center;color:var(--text-3);font-size:12px;padding:16px 0;">
+                لسه مفيش صور محفوظة في مكتبتك — أنشئ صورة الأول من تبويب "صورة".
+            </div>
+            <div id="isVideoPickerLoading" style="text-align:center;color:var(--text-3);font-size:12px;padding:16px 0;">
+                <span class="btn-spinner"></span> جارٍ التحميل...
+            </div>
+            <div id="isVideoPickerGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <!-- عرض فيديو من المكتبة بالحجم الكامل -->
+    <div class="modal-overlay" id="libraryVideoViewModal">
+        <div class="modal" style="max-width:460px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-video"></i> الفيديو</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('libraryVideoViewModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="text-align:center;">
+                <video id="libraryVideoViewPlayer" controls playsinline style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);"></video>
+                <div id="libraryVideoViewPrompt" style="margin-top:10px;font-size:12px;color:var(--text-3);text-align:right;line-height:1.7;"></div>
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                    <a id="libraryVideoViewDownload" download="ai-video.mp4" class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);"><i class="fas fa-download"></i> تحميل</a>
+                    <button class="btn-calc" style="flex:1;background:var(--danger);color:#fff;" onclick="deleteLibraryVideo(currentLibraryVideoViewId)"><i class="fas fa-trash"></i> حذف</button>
+                </div>
             </div>
         </div>
     </div>
@@ -10307,6 +10390,15 @@ ${r.pathSummary}
             document.getElementById('isGenerateStatus').classList.remove('show');
             document.getElementById('isLibraryGrid').innerHTML = '';
             document.getElementById('isLibraryEmpty').style.display = 'none';
+            document.getElementById('isVideoPrompt').value = '';
+            document.getElementById('isVideoAspectRatio').value = '16:9';
+            document.getElementById('isVideoResultWrap').style.display = 'none';
+            document.getElementById('isVideoStatus').classList.remove('show');
+            document.getElementById('isVideoQuotaBadge').style.display = 'none';
+            document.getElementById('isVideoQuotaBadge').innerHTML = '';
+            document.getElementById('isVideoLibraryGrid').innerHTML = '';
+            document.getElementById('isVideoLibraryEmpty').style.display = 'none';
+            clearVideoSourceImage();
             switchImageStudioTab('analyze');
             openModal('imageStudioModal');
         }
@@ -10314,12 +10406,15 @@ ${r.pathSummary}
         function switchImageStudioTab(tab) {
             document.getElementById('isTabAnalyze').classList.toggle('active', tab === 'analyze');
             document.getElementById('isTabGenerate').classList.toggle('active', tab === 'generate');
+            document.getElementById('isTabVideo').classList.toggle('active', tab === 'video');
             document.getElementById('isTabLibrary').classList.toggle('active', tab === 'library');
             document.getElementById('isPaneAnalyze').style.display = tab === 'analyze' ? 'block' : 'none';
             document.getElementById('isPaneGenerate').style.display = tab === 'generate' ? 'block' : 'none';
+            document.getElementById('isPaneVideo').style.display = tab === 'video' ? 'block' : 'none';
             document.getElementById('isPaneLibrary').style.display = tab === 'library' ? 'block' : 'none';
-            if (tab === 'library') loadImageLibrary();
+            if (tab === 'library') { loadImageLibrary(); loadVideoLibrary(); }
             if (tab === 'generate') refreshImageQuotaBadge();
+            if (tab === 'video') refreshVideoQuotaBadge();
         }
 
         // قوالب برومبت جاهزة — بتحط نص scaffold في الخانة والطالب يكمّل الموضوع بعدها
@@ -10483,7 +10578,7 @@ ${r.pathSummary}
         let isLastGeneratedUrl = null; // لازم يكون رابط عام (مش base64) عشان التعديل يشتغل عليه
         let isLastGeneratedProvider = null; // المزوّد اللي أنشأ الصورة (لازم نستخدم نفسه في التعديل)
         let isLastGeneratedSize = null; // { width, height } — بنستخدمها تاني وقت التعديل عشان الأبعاد تفضل زي ما هي
-        const EDIT_CAPABLE_PROVIDERS = ['grok', 'flux', 'gpt4o-image']; // مطابق لـ EDIT_PROVIDERS في index.js
+        const EDIT_CAPABLE_PROVIDERS = ['grok', 'flux']; // مطابق لـ EDIT_PROVIDERS في index.js
 
         async function runImageStudioGenerate() {
             const rawPrompt = document.getElementById('isGeneratePrompt').value.trim();
@@ -10528,7 +10623,7 @@ ${r.pathSummary}
                 document.getElementById('isGenerateDownloadLink').href = src;
                 resultWrap.style.display = 'block';
                 statusEl.classList.remove('show');
-                const providerLabels = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max', 'gpt4o-image': 'GPT-4o Image' };
+                const providerLabels = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max' };
                 const usedLabel = providerLabels[data.usedProvider] || data.usedProvider;
                 const savedNote = data.savedToLibrary ? ' • 📥 اتحفظت في مكتبتي' : '';
                 statusEl.innerHTML = usedLabel
@@ -10631,7 +10726,7 @@ ${r.pathSummary}
             }
         }
 
-        const IMAGE_PROVIDER_LABELS = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max', 'gpt4o-image': 'GPT-4o Image' };
+        const IMAGE_PROVIDER_LABELS = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max' };
 
         function openLibraryImageView(img) {
             currentLibraryViewId = img._id;
@@ -10660,6 +10755,169 @@ ${r.pathSummary}
                 loadImageLibrary();
             } catch (e) {
                 showToast(e.message || 'تعذر حذف الصورة', 'error');
+            }
+        }
+
+        // ====================== إنشاء فيديو (Grok Imagine Video) ======================
+        let selectedVideoSourceImageUrl = null; // رابط الصورة المختارة كمصدر للفيديو (اختياري)
+        let lastVideoQuotaEmpty = false; // آخر حالة معروفة للحد اليومي — بتستخدم عشان منفكّش الزرار غلط في finally
+
+        function renderVideoQuotaBadge(quota) {
+            const badge = document.getElementById('isVideoQuotaBadge');
+            const genBtn = document.getElementById('isVideoGenerateBtn');
+            if (!quota || quota.unlimited) {
+                badge.style.display = 'none';
+                lastVideoQuotaEmpty = false;
+                return;
+            }
+            badge.style.display = 'block';
+            const empty = quota.remaining <= 0;
+            lastVideoQuotaEmpty = empty;
+            badge.style.color = empty ? 'var(--danger)' : 'var(--text-3)';
+            badge.innerHTML = empty
+                ? `⚠️ وصلت للحد الأقصى (${quota.limit} فيديوهات اليوم) — هيتجدد بكرة`
+                : `متبقّي <b>${quota.remaining}</b> من ${quota.limit} فيديوهات النهاردة`;
+            if (genBtn) genBtn.disabled = empty;
+        }
+
+        async function refreshVideoQuotaBadge() {
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/video-quota`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                const data = await res.json();
+                if (res.ok) renderVideoQuotaBadge(data);
+            } catch (e) { /* غير حرج */ }
+        }
+
+        function clearVideoSourceImage() {
+            selectedVideoSourceImageUrl = null;
+            document.getElementById('isVideoImagePreviewWrap').style.display = 'none';
+            document.getElementById('isVideoImagePreview').src = '';
+        }
+
+        function selectVideoSourceImage(url) {
+            selectedVideoSourceImageUrl = url;
+            document.getElementById('isVideoImagePreview').src = url;
+            document.getElementById('isVideoImagePreviewWrap').style.display = 'block';
+            closeModal('videoImagePickerModal');
+        }
+
+        async function openVideoImagePicker() {
+            openModal('videoImagePickerModal');
+            const grid = document.getElementById('isVideoPickerGrid');
+            const emptyEl = document.getElementById('isVideoPickerEmpty');
+            const loadingEl = document.getElementById('isVideoPickerLoading');
+            grid.innerHTML = '';
+            emptyEl.style.display = 'none';
+            loadingEl.style.display = 'block';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/image-library`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'تعذر تحميل الصور');
+                loadingEl.style.display = 'none';
+                if (!data.images || !data.images.length) { emptyEl.style.display = 'block'; return; }
+                grid.innerHTML = data.images.map(img => `
+                    <div style="cursor:pointer;border-radius:8px;overflow:hidden;" onclick="selectVideoSourceImage('${img.imageUrl.replace(/'/g, "\\'")}')">
+                        <img src="${img.imageUrl}" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
+                    </div>
+                `).join('');
+            } catch (e) {
+                loadingEl.style.display = 'none';
+                emptyEl.style.display = 'block';
+                emptyEl.textContent = e.message || 'تعذر تحميل الصور';
+            }
+        }
+
+        async function runVideoStudioGenerate() {
+            const prompt = document.getElementById('isVideoPrompt').value.trim();
+            if (!prompt) { showToast('اكتب وصف الفيديو الأول', 'error'); return; }
+            const aspectRatio = document.getElementById('isVideoAspectRatio').value;
+            const btn = document.getElementById('isVideoGenerateBtn');
+            const statusEl = document.getElementById('isVideoStatus');
+            const resultWrap = document.getElementById('isVideoResultWrap');
+            btn.disabled = true;
+            resultWrap.style.display = 'none';
+            statusEl.innerHTML = '<span class="btn-spinner"></span> جارٍ إنشاء الفيديو... ممكن ياخد دقيقة لكذا دقيقة، سيب الصفحة مفتوحة ولا تقفلها';
+            statusEl.classList.add('show');
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/generate-video`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ prompt, imageUrl: selectedVideoSourceImageUrl, aspectRatio })
+                });
+                const data = await res.json();
+                if (typeof data.quotaRemaining === 'number') renderVideoQuotaBadge({ used: data.quotaLimit - data.quotaRemaining, remaining: data.quotaRemaining, limit: data.quotaLimit });
+                if (!res.ok) throw new Error(data.error || 'فشل إنشاء الفيديو');
+                document.getElementById('isVideoResultPlayer').src = data.videoUrl;
+                document.getElementById('isVideoDownloadLink').href = data.videoUrl;
+                resultWrap.style.display = 'block';
+                statusEl.classList.remove('show');
+                statusEl.innerHTML = data.savedToLibrary ? '<span style="color:var(--text-3);font-size:11px;">📥 اتحفظ في مكتبتي</span>' : '';
+                if (data.savedToLibrary) statusEl.classList.add('show');
+            } catch (e) {
+                statusEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر إنشاء الفيديو')}</span>`;
+                statusEl.classList.add('show');
+            } finally {
+                btn.disabled = lastVideoQuotaEmpty;
+            }
+        }
+
+        // ====================== مكتبة الفيديو ======================
+        let currentLibraryVideoViewId = null;
+
+        async function loadVideoLibrary() {
+            const grid = document.getElementById('isVideoLibraryGrid');
+            const emptyEl = document.getElementById('isVideoLibraryEmpty');
+            const loadingEl = document.getElementById('isVideoLibraryLoading');
+            grid.innerHTML = '';
+            emptyEl.style.display = 'none';
+            loadingEl.style.display = 'block';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/video-library`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'تعذر تحميل مكتبة الفيديو');
+                loadingEl.style.display = 'none';
+                if (!data.videos || !data.videos.length) { emptyEl.style.display = 'block'; return; }
+                grid.innerHTML = data.videos.map(vid => `
+                    <div style="cursor:pointer;border-radius:8px;overflow:hidden;background:var(--bg-2);" title="${escapeHtml(vid.prompt || '')}" onclick='openLibraryVideoView(${JSON.stringify(vid).replace(/'/g, "&apos;")})'>
+                        <video src="${vid.videoUrl}" muted style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;pointer-events:none;"></video>
+                    </div>
+                `).join('');
+            } catch (e) {
+                loadingEl.style.display = 'none';
+                emptyEl.style.display = 'block';
+                emptyEl.textContent = e.message || 'تعذر تحميل مكتبة الفيديو';
+            }
+        }
+
+        function openLibraryVideoView(vid) {
+            currentLibraryVideoViewId = vid._id;
+            document.getElementById('libraryVideoViewPlayer').src = vid.videoUrl;
+            document.getElementById('libraryVideoViewDownload').href = vid.videoUrl;
+            document.getElementById('libraryVideoViewPrompt').textContent = vid.prompt || '';
+            openModal('libraryVideoViewModal');
+        }
+
+        async function deleteLibraryVideo(id) {
+            if (!id) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/video-library/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'تعذر حذف الفيديو');
+                document.getElementById('libraryVideoViewPlayer').pause();
+                closeModal('libraryVideoViewModal');
+                showToast('تم حذف الفيديو', 'success');
+                loadVideoLibrary();
+            } catch (e) {
+                showToast(e.message || 'تعذر حذف الفيديو', 'error');
             }
         }
 
