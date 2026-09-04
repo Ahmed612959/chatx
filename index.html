@@ -1882,6 +1882,9 @@
             <div id="groupChatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background-color:var(--gc-bg,transparent);background-image:var(--gc-bg-image,none);background-size:140px;"></div>
             <div id="groupChatTypingIndicator" style="display:none;padding:0 14px 6px;font-size:11px;color:var(--text-3);"></div>
 
+            <!-- بانر طلب المحادثة — بيظهر بس لما الغرفة لسه 'pending' (طلب جديد مش متقبل) -->
+            <div id="groupChatRequestBanner" style="display:none;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--bg-2);flex-shrink:0;"></div>
+
             <input type="file" id="groupChatImageInput" accept="image/*" style="display:none;" onchange="handleGroupChatImageSelect(this.files[0]); this.value='';">
             <div id="groupChatPendingImageChip" style="display:none;padding:8px 12px 0;align-items:center;gap:8px;"></div>
 
@@ -7823,6 +7826,10 @@
         let mentionSearchToken = 0;
         let activeGroupChatId = null;
         let groupChatPollTimer = null;
+        // حالة "طلب المحادثة" بتاعة الغرفة المفتوحة دلوقتي — 'accepted' يعني
+        // اتقبلت وعادية، 'pending' يعني لسه مستنية موافقة الطرف اللي مبدأش الطلب.
+        let activeGroupChatStatus = 'accepted';
+        let activeGroupChatRequestedBy = null;
 
         function openGroupChatList() {
             openModal('groupChatListModal');
@@ -8445,7 +8452,7 @@
                 });
                 if (!res.ok) throw new Error('failed');
                 const data = await res.json();
-                openGroupChatRoom(data.chatId, memberUsername, memberUsername);
+                openGroupChatRoom(data.chatId, memberUsername, memberUsername, data.status || 'accepted', data.requestedBy || null);
                 loadMyGroupChats();
             } catch (e) {
                 showToast('تعذر إنشاء المحادثة — endpoint غرف المذاكرة لسه مش متاح على سيرفر School X', 'error');
@@ -8475,10 +8482,18 @@
                 listEl.innerHTML = '';
                 chatsList.forEach(c => {
                     const otherName = (c.memberUsernames || []).filter(u => u !== schoolUser?.username).join(', ');
+                    const isPending = (c.status || 'accepted') === 'pending';
+                    const iAmRequester = isPending && c.requestedBy === schoolUser?.username;
                     const row = document.createElement('div');
                     row.style.cssText = 'padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;';
-                    row.innerHTML = `<div><div style="font-size:13px;font-weight:700;">${escapeHtml(otherName)}</div><div style="font-size:11px;color:var(--text-3);margin-top:2px;">${escapeHtml(c.lastMessage || 'ابدأ المذاكرة...')}</div></div><i class="fas fa-chevron-left" style="color:var(--text-3);"></i>`;
-                    row.onclick = () => openGroupChatRoom(c.id, otherName, otherName);
+                    // لو أنا اللي بدأت الطلب: بنوريه "مستني الموافقة". لو أنا المُستقبِل
+                    // وطلب جديد مستني ردي: بنوريه بلون تنبيه عشان يلاحظه ويفتح الغرفة يقبل/يرفض.
+                    const subtitle = isPending
+                        ? (iAmRequester ? '⏳ في انتظار موافقة الطرف التاني' : '📩 طلب محادثة جديد — افتح عشان تقبل أو ترفض')
+                        : (c.lastMessage || 'ابدأ المذاكرة...');
+                    const subtitleColor = (isPending && !iAmRequester) ? 'var(--warning, #f59e0b)' : 'var(--text-3)';
+                    row.innerHTML = `<div><div style="font-size:13px;font-weight:700;">${escapeHtml(otherName)}</div><div style="font-size:11px;color:${subtitleColor};margin-top:2px;">${escapeHtml(subtitle)}</div></div><i class="fas fa-chevron-left" style="color:var(--text-3);"></i>`;
+                    row.onclick = () => openGroupChatRoom(c.id, otherName, otherName, c.status || 'accepted', c.requestedBy || null);
                     listEl.appendChild(row);
                 });
             } catch (e) {
@@ -8486,9 +8501,11 @@
             }
         }
 
-        function openGroupChatRoom(chatId, title, otherUsername) {
+        function openGroupChatRoom(chatId, title, otherUsername, status, requestedBy) {
             activeGroupChatId = chatId;
             currentGroupChatOtherUsername = otherUsername || title || null;
+            activeGroupChatStatus = status || 'accepted';
+            activeGroupChatRequestedBy = requestedBy || null;
             lastKnownReadBy = {};
             document.getElementById('groupChatRoomTitle').textContent = title || 'غرفة مذاكرة';
             document.getElementById('groupChatMessages').innerHTML = '';
@@ -8496,6 +8513,7 @@
             removeGroupPendingImage();
             updateGroupChatSendButton();
             applyGroupChatTheme(getSavedGroupChatTheme());
+            renderGroupChatRequestBanner();
             closeModal('groupChatListModal');
             openModal('groupChatRoomModal');
             loadGroupChatMessages(true);
@@ -8510,10 +8528,81 @@
             cancelGroupVoiceRecording(); // لو الطالب قفل الغرفة وهو لسه بيسجّل، نوقف الميكروفون ونلغي بهدوء
             activeGroupChatId = null;
             currentGroupChatOtherUsername = null;
+            activeGroupChatStatus = 'accepted';
+            activeGroupChatRequestedBy = null;
             lastKnownReadBy = {};
             updateTypingIndicator([]);
             const statusEl = document.getElementById('groupChatOnlineStatus');
             if (statusEl) statusEl.innerHTML = '';
+        }
+
+        // بيبني/يحدّث بانر "طلب محادثة" فوق صندوق الكتابة، وبيتحكم في تفعيل/تعطيل
+        // الكتابة حسب حالة الغرفة: لو الطلب لسه pending وأنا مش اللي بدأه، لازم
+        // أقبل أو أرفض الأول قبل ما أقدر أبعت أي رسالة.
+        function renderGroupChatRequestBanner() {
+            let banner = document.getElementById('groupChatRequestBanner');
+            const inputRow = document.getElementById('groupChatInputRow');
+            const isPending = activeGroupChatStatus === 'pending';
+            const iAmRequester = isPending && activeGroupChatRequestedBy === schoolUser?.username;
+            const iMustDecide = isPending && !iAmRequester;
+
+            if (!banner) return; // العنصر لازم يكون متعرّف في الـ HTML
+
+            if (iMustDecide) {
+                banner.style.display = 'flex';
+                banner.innerHTML = `
+                    <span style="flex:1;font-size:12px;">📩 ${escapeHtml(currentGroupChatOtherUsername || 'زميل')} عايز يبدأ محادثة معاك</span>
+                    <button class="btn-calc" style="width:auto;padding:6px 14px;font-size:12px;" onclick="acceptGroupChatRequest()">قبول</button>
+                    <button class="action-btn" style="width:auto;padding:6px 14px;font-size:12px;color:var(--danger);" onclick="declineGroupChatRequest()">رفض</button>
+                `;
+            } else if (isPending && iAmRequester) {
+                banner.style.display = 'flex';
+                banner.innerHTML = `<span style="flex:1;font-size:12px;color:var(--text-3);">⏳ في انتظار موافقة الطرف التاني على المحادثة</span>`;
+            } else {
+                banner.style.display = 'none';
+                banner.innerHTML = '';
+            }
+
+            // تعطيل الكتابة والإرسال والتسجيل الصوتي لحد ما يتحدد قرار الطلب
+            if (inputRow) inputRow.style.opacity = iMustDecide ? '0.5' : '1';
+            ['groupChatInput', 'groupChatSendBtn', 'groupChatMicBtn'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = iMustDecide;
+            });
+        }
+
+        async function acceptGroupChatRequest() {
+            if (!activeGroupChatId) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats/${activeGroupChatId}/accept`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                activeGroupChatStatus = 'accepted';
+                renderGroupChatRequestBanner();
+                loadMyGroupChats();
+                showToast('اتقبل الطلب، اتفضل ابدأ المذاكرة 🎉', 'success');
+            } catch (e) {
+                showToast('تعذر قبول الطلب', 'error');
+            }
+        }
+
+        async function declineGroupChatRequest() {
+            if (!activeGroupChatId) return;
+            if (!confirm('متأكد إنك عايز ترفض طلب المحادثة ده؟')) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats/${activeGroupChatId}/decline`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                showToast('اترفض الطلب', 'success');
+                closeGroupChatRoom();
+                loadMyGroupChats();
+            } catch (e) {
+                showToast('تعذر رفض الطلب', 'error');
+            }
         }
 
         // ====================== ثيمات غرفة المذاكرة ======================
@@ -8650,6 +8739,22 @@
             bubble.dataset.isMe = isMe ? '1' : '0';
             bubble.dataset.createdAt = m.createdAt;
             bubble.dataset.msgId = m.id || '';
+
+            // رسالة محذوفة — بنعرض مكانها placeholder بس، من غير محتوى ولا ريأكشنز
+            // ولا إمكانية حذف/رد تاني عليها.
+            if (m.deleted) {
+                bubble.dataset.deleted = '1';
+                bubble.style.cssText = `max-width:78%;align-self:${isMe ? 'flex-end' : 'flex-start'};padding:8px 14px;border-radius:14px;background:transparent;border:1px dashed var(--border);color:var(--text-3);font-size:12px;font-style:italic;display:flex;align-items:center;gap:6px;`;
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-ban';
+                icon.style.fontSize = '11px';
+                bubble.appendChild(icon);
+                const label = document.createElement('span');
+                label.textContent = isMe ? 'تم حذف الرسالة' : `تم حذف الرسالة بواسطة ${m.deletedByName || 'الطرف التاني'}`;
+                bubble.appendChild(label);
+                return bubble;
+            }
+
             const hasMedia = (m.image && m.image.base64) || (m.audio && m.audio.base64);
             bubble.style.cssText = `position:relative;max-width:${hasMedia ? '82%' : '78%'};align-self:${isMe ? 'flex-end' : 'flex-start'};padding:${m.image && m.image.base64 ? '6px' : '10px 14px'};border-radius:14px;background:${isMe ? 'var(--gc-out-bg, var(--grad-bold))' : 'var(--gc-in-bg, var(--bg-2))'};color:${isMe ? 'var(--gc-out-text, #fff)' : 'var(--gc-in-text, var(--text-1))'};font-size:13px;line-height:1.7;`;
 
@@ -8694,7 +8799,9 @@
             bubble.appendChild(reactionsRow);
             renderMessageReactions(reactionsRow, m.reactions || {});
 
-            if (m.id) attachLongPressReaction(bubble, m.id);
+            // الضغط المطول بيفتح شريط الإيموجيات زي ما كان، وبيضيف زرار حذف كمان
+            // بس لو الرسالة دي رسالتي أنا (isMe) — محدش يقدر يحذف رسالة غير رسايله هو.
+            if (m.id) attachLongPressReaction(bubble, m.id, isMe);
             return bubble;
         }
 
@@ -8712,10 +8819,10 @@
 
         // ضغطة مطولة (500ms) على أي رسالة بتفتح شريط إيموجيات سريع للرد عليها —
         // زي واتساب. شغالة بالتاتش (موبايل) وبرضه بالماوس (اختبار من الديسكتوب).
-        function attachLongPressReaction(bubble, messageId) {
+        function attachLongPressReaction(bubble, messageId, isMe) {
             let pressTimer = null;
             const start = () => {
-                pressTimer = setTimeout(() => showReactionPicker(bubble, messageId), 500);
+                pressTimer = setTimeout(() => showReactionPicker(bubble, messageId, isMe), 500);
             };
             const cancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
             bubble.addEventListener('touchstart', start, { passive: true });
@@ -8726,7 +8833,7 @@
             bubble.addEventListener('mouseleave', cancel);
         }
 
-        function showReactionPicker(bubble, messageId) {
+        function showReactionPicker(bubble, messageId, isMe) {
             document.querySelectorAll('.reaction-picker').forEach(el => el.remove());
             const picker = document.createElement('div');
             picker.className = 'reaction-picker';
@@ -8750,12 +8857,50 @@
                 };
                 picker.appendChild(btn);
             });
+            // زرار حذف — بيظهر بس لو الرسالة دي رسالتي أنا. محدش يقدر يحذف رسالة
+            // غير رسايله هو (الفرونت إند هنا بس تسهيل — السيرفر بيمنع أي حد تاني بردو).
+            if (isMe) {
+                const delBtn = document.createElement('span');
+                delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                delBtn.style.cssText = 'cursor:pointer;font-size:16px;color:var(--danger);display:flex;align-items:center;padding:0 2px;border-inline-start:1px solid var(--border);padding-inline-start:8px;';
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    picker.remove();
+                    deleteGroupChatMessage(messageId);
+                };
+                picker.appendChild(delBtn);
+            }
             bubble.appendChild(picker);
             setTimeout(() => {
                 document.addEventListener('click', function closePicker(e) {
                     if (!picker.contains(e.target)) { picker.remove(); document.removeEventListener('click', closePicker); }
                 });
             }, 50);
+        }
+
+        // حذف رسالة واحدة — بس السيرفر هو اللي بيتأكد فعليًا إن اللي بيحذف هو نفسه
+        // اللي بعتها؛ هنا بنستبدل الفقاعة فورًا بنسخة "محذوفة" (optimistic) وبعدين
+        // بنأكد من رد السيرفر.
+        async function deleteGroupChatMessage(messageId) {
+            if (!activeGroupChatId || !messageId) return;
+            if (!confirm('تمسح الرسالة دي؟ الطرف التاني هيشوف إنها اتمسحت.')) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/group-chats/${activeGroupChatId}/messages/${messageId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || 'failed');
+                }
+                const bubble = document.querySelector(`#groupChatMessages [data-msg-id="${CSS.escape(String(messageId))}"]`);
+                if (bubble) {
+                    const isMe = bubble.dataset.isMe === '1';
+                    bubble.replaceWith(buildGroupChatBubble({ id: messageId, deleted: true, senderUsername: schoolUser?.username, deletedByName: schoolUser?.fullName || schoolUser?.username, createdAt: Number(bubble.dataset.createdAt) || Date.now() }, isMe));
+                }
+            } catch (e) {
+                showToast(e.message === 'تقدر تحذف رسايلك انت بس' ? e.message : 'تعذر حذف الرسالة', 'error');
+            }
         }
 
         async function sendReaction(messageId, emoji) {
@@ -8793,6 +8938,13 @@
                 const data = await res.json();
                 const msgs = data.messages || [];
                 lastKnownReadBy = data.lastReadBy || lastKnownReadBy;
+                // تحديث حالة الطلب لحظيًا — لو الطرف التاني قبل الطلب وأنا لسه فاتح
+                // الغرفة، أو لو أنا فتحتها وقبلت الطلب من جهاز تاني، البانر يتحدّث تلقائي.
+                if (typeof data.chatStatus === 'string' && (data.chatStatus !== activeGroupChatStatus || data.requestedBy !== activeGroupChatRequestedBy)) {
+                    activeGroupChatStatus = data.chatStatus;
+                    activeGroupChatRequestedBy = data.requestedBy || null;
+                    renderGroupChatRequestBanner();
+                }
                 const box = document.getElementById('groupChatMessages');
                 // بنسجّل هل المستخدم كان "تحت" أصلاً (قريب من آخر الشات) قبل ما نضيف أي حاجة —
                 // ده اللي بيحدد هل نعمل auto-scroll بعدين ولا لأ. الفرق (80px) بيسمح بهامش
@@ -8801,8 +8953,15 @@
                 let receivedNewFromOther = false;
                 let appendedAny = false;
                 msgs.forEach(m => {
-                    // حماية إضافية: لو الرسالة دي (بنفس الـ id) موجودة على الشاشة أصلاً، متتضافش تاني.
-                    if (m.id && box.querySelector(`[data-msg-id="${CSS.escape(String(m.id))}"]`)) {
+                    // حماية إضافية: لو الرسالة دي (بنفس الـ id) موجودة على الشاشة أصلاً،
+                    // منضيفهاش تاني — إلا لو اتحذفت دلوقتي (m.deleted) وكانت لسه ظاهرة
+                    // بمحتواها الأصلي، وقتها نستبدل الفقاعة بنسخة "محذوفة" بدلها.
+                    const existingEl = m.id ? box.querySelector(`[data-msg-id="${CSS.escape(String(m.id))}"]`) : null;
+                    if (existingEl) {
+                        if (m.deleted && existingEl.dataset.deleted !== '1') {
+                            const isMeUpd = m.senderUsername === schoolUser?.username;
+                            existingEl.replaceWith(buildGroupChatBubble(m, isMeUpd));
+                        }
                         lastGroupMsgAt = Math.max(lastGroupMsgAt, m.createdAt || 0);
                         return;
                     }
@@ -9149,6 +9308,12 @@
             const image = pendingGroupImage;
             if (!text && !image) return;
             if (!activeGroupChatId) return;
+            // لسه محتاج أقبل/أرفض طلب المحادثة الأول — منمنعش بس بتعطيل الزرار،
+            // فحص كمان هنا احتياطًا.
+            if (activeGroupChatStatus === 'pending' && activeGroupChatRequestedBy !== schoolUser?.username) {
+                showToast('لازم تقبل طلب المحادثة الأول', 'error');
+                return;
+            }
             input.value = '';
             removeGroupPendingImage();
             updateGroupChatSendButton();
