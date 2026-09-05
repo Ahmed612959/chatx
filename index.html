@@ -882,6 +882,58 @@
         }
         .close-modal:hover { color: var(--danger); border-color: var(--danger); }
 
+        /* ====================== مكالمة صوتية حية مع المساعد (Live Voice Call) ====================== */
+        .call-overlay {
+            display: none; position: fixed; inset: 0; z-index: 300;
+            background: radial-gradient(circle at 50% 28%, #232a52 0%, #05070f 78%);
+            flex-direction: column; align-items: center; justify-content: space-between;
+            padding: 34px 20px 28px; color: #fff; text-align: center;
+        }
+        .call-overlay.active { display: flex; }
+        .call-top { display:flex; flex-direction:column; align-items:center; }
+        .call-brand { font-size: 12px; letter-spacing:.5px; color: rgba(255,255,255,.55); font-weight:700; }
+        .call-status-text { font-size: 13.5px; color: rgba(255,255,255,.8); margin-top: 8px; min-height: 18px; font-weight:600; }
+        .call-orb-wrap { position: relative; width: 190px; height: 190px; display:flex; align-items:center; justify-content:center; margin-top: 18px; }
+        .call-orb {
+            width: 148px; height: 148px; border-radius: 50%; z-index:2; cursor:pointer;
+            background: var(--grad-bold); background-size: 200% 200%;
+            display: flex; align-items: center; justify-content: center; font-size: 44px; color:#fff;
+            animation: gradientFlow 5s ease infinite;
+            box-shadow: 0 0 40px 6px rgba(139,92,246,.45); border:none;
+        }
+        .call-orb.listening { animation: gradientFlow 5s ease infinite, callPulse 1.3s ease-in-out infinite; }
+        .call-orb.speaking { animation: gradientFlow 2.6s ease infinite, callTalk .45s ease-in-out infinite alternate; }
+        .call-orb.thinking { animation: gradientFlow 1.2s linear infinite; }
+        @keyframes callPulse { 0%,100% { box-shadow: 0 0 40px 6px rgba(139,92,246,.45);} 50% { box-shadow: 0 0 65px 20px rgba(139,92,246,.75);} }
+        @keyframes callTalk { from { transform: scale(1); } to { transform: scale(1.07); } }
+        .call-ring { position:absolute; inset:0; border-radius:50%; border:2px solid rgba(139,92,246,.35); animation: callRing 2.2s ease-out infinite; pointer-events:none; }
+        .call-ring:nth-child(3){ animation-delay: .75s; }
+        @keyframes callRing { 0% { transform: scale(.76); opacity:.9;} 100% { transform: scale(1.5); opacity:0;} }
+        .call-transcript { max-width: 320px; min-height: 70px; font-size: 14px; line-height:1.85; color: rgba(255,255,255,.92); margin-top: 22px; }
+        .call-transcript .u { color: #a5b4fc; }
+        .call-controls { display:flex; align-items:center; justify-content:center; gap: 26px; width:100%; max-width:320px; }
+        .call-ctrl-btn { width:56px; height:56px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:19px; color:#fff; }
+        .call-ctrl-btn.end { background: var(--danger); width:64px; height:64px; font-size:23px; box-shadow: 0 4px 18px rgba(239,68,68,.5); }
+        .call-ctrl-btn.secondary { background: rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18); }
+        .call-ctrl-btn.secondary.on { background: var(--danger); }
+
+        /* ====================== مين فاتح دلوقتي (Live Now) ====================== */
+        .live-now-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background: var(--bg-glass); border:1px solid var(--border); }
+        .live-now-avatar { width:36px; height:36px; border-radius:50%; background: var(--grad-bold); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:#fff; flex-shrink:0; position:relative; }
+        .live-now-dot { position:absolute; bottom:-1px; left:-1px; width:11px; height:11px; border-radius:50%; background:#22c55e; border:2px solid var(--bg-2); animation: liveDotPulse 1.8s ease-in-out infinite; }
+        @keyframes liveDotPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.55);} 50% { box-shadow: 0 0 0 4px rgba(34,197,94,0);} }
+        .live-now-name { font-size:13px; font-weight:700; }
+        .live-now-meta { font-size:10.5px; color:var(--text-3); margin-top:1px; }
+
+        /* ====================== استوديو الفيديو التلقائي (ملخص → فيديو) ====================== */
+        #videoStudioModal .modal { max-width: 480px; }
+        .vs-progress-wrap { background: var(--bg-2); border-radius: 10px; height: 8px; overflow: hidden; margin-top: 10px; }
+        .vs-progress-bar { height: 100%; width: 0%; background: var(--grad-bold); transition: width .25s ease; }
+        .vs-preview-video { width: 100%; border-radius: 14px; margin-top: 12px; background:#000; max-height: 360px; display:block; }
+        .vs-slide-count-opt { display:flex; gap:8px; margin-top:8px; }
+        .vs-slide-count-opt button { flex:1; padding:9px 4px; border-radius:10px; border:1px solid var(--border); background: var(--bg-2); color:var(--text-2); font-size:12.5px; font-weight:700; cursor:pointer; }
+        .vs-slide-count-opt button.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
         /* ====================== تابات المكتبة المشتركة (كل المكتبة / ملفاتي) ====================== */
         .lib-tab {
             flex: 1; padding: 11px 8px; background: none; border: none; cursor: pointer;
@@ -1393,6 +1445,10 @@
                 </div>
                 <div class="sb-footer-actions">
                     <button class="icon-btn" id="sbQuickLogoutBtn" style="display:none;" title="تسجيل الخروج من School X" aria-label="تسجيل الخروج من School X" onclick="quickSchoolLogout()"><i class="fas fa-right-from-bracket"></i></button>
+                    <button class="icon-btn" id="liveNowBtn" style="display:none;position:relative;" title="مين فاتح دلوقتي" aria-label="مين فاتح دلوقتي" onclick="openLiveNowPanel()">
+                        <i class="fas fa-tower-broadcast"></i>
+                        <span id="liveNowDotBadge" style="display:none;position:absolute;top:2px;left:2px;width:9px;height:9px;border-radius:50%;background:#22c55e;border:1.5px solid var(--bg-2);"></span>
+                    </button>
                     <button class="icon-btn" id="leaderboardBtn" style="display:none;" title="لوحة الصدارة الأسبوعية" aria-label="لوحة الصدارة الأسبوعية" onclick="openLeaderboard()"><i class="fas fa-trophy"></i></button>
                     <button class="icon-btn" id="groupChatBtn" style="display:none;" title="غرفة مذاكرة جماعية" aria-label="غرفة مذاكرة جماعية" onclick="openGroupChatList()"><i class="fas fa-user-group"></i></button>
                     <button class="icon-btn" id="academicProfileBtn" style="display:none;" title="البروفايل الأكاديمي (Premium)" aria-label="البروفايل الأكاديمي" onclick="openAcademicProfile()"><i class="fas fa-id-card-clip"></i></button>
@@ -1423,6 +1479,7 @@
                     <button class="action-btn" aria-label="مميزات Premium" onclick="openPremiumHub()"><i class="fas fa-crown"></i></button>
                     <button class="action-btn" aria-label="المكتبة المشتركة" onclick="openModal('sharedLibraryModal'); switchLibraryTab('all');"><i class="fas fa-layer-group"></i></button>
                     <button class="action-btn" aria-label="فتح الأدوات" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
+                    <button class="action-btn" aria-label="استوديو الفيديو التلقائي" title="حوّل أي ملخص لفيديو بالصوت" onclick="openModal('videoStudioModal')"><i class="fas fa-clapperboard"></i></button>
                 </div>
             </div>
 
@@ -1474,6 +1531,16 @@
                             <h4>سؤال اليوم من زميل</h4>
                             <p>أسئلة شائعة مجهولة</p>
                         </div>
+                        <div class="quick-card" onclick="openVoiceCallScreen()">
+                            <i class="fas fa-phone-volume"></i>
+                            <h4>مكالمة صوتية</h4>
+                            <p>ذاكر وانت ماشي</p>
+                        </div>
+                        <div class="quick-card" onclick="openModal('videoStudioModal')">
+                            <i class="fas fa-clapperboard"></i>
+                            <h4>فيديو من ملخص</h4>
+                            <p>شرائح متحركة + صوت</p>
+                        </div>
                     </div>
                 </div>
                 
@@ -1496,6 +1563,9 @@
                     <input type="file" id="fileInput" hidden accept=".txt,.md,.jpg,.jpeg,.png,.pdf" onchange="handleFileUpload(event)">
                     <button class="mic-btn" id="micBtn" onclick="toggleVoiceInput()" title="سؤال بالصوت" aria-label="سؤال بالصوت">
                         <i class="fas fa-microphone" id="micIcon"></i>
+                    </button>
+                    <button class="mic-btn" id="voiceCallBtn" onclick="openVoiceCallScreen()" title="مكالمة صوتية حية مع المساعد" aria-label="مكالمة صوتية حية مع المساعد" style="background:var(--grad-bold);color:#fff;">
+                        <i class="fas fa-phone-volume"></i>
                     </button>
                     <textarea id="messageInput" rows="1" placeholder="اكتب سؤالك هنا..." aria-label="اكتب رسالتك" oninput="autoResize(this); updateCharCount()" onkeydown="handleKeyDown(event)"></textarea>
                     <button class="send-btn" id="sendBtn" aria-label="إرسال الرسالة" onclick="sendMessage()" disabled>
@@ -1823,6 +1893,76 @@
                 <div id="leaderboardList" style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;"></div>
                 <button class="btn-calc" style="margin-top:12px;background:var(--bg-2);color:var(--text-2);" onclick="loadWeeklyLeaderboard()"><i class="fas fa-rotate"></i> تحديث</button>
             </div>
+        </div>
+    </div>
+
+    <!-- مين فاتح دلوقتي (Live Now) -->
+    <div class="modal-overlay" id="liveNowModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-tower-broadcast"></i> مين فاتح دلوقتي</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeLiveNowPanel()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tool-section">
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    بيتحدّث لايف كل شوية. الأسماء بتتعرض جزئيًا بس (أول حرفين وآخر حرف) عشان خصوصية زمايلك.
+                </p>
+                <div id="liveNowList" style="display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- استوديو الفيديو التلقائي: ملخص → فيديو بصوت وشرائح متحركة -->
+    <div class="modal-overlay" id="videoStudioModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-clapperboard"></i> استوديو الفيديو التلقائي</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('videoStudioModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tool-section" id="vsInputSection">
+                <div class="tool-title"><i class="fas fa-align-right"></i> الصق الملخص أو النص اللي عايز تحوّله فيديو</div>
+                <textarea id="vsSummaryInput" class="tool-input" rows="6" style="resize:vertical;" placeholder="مثال: الصق هنا ملخص محاضرة أو أي نص عايز تفهمه بشكل فيديو بدل ما تقراه..."></textarea>
+                <div class="tool-title" style="margin-top:12px;">عدد الشرائح تقريبًا</div>
+                <div class="vs-slide-count-opt" id="vsSlideCountOpt">
+                    <button type="button" data-n="4" class="active" onclick="vsSetSlideCount(4, this)">4</button>
+                    <button type="button" data-n="6" onclick="vsSetSlideCount(6, this)">6</button>
+                    <button type="button" data-n="8" onclick="vsSetSlideCount(8, this)">8</button>
+                </div>
+                <button class="btn-calc" style="margin-top:14px;" onclick="generateVideoFromSummary()" id="vsGenerateBtn"><i class="fas fa-wand-magic-sparkles"></i> حوّله فيديو</button>
+                <p style="font-size:10.5px;color:var(--text-3);margin-top:8px;line-height:1.6;">
+                    بيتعمل بالكامل من على جهازك (توليد شرائح بالذكاء الاصطناعي + صوت + تسجيل فيديو). محتاج متصفح Chrome أو Edge لأفضل نتيجة.
+                </p>
+            </div>
+            <div class="tool-section" id="vsProgressSection" style="display:none;">
+                <div id="vsProgressText" style="font-size:13px;font-weight:700;text-align:center;">جارٍ التحضير...</div>
+                <div class="vs-progress-wrap"><div class="vs-progress-bar" id="vsProgressBar"></div></div>
+            </div>
+            <div class="tool-section" id="vsResultSection" style="display:none;">
+                <video class="vs-preview-video" id="vsPreviewVideo" controls playsinline></video>
+                <div style="display:flex;gap:8px;margin-top:10px;">
+                    <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);" onclick="vsResetStudio()"><i class="fas fa-rotate-right"></i> فيديو جديد</button>
+                    <button class="btn-calc" style="flex:1;" id="vsDownloadBtn"><i class="fas fa-download"></i> تحميل</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مكالمة صوتية حية مع المساعد -->
+    <div class="call-overlay" id="voiceCallOverlay">
+        <div class="call-top">
+            <div class="call-brand">Chat X · مكالمة مباشرة</div>
+            <div class="call-status-text" id="callStatusText">جارٍ الاتصال...</div>
+        </div>
+        <div class="call-orb-wrap">
+            <div class="call-ring"></div>
+            <div class="call-ring"></div>
+            <button class="call-orb" id="callOrb" onclick="callBargeIn()" aria-label="اضغط عشان تقاطع الرد"><i class="fas fa-graduation-cap"></i></button>
+        </div>
+        <div class="call-transcript" id="callTranscript">اتكلم براحتك، وهسمعك وأرد عليك زي المكالمة العادية 🎧</div>
+        <div class="call-controls">
+            <button class="call-ctrl-btn secondary" id="callMuteBtn" onclick="toggleCallMute()" title="كتم المايك" aria-label="كتم المايك"><i class="fas fa-microphone" id="callMuteIcon"></i></button>
+            <button class="call-ctrl-btn end" onclick="endVoiceCall()" title="إنهاء المكالمة" aria-label="إنهاء المكالمة"><i class="fas fa-phone-slash"></i></button>
+            <button class="call-ctrl-btn secondary" onclick="callBargeIn()" title="قاطع وقول حاجة تانية" aria-label="قاطع وقول حاجة تانية"><i class="fas fa-comment-slash"></i></button>
         </div>
     </div>
 
@@ -7140,6 +7280,8 @@
                 const groupChatBtn = document.getElementById('groupChatBtn');
                 const pushNotifSection = document.getElementById('pushNotifSection');
                 if (leaderboardBtn) leaderboardBtn.style.display = 'flex';
+                const liveNowBtnOn = document.getElementById('liveNowBtn');
+                if (liveNowBtnOn) liveNowBtnOn.style.display = 'flex';
                 if (groupChatBtn) groupChatBtn.style.display = 'flex';
                 if (pushNotifSection) pushNotifSection.style.display = 'block';
 
@@ -7187,6 +7329,8 @@
                 const groupChatBtnOff = document.getElementById('groupChatBtn');
                 const pushNotifSectionOff = document.getElementById('pushNotifSection');
                 if (leaderboardBtnOff) leaderboardBtnOff.style.display = 'none';
+                const liveNowBtnOff = document.getElementById('liveNowBtn');
+                if (liveNowBtnOff) liveNowBtnOff.style.display = 'none';
                 if (groupChatBtnOff) groupChatBtnOff.style.display = 'none';
                 if (pushNotifSectionOff) pushNotifSectionOff.style.display = 'none';
             }
@@ -12596,6 +12740,545 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             });
         }
 
+        // ====================== مين فاتح دلوقتي (Live Now) ======================
+        // مبني فوق نفس endpoint بتاع لوحة الصدارة (/api/leaderboard/live) اللي أصلًا بيرجع
+        // مصفوفة "online" — إحنا هنا بس بنعرضها بشكل حي ولطيف مع إخفاء جزء من الاسم.
+        let liveNowRefreshTimer = null;
+
+        // بيسيب أول حرفين وآخر حرف من الاسم بس ويحط نجوم بينهم، عشان يبان "مين تقريبًا"
+        // من غير ما يفضح هوية الزميل بالكامل قدام كل اللي فاتحين.
+        function maskLiveName(name) {
+            const clean = (name || '').trim();
+            if (!clean) return 'طالب';
+            if (clean.length <= 3) return clean[0] + '*'.repeat(Math.max(clean.length - 1, 1));
+            const first = clean.slice(0, 2);
+            const last = clean.slice(-1);
+            const stars = '*'.repeat(Math.min(Math.max(clean.length - 3, 2), 6));
+            return `${first}${stars}${last}`;
+        }
+
+        function openLiveNowPanel() {
+            if (!schoolToken) {
+                showToast('لازم تسجّل دخول School X الأول عشان تشوف مين فاتح دلوقتي', 'error');
+                return;
+            }
+            openModal('liveNowModal');
+            loadLiveNowUsers();
+            clearInterval(liveNowRefreshTimer);
+            liveNowRefreshTimer = setInterval(loadLiveNowUsers, 20000); // تحديث حي كل 20 ثانية
+        }
+
+        function closeLiveNowPanel() {
+            closeModal('liveNowModal');
+            clearInterval(liveNowRefreshTimer);
+            liveNowRefreshTimer = null;
+        }
+
+        async function loadLiveNowUsers() {
+            const listEl = document.getElementById('liveNowList');
+            if (!schoolToken || !listEl) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/leaderboard/live`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+                const online = data.online || [];
+
+                const badge = document.getElementById('liveNowDotBadge');
+                if (badge) badge.style.display = online.length ? 'block' : 'none';
+
+                if (!online.length) {
+                    listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش حد فاتح دلوقتي</div>';
+                    return;
+                }
+                listEl.innerHTML = online.map(u => {
+                    const displayName = u.fullName || u.username || 'طالب';
+                    const masked = maskLiveName(displayName);
+                    const initial = displayName.trim().charAt(0) || '؟';
+                    return `
+                        <div class="live-now-row">
+                            <div class="live-now-avatar">${escapeHtml(initial)}<span class="live-now-dot"></span></div>
+                            <div style="flex:1;min-width:0;">
+                                <div class="live-now-name">${escapeHtml(masked)}</div>
+                                <div class="live-now-meta">🟢 أونلاين الآن • ${u.questionsToday || 0} سؤال النهاردة</div>
+                            </div>
+                        </div>`;
+                }).join('');
+            } catch (e) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل القائمة</div>';
+            }
+        }
+
+        // ====================== مكالمة صوتية حية مع المساعد (Live Voice Call) ======================
+        // الفرق عن زرار المايك العادي: هنا مش "سجّل جملة واحدة وابعتها" — دي محادثة صوتية
+        // مستمرة زي مكالمة تليفون: بتتكلم، سكوتك بعد ما تخلص كلامك بيبعت السؤال تلقائيًا،
+        // والرد بييجي صوت جملة جملة أول ما تتجهز (مش لازم يخلص الرد كله الأول) عشان
+        // تحس فعلًا إنها مكالمة حية مش شات اتحول صوت.
+        let callRecognition = null;
+        let callActive = false;
+        let callMuted = false;
+        let callState = 'idle'; // idle | listening | thinking | speaking
+        let callSilenceTimer = null;
+        let callHistory = [];
+        let callAbortController = null;
+        let callAudioQueue = [];
+        let callQueueRunning = false;
+        let callCurrentAudio = null;
+        let callFinalTranscriptBuffer = '';
+
+        const CALL_SYSTEM_PROMPT = `إنت "Chat X"، مساعد أكاديمي بتتكلم دلوقتي مع طالب تمريض في مكالمة تليفون صوتية حية مش شات مكتوب.
+قواعد صارمة لازم تلتزم بيها:
+- رد بلهجة مصرية عامية طبيعية جدًا، زي ما بتتكلم مع زميلك في التليفون.
+- جملة لحد 3 جمل بالكتير في كل رد — إنت في مكالمة، مش بتكتب مقال.
+- ممنوع تمامًا أي رموز ماركداون أو نجوم أو عناوين أو قوائم مرقمة أو أقواس — الكلام هيتحول صوت حرفيًا زي ما هو.
+- لو السؤال محتاج شرح طويل فعلاً، اديله الفكرة الأهم بس دلوقتي واسأله لو عايز يكمل في التفاصيل.
+- ابدأ بالإجابة على طول من غير مقدمات زي "بالطبع" أو "تمام".`;
+
+        function updateCallUI() {
+            const orb = document.getElementById('callOrb');
+            const statusText = document.getElementById('callStatusText');
+            if (!orb || !statusText) return;
+            orb.classList.remove('listening', 'speaking', 'thinking');
+            if (callState === 'listening') { orb.classList.add('listening'); statusText.textContent = 'بسمعك...'; }
+            else if (callState === 'thinking') { orb.classList.add('thinking'); statusText.textContent = 'بفكر...'; }
+            else if (callState === 'speaking') { orb.classList.add('speaking'); statusText.textContent = 'بيتكلم — دوس تقاطعه لو عايز'; }
+            else { statusText.textContent = 'جارٍ الاتصال...'; }
+        }
+
+        function openVoiceCallScreen() {
+            if (!window.isSecureContext) { showToast('المكالمة الصوتية محتاجة HTTPS', 'error'); return; }
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) { showToast('متصفحك مش بيدعم التعرف على الصوت، جرب Chrome', 'error'); return; }
+
+            document.getElementById('voiceCallOverlay').classList.add('active');
+            callHistory = [];
+            callActive = true;
+            callMuted = false;
+            document.getElementById('callMuteIcon').className = 'fas fa-microphone';
+            document.getElementById('callMuteBtn').classList.remove('on');
+            document.getElementById('callTranscript').textContent = 'اتكلم براحتك، وهسمعك وأرد عليك زي المكالمة العادية 🎧';
+            callState = 'idle';
+            updateCallUI();
+            startCallListening();
+        }
+
+        function startCallListening() {
+            if (!callActive || callMuted) return;
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            try { if (callRecognition) callRecognition.abort(); } catch (e) {}
+            callRecognition = new SR();
+            callRecognition.lang = 'ar-EG';
+            callRecognition.continuous = true;
+            callRecognition.interimResults = true;
+            callRecognition.maxAlternatives = 1;
+            callFinalTranscriptBuffer = '';
+
+            callRecognition.onstart = () => { callState = 'listening'; updateCallUI(); };
+            callRecognition.onresult = (event) => {
+                clearTimeout(callSilenceTimer);
+                let interim = '', final = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const t = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) final += t; else interim += t;
+                }
+                if (final) callFinalTranscriptBuffer += final;
+                const shown = (callFinalTranscriptBuffer + ' ' + interim).trim();
+                if (shown) document.getElementById('callTranscript').innerHTML = `<span class="u">${escapeHtml(shown)}</span>`;
+                // بعد حوالي ثانية سكوت من غير كلام جديد، نعتبر إن الطالب خلص كلامه ونبعت سؤاله
+                callSilenceTimer = setTimeout(() => {
+                    const text = (callFinalTranscriptBuffer || interim).trim();
+                    if (text) {
+                        callState = 'thinking'; // قبل الـ stop() عشان onend متعملش listen تاني بالغلط
+                        callFinalTranscriptBuffer = '';
+                        try { callRecognition.stop(); } catch (e) {}
+                        handleCallUserTurn(text);
+                    }
+                }, 1100);
+            };
+            callRecognition.onerror = (event) => {
+                if (event.error === 'no-speech' || event.error === 'aborted') return;
+                if (event.error === 'not-allowed') {
+                    showToast('لازم تسمح باستخدام المايك عشان المكالمة تشتغل', 'error');
+                    endVoiceCall();
+                }
+            };
+            callRecognition.onend = () => {
+                if (callActive && !callMuted && callState === 'listening') {
+                    setTimeout(() => { if (callActive && !callMuted) startCallListening(); }, 300);
+                }
+            };
+            try { callRecognition.start(); } catch (e) {}
+        }
+
+        async function handleCallUserTurn(text) {
+            if (!callActive) return;
+            callState = 'thinking';
+            updateCallUI();
+            document.getElementById('callTranscript').innerHTML = `<span class="u">${escapeHtml(text)}</span>`;
+            callHistory.push({ role: 'user', content: text });
+            if (callHistory.length > 12) callHistory = callHistory.slice(-12); // آخر ستة تبادلات كافية لسياق المكالمة
+
+            if (callAbortController) callAbortController.abort();
+            callAbortController = new AbortController();
+
+            try {
+                const response = await fetch(`${settings.backendUrl}/api/groq`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'openai/gpt-oss-20b',
+                        messages: [{ role: 'system', content: CALL_SYSTEM_PROMPT }, ...callHistory],
+                        stream: true,
+                        temperature: 0.7
+                    }),
+                    signal: callAbortController.signal
+                });
+                if (!response.ok) throw new Error('call-groq-failed');
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '', fullText = '', spokenSoFar = '';
+                callState = 'speaking';
+                let firstChunk = true;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const payload = line.slice(6).trim();
+                        if (payload === '[DONE]') continue;
+                        try {
+                            const data = JSON.parse(payload);
+                            const content = data.choices[0]?.delta?.content || '';
+                            if (content) {
+                                fullText += content;
+                                if (firstChunk) { updateCallUI(); firstChunk = false; }
+                                document.getElementById('callTranscript').textContent = fullText;
+                            }
+                        } catch (e) {}
+                    }
+                    // كل ما تتجمع جملة كاملة (لحد نقطة/علامة استفهام/تعجب) نبعتها فورًا للصوت
+                    // من غير ما نستنى باقي الرد يخلص — ده اللي بيدّي إحساس المكالمة الحية.
+                    const rest = fullText.slice(spokenSoFar.length);
+                    const match = rest.match(/^[\s\S]*?[.!؟?]+(\s|$)/);
+                    if (match) {
+                        spokenSoFar += match[0];
+                        const sentence = match[0].trim();
+                        if (sentence) queueCallSpeech(sentence);
+                    }
+                }
+                const remaining = fullText.slice(spokenSoFar.length).trim();
+                if (remaining) queueCallSpeech(remaining);
+                if (!fullText.trim()) queueCallSpeech('معلش، ممكن تعيد سؤالك تاني؟');
+                callHistory.push({ role: 'assistant', content: fullText });
+            } catch (err) {
+                if (err.name !== 'AbortError') queueCallSpeech('حصل عطل بسيط في الاتصال، جرب تاني.');
+            }
+        }
+
+        // طابور تشغيل صوتي بسيط: كل جملة بتتحول صوت وتتشغّل بالترتيب عشان متتعملش فوق بعض.
+        // أول ما الطابور يخلص كله، المايك بيفتح تاني تلقائيًا زي مكالمة حقيقية.
+        function queueCallSpeech(text) {
+            callAudioQueue.push(text);
+            if (!callQueueRunning) runCallSpeechQueue();
+        }
+
+        async function runCallSpeechQueue() {
+            callQueueRunning = true;
+            callState = 'speaking';
+            updateCallUI();
+            while (callAudioQueue.length) {
+                const text = callAudioQueue.shift();
+                try {
+                    const blob = await fetchTtsAudioBlob(text);
+                    if (!callActive) break;
+                    await playCallAudioBlob(blob);
+                } catch (e) { /* نتجاهل الجملة دي ونكمل اللي بعدها */ }
+            }
+            callQueueRunning = false;
+            if (callActive && !callMuted) {
+                callState = 'idle';
+                updateCallUI();
+                setTimeout(() => { if (callActive && !callMuted) startCallListening(); }, 200);
+            }
+        }
+
+        function playCallAudioBlob(blob) {
+            return new Promise((resolve) => {
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                callCurrentAudio = audio;
+                const cleanup = () => { URL.revokeObjectURL(url); if (callCurrentAudio === audio) callCurrentAudio = null; resolve(); };
+                audio.onended = cleanup;
+                audio.onerror = cleanup;
+                audio.play().catch(cleanup);
+            });
+        }
+
+        // "قاطعني" — بيوقف أي صوت شغال دلوقتي وأي رد لسه بيتولّد، وبيفتح المايك فورًا عشان
+        // الطالب يقول اللي عايزه من غير ما يستنى الرد يخلص، زي أي مكالمة حقيقية.
+        function callBargeIn() {
+            if (!callActive) return;
+            callAudioQueue = [];
+            if (callCurrentAudio) { try { callCurrentAudio.pause(); } catch (e) {} callCurrentAudio = null; }
+            if (callAbortController) callAbortController.abort();
+            callQueueRunning = false;
+            document.getElementById('callTranscript').textContent = 'تمام، قول اللي عايزه...';
+            startCallListening();
+        }
+
+        function toggleCallMute() {
+            callMuted = !callMuted;
+            document.getElementById('callMuteIcon').className = callMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
+            document.getElementById('callMuteBtn').classList.toggle('on', callMuted);
+            if (callMuted) {
+                try { if (callRecognition) callRecognition.stop(); } catch (e) {}
+            } else if (callState !== 'speaking' && callState !== 'thinking') {
+                startCallListening();
+            }
+        }
+
+        function endVoiceCall() {
+            callActive = false;
+            callMuted = false;
+            callAudioQueue = [];
+            callQueueRunning = false;
+            try { if (callRecognition) callRecognition.abort(); } catch (e) {}
+            if (callCurrentAudio) { try { callCurrentAudio.pause(); } catch (e) {} callCurrentAudio = null; }
+            if (callAbortController) callAbortController.abort();
+            document.getElementById('voiceCallOverlay').classList.remove('active');
+        }
+
+        // ====================== استوديو الفيديو التلقائي (ملخص → فيديو بصوت وشرائح متحركة) ======================
+        let vsSelectedSlideCount = 4;
+        let vsGeneratedVideoUrl = null;
+
+        function vsSetSlideCount(n, btn) {
+            vsSelectedSlideCount = n;
+            document.querySelectorAll('#vsSlideCountOpt button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function vsResetStudio() {
+            document.getElementById('vsInputSection').style.display = 'block';
+            document.getElementById('vsProgressSection').style.display = 'none';
+            document.getElementById('vsResultSection').style.display = 'none';
+            if (vsGeneratedVideoUrl) { URL.revokeObjectURL(vsGeneratedVideoUrl); vsGeneratedVideoUrl = null; }
+        }
+
+        function vsSetProgress(pct, text) {
+            document.getElementById('vsProgressBar').style.width = pct + '%';
+            if (text) document.getElementById('vsProgressText').textContent = text;
+        }
+
+        // بيقسّم أي نص لشرائح { title, bullets[] } بالذكاء الاصطناعي (فهم فعلي للمحتوى)،
+        // ولو فشل الطلب لأي سبب (شبكة، رد مش JSON..) بيرجع لتقسيم محلي بسيط عشان الميزة
+        // تفضل شغالة حتى من غير AI.
+        async function vsBuildSlides(rawText, targetCount) {
+            try {
+                const prompt = `قسّم النص التعليمي ده لعدد ${targetCount} شرائح فيديو تعليمي مختصرة. رجّعلي JSON بس من غير أي كلام تاني ومن غير markdown، بالشكل ده بالظبط:
+[{"title":"عنوان قصير للشريحة","bullets":["نقطة قصيرة 1","نقطة قصيرة 2"]}]
+كل شريحة لازم يكون فيها لحد 3 نقاط قصيرة جدًا (كل نقطة أقل من 12 كلمة) مناسبة إنها تتقال بصوت وتتقرأ على الشاشة في نفس الوقت. النص:
+"""${rawText.slice(0, 6000)}"""`;
+                const res = await fetch(`${settings.backendUrl}/api/groq`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'openai/gpt-oss-20b',
+                        messages: [{ role: 'user', content: prompt }],
+                        stream: false,
+                        temperature: 0.4
+                    })
+                });
+                if (!res.ok) throw new Error('vs-ai-failed');
+                const data = await res.json();
+                let content = data.choices?.[0]?.message?.content || '';
+                content = content.replace(/```json|```/g, '').trim();
+                const jsonStart = content.indexOf('[');
+                const jsonEnd = content.lastIndexOf(']');
+                if (jsonStart === -1 || jsonEnd === -1) throw new Error('vs-no-json');
+                const slides = JSON.parse(content.slice(jsonStart, jsonEnd + 1));
+                if (!Array.isArray(slides) || !slides.length) throw new Error('vs-empty');
+                return slides.map(s => ({
+                    title: (s.title || '').toString().slice(0, 60),
+                    bullets: Array.isArray(s.bullets) ? s.bullets.slice(0, 4).map(b => b.toString().slice(0, 90)) : []
+                })).filter(s => s.title || s.bullets.length);
+            } catch (e) {
+                return vsBuildSlidesLocally(rawText, targetCount);
+            }
+        }
+
+        // تقسيم احتياطي محلي من غير AI: بيقسّم النص لجمل، وبيوزّعها بالتساوي على عدد الشرائح.
+        function vsBuildSlidesLocally(rawText, targetCount) {
+            const sentences = rawText.replace(/\s+/g, ' ').trim().split(/(?<=[.!؟?])\s+/).filter(Boolean);
+            if (!sentences.length) return [{ title: 'ملخص', bullets: [rawText.slice(0, 90)] }];
+            const perSlide = Math.max(1, Math.ceil(sentences.length / targetCount));
+            const slides = [];
+            for (let i = 0; i < sentences.length; i += perSlide) {
+                const group = sentences.slice(i, i + perSlide);
+                slides.push({ title: `نقطة ${slides.length + 1}`, bullets: group.map(s => s.slice(0, 90)) });
+            }
+            return slides;
+        }
+
+        // بيرسم نص متعدد الأسطر جوه عرض معيّن (canvas مفيهوش wrap تلقائي زي HTML).
+        function vsWrapText(ctx2, text, x, y, maxWidth, lineHeight) {
+            const words = (text || '').split(' ');
+            let line = '';
+            const lines = [];
+            words.forEach(w => {
+                const test = line ? line + ' ' + w : w;
+                if (ctx2.measureText(test).width > maxWidth && line) { lines.push(line); line = w; }
+                else line = test;
+            });
+            if (line) lines.push(line);
+            const startY = y - (lines.length - 1) * lineHeight / 2;
+            lines.forEach((l, i) => ctx2.fillText(l, x, startY + i * lineHeight));
+        }
+
+        async function generateVideoFromSummary() {
+            const rawText = document.getElementById('vsSummaryInput').value.trim();
+            if (!rawText) { showToast('اكتب أو الصق نص الأول', 'error'); return; }
+            if (typeof MediaRecorder === 'undefined' || !HTMLCanvasElement.prototype.captureStream) {
+                showToast('متصفحك مش بيدعم تسجيل الفيديو، جرب Chrome أو Edge', 'error');
+                return;
+            }
+
+            document.getElementById('vsInputSection').style.display = 'none';
+            document.getElementById('vsProgressSection').style.display = 'block';
+            document.getElementById('vsResultSection').style.display = 'none';
+            vsSetProgress(4, 'بنفهم النص ونقسّمه لشرائح...');
+
+            try {
+                const slides = await vsBuildSlides(rawText, vsSelectedSlideCount);
+                vsSetProgress(20, `جاهز ${slides.length} شرائح — بنولّد الصوت...`);
+
+                const audioBuffers = [];
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                for (let i = 0; i < slides.length; i++) {
+                    const s = slides[i];
+                    const narration = [s.title, ...(s.bullets || [])].filter(Boolean).join('. ');
+                    const blob = await fetchTtsAudioBlob(narration || 'لا يوجد نص');
+                    const arrBuf = await blob.arrayBuffer();
+                    const audioBuf = await audioCtx.decodeAudioData(arrBuf);
+                    audioBuffers.push(audioBuf);
+                    vsSetProgress(20 + Math.round((i + 1) / slides.length * 35), `بنولّد صوت الشريحة ${i + 1} من ${slides.length}...`);
+                }
+
+                vsSetProgress(58, 'بنجهّز التسجيل...');
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 720; canvas.height = 1280;
+                const ctx = canvas.getContext('2d');
+
+                const destination = audioCtx.createMediaStreamDestination();
+                const canvasStream = canvas.captureStream(30);
+                const combinedStream = new MediaStream([
+                    ...canvasStream.getVideoTracks(),
+                    ...destination.stream.getAudioTracks()
+                ]);
+
+                let mimeType = 'video/webm;codecs=vp9,opus';
+                if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
+                const recorder = new MediaRecorder(combinedStream, { mimeType });
+                const chunks = [];
+                recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+
+                const totalDuration = audioBuffers.reduce((a, b) => a + b.duration, 0) + 0.4;
+                const slideStarts = [];
+                let acc = 0;
+                audioBuffers.forEach(b => { slideStarts.push(acc); acc += b.duration; });
+
+                function drawSlide(slideIndex, tInSlide) {
+                    const s = slides[slideIndex] || { title: '', bullets: [] };
+                    const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                    grad.addColorStop(0, '#161b33'); grad.addColorStop(1, '#0a0e1a');
+                    ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    ctx.fillStyle = 'rgba(255,255,255,.55)';
+                    ctx.font = '700 26px Cairo, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Chat X', canvas.width / 2, 90);
+
+                    const fade = Math.min(1, tInSlide / 0.5);
+                    ctx.globalAlpha = fade;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '800 46px Cairo, sans-serif';
+                    vsWrapText(ctx, s.title || '', canvas.width / 2, 320, 620, 56);
+
+                    const bullets = s.bullets || [];
+                    const perBulletDelay = 0.4;
+                    bullets.forEach((b, bi) => {
+                        const bulletFade = Math.min(1, Math.max(0, (tInSlide - bi * perBulletDelay) / 0.5));
+                        if (bulletFade <= 0) return;
+                        ctx.globalAlpha = bulletFade;
+                        ctx.font = '600 32px Cairo, sans-serif';
+                        ctx.fillStyle = '#c7d2fe';
+                        vsWrapText(ctx, '• ' + b, canvas.width / 2, 460 + bi * 110, 600, 40);
+                    });
+                    ctx.globalAlpha = 1;
+
+                    const overallT = slideStarts[slideIndex] + tInSlide;
+                    const progress = Math.min(1, overallT / totalDuration);
+                    ctx.fillStyle = 'rgba(255,255,255,.15)';
+                    ctx.fillRect(60, canvas.height - 60, canvas.width - 120, 6);
+                    ctx.fillStyle = '#8b5cf6';
+                    ctx.fillRect(60, canvas.height - 60, (canvas.width - 120) * progress, 6);
+                }
+
+                recorder.start(200);
+                const startTime = audioCtx.currentTime + 0.15;
+                audioBuffers.forEach((buf, i) => {
+                    const src = audioCtx.createBufferSource();
+                    src.buffer = buf;
+                    src.connect(destination);
+                    src.start(startTime + slideStarts[i]);
+                });
+
+                await new Promise((resolve) => {
+                    function frame() {
+                        const elapsed = audioCtx.currentTime - startTime;
+                        let idx = slideStarts.findIndex((s, i) => elapsed < s + audioBuffers[i].duration);
+                        if (idx === -1) idx = slides.length - 1;
+                        const tInSlide = Math.max(0, elapsed - slideStarts[idx]);
+                        drawSlide(idx, tInSlide);
+                        vsSetProgress(58 + Math.min(40, Math.round((elapsed / totalDuration) * 40)), `بنسجّل الفيديو... ${Math.min(100, Math.round(elapsed / totalDuration * 100))}%`);
+                        if (elapsed < totalDuration) requestAnimationFrame(frame);
+                        else resolve();
+                    }
+                    requestAnimationFrame(frame);
+                });
+
+                await new Promise(r => setTimeout(r, 250));
+                recorder.stop();
+                await new Promise(resolve => { recorder.onstop = resolve; });
+
+                const videoBlob = new Blob(chunks, { type: mimeType.split(';')[0] });
+                vsGeneratedVideoUrl = URL.createObjectURL(videoBlob);
+                document.getElementById('vsPreviewVideo').src = vsGeneratedVideoUrl;
+
+                document.getElementById('vsDownloadBtn').onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = vsGeneratedVideoUrl;
+                    a.download = `فيديو-تلقائي-${Date.now()}.webm`;
+                    document.body.appendChild(a); a.click(); a.remove();
+                };
+
+                document.getElementById('vsProgressSection').style.display = 'none';
+                document.getElementById('vsResultSection').style.display = 'block';
+                showToast('الفيديو جاهز ✓', 'success');
+            } catch (err) {
+                console.error('video studio error', err);
+                showToast('حصل عطل أثناء توليد الفيديو، حاول تاني', 'error');
+                vsResetStudio();
+            }
+        }
+
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -12611,6 +13294,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         window.onclick = (e) => {
             if (e.target.classList.contains('modal-overlay')) {
                 if (e.target.id === 'drugScanModal') stopDrugScanner();
+                if (e.target.id === 'liveNowModal') { clearInterval(liveNowRefreshTimer); liveNowRefreshTimer = null; }
                 e.target.classList.remove('active');
             }
         };
