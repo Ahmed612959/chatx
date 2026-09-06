@@ -3455,8 +3455,10 @@
         // كل مكان في التطبيق مرة واحدة — مفيش داعي نكرر نفس المنطق في 3 أماكن مختلفة.
         //
         // ترتيب المحاولات (fallback chain) — كل طبقة بتتجرب وبترجع أول ما توفر النتيجة:
-        //   (0) CometAPI (Kling TTS، /api/tts-cometapi) → بتتجرب الأول لكل الطلاب (مش
-        //       بس Premium) لو مفتاحها مضبوط على السيرفر. دي "أول صوت" هيرد في المكالمة.
+        //   (-1) Amazon Polly (/api/tts-polly) → أول حاجة بتتجرب فعليًا لكل الطلاب لو
+        //        مفاتيح AWS مضبوطة على السيرفر.
+        //   (0) CometAPI (Kling TTS، /api/tts-cometapi) → بتتجرب بعد كده لو Polly مش
+        //       متاحة، لكل الطلاب برضه (مش بس Premium).
         //   الطالب Premium (premium_voice مفعّلة)?
         //     └─(1) Gemini TTS المباشر (/api/tts-gemini بمفتاحنا احنا) → أعلى جودة، لكن
         //           حصته محدودة جدًا على الخطة المجانية (3 طلبات/دقيقة، 15/يوم لكل
@@ -3681,6 +3683,23 @@
             const idbKey = await ttsHashKey(text, voiceKey);
             const cachedBlob = await ttsIdbGet(idbKey);
             if (cachedBlob) return cachedBlob;
+
+            // (-1) Amazon Polly — الطبقة الأولى فعليًا دلوقتي، بتتجرب لكل الطلاب قبل أي
+            // حاجة تانية. لو مفاتيح AWS مش مضبوطة أو الطلب فشل، بنكمل بصمت لـ CometAPI
+            // وبعدين لباقي الطبقات القديمة من غير ما الطالب يحس بأي فرق (شوف خطوات
+            // الإعداد في تعليق أعلى api/tts-polly.js).
+            try {
+                const pollyRes = await fetch('/api/tts-polly', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                if (pollyRes.ok) {
+                    const blob = await pollyRes.blob();
+                    ttsIdbSet(idbKey, blob);
+                    return blob;
+                }
+            } catch (err) { /* Polly مش متاحة دلوقتي — نكمل عادي للطبقات الجاية */ }
 
             // (0) CometAPI (Kling TTS) — الطبقة الأولى اللي بتتحاول لكل الطلاب، مش بس
             // Premium. دي أول صوت هيرد فعليًا لو مفتاح COMETAPI_API_KEY مضبوط على
