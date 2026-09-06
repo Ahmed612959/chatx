@@ -916,6 +916,34 @@
         .call-ctrl-btn.end { background: var(--danger); width:64px; height:64px; font-size:23px; box-shadow: 0 4px 18px rgba(239,68,68,.5); }
         .call-ctrl-btn.secondary { background: rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18); }
         .call-ctrl-btn.secondary.on { background: var(--danger); }
+        .call-theme-toggle {
+            position: absolute; top: 34px; inset-inline-end: 20px; width: 38px; height: 38px; border-radius: 50%;
+            background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18); color:#fff;
+            display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; z-index: 2;
+        }
+
+        /* ====================== ثيم أبيض أنيق للمكالمة الصوتية ====================== */
+        /* اختياري بيتخزن في localStorage، مستقل تمامًا عن الوضع الليلي/النهاري العادي
+           في باقي التطبيق — بيغيّر شكل شاشة المكالمة بس لخلفية بيضاء فاتحة أنيقة
+           والنص الأزرق/البنفسجي الغامق عشان يبان واضح فوق الأبيض. */
+        .call-overlay.call-light {
+            background: radial-gradient(circle at 50% 22%, #ffffff 0%, #eef0fb 55%, #e3e6f7 100%);
+            color: #1e2140;
+        }
+        .call-overlay.call-light .call-brand { color: rgba(30,33,64,.55); }
+        .call-overlay.call-light .call-status-text { color: rgba(30,33,64,.8); }
+        .call-overlay.call-light .call-transcript { color: rgba(30,33,64,.92); }
+        .call-overlay.call-light .call-transcript .u { color: #6d5bd0; font-weight: 700; }
+        .call-overlay.call-light .call-orb {
+            box-shadow: 0 0 40px 6px rgba(99,102,241,.28), 0 6px 22px rgba(30,33,64,.18);
+        }
+        .call-overlay.call-light .call-ring { border-color: rgba(99,102,241,.30); }
+        .call-overlay.call-light .call-ctrl-btn.secondary {
+            background: rgba(30,33,64,.06); border: 1px solid rgba(30,33,64,.14); color: #1e2140;
+        }
+        .call-overlay.call-light .call-theme-toggle {
+            background: rgba(30,33,64,.06); border: 1px solid rgba(30,33,64,.14); color: #1e2140;
+        }
 
         /* ====================== مين فاتح دلوقتي (Live Now) ====================== */
         .live-now-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background: var(--bg-glass); border:1px solid var(--border); }
@@ -1968,6 +1996,7 @@
 
     <!-- مكالمة صوتية حية مع المساعد -->
     <div class="call-overlay" id="voiceCallOverlay">
+        <button class="call-theme-toggle" id="callThemeToggle" onclick="toggleCallTheme()" title="غيّر شكل المكالمة" aria-label="غيّر شكل المكالمة"><i class="fas fa-sun" id="callThemeIcon"></i></button>
         <div class="call-top">
             <div class="call-brand">Chat X · مكالمة مباشرة</div>
             <div class="call-status-text" id="callStatusText">جارٍ الاتصال...</div>
@@ -3426,6 +3455,8 @@
         // كل مكان في التطبيق مرة واحدة — مفيش داعي نكرر نفس المنطق في 3 أماكن مختلفة.
         //
         // ترتيب المحاولات (fallback chain) — كل طبقة بتتجرب وبترجع أول ما توفر النتيجة:
+        //   (0) CometAPI (Kling TTS، /api/tts-cometapi) → بتتجرب الأول لكل الطلاب (مش
+        //       بس Premium) لو مفتاحها مضبوط على السيرفر. دي "أول صوت" هيرد في المكالمة.
         //   الطالب Premium (premium_voice مفعّلة)?
         //     └─(1) Gemini TTS المباشر (/api/tts-gemini بمفتاحنا احنا) → أعلى جودة، لكن
         //           حصته محدودة جدًا على الخطة المجانية (3 طلبات/دقيقة، 15/يوم لكل
@@ -3650,6 +3681,24 @@
             const idbKey = await ttsHashKey(text, voiceKey);
             const cachedBlob = await ttsIdbGet(idbKey);
             if (cachedBlob) return cachedBlob;
+
+            // (0) CometAPI (Kling TTS) — الطبقة الأولى اللي بتتحاول لكل الطلاب، مش بس
+            // Premium. دي أول صوت هيرد فعليًا لو مفتاح COMETAPI_API_KEY مضبوط على
+            // السيرفر (Environment Variables أو من صفحة admin-apikeys.html). لو المفتاح
+            // مش مضبوط أو الطلب فشل لأي سبب، بنكمل تلقائيًا وبصمت لباقي الطبقات القديمة
+            // (Gemini/Edge/Azure/Google) من غير ما الطالب يحس بأي فرق.
+            try {
+                const cometRes = await fetch('/api/tts-cometapi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voice_language: 'ar' })
+                });
+                if (cometRes.ok) {
+                    const blob = await cometRes.blob();
+                    ttsIdbSet(idbKey, blob);
+                    return blob;
+                }
+            } catch (err) { /* CometAPI مش متاحة دلوقتي — نكمل عادي للطبقات الجاية */ }
 
             if (hasPremium('premium_voice')) {
                 reportFeatureUsage('premium_voice');
@@ -12832,43 +12881,65 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         // ====================== مكالمة صوتية حية مع المساعد (Live Voice Call) ======================
         // الفرق عن زرار المايك العادي: هنا مش "سجّل جملة واحدة وابعتها" — دي محادثة صوتية
         // مستمرة زي مكالمة تليفون: بتتكلم، سكوتك بعد ما تخلص كلامك بيبعت السؤال تلقائيًا،
-        // والرد بييجي صوت جملة جملة أول ما تتجهز (مش لازم يخلص الرد كله الأول) عشان
-        // تحس فعلًا إنها مكالمة حية مش شات اتحول صوت.
-        let callRecognition = null;
+        // والرد بييجي صوت جملة جملة أول ما تتجهز عشان تحس فعلًا إنها مكالمة حية.
+        //
+        // نظام التعرف على الصوت اتغيّر بالكامل: بدل الاعتماد على SpeechRecognition
+        // المدمجة في المتصفح (اللي كانت بتفتح وتقفل "جلسة" جديدة كل شوية وده اللي كان
+        // بيسبب المشاكل زي صوت "تيت تيت" المتكرر والتعليق)، دلوقتي بنفتح المايك مرة واحدة
+        // بس لطول المكالمة، وبنراقب شدة الصوت لحظة بلحظة (Voice Activity Detection) عشان
+        // نعرف بالظبط إمتى الطالب بيتكلم وإمتى بيسكت، وبنسجّل المقطع ده بس ونبعته لـ
+        // Whisper (نظام تفريغ صوت أقوى بكتير ودقة أعلى من المدمج في المتصفح، خصوصًا مع
+        // اللهجة المصرية) عن طريق Groq. مفيش جلسات بتتفتح وتتقفل كل شوية، فمفيش سبب
+        // للصوت المتكرر أصلًا.
         let callActive = false;
         let callMuted = false;
         let callState = 'idle'; // idle | listening | thinking | speaking
-        let callSilenceTimer = null;
         let callHistory = [];
         let callAbortController = null;
         let callAudioQueue = [];
         let callQueueRunning = false;
         let callCurrentAudio = null;
-        let callFinalTranscriptBuffer = '';
-        // ثوابت استقرار المكالمة: عداد محاولات إعادة تشغيل المايك بعد أخطاء غير متوقعة،
-        // وتوقيت آخر تحديث فعلي للحالة — الـ"واتشدوج" بيستخدمه عشان يكتشف لو المكالمة
-        // فضلت واقفة (عالقة) في حالة "بفكر/بيتكلم" أكتر من اللازم ويرجّعها تسمع بالقوة.
-        let callRecognitionRetryCount = 0;
         let callLastActivityAt = Date.now();
         let callWatchdogTimer = null;
+
+        let callMicStream = null;
+        let callAudioAnalyserCtx = null;
+        let callAnalyser = null;
+        let callVadRafId = null;
+        let callMediaRecorder = null;
+        let callRecordedChunks = [];
+        let callIsRecordingSpeech = false;
+        let callSpeechStartAt = 0;
+        let callLastVoiceAt = 0;
+
+        const CALL_VAD_THRESHOLD = 0.025;   // حساسية كشف الكلام (أعلى = محتاج صوت أوضح عشان يبدأ يسجّل)
+        const CALL_VAD_SILENCE_MS = 700;    // سكوت بعد الكلام قبل ما نعتبر إن الطالب خلص كلامه — زودناها شوية
+                                             // (كانت 550) عشان مايتقطعش كلام الطالب وهو لسه بيفكر وسط الجملة
+        const CALL_MIN_SPEECH_MS = 280;     // أقل مدة كلام عشان منبعتش نفخة أو ضوضاء بسيطة لـ Whisper
+
+        // كاشف الصوت بيتكيّف مع ضوضاء الخلفية بدل ما يعتمد على رقم ثابت بس — لو الطالب
+        // في مكان فيه ضوضاء خلفية دايمة (مروحة، شارع..)، عتبة ثابتة صغيرة كانت بتخلي
+        // المكالمة "تفتح وتقفل مع نفسها" (بتحس إن الضوضاء دي كلام). دلوقتي بنراقب متوسط
+        // شدة الصوت وقت السكوت الفعلي، والعتبة الحقيقية بتبقى أعلى من الضوضاء دي بمسافة
+        // واضحة، مش رقم ثابت للجميع.
+        let callNoiseFloor = 0.01;
+        const CALL_NOISE_FLOOR_SMOOTHING = 0.05;
+        const CALL_NOISE_FLOOR_MULTIPLIER = 2.4;
 
         function startCallWatchdog() {
             stopCallWatchdog();
             callWatchdogTimer = setInterval(() => {
                 if (!callActive || callMuted) return;
                 const stuckMs = Date.now() - callLastActivityAt;
-                // لو فضلت المكالمة في نفس الحالة (غير "بتسمع") أكتر من 25 ثانية من غير أي
-                // تقدم، نعتبرها اتعلقت (شبكة بطيئة جدًا، رد اتقطع بصمت..) ونرجّعها تسمع
-                // تاني بالقوة بدل ما تفضل واقفة للأبد لحد ما المستخدم يقفل ويفتح تاني.
-                if (stuckMs > 25000 && callState !== 'listening') {
+                // لو المكالمة فضلت في حالة "بيفكر/بيتكلم" أكتر من 25 ثانية من غير أي تقدم
+                // فعلي (شبكة معلّقة تمامًا، رد اتقطع بصمت..)، نلغي أي طلب شغال ونرجّعها
+                // تسمع تاني بالقوة بدل ما تفضل واقفة للأبد.
+                if (stuckMs > 25000 && (callState === 'thinking' || callState === 'speaking')) {
                     if (callAbortController) callAbortController.abort();
                     callAudioQueue = [];
                     callQueueRunning = false;
                     callState = 'idle';
                     updateCallUI();
-                    startCallListening();
-                } else if (callState === 'idle' && !callRecognition) {
-                    startCallListening();
                 }
             }, 6000);
         }
@@ -12891,17 +12962,37 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             const statusText = document.getElementById('callStatusText');
             if (!orb || !statusText) return;
             orb.classList.remove('listening', 'speaking', 'thinking');
-            if (callState === 'listening') { orb.classList.add('listening'); statusText.textContent = 'بسمعك...'; }
-            else if (callState === 'thinking') { orb.classList.add('thinking'); statusText.textContent = 'بفكر...'; }
+            if (callState === 'thinking') { orb.classList.add('thinking'); statusText.textContent = 'بفكر...'; }
             else if (callState === 'speaking') { orb.classList.add('speaking'); statusText.textContent = 'بيتكلم — دوس تقاطعه لو عايز'; }
-            else { statusText.textContent = 'جارٍ الاتصال...'; }
+            else { orb.classList.add('listening'); statusText.textContent = 'بسمعك...'; } // idle/listening = المايك بيراقب منتظر كلامك
         }
 
-        function openVoiceCallScreen() {
-            if (!window.isSecureContext) { showToast('المكالمة الصوتية محتاجة HTTPS', 'error'); return; }
-            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SR) { showToast('متصفحك مش بيدعم التعرف على الصوت، جرب Chrome', 'error'); return; }
+        // ثيم شاشة المكالمة (غامق افتراضيًا / أبيض أنيق اختياري) — متخزن في localStorage
+        // ومستقل تمامًا عن ثيم باقي التطبيق.
+        function getSelectedCallTheme() {
+            return localStorage.getItem('chatx_call_theme') || 'dark';
+        }
+        function applyCallTheme(theme) {
+            const overlay = document.getElementById('voiceCallOverlay');
+            const icon = document.getElementById('callThemeIcon');
+            if (!overlay) return;
+            overlay.classList.toggle('call-light', theme === 'light');
+            if (icon) icon.className = theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+        }
+        function toggleCallTheme() {
+            const next = getSelectedCallTheme() === 'light' ? 'dark' : 'light';
+            localStorage.setItem('chatx_call_theme', next);
+            applyCallTheme(next);
+        }
 
+        async function openVoiceCallScreen() {
+            if (!window.isSecureContext) { showToast('المكالمة الصوتية محتاجة HTTPS', 'error'); return; }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+                showToast('متصفحك مش بيدعم التسجيل الصوتي، جرب Chrome أو Edge', 'error');
+                return;
+            }
+
+            applyCallTheme(getSelectedCallTheme());
             document.getElementById('voiceCallOverlay').classList.add('active');
             callHistory = [];
             callActive = true;
@@ -12910,84 +13001,148 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             document.getElementById('callMuteBtn').classList.remove('on');
             document.getElementById('callTranscript').textContent = 'اتكلم براحتك، وهسمعك وأرد عليك زي المكالمة العادية 🎧';
             callState = 'idle';
-            callRecognitionRetryCount = 0;
             updateCallUI();
-            startCallListening();
+
+            const micOk = await initCallMic();
+            if (!micOk) return; // initCallMic بيقفل المكالمة ويبلّغ المستخدم لو رفض إذن المايك
+
             startCallWatchdog();
+            runCallVadLoop();
         }
 
-        function startCallListening() {
-            if (!callActive || callMuted) return;
-            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (callRecognition) {
-                try {
-                    callRecognition.onresult = null;
-                    callRecognition.onerror = null;
-                    callRecognition.onend = null;
-                    callRecognition.onstart = null;
-                    callRecognition.abort();
-                } catch (e) {}
+        // بيفتح المايك مرة واحدة بس لطول المكالمة، وبيجهّز محلّل صوت (Analyser) عشان
+        // نقدر نقيس شدة الصوت لحظة بلحظة من غير أي "جلسات" بتتفتح وتتقفل.
+        async function initCallMic() {
+            try {
+                callMicStream = await navigator.mediaDevices.getUserMedia({
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+                });
+            } catch (e) {
+                showToast('لازم تسمح باستخدام المايك عشان المكالمة تشتغل', 'error');
+                endVoiceCall();
+                return false;
             }
-            callRecognition = new SR();
-            callRecognition.lang = 'ar-EG';
-            callRecognition.continuous = true;
-            callRecognition.interimResults = true;
-            callRecognition.maxAlternatives = 1;
-            callFinalTranscriptBuffer = '';
+            callAudioAnalyserCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const source = callAudioAnalyserCtx.createMediaStreamSource(callMicStream);
+            callAnalyser = callAudioAnalyserCtx.createAnalyser();
+            callAnalyser.fftSize = 512;
+            source.connect(callAnalyser);
+            return true;
+        }
 
-            callRecognition.onstart = () => { callState = 'listening'; updateCallUI(); };
-            callRecognition.onresult = (event) => {
-                callRecognitionRetryCount = 0; // وصل صوت فعلي — المايك شغال تمام، نصفّر عداد الفشل
-                clearTimeout(callSilenceTimer);
-                let interim = '', final = '';
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const t = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) final += t; else interim += t;
+        function stopCallMic() {
+            if (callVadRafId) { cancelAnimationFrame(callVadRafId); callVadRafId = null; }
+            if (callMediaRecorder && callMediaRecorder.state !== 'inactive') { try { callMediaRecorder.stop(); } catch (e) {} }
+            callMediaRecorder = null;
+            callIsRecordingSpeech = false;
+            if (callMicStream) { callMicStream.getTracks().forEach(t => t.stop()); callMicStream = null; }
+            if (callAudioAnalyserCtx) { try { callAudioAnalyserCtx.close(); } catch (e) {} callAudioAnalyserCtx = null; }
+            callAnalyser = null;
+        }
+
+        // كاشف نشاط صوتي (VAD) شغّال طول المكالمة عن طريق requestAnimationFrame: بيبدأ
+        // يسجّل أول ما يحس بكلام فعلي، ويوقف ويبعت أول ما يحس بسكوت قصير بعده. أسرع
+        // وأثبت بكتير من نظام "جلسة تعرف على صوت" بيتقفل ويتفتح كل شوية.
+        function runCallVadLoop() {
+            if (!callActive) return;
+            callVadRafId = requestAnimationFrame(runCallVadLoop);
+            if (!callAnalyser || callMuted || callState === 'thinking' || callState === 'speaking') {
+                if (callIsRecordingSpeech) stopCallRecordingAndSend(true); // المايك اتقفل فجأة (كتم/بدأ رد) — اتجاهل أي تسجيل ناقص
+                return;
+            }
+
+            const data = new Uint8Array(callAnalyser.fftSize);
+            callAnalyser.getByteTimeDomainData(data);
+            let sum = 0;
+            for (let i = 0; i < data.length; i++) { const v = (data[i] - 128) / 128; sum += v * v; }
+            const rms = Math.sqrt(sum / data.length);
+            const now = performance.now();
+
+            const effectiveThreshold = Math.max(CALL_VAD_THRESHOLD, callNoiseFloor * CALL_NOISE_FLOOR_MULTIPLIER);
+
+            if (rms > effectiveThreshold) {
+                callLastVoiceAt = now;
+                if (!callIsRecordingSpeech) startCallRecording();
+            } else {
+                // مبنحدّثش متوسط الضوضاء وإحنا بنسجّل كلام فعلي — بس وقت السكوت الحقيقي،
+                // عشان صوت الطالب نفسه ميرفعش تقدير "الضوضاء" غلط.
+                if (!callIsRecordingSpeech) {
+                    callNoiseFloor += (rms - callNoiseFloor) * CALL_NOISE_FLOOR_SMOOTHING;
                 }
-                if (final) callFinalTranscriptBuffer += final;
-                const shown = (callFinalTranscriptBuffer + ' ' + interim).trim();
-                if (shown) document.getElementById('callTranscript').innerHTML = `<span class="u">${escapeHtml(shown)}</span>`;
-                // بعد سكوت قصير جدًا (نص ثانية تقريبًا) من غير كلام جديد، نعتبر إن الطالب
-                // خلص كلامه ونبعت سؤاله فورًا — ده اللي بيدّي إحساس المكالمة السريعة زي
-                // المواقع المحترفة بدل ما الطالب يستنى ثانية وشوية قبل ما حد يرد عليه.
-                callSilenceTimer = setTimeout(() => {
-                    if (!callActive || callMuted) return;
-                    const text = (callFinalTranscriptBuffer || interim).trim();
-                    if (text) {
-                        callState = 'thinking'; // قبل الـ stop() عشان onend متعملش listen تاني بالغلط
-                        callFinalTranscriptBuffer = '';
-                        try { callRecognition.stop(); } catch (e) {}
-                        handleCallUserTurn(text);
-                    }
-                }, 550);
-            };
-            callRecognition.onerror = (event) => {
-                if (event.error === 'no-speech' || event.error === 'aborted') return;
-                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                    showToast('لازم تسمح باستخدام المايك عشان المكالمة تشتغل', 'error');
-                    endVoiceCall();
-                    return;
+                if (callIsRecordingSpeech && now - callLastVoiceAt > CALL_VAD_SILENCE_MS) {
+                    stopCallRecordingAndSend(false);
                 }
-                // أخطاء تانية (شبكة، انقطاع مؤقت..) — قديمًا كانت بتسيب المايك ميت من غير
-                // أي رسالة لحد ما المستخدم يقفل المكالمة ويفتحها تاني. دلوقتي بنحاول نعيد
-                // فتحه تلقائيًا (زي أي مكالمة حقيقية بتستعيد نفسها بعد تقطيع بسيط)، وبس لو
-                // فشل بشكل متكرر فعلاً بنبلّغ المستخدم بدل تكرار صامت للأبد.
-                callRecognitionRetryCount++;
-                if (callRecognitionRetryCount > 6) {
-                    showToast('في مشكلة في المايك، جرب تقفل المكالمة وتفتحها تاني', 'error');
-                    callRecognitionRetryCount = 0;
-                    return;
+            }
+        }
+
+        function startCallRecording() {
+            if (!callMicStream) return;
+            callIsRecordingSpeech = true;
+            callSpeechStartAt = performance.now();
+            callLastVoiceAt = callSpeechStartAt;
+            callRecordedChunks = [];
+            let mimeType = 'audio/webm;codecs=opus';
+            if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'audio/webm';
+            try { callMediaRecorder = new MediaRecorder(callMicStream, { mimeType }); }
+            catch (e) { callMediaRecorder = new MediaRecorder(callMicStream); }
+            callMediaRecorder.ondataavailable = (e) => { if (e.data.size) callRecordedChunks.push(e.data); };
+            try { callMediaRecorder.start(); } catch (e) { callIsRecordingSpeech = false; return; }
+            callState = 'listening';
+            updateCallUI();
+        }
+
+        // بيوقف التسجيل الحالي؛ لو discard=true (المايك اتقفل بكتم أو بمقاطعة) بيرمي
+        // المقطع من غير ما يبعته. غير كده بيبعته لـ Whisper يتفرّغ نص، وبعدين يبعت
+        // السؤال فعليًا لأقوى الموديلات.
+        async function stopCallRecordingAndSend(discard) {
+            if (!callIsRecordingSpeech || !callMediaRecorder) { callIsRecordingSpeech = false; return; }
+            const duration = performance.now() - callSpeechStartAt;
+            callIsRecordingSpeech = false;
+            const recorder = callMediaRecorder;
+            callMediaRecorder = null;
+
+            await new Promise((resolve) => {
+                if (recorder.state === 'inactive') return resolve();
+                recorder.onstop = resolve;
+                try { recorder.stop(); } catch (e) { resolve(); }
+            });
+
+            if (discard || duration < CALL_MIN_SPEECH_MS) { callRecordedChunks = []; return; }
+
+            const blob = new Blob(callRecordedChunks, { type: recorder.mimeType || 'audio/webm' });
+            callRecordedChunks = [];
+            if (!blob.size) return;
+
+            callState = 'thinking';
+            updateCallUI();
+            document.getElementById('callTranscript').textContent = 'بنفهم كلامك...';
+
+            // نظام التعرف الأساسي: Whisper بتاع Groq (أسرع وأدق نظام للتفريغ الفوري).
+            // لو فشل لأي سبب (السيرفر واقع، الشبكة اتقطعت..)، بنجرب فورًا نظام تاني
+            // (فهم الصوت المباشر بتاع Gemini) كشبكة أمان بدل ما المكالمة تفضل من غير
+            // رد خالص — أقوى من الاعتماد على مزوّد واحد بس.
+            async function tryTranscribe(endpoint) {
+                const form = new FormData();
+                form.append('audio', blob, 'speech.webm');
+                const res = await fetch(`${settings.backendUrl}${endpoint}`, { method: 'POST', body: form });
+                if (!res.ok) throw new Error('transcribe-failed');
+                const data = await res.json();
+                return (data.text || '').trim();
+            }
+
+            try {
+                let text = '';
+                try {
+                    text = await tryTranscribe('/api/groq-whisper');
+                } catch (primaryErr) {
+                    text = await tryTranscribe('/api/gemini-transcribe'); // شبكة أمان لو Whisper وقع
                 }
-                if (callActive && !callMuted && callState !== 'thinking' && callState !== 'speaking') {
-                    setTimeout(() => { if (callActive && !callMuted) startCallListening(); }, 400);
-                }
-            };
-            callRecognition.onend = () => {
-                if (callActive && !callMuted && callState === 'listening') {
-                    setTimeout(() => { if (callActive && !callMuted) startCallListening(); }, 300);
-                }
-            };
-            try { callRecognition.start(); } catch (e) {}
+                if (!text) { callState = 'idle'; updateCallUI(); return; } // كلام مش مفهوم/سكوت — رجّع تسمع من غير ما تضايق الطالب برسالة
+                handleCallUserTurn(text);
+            } catch (e) {
+                callState = 'idle';
+                updateCallUI();
+            }
         }
 
         // ترتيب الموديلات اللي بترد في المكالمة الحية: Groq الأول لأنه الأسرع (مهم جدًا
@@ -13121,17 +13276,25 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                 if (!mySignal.aborted) queueCallSpeech('حصل عطل بسيط في الاتصال، جرب تاني.');
             } finally {
                 // شبكة أمان أخيرة: مهما حصل فوق، لازم المكالمة ترجع تسمع تاني ولا تفضل
-                // عالقة في "بفكر" من غير ما حد يرد عليها.
-                if (callActive && !callMuted && !callQueueRunning && callAudioQueue.length === 0 && callState !== 'listening') {
+                // عالقة في "بفكر" من غير حد يرد عليها. مفيش داعي لأي "إعادة تشغيل" يدوية
+                // هنا — كاشف الصوت (VAD) شغّال طول الوقت وبيرجع يراقب المايك تلقائيًا أول
+                // ما الحالة تبقى غير "بيفكر/بيتكلم".
+                if (callActive && !callMuted && !callQueueRunning && callAudioQueue.length === 0) {
                     callState = 'idle';
                     updateCallUI();
-                    setTimeout(() => { if (callActive && !callMuted && callState !== 'listening') startCallListening(); }, 200);
                 }
             }
         }
 
-        // طابور تشغيل صوتي بسيط: كل جملة بتتحول صوت وتتشغّل بالترتيب عشان متتعملش فوق بعض.
-        // أول ما الطابور يخلص كله، المايك بيفتح تاني تلقائيًا زي مكالمة حقيقية.
+        // طابور تشغيل صوتي: كل جملة بتتحول صوت وتتشغّل بالترتيب عشان متتعملش فوق بعض.
+        // أول ما الطابور يخلص كله، المايك بيرجع يراقب تلقائيًا (كاشف الصوت شغّال طول الوقت).
+        //
+        // ⚡ Pipelining: بنبدأ نجهّز صوت الجملة الجاية وإحنا لسه بنشغّل الجملة الحالية
+        // (بدل ما ننتظر تشغيل الحالية يخلص وبعدين نبدأ نطلب صوت التانية). ده بيشيل
+        // "السكوت الميت" اللي كان بيحصل بين كل جملة والتانية وقت انتظار تحويل النص
+        // لصوت — أكبر سبب لإحساس إن الرد "بيمل" أو بيقف كل شوية في الرد الطويل.
+        let callQueueGeneration = 0;
+
         function queueCallSpeech(text) {
             callAudioQueue.push(text);
             if (!callQueueRunning) runCallSpeechQueue();
@@ -13141,19 +13304,31 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             callQueueRunning = true;
             callState = 'speaking';
             updateCallUI();
-            while (callAudioQueue.length) {
-                const text = callAudioQueue.shift();
-                try {
-                    const blob = await fetchTtsAudioBlob(text);
-                    if (!callActive) break;
-                    await playCallAudioBlob(blob);
-                } catch (e) { /* نتجاهل الجملة دي ونكمل اللي بعدها */ }
+            const myGeneration = callQueueGeneration;
+
+            let nextPromise = callAudioQueue.length ? fetchTtsAudioBlob(callAudioQueue.shift()) : null;
+
+            while (nextPromise) {
+                let blob = null;
+                try { blob = await nextPromise; } catch (e) { /* فشلت هذه الجملة بس — نتجاهلها ونكمل اللي بعدها */ }
+
+                // اطلب صوت الجملة الجاية دلوقتي فورًا (لو موجودة) — من غير ما تستنى تشغيل
+                // الجملة الحالية، عشان تكون جاهزة أول ما الحالية تخلص بالظبط.
+                nextPromise = callAudioQueue.length ? fetchTtsAudioBlob(callAudioQueue.shift()) : null;
+
+                // لو حصلت مقاطعة (barge-in) أو المكالمة اتقفلت وإحنا مستنيين، منشغّلش
+                // صوت بقى قديم/مش مطلوب.
+                if (myGeneration !== callQueueGeneration || !callActive) break;
+                if (blob) { try { await playCallAudioBlob(blob); } catch (e) {} }
+                if (myGeneration !== callQueueGeneration || !callActive) break;
             }
-            callQueueRunning = false;
-            if (callActive && !callMuted) {
-                callState = 'idle';
-                updateCallUI();
-                setTimeout(() => { if (callActive && !callMuted) startCallListening(); }, 200);
+
+            if (myGeneration === callQueueGeneration) {
+                callQueueRunning = false;
+                if (callActive && !callMuted) {
+                    callState = 'idle';
+                    updateCallUI();
+                }
             }
         }
 
@@ -13169,52 +13344,43 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             });
         }
 
-        // "قاطعني" — بيوقف أي صوت شغال دلوقتي وأي رد لسه بيتولّد، وبيفتح المايك فورًا عشان
-        // الطالب يقول اللي عايزه من غير ما يستنى الرد يخلص، زي أي مكالمة حقيقية.
+        // "قاطعني" — بيوقف أي صوت شغال دلوقتي وأي رد لسه بيتولّد، وبيرجّع الحالة لـ"بيسمع"
+        // فورًا عشان كاشف الصوت يمسك كلام الطالب من أول لحظة، زي أي مكالمة حقيقية.
         function callBargeIn() {
             if (!callActive) return;
+            callQueueGeneration++; // يلغي أي صوت متجهّز مسبقًا (pipelined) من الرد اللي اتقاطع
             callAudioQueue = [];
             if (callCurrentAudio) { try { callCurrentAudio.pause(); } catch (e) {} callCurrentAudio = null; }
             if (callAbortController) callAbortController.abort();
             callQueueRunning = false;
             document.getElementById('callTranscript').textContent = 'تمام، قول اللي عايزه...';
-            startCallListening();
+            callState = 'idle';
+            updateCallUI();
         }
 
         function toggleCallMute() {
             callMuted = !callMuted;
             document.getElementById('callMuteIcon').className = callMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
             document.getElementById('callMuteBtn').classList.toggle('on', callMuted);
-            if (callMuted) {
-                // بنلغي أي "دور كلام" كان مستنّي يتبعت بعد سكوت قصير قبل الكتم مباشرة، وأهم
-                // حاجة: بنفصل الـ instance القديم تمامًا (نصفّر أحداثه الأول وبعدين نوقفه)
-                // عشان مفيش أي حدث onend/onerror متأخر منه يقدر يعيد تشغيل المايك أو يسبب
-                // صوت "تيت تيت" المتكرر (مشكلة معروفة في متصفحات الموبايل لو سبت الـ instance
-                // القديم شغّال في الخلفية وهو المفروض واقف).
-                clearTimeout(callSilenceTimer);
-                callFinalTranscriptBuffer = '';
-                if (callRecognition) {
-                    try {
-                        callRecognition.onresult = null;
-                        callRecognition.onerror = null;
-                        callRecognition.onend = null;
-                        callRecognition.onstart = null;
-                        callRecognition.stop();
-                    } catch (e) {}
-                }
-                callRecognition = null;
-            } else if (callState !== 'speaking' && callState !== 'thinking') {
-                startCallListening();
+            // مفيش أي جلسة "تعرف على صوت" بتتفتح أو تتقفل هنا خالص — المايك فاتح طول
+            // المكالمة والكتم بس بيوقف كاشف الصوت من إنه يسجّل، فمفيش أي احتمال لصوت
+            // "تيت تيت" المتكرر اللي كان بيحصل قبل كده.
+            if (callMuted && callIsRecordingSpeech) {
+                stopCallRecordingAndSend(true); // نلغي أي تسجيل ناقص كان شغال وقت الكتم من غير ما نبعته
+            } else if (!callMuted && callState !== 'speaking' && callState !== 'thinking') {
+                callState = 'idle';
+                updateCallUI();
             }
         }
 
         function endVoiceCall() {
             callActive = false;
             callMuted = false;
+            callQueueGeneration++;
             callAudioQueue = [];
             callQueueRunning = false;
             stopCallWatchdog();
-            try { if (callRecognition) callRecognition.abort(); } catch (e) {}
+            stopCallMic();
             if (callCurrentAudio) { try { callCurrentAudio.pause(); } catch (e) {} callCurrentAudio = null; }
             if (callAbortController) callAbortController.abort();
             document.getElementById('voiceCallOverlay').classList.remove('active');

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>مفاتيح الـ API — Chat X</title>
+<style>
+    :root {
+        --bg: #0a0e1a; --bg-2: #131827;
+        --accent: #6366f1; --accent-2: #8b5cf6;
+        --text-1: #f1f5f9; --text-2: #94a3b8; --text-3: #64748b;
+        --border: rgba(255, 255, 255, 0.08);
+        --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+        --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text-1); min-height: 100vh; padding: 20px 16px 60px; }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .sub { font-size: 12px; color: var(--text-3); margin-top: 4px; line-height: 1.7; }
+    .card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-top: 16px; }
+    .banner { font-size: 12px; padding: 10px 12px; border-radius: 10px; margin-top: 14px; line-height: 1.8; }
+    .banner.warn { background: rgba(245,158,11,.12); color: var(--warning); border: 1px solid rgba(245,158,11,.25); }
+    .banner.err { background: rgba(239,68,68,.12); color: var(--danger); border: 1px solid rgba(239,68,68,.25); }
+    label { font-size: 12px; color: var(--text-2); display: block; margin-bottom: 6px; }
+    input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text-1); border-radius: 9px; padding: 10px 12px; font-size: 13px; outline: none; font-family: var(--font); }
+    input:focus { border-color: var(--accent); }
+    button { font-family: inherit; font-size: 13px; font-weight: 700; color: #fff; cursor: pointer; background: linear-gradient(135deg, var(--accent), var(--accent-2)); border: none; border-radius: 10px; padding: 10px 18px; }
+    button.ghost { background: var(--bg); border: 1px solid var(--border); color: var(--text-2); }
+    button.danger-btn { background: var(--danger); }
+    button:disabled { opacity: .5; cursor: default; }
+    .row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .row:last-child { border-bottom: none; }
+    .p-label { font-weight: 700; font-size: 13.5px; flex: 1 1 100%; }
+    .p-meta { font-size: 11px; color: var(--text-3); }
+    .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .dot.admin-panel { background: var(--success); box-shadow: 0 0 8px var(--success); }
+    .dot.environment-variable { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .dot.not-set { background: var(--text-3); }
+    .add-row { display: flex; gap: 8px; width: 100%; margin-top: 6px; }
+    .add-row input { flex: 1; }
+    #loginScreen { max-width: 360px; margin: 60px auto; }
+    .err-box { color: var(--danger); font-size: 12px; margin-top: 8px; display: none; }
+</style>
+</head>
+<body>
+<div id="loginScreen" class="wrap">
+    <div class="card">
+        <h1 style="font-size:16px;margin-bottom:4px;">دخول لوحة مفاتيح الـ API</h1>
+        <div class="sub">اكتب سر الأدمن (ADMIN_PANEL_SECRET) اللي ضبطته في Environment Variables.</div>
+        <div style="margin-top:14px;">
+            <label>السر</label>
+            <input type="password" id="secretInput" autocomplete="off">
+        </div>
+        <button style="width:100%;margin-top:12px;" onclick="doLogin()">دخول</button>
+        <div class="err-box" id="loginErr"></div>
+    </div>
+</div>
+
+<div class="wrap" id="mainScreen" style="display:none;">
+    <h1>مفاتيح الـ API</h1>
+    <div class="sub">ضيف أو غيّر مفتاح أي مزوّد من هنا مباشرة — أول صوت هيرد في المكالمة هو CometAPI (Kling TTS) لو مفتاحه مضبوط.</div>
+    <div id="kvBanner"></div>
+    <div class="card"><div id="list">جارٍ التحميل...</div></div>
+    <div style="text-align:center;margin-top:16px;">
+        <button class="ghost" onclick="doLogout()">خروج</button>
+    </div>
+</div>
+
+<script>
+    const SECRET_KEY = 'sx_admin_apikeys_secret';
+    let secret = localStorage.getItem(SECRET_KEY) || '';
+
+    async function apiCall(path, options = {}) {
+        const res = await fetch('/api/admin-keys' + path, {
+            ...options,
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + secret, ...(options.headers || {}) }
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (res.status === 401) doLogout();
+            throw new Error(data.error || 'حصل خطأ');
+        }
+        return data;
+    }
+
+    async function doLogin() {
+        const val = document.getElementById('secretInput').value.trim();
+        const errBox = document.getElementById('loginErr');
+        errBox.style.display = 'none';
+        if (!val) { errBox.textContent = 'اكتب السر الأول'; errBox.style.display = 'block'; return; }
+        secret = val;
+        try {
+            await apiCall('');
+            localStorage.setItem(SECRET_KEY, secret);
+            enterMain();
+        } catch (e) {
+            errBox.textContent = e.message;
+            errBox.style.display = 'block';
+        }
+    }
+
+    function doLogout() {
+        localStorage.removeItem(SECRET_KEY);
+        secret = '';
+        document.getElementById('mainScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'block';
+    }
+
+    function enterMain() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainScreen').style.display = 'block';
+        loadKeys();
+    }
+
+    function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML;
+    }
+
+    async function loadKeys() {
+        const list = document.getElementById('list');
+        const banner = document.getElementById('kvBanner');
+        try {
+            const data = await apiCall('');
+            banner.innerHTML = data.kvConfigured
+                ? ''
+                : `<div class="banner warn">مفيش Vercel KV (أو Upstash for Redis) مربوط بالمشروع لسه، فأي مفتاح تحفظه من هنا مش هيتخزن بشكل دائم. اربط KV من Vercel Dashboard → Storage عشان الحفظ من هنا يشتغل — لحد كده استخدم Environment Variables في Vercel مباشرة.</div>`;
+
+            list.innerHTML = data.providers.map(p => `
+                <div class="row">
+                    <div class="p-label">${esc(p.label)}</div>
+                    <div class="dot ${p.source}"></div>
+                    <div class="p-meta">${p.configured ? (p.masked + ' · ' + (p.source === 'admin-panel' ? 'اتضاف من هنا' : 'من Environment Variables')) : 'مش مضبوط'}</div>
+                    <div class="add-row">
+                        <input type="text" id="inp_${p.env}" placeholder="الصق مفتاح ${esc(p.label)} هنا...">
+                        <button onclick="saveKey('${p.env}')"><i class="fas fa-save"></i> حفظ</button>
+                        ${p.source === 'admin-panel' ? `<button class="danger-btn" onclick="removeKey('${p.env}')">مسح</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        } catch (e) {
+            list.innerHTML = `<div class="banner err">${esc(e.message)}</div>`;
+        }
+    }
+
+    async function saveKey(env) {
+        const input = document.getElementById('inp_' + env);
+        const value = input.value.trim();
+        if (!value) return;
+        try {
+            await apiCall('', { method: 'POST', body: JSON.stringify({ env, apiKey: value }) });
+            input.value = '';
+            await loadKeys();
+        } catch (e) {
+            alert(e.message);
+        }
+    }
+
+    async function removeKey(env) {
+        if (!confirm('متأكد إنك عايز تمسح المفتاح ده؟')) return;
+        try {
+            await apiCall('', { method: 'DELETE', body: JSON.stringify({ env }) });
+            await loadKeys();
+        } catch (e) {
+            alert(e.message);
+        }
+    }
+
+    if (secret) {
+        apiCall('').then(() => enterMain()).catch(() => doLogout());
+    }
+</script>
+</body>
+</html>
