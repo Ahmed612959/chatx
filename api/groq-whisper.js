@@ -1,10 +1,12 @@
 export const config = { runtime: 'edge' };
 import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
 import { reportApiUsage } from './_usageTrack.js';
+import { attemptWithFailover } from './_keystore.js';
 
 // بيفرّغ مقطع صوت لنص عن طريق Whisper (large-v3-turbo) بتاع Groq — نظام تعرف على
 // الصوت أدق وأقوى بكتير من التعرف المدمج في المتصفح (Web Speech API)، خصوصًا مع
-// اللهجة المصرية، وسريع جدًا (بيرجع النص في أقل من ثانية غالبًا لمقطع قصير).
+// اللهجة المصرية، وسريع جدًا (بيرجع النص في أقل من ثانية غالبًا لمقطع قصير). بيدعم
+// أكتر من مفتاح مع تبديل تلقائي لو واحد فشل (شوف _keystore.js).
 export default async function handler(request) {
   try {
     if (request.method !== 'POST') {
@@ -13,14 +15,6 @@ export default async function handler(request) {
 
     const rl = checkRateLimit(request, { limit: 40, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
-
-    const GROQ_API_KEY = process.env.GROQ_API_KEY;
-    if (!GROQ_API_KEY) {
-      return new Response(JSON.stringify({ error: 'GROQ_API_KEY غير مضبوط في Environment Variables' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
 
     let incomingForm;
     try {
@@ -40,21 +34,30 @@ export default async function handler(request) {
       });
     }
 
-    const outForm = new FormData();
-    outForm.append('file', audioFile, 'speech.webm');
-    outForm.append('model', 'whisper-large-v3-turbo');
-    outForm.append('language', 'ar');
-    outForm.append('response_format', 'json');
-    outForm.append('temperature', '0');
-
     let upstream;
     try {
-      upstream = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${GROQ_API_KEY}` },
-        body: outForm
+      upstream = await attemptWithFailover('GROQ_API_KEY', (key) => {
+        // بنبني FormData جديدة لكل محاولة — الـ Blob نفسه (audioFile) قابل للقراءة
+        // أكتر من مرة، فمفيش مشكلة نعيد استخدامه مع مفتاح تاني لو الأول فشل.
+        const outForm = new FormData();
+        outForm.append('file', audioFile, 'speech.webm');
+        outForm.append('model', 'whisper-large-v3-turbo');
+        outForm.append('language', 'ar');
+        outForm.append('response_format', 'json');
+        outForm.append('temperature', '0');
+        return fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${key}` },
+          body: outForm
+        });
       });
     } catch (err) {
+      if (err.code === 'NO_API_KEY') {
+        return new Response(JSON.stringify({ error: 'GROQ_API_KEY غير مضبوط في Environment Variables' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
       return new Response(JSON.stringify({ error: 'تعذر الوصول لخدمة تفريغ الصوت' }), {
         status: 502,
         headers: { 'Content-Type': 'application/json' }

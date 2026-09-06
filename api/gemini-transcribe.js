@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
-import { getApiKey } from './_keystore.js';
+import { attemptWithFailover } from './_keystore.js';
 
 // ====================================================================================
 // نظام تعرف على صوت تاني (احتياطي) بيستخدم فهم Gemini للصوت مباشرة — بيتنادى بس لو
@@ -19,14 +19,6 @@ export default async function handler(request) {
     const rl = checkRateLimit(request, { limit: 20, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
-    const GEMINI_API_KEY = await getApiKey('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY غير مضبوط' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
     const incomingForm = await request.formData().catch(() => null);
     const audioFile = incomingForm?.get('audio');
     if (!audioFile) {
@@ -42,8 +34,8 @@ export default async function handler(request) {
 
     let upstream;
     try {
-      upstream = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
+      upstream = await attemptWithFailover('GEMINI_API_KEY', (key) => fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${key}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -57,8 +49,14 @@ export default async function handler(request) {
             generationConfig: { temperature: 0, maxOutputTokens: 200 }
           })
         }
-      );
+      ));
     } catch (err) {
+      if (err.code === 'NO_API_KEY') {
+        return new Response(JSON.stringify({ error: 'GEMINI_API_KEY غير مضبوط' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
       return new Response(JSON.stringify({ error: 'تعذر الوصول لـ Gemini' }), {
         status: 502,
         headers: { 'Content-Type': 'application/json' }

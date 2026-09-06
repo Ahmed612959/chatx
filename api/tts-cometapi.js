@@ -1,16 +1,11 @@
 export const config = { runtime: 'edge' };
 import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
-import { getApiKey } from './_keystore.js';
+import { attemptWithFailover } from './_keystore.js';
 
 // ====================================================================================
-// صوت Kling TTS عن طريق CometAPI — ده أول طبقة صوت بيتحاول بيها fetchTtsAudioBlob في
-// الفرونت إند (قبل Gemini/Edge/Azure/Google Translate)، يعني هو "أول صوت يرد" في
-// المكالمة الحية زي ما طلبت بالظبط. لو المفتاح مش مضبوط أو الطلب فشل لأي سبب، الفرونت
-// إند بيكمل تلقائيًا لباقي الطبقات القديمة من غير ما المكالمة تتأثر خالص.
-//
-// المفتاح: COMETAPI_API_KEY — تقدر تضبطه من Environment Variables في Vercel، أو
-// تضيفه/تغيّره من صفحة admin-apikeys.html الجديدة من غير ما تعمل deploy (لو ربطت
-// Vercel KV بالمشروع — التفاصيل في api/_keystore.js).
+// صوت Kling TTS عن طريق CometAPI — دلوقتي طبقة تانية بعد Amazon Polly (شوف
+// tts-polly.js) في fetchTtsAudioBlob بالفرونت إند. لو Polly مش مضبوط أو فشل، ده أول
+// حاجة بتتجرب. بيدعم أكتر من مفتاح مع تبديل تلقائي لو واحد فشل (شوف _keystore.js).
 // ====================================================================================
 
 const COMETAPI_TTS_URL = 'https://api.cometapi.com/kling/v1/audio/tts';
@@ -25,14 +20,6 @@ export default async function handler(request) {
     const rl = checkRateLimit(request, { limit: 30, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
-    const COMETAPI_API_KEY = await getApiKey('COMETAPI_API_KEY');
-    if (!COMETAPI_API_KEY) {
-      return new Response(JSON.stringify({ error: 'COMETAPI_API_KEY غير مضبوط' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
     const { text, voice_id, voice_language, voice_speed } = await request.json().catch(() => ({}));
     if (!text || !text.trim()) {
       return new Response(JSON.stringify({ error: 'مفيش نص للتحويل لصوت' }), {
@@ -43,20 +30,23 @@ export default async function handler(request) {
 
     let upstream;
     try {
-      upstream = await fetch(COMETAPI_TTS_URL, {
+      upstream = await attemptWithFailover('COMETAPI_API_KEY', (key) => fetch(COMETAPI_TTS_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${COMETAPI_API_KEY}`
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
         body: JSON.stringify({
           text: text.slice(0, 2000),
           voice_id: voice_id || DEFAULT_VOICE_ID,
           voice_language: voice_language || 'ar',
           voice_speed: voice_speed || 1.0
         })
-      });
+      }));
     } catch (err) {
+      if (err.code === 'NO_API_KEY') {
+        return new Response(JSON.stringify({ error: 'COMETAPI_API_KEY غير مضبوط' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
       return new Response(JSON.stringify({ error: 'تعذر الوصول لـ CometAPI' }), {
         status: 502,
         headers: { 'Content-Type': 'application/json' }
@@ -73,8 +63,6 @@ export default async function handler(request) {
 
     const contentType = upstream.headers.get('content-type') || '';
 
-    // الحالة العادية: CometAPI بترجع الصوت مباشرة كـ bytes — نمرره زي ما هو من غير
-    // ما نلمسه، أسرع طريقة ممكنة.
     if (contentType.startsWith('audio/') || contentType.includes('octet-stream')) {
       return new Response(upstream.body, {
         status: 200,
@@ -82,8 +70,6 @@ export default async function handler(request) {
       });
     }
 
-    // بعض إصدارات Kling بترجع JSON فيه رابط الصوت الجاهز بدل الـ bytes مباشرة —
-    // بنتعامل مع الشكلين الشائعين (audio_url على المستوى الأول، أو جوه data).
     const data = await upstream.json().catch(() => null);
     const audioUrl = data?.audio_url || data?.data?.audio_url || data?.url || data?.data?.url;
     if (audioUrl) {

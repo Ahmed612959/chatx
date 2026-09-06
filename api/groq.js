@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' };
 import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
 import { reportApiUsage } from './_usageTrack.js';
+import { attemptWithFailover } from './_keystore.js';
 
 export default async function handler(request) {
   try {
@@ -11,27 +12,25 @@ export default async function handler(request) {
     const rl = checkRateLimit(request, { limit: 20, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
-    const GROQ_API_KEY = process.env.GROQ_API_KEY;
-    if (!GROQ_API_KEY) {
-      return new Response(JSON.stringify({ error: 'GROQ_API_KEY غير مضبوط في Environment Variables' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
     const body = await request.text();
 
     let upstream;
     try {
-      upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      upstream = await attemptWithFailover('GROQ_API_KEY', (key) => fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Authorization': `Bearer ${key}`,
           'Content-Type': 'application/json'
         },
         body
-      });
+      }));
     } catch (err) {
+      if (err.code === 'NO_API_KEY') {
+        return new Response(JSON.stringify({ error: 'GROQ_API_KEY غير مضبوط في Environment Variables' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
       return new Response(JSON.stringify({ error: 'تعذر الوصول لـ Groq' }), {
         status: 502,
         headers: { 'Content-Type': 'application/json' }

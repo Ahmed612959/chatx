@@ -83,8 +83,11 @@ const PROVIDERS = [
   {
     name: 'cometapiTts',
     envKey: 'COMETAPI_API_KEY',
-    // فحص وجود المفتاح بس هنا (زي أغلب المزودين) — فحص "حي" فعلي هيكلّف صوت مولّد
-    // فعليًا كل مرة حد يدوس "فحص حقيقي"، فمش هنعمله لتوفير الكوتة.
+    ping: null
+  },
+  {
+    name: 'awsPollyTts',
+    envKey: 'AWS_ACCESS_KEY_ID',
     ping: null
   }
 ];
@@ -106,7 +109,8 @@ export default async function handler(request) {
         qwenConfigured: Boolean(process.env.QWEN_API_KEY),
         deepseekConfigured: Boolean(process.env.DEEPSEEK_API_KEY),
         zimageConfigured: Boolean(process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY),
-        cometapiTtsConfigured: Boolean(process.env.COMETAPI_API_KEY)
+        cometapiTtsConfigured: Boolean(process.env.COMETAPI_API_KEY),
+        awsPollyTtsConfigured: Boolean(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY)
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );

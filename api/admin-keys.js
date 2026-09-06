@@ -1,20 +1,20 @@
 export const config = { runtime: 'edge' };
-import { getApiKey, setApiKey, deleteApiKey, kvConfigured, hasOverride } from './_keystore.js';
+import { listManagedKeys, addManagedKey, deleteManagedKey, revealManagedKey, kvConfigured, hasAnyKey } from './_keystore.js';
 
 // ====================================================================================
-// بيدعم صفحة admin-apikeys.html — عشان الأدمن يضيف/يغيّر مفتاح API لأي مزوّد من
-// المتصفح مباشرة من غير ما يحتاج يدخل Vercel Dashboard كل مرة.
+// بيدعم صفحة admin-apikeys.html — إضافة/مسح/كشف أكتر من مفتاح لكل مزوّد، مع تتبع
+// عدد مرات الفشل لكل مفتاح (بتتحدّث تلقائيًا من _keystore.js وقت استخدام المفاتيح
+// الفعلي في باقي ملفات api/*.js عن طريق attemptWithFailover).
 //
 // الحماية: بيتطلب Authorization: Bearer <ADMIN_PANEL_SECRET> — نفس القيمة اللي
-// المفروض تحطها إنت في Environment Variables باسم ADMIN_PANEL_SECRET (اختار قيمة
-// عشوائية طويلة وسيبها سر، ده هو "الباسورد" بتاع صفحة admin-apikeys.html).
-//
-// الحفظ الفعلي بيحصل في Vercel KV (أو Upstash for Redis) لو مربوط بالمشروع —
-// لو لسه مش مربوط، الـ endpoint بيقول كده بوضوح بدل ما يدّعي إن الحفظ نجح.
+// المفروض تحطها إنت في Environment Variables باسم ADMIN_PANEL_SECRET.
 // ====================================================================================
 
 // كل مفتاح ممكن الأدمن يتحكم فيه من الصفحة — اسم الـ Environment Variable + وصف
 // قصير يظهر في الواجهة. ضيف أي مزوّد جديد هنا وهيظهر تلقائيًا في admin-apikeys.html.
+// ملحوظة: AWS (Polly) مستثناة عمدًا من هنا لأنها زوج مفاتيح (Access Key + Secret)
+// مش قيمة واحدة، فبتتضبط من Environment Variables في Vercel مباشرة بس — التفاصيل
+// في تعليق أعلى api/tts-polly.js.
 const MANAGED_KEYS = [
   { env: 'COMETAPI_API_KEY', label: 'CometAPI (صوت Kling TTS للمكالمة)' },
   { env: 'GROQ_API_KEY', label: 'Groq (رد سريع + Whisper للتعرف على الصوت)' },
@@ -42,12 +42,6 @@ function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-function maskKey(value) {
-  if (!value) return null;
-  if (value.length <= 8) return '••••';
-  return value.slice(0, 4) + '••••••••' + value.slice(-4);
-}
-
 export default async function handler(request) {
   try {
     if (!process.env.ADMIN_PANEL_SECRET) {
@@ -59,33 +53,39 @@ export default async function handler(request) {
 
     if (request.method === 'GET') {
       const rows = await Promise.all(MANAGED_KEYS.map(async (k) => {
-        const value = await getApiKey(k.env);
-        const overridden = await hasOverride(k.env);
-        return {
-          env: k.env,
-          label: k.label,
-          configured: Boolean(value),
-          masked: maskKey(value),
-          source: value ? (overridden ? 'admin-panel' : 'environment-variable') : 'not-set'
-        };
+        const keys = await listManagedKeys(k.env);
+        const envHasFallback = Boolean((process.env[k.env] || '').trim());
+        return { env: k.env, label: k.label, keys, envHasFallback };
       }));
       return json({ kvConfigured: kvConfigured(), providers: rows });
     }
 
     if (request.method === 'POST') {
       const body = await request.json().catch(() => ({}));
-      const { env, apiKey } = body;
+      const { action, env, apiKey, label, id } = body;
+
       if (!env || !MANAGED_KEYS.some(k => k.env === env)) {
-        return json({ error: 'اسم المفتاح ده مش معروف' }, 400);
+        return json({ error: 'اسم المزوّد ده مش معروف' }, 400);
       }
+
+      if (action === 'reveal') {
+        if (!id) return json({ error: 'مفيش id للمفتاح' }, 400);
+        const value = await revealManagedKey(env, id);
+        if (!value) return json({ error: 'المفتاح مش موجود' }, 404);
+        return json({ value });
+      }
+
+      // الإجراء الافتراضي: إضافة مفتاح جديد لنفس المزوّد (يتضاف لقائمة المفاتيح،
+      // مش بيستبدل القديم — يعني ممكن تحط أكتر من مفتاح وهيتبدّل بينهم تلقائيًا
+      // لو واحد فشل).
       if (!apiKey || !apiKey.trim()) {
         return json({ error: 'اكتب المفتاح الأول' }, 400);
       }
       try {
-        await setApiKey(env, apiKey.trim());
+        await addManagedKey(env, apiKey.trim(), label || '');
       } catch (e) {
         if (e.code === 'KV_NOT_CONFIGURED') {
-          return json({ error: 'لازم تربط Vercel KV (أو Upstash for Redis) بالمشروع الأول عشان الحفظ من الصفحة يشتغل — لحد ما تعمل كده تقدر تضبط المفتاح مباشرة من Environment Variables في Vercel' }, 501);
+          return json({ error: 'لازم تربط Vercel KV (أو Upstash for Redis) بالمشروع الأول عشان تقدر تضيف أكتر من مفتاح من الصفحة — لحد ما تعمل كده تقدر تحط أكتر من مفتاح مفصولين بفاصلة في نفس الـ Environment Variable مباشرة من Vercel' }, 501);
         }
         return json({ error: 'تعذر حفظ المفتاح' }, 502);
       }
@@ -94,15 +94,16 @@ export default async function handler(request) {
 
     if (request.method === 'DELETE') {
       const body = await request.json().catch(() => ({}));
-      const { env } = body;
+      const { env, id } = body;
       if (!env || !MANAGED_KEYS.some(k => k.env === env)) {
-        return json({ error: 'اسم المفتاح ده مش معروف' }, 400);
+        return json({ error: 'اسم المزوّد ده مش معروف' }, 400);
       }
+      if (!id) return json({ error: 'مفيش id للمفتاح' }, 400);
       try {
-        await deleteApiKey(env);
+        await deleteManagedKey(env, id);
       } catch (e) {
         if (e.code === 'KV_NOT_CONFIGURED') {
-          return json({ error: 'مفيش KV مربوط أصلاً فمفيش override نمسحه' }, 501);
+          return json({ error: 'مفيش KV مربوط أصلاً فمفيش مفاتيح متخزنة نمسحها من هنا' }, 501);
         }
         return json({ error: 'تعذر مسح المفتاح' }, 502);
       }

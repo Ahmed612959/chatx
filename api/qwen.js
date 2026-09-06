@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' };
 import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
 import { reportApiUsage } from './_usageTrack.js';
+import { attemptWithFailover } from './_keystore.js';
 
 export default async function handler(request) {
   try {
@@ -11,14 +12,6 @@ export default async function handler(request) {
     const rl = checkRateLimit(request, { limit: 20, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
-    const QWEN_API_KEY = process.env.QWEN_API_KEY;
-    if (!QWEN_API_KEY) {
-      return new Response(JSON.stringify({ error: 'QWEN_API_KEY غير مضبوط في Environment Variables' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
     const body = await request.text();
 
     // DashScope's OpenAI-compatible endpoint. This is the international (Singapore)
@@ -26,15 +19,21 @@ export default async function handler(request) {
     // swap this for https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
     let upstream;
     try {
-      upstream = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      upstream = await attemptWithFailover('QWEN_API_KEY', (key) => fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${QWEN_API_KEY}`,
+          'Authorization': `Bearer ${key}`,
           'Content-Type': 'application/json'
         },
         body
-      });
+      }));
     } catch (err) {
+      if (err.code === 'NO_API_KEY') {
+        return new Response(JSON.stringify({ error: 'QWEN_API_KEY غير مضبوط في Environment Variables' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
       return new Response(JSON.stringify({ error: 'تعذر الوصول لـ Qwen' }), {
         status: 502,
         headers: { 'Content-Type': 'application/json' }
