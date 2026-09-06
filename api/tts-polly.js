@@ -23,6 +23,8 @@ import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
 //                                   صوت رجالي بلهجة مصرية في Polly لحد دلوقتي)
 //        POLLY_VOLUME            = اختياري، افتراضيًا +3dB (تقدر تزوّدها أو تقلّلها،
 //                                   مثلاً +6dB لصوت أعلى أو +0dB للمستوى الافتراضي)
+//        POLLY_RATE              = اختياري، افتراضيًا 90% (سرعة الكلام — قلّلها زي
+//                                   80% لو عايزه أبطأ، أو زوّدها لـ 100% للسرعة العادية)
 //   5) اعمل Redeploy من Vercel عشان يقرأ المتغيرات الجديدة.
 //
 // ملحوظة عن الصوت: Zayd صوت رجالي neural (خليجي/فصحى مش مصري)، وده أفضل خيار متاح
@@ -34,6 +36,7 @@ const DEFAULT_REGION = 'eu-west-1';
 const DEFAULT_VOICE = 'Zayd';   // رجالي، neural — كان Zeina (نسائي) قبل كده
 const DEFAULT_ENGINE = 'neural';
 const DEFAULT_VOLUME = '+3dB';  // مستوى صوت طبيعي ومسموع، مش هادي زيادة ولا صارخ
+const DEFAULT_RATE = '90%';     // أبطأ شوية من العادي (100%) — إحساس هادي واحترافي بدل الاندفاع
 
 function escapeSsml(text) {
   return text
@@ -42,6 +45,16 @@ function escapeSsml(text) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+// بيحوّل النص العادي لـ SSML فيه وقفات طبيعية: وقفة أوضح بعد نهاية كل جملة (نقطة/
+// علامة استفهام/تعجب) ووقفة أقصر بعد الفواصل — عشان الصوت يحس إنه "بيتكلم بانتظام"
+// جملة جملة، مش بيندفع في الرسالة كلها مرة واحدة من غير أي نفَس بينها.
+function buildSsml(text, { volume, rate }) {
+  let escaped = escapeSsml(text.slice(0, 3000));
+  escaped = escaped.replace(/([.!؟?])(\s+|$)/g, '$1<break time="450ms"/>$2');
+  escaped = escaped.replace(/([,،])(\s+)/g, '$1<break time="200ms"/>$2');
+  return `<speak><prosody rate="${rate}" volume="${volume}">${escaped}</prosody></speak>`;
 }
 
 function toHex(buffer) {
@@ -122,6 +135,7 @@ export default async function handler(request) {
     const voiceId = process.env.POLLY_VOICE_ID || DEFAULT_VOICE;
     const engine = process.env.POLLY_ENGINE || DEFAULT_ENGINE;
     const volume = process.env.POLLY_VOLUME || DEFAULT_VOLUME;
+    const rate = process.env.POLLY_RATE || DEFAULT_RATE;
 
     const { text } = await request.json().catch(() => ({}));
     if (!text || !text.trim()) {
@@ -131,9 +145,9 @@ export default async function handler(request) {
       });
     }
 
-    // بنلف النص بـ SSML عشان نتحكم في مستوى الصوت (volume) — من غير كده Polly
-    // بيطلّع الصوت بمستوى منخفض شوية بيحتاج رفع يدوي من الطالب كل مرة.
-    const ssml = `<speak><prosody volume="${volume}">${escapeSsml(text.slice(0, 3000))}</prosody></speak>`;
+    // بنلف النص بـ SSML عشان نتحكم في السرعة والوقفات الطبيعية بين الجمل ومستوى
+    // الصوت — من غير كده Polly بيقول الرسالة كلها دفعة واحدة وبسرعة عادية.
+    const ssml = buildSsml(text, { volume, rate });
 
     let upstream;
     try {
