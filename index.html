@@ -12877,10 +12877,10 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             if (callWatchdogTimer) { clearInterval(callWatchdogTimer); callWatchdogTimer = null; }
         }
 
-        const CALL_SYSTEM_PROMPT = `إنت "Chat X"، مساعد أكاديمي بتتكلم دلوقتي مع طالب تمريض في مكالمة تليفون صوتية حية مش شات مكتوب.
+        const CALL_SYSTEM_PROMPT = `إنت "Chat X"، مساعد أكاديمي ذكي وفاهم بتتكلم دلوقتي مع طالب تمريض في مكالمة تليفون صوتية حية مش شات مكتوب.
 قواعد صارمة لازم تلتزم بيها:
 - رد بلهجة مصرية عامية طبيعية جدًا، زي ما بتتكلم مع زميلك في التليفون.
-- جملة لحد 3 جمل بالكتير في كل رد — إنت في مكالمة، مش بتكتب مقال.
+- افهم قصد الطالب من أول مرة وردّ على السؤال بالظبط من غير لف ودوران، وجملة لحد 3 جمل بالكتير في كل رد — إنت في مكالمة، مش بتكتب مقال.
 - ممنوع تمامًا أي رموز ماركداون أو نجوم أو عناوين أو قوائم مرقمة أو أقواس — الكلام هيتحول صوت حرفيًا زي ما هو.
 - لو السؤال محتاج شرح طويل فعلاً، اديله الفكرة الأهم بس دلوقتي واسأله لو عايز يكمل في التفاصيل.
 - ابدأ بالإجابة على طول من غير مقدمات زي "بالطبع" أو "تمام".`;
@@ -12919,7 +12919,15 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         function startCallListening() {
             if (!callActive || callMuted) return;
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            try { if (callRecognition) callRecognition.abort(); } catch (e) {}
+            if (callRecognition) {
+                try {
+                    callRecognition.onresult = null;
+                    callRecognition.onerror = null;
+                    callRecognition.onend = null;
+                    callRecognition.onstart = null;
+                    callRecognition.abort();
+                } catch (e) {}
+            }
             callRecognition = new SR();
             callRecognition.lang = 'ar-EG';
             callRecognition.continuous = true;
@@ -12939,8 +12947,11 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                 if (final) callFinalTranscriptBuffer += final;
                 const shown = (callFinalTranscriptBuffer + ' ' + interim).trim();
                 if (shown) document.getElementById('callTranscript').innerHTML = `<span class="u">${escapeHtml(shown)}</span>`;
-                // بعد حوالي ثانية سكوت من غير كلام جديد، نعتبر إن الطالب خلص كلامه ونبعت سؤاله
+                // بعد سكوت قصير جدًا (نص ثانية تقريبًا) من غير كلام جديد، نعتبر إن الطالب
+                // خلص كلامه ونبعت سؤاله فورًا — ده اللي بيدّي إحساس المكالمة السريعة زي
+                // المواقع المحترفة بدل ما الطالب يستنى ثانية وشوية قبل ما حد يرد عليه.
                 callSilenceTimer = setTimeout(() => {
+                    if (!callActive || callMuted) return;
                     const text = (callFinalTranscriptBuffer || interim).trim();
                     if (text) {
                         callState = 'thinking'; // قبل الـ stop() عشان onend متعملش listen تاني بالغلط
@@ -12948,7 +12959,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                         try { callRecognition.stop(); } catch (e) {}
                         handleCallUserTurn(text);
                     }
-                }, 1100);
+                }, 550);
             };
             callRecognition.onerror = (event) => {
                 if (event.error === 'no-speech' || event.error === 'aborted') return;
@@ -12984,11 +12995,12 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         // (Gemini، DeepSeek، Qwen، OpenRouter) بدل ما المكالمة تقف أو تتعلق.
         const CALL_PROVIDER_CHAIN = ['groq', 'gemini', 'deepseek', 'qwen', 'openrouter'];
         // لو الموديل ماردش ولا حرف خلال المدة دي، نعتبره واقع وننتقل للي بعده فورًا
-        // (ماحدش بدأ يتكلم لسه، فمفيش خطورة تكرار كلام).
-        const CALL_FIRST_CHUNK_TIMEOUT_MS = 6000;
+        // (ماحدش بدأ يتكلم لسه، فمفيش خطورة تكرار كلام). قللناها عشان الاستجابة تبقى
+        // سريعة زي المكالمات الاحترافية بدل ما الطالب يستنى قبل ما نكتشف إن الموديل بطيء.
+        const CALL_FIRST_CHUNK_TIMEOUT_MS = 4500;
         // لو الرد ابتدا وبعدين سكت فجأة لمدة طويلة (شبكة اتقطعت نص الرد)، بنقفل الرد
         // بأدب باللي اتقال لحد دلوقتي بدل ما نستنى للأبد ونعلّق المكالمة كلها.
-        const CALL_STALL_TIMEOUT_MS = 12000;
+        const CALL_STALL_TIMEOUT_MS = 9000;
         const CALL_OPENAI_STYLE_MODELS = { groq: 'openai/gpt-oss-20b', deepseek: 'deepseek-chat', qwen: 'qwen-plus', openrouter: 'openrouter/free' };
 
         // بيجهّز رابط الطلب وجسمه وطريقة قراءة القطعة النصية من كل سطر SSE، حسب شكل
@@ -13174,7 +13186,23 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             document.getElementById('callMuteIcon').className = callMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
             document.getElementById('callMuteBtn').classList.toggle('on', callMuted);
             if (callMuted) {
-                try { if (callRecognition) callRecognition.stop(); } catch (e) {}
+                // بنلغي أي "دور كلام" كان مستنّي يتبعت بعد سكوت قصير قبل الكتم مباشرة، وأهم
+                // حاجة: بنفصل الـ instance القديم تمامًا (نصفّر أحداثه الأول وبعدين نوقفه)
+                // عشان مفيش أي حدث onend/onerror متأخر منه يقدر يعيد تشغيل المايك أو يسبب
+                // صوت "تيت تيت" المتكرر (مشكلة معروفة في متصفحات الموبايل لو سبت الـ instance
+                // القديم شغّال في الخلفية وهو المفروض واقف).
+                clearTimeout(callSilenceTimer);
+                callFinalTranscriptBuffer = '';
+                if (callRecognition) {
+                    try {
+                        callRecognition.onresult = null;
+                        callRecognition.onerror = null;
+                        callRecognition.onend = null;
+                        callRecognition.onstart = null;
+                        callRecognition.stop();
+                    } catch (e) {}
+                }
+                callRecognition = null;
             } else if (callState !== 'speaking' && callState !== 'thinking') {
                 startCallListening();
             }
