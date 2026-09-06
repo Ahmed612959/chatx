@@ -933,6 +933,12 @@
         .vs-slide-count-opt { display:flex; gap:8px; margin-top:8px; }
         .vs-slide-count-opt button { flex:1; padding:9px 4px; border-radius:10px; border:1px solid var(--border); background: var(--bg-2); color:var(--text-2); font-size:12.5px; font-weight:700; cursor:pointer; }
         .vs-slide-count-opt button.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+        .vs-avatar-groups { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-top:8px; -webkit-overflow-scrolling:touch; }
+        .vs-avatar-groups button { flex:0 0 auto; padding:7px 13px; border-radius:20px; border:1px solid var(--border); background: var(--bg-2); color:var(--text-2); font-size:11.5px; font-weight:700; cursor:pointer; white-space:nowrap; }
+        .vs-avatar-groups button.active { border-color: var(--accent); color:#fff; background: var(--grad-bold); }
+        .vs-avatar-grid { display:grid; grid-template-columns: repeat(6, 1fr); gap:8px; margin-top:10px; max-height:190px; overflow-y:auto; }
+        .vs-avatar-grid button { aspect-ratio:1; border-radius:12px; border:2px solid transparent; background: var(--bg-2); font-size:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+        .vs-avatar-grid button.selected { border-color: var(--accent); background: var(--accent-glow); }
 
         /* ====================== تابات المكتبة المشتركة (كل المكتبة / ملفاتي) ====================== */
         .lib-tab {
@@ -1928,6 +1934,9 @@
                     <button type="button" data-n="6" onclick="vsSetSlideCount(6, this)">6</button>
                     <button type="button" data-n="8" onclick="vsSetSlideCount(8, this)">8</button>
                 </div>
+                <div class="tool-title" style="margin-top:12px;">اختار الأفاتار اللي هيشرح الفيديو</div>
+                <div class="vs-avatar-groups" id="vsAvatarGroups"></div>
+                <div class="vs-avatar-grid" id="vsAvatarGrid"></div>
                 <button class="btn-calc" style="margin-top:14px;" onclick="generateVideoFromSummary()" id="vsGenerateBtn"><i class="fas fa-wand-magic-sparkles"></i> حوّله فيديو</button>
                 <p style="font-size:10.5px;color:var(--text-3);margin-top:8px;line-height:1.6;">
                     بيتعمل بالكامل من على جهازك (توليد شرائح بالذكاء الاصطناعي + صوت + تسجيل فيديو). محتاج متصفح Chrome أو Edge لأفضل نتيجة.
@@ -13202,6 +13211,46 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         const VS_MODEL_TIMEOUT_MS = 12000; // مهلة قصوى لكل موديل — لو علّق منستناهوش، ننتقل للي بعده فورًا
         const VS_PROVIDER_LABELS = { gemini: 'Gemini', deepseek: 'DeepSeek', qwen: 'Qwen', openrouter: 'OpenRouter', groq: 'Groq' };
 
+        // ====================== مجموعات الأفاتارات (يختار منها الطالب قبل إنشاء الفيديو) ======================
+        // كل مجموعة فيها مجموعة كبيرة من الأيقونات بفكرة موحّدة، عشان يبقى فيه اختيار
+        // واسع فعلًا مش شكل واحد بس. الاختيار بيتحفظ في vsSelectedAvatarEmoji ويتستخدم
+        // وقت رسم الفيديو (vsDrawAvatar).
+        const VS_AVATAR_GROUPS = {
+            'طبي وتمريض': ['🩺', '👩‍⚕️', '👨‍⚕️', '🧑‍⚕️', '💉', '🧬', '🔬', '🚑', '🩹', '💊', '🦴', '🫀'],
+            'حيوانات': ['🐱', '🐶', '🦁', '🐼', '🐨', '🦊', '🐸', '🐧', '🦉', '🐰', '🐻', '🐯', '🐵', '🐮', '🐷', '🦄'],
+            'روبوتات وفضاء': ['🤖', '👾', '👽', '🛸', '🦾', '🧑‍🚀', '⚙️', '🛰️', '🔋', '💾'],
+            'تعبيرات': ['😀', '😎', '🤓', '🥳', '😇', '🤠', '🥸', '🧐', '🙂', '😊', '🤗', '🤩'],
+            'شخصيات خيالية': ['🧙', '🧚', '🦸', '🦹', '🧛', '🧜', '🧝', '🥷', '🧞', '🧟', '👑', '🎭'],
+            'طبيعة وطاقة': ['🌟', '🌙', '⚡', '🔥', '🌈', '❄️', '🌊', '🍀', '☀️', '🌸', '🌵', '🍎']
+        };
+        let vsSelectedAvatarEmoji = '🤖';
+        let vsActiveAvatarGroup = Object.keys(VS_AVATAR_GROUPS)[0];
+
+        function vsRenderAvatarPicker() {
+            const groupsEl = document.getElementById('vsAvatarGroups');
+            const gridEl = document.getElementById('vsAvatarGrid');
+            if (!groupsEl || !gridEl) return;
+            groupsEl.innerHTML = Object.keys(VS_AVATAR_GROUPS).map(name =>
+                `<button type="button" class="${name === vsActiveAvatarGroup ? 'active' : ''}" onclick="vsSetAvatarGroup('${name}')">${name}</button>`
+            ).join('');
+            gridEl.innerHTML = VS_AVATAR_GROUPS[vsActiveAvatarGroup].map(emoji =>
+                `<button type="button" class="${emoji === vsSelectedAvatarEmoji ? 'selected' : ''}" onclick="vsSetAvatarEmoji('${emoji.replace(/'/g, "\\'")}', this)">${emoji}</button>`
+            ).join('');
+        }
+
+        function vsSetAvatarGroup(name) {
+            vsActiveAvatarGroup = name;
+            vsRenderAvatarPicker();
+        }
+
+        function vsSetAvatarEmoji(emoji, btn) {
+            vsSelectedAvatarEmoji = emoji;
+            document.querySelectorAll('#vsAvatarGrid button').forEach(b => b.classList.remove('selected'));
+            if (btn) btn.classList.add('selected');
+        }
+
+        vsRenderAvatarPicker();
+
         async function vsCallProviderOnce(provider, prompt, signal) {
             if (provider === 'gemini') {
                 const res = await fetch(`${settings.backendUrl}/api/gemini`, {
@@ -13390,9 +13439,9 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             ctx.restore();
         }
 
-        // أفاتار دائري بسيط بيترمش وبيفتح بقه مع شدة الصوت — بيدّي إحساس إن حد بيشرح
-        // فعلًا مش مجرد نص ثابت على الشاشة.
-        function vsDrawAvatar(ctx, canvas, palette, amplitude, t) {
+        // أفاتار الطالب المُختار — بيتحط جوه دائرة متوهجة، وبيكبر شوية مع شدة الصوت
+        // عشان يدي إحساس إنه بيتكلم فعلًا (زي نبضة) بدل ما يفضل ثابت طول الوقت.
+        function vsDrawAvatar(ctx, canvas, palette, amplitude, t, avatarEmoji) {
             const cx = canvas.width / 2;
             const cy = canvas.height - 210;
             const bob = Math.sin(t * 2.2) * 6;
@@ -13414,20 +13463,15 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             ctx.fillStyle = bodyGrad;
             ctx.beginPath(); ctx.arc(cx, cy + bob, r, 0, Math.PI * 2); ctx.fill();
 
-            const blinkScale = (Math.sin(t * 0.7) > 0.985) ? 0.15 : 1;
-            ctx.fillStyle = '#1e2140';
-            [-1, 1].forEach(side => {
-                ctx.save();
-                ctx.translate(cx + side * 28, cy + bob - 10);
-                ctx.scale(1, blinkScale);
-                ctx.beginPath(); ctx.ellipse(0, 0, 8, 11, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.restore();
-            });
-
-            const mouthOpen = 5 + amplitude * 30;
-            ctx.beginPath();
-            ctx.ellipse(cx, cy + bob + 32, 20, mouthOpen / 2, 0, 0, Math.PI * 2);
-            ctx.fill();
+            const scale = 1 + amplitude * 0.18;
+            ctx.save();
+            ctx.translate(cx, cy + bob);
+            ctx.scale(scale, scale);
+            ctx.font = '92px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(avatarEmoji || '🤖', 0, 4);
+            ctx.restore();
         }
 
         async function generateVideoFromSummary() {
@@ -13446,6 +13490,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             try {
                 const palette = vsPickPalette(rawText);
                 const topicIcon = vsDetectTopicIcon(rawText);
+                const chosenAvatar = vsSelectedAvatarEmoji;
                 const slides = await vsBuildSlides(rawText, vsSelectedSlideCount);
                 vsSetProgress(20, `جاهز ${slides.length} شرائح — بنولّد الصوت...`);
 
@@ -13514,7 +13559,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 
                     // أفاتار متحرك في أسفل الشريحة، فمه بيتحرك مع شدة الصوت الفعلية في هذه اللحظة
                     const amplitude = vsGetAmplitudeAt(audioBuffers[slideIndex], tInSlide);
-                    vsDrawAvatar(ctx, canvas, palette, amplitude, tGlobal);
+                    vsDrawAvatar(ctx, canvas, palette, amplitude, tGlobal, chosenAvatar);
 
                     const overallT = slideStarts[slideIndex] + tInSlide;
                     const progress = Math.min(1, overallT / totalDuration);
