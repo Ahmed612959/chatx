@@ -2,9 +2,9 @@ export const config = { runtime: 'edge' };
 import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
 
 // ====================================================================================
-// Amazon Polly — دلوقتي أول طبقة صوت بتتحاول في المكالمة (قبل CometAPI). لو مفتاح
-// AWS مش مضبوط أو الطلب فشل لأي سبب، الفرونت إند بيكمل تلقائيًا وبصمت لـ CometAPI
-// وبعدين لباقي الطبقات القديمة — مفيش أي تأثير على المكالمة حتى لو Polly مش مفعّل.
+// Amazon Polly — أول طبقة صوت بتتحاول في المكالمة وفي رسائل الشات العادية كمان (نفس
+// الدالة fetchTtsAudioBlob بالفرونت إند مستخدمة في الاتنين). لو مفتاح AWS مش مضبوط
+// أو الطلب فشل لأي سبب، بيكمل تلقائيًا وبصمت لـ CometAPI وبعدين لباقي الطبقات القديمة.
 //
 // الإعداد المطلوب (خطوات AWS، لازم تتعمل هناك، مفيش بديل لأن Polly بيوقّع كل طلب
 // بمفتاح AWS مش Bearer token عادي):
@@ -17,19 +17,32 @@ import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
 //   4) في Vercel → Settings → Environment Variables ضيف:
 //        AWS_ACCESS_KEY_ID       = القيمة اللي نسختها
 //        AWS_SECRET_ACCESS_KEY   = القيمة اللي نسختها
-//        AWS_REGION              = اختياري، افتراضيًا eu-west-1 (Polly متاحة في أغلب
-//                                   الـ regions، اختار الأقرب جغرافيًا لطلابك)
-//        POLLY_VOICE_ID          = اختياري، افتراضيًا Zeina (الصوت العربي الوحيد
-//                                   المتاح حاليًا بمحرك standard)
+//        AWS_REGION              = اختياري، افتراضيًا eu-west-1
+//        POLLY_VOICE_ID          = اختياري، افتراضيًا Zayd (الصوت العربي الرجالي
+//                                   الوحيد المتاح في Polly — لهجة خليجية/فصحى، مفيش
+//                                   صوت رجالي بلهجة مصرية في Polly لحد دلوقتي)
+//        POLLY_VOLUME            = اختياري، افتراضيًا +3dB (تقدر تزوّدها أو تقلّلها،
+//                                   مثلاً +6dB لصوت أعلى أو +0dB للمستوى الافتراضي)
 //   5) اعمل Redeploy من Vercel عشان يقرأ المتغيرات الجديدة.
 //
-// ملحوظة: صوت Zeina عربي لكن مش بأحدث جودة عصبية (neural) لأن AWS لسه معندهاش
-// صوت عربي neural رسمي وقت كتابة الكود ده — لو تحقق لاحقًا وحبيت تستخدمه غيّر
-// Engine تحت من 'standard' لـ 'neural' وVoiceId المناسب.
+// ملحوظة عن الصوت: Zayd صوت رجالي neural (خليجي/فصحى مش مصري)، وده أفضل خيار متاح
+// حاليًا من AWS لأنها لسه معندهاش صوت رجالي باللهجة المصرية. لو حبيت ترجع للصوت
+// الستّاتي (Zeina) بدل Zayd، غيّر POLLY_VOICE_ID = Zeina وEngine تحت لـ 'standard'.
 // ====================================================================================
 
 const DEFAULT_REGION = 'eu-west-1';
-const DEFAULT_VOICE = 'Zeina';
+const DEFAULT_VOICE = 'Zayd';   // رجالي، neural — كان Zeina (نسائي) قبل كده
+const DEFAULT_ENGINE = 'neural';
+const DEFAULT_VOLUME = '+3dB';  // مستوى صوت طبيعي ومسموع، مش هادي زيادة ولا صارخ
+
+function escapeSsml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
 
 function toHex(buffer) {
   return [...new Uint8Array(buffer)].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -107,6 +120,8 @@ export default async function handler(request) {
     }
     const region = process.env.AWS_REGION || DEFAULT_REGION;
     const voiceId = process.env.POLLY_VOICE_ID || DEFAULT_VOICE;
+    const engine = process.env.POLLY_ENGINE || DEFAULT_ENGINE;
+    const volume = process.env.POLLY_VOLUME || DEFAULT_VOLUME;
 
     const { text } = await request.json().catch(() => ({}));
     if (!text || !text.trim()) {
@@ -116,6 +131,10 @@ export default async function handler(request) {
       });
     }
 
+    // بنلف النص بـ SSML عشان نتحكم في مستوى الصوت (volume) — من غير كده Polly
+    // بيطلّع الصوت بمستوى منخفض شوية بيحتاج رفع يدوي من الطالب كل مرة.
+    const ssml = `<speak><prosody volume="${volume}">${escapeSsml(text.slice(0, 3000))}</prosody></speak>`;
+
     let upstream;
     try {
       upstream = await signedPollyRequest({
@@ -123,11 +142,11 @@ export default async function handler(request) {
         secretAccessKey,
         region,
         bodyObj: {
-          Text: text.slice(0, 3000),
+          Text: ssml,
           OutputFormat: 'mp3',
           VoiceId: voiceId,
-          Engine: 'standard',
-          TextType: 'text'
+          Engine: engine,
+          TextType: 'ssml'
         }
       });
     } catch (err) {
