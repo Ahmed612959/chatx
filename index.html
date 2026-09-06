@@ -939,6 +939,12 @@
         .vs-avatar-grid { display:grid; grid-template-columns: repeat(6, 1fr); gap:8px; margin-top:10px; max-height:190px; overflow-y:auto; }
         .vs-avatar-grid button { aspect-ratio:1; border-radius:12px; border:2px solid transparent; background: var(--bg-2); font-size:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
         .vs-avatar-grid button.selected { border-color: var(--accent); background: var(--accent-glow); }
+        .vs-filter-chip, .vs-anim-chip { flex:0 0 auto; padding:8px 14px; border-radius:20px; border:2px solid var(--border); color:#fff; font-size:11.5px; font-weight:700; cursor:pointer; white-space:nowrap; text-shadow:0 1px 3px rgba(0,0,0,.6); }
+        .vs-anim-chip { background: var(--bg-2); color:var(--text-2); text-shadow:none; }
+        .vs-filter-chip.auto, .vs-anim-chip { border-color: var(--border); }
+        .vs-filter-chip.active, .vs-anim-chip.active { border-color:#fff; box-shadow:0 0 0 2px var(--accent); }
+        .vs-anim-chip.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+        .vs-chip-wrap { display:flex; flex-wrap:wrap; gap:7px; margin-top:8px; max-height:150px; overflow-y:auto; }
 
         /* ====================== تابات المكتبة المشتركة (كل المكتبة / ملفاتي) ====================== */
         .lib-tab {
@@ -1937,6 +1943,10 @@
                 <div class="tool-title" style="margin-top:12px;">اختار الأفاتار اللي هيشرح الفيديو</div>
                 <div class="vs-avatar-groups" id="vsAvatarGroups"></div>
                 <div class="vs-avatar-grid" id="vsAvatarGrid"></div>
+                <div class="tool-title" style="margin-top:12px;">استايل شكل الفيديو (فلتر الألوان والزخرفة)</div>
+                <div class="vs-chip-wrap" id="vsFilterChips"></div>
+                <div class="tool-title" style="margin-top:12px;">حركة ظهور النص والأفاتار</div>
+                <div class="vs-chip-wrap" id="vsAnimationChips"></div>
                 <button class="btn-calc" style="margin-top:14px;" onclick="generateVideoFromSummary()" id="vsGenerateBtn"><i class="fas fa-wand-magic-sparkles"></i> حوّله فيديو</button>
                 <p style="font-size:10.5px;color:var(--text-3);margin-top:8px;line-height:1.6;">
                     بيتعمل بالكامل من على جهازك (توليد شرائح بالذكاء الاصطناعي + صوت + تسجيل فيديو). محتاج متصفح Chrome أو Edge لأفضل نتيجة.
@@ -13363,27 +13373,130 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             lines.forEach((l, i) => ctx2.fillText(l, x, startY + i * lineHeight));
         }
 
-        // ====================== خلفية ملوّنة حسب الموضوع + أفاتار متحرك بيتكلم ======================
-        // مجموعة ثيمات ألوان زاهية (مفيش أسود خالص في أي ثيم) بتتغيّر حسب النص — بديل
-        // بصري بسيط وموثوق 100% بدل الاعتماد على توليد صور AI، اللي ممكن يبطّئ الميزة
-        // أو يوقّفها لو المزوّد كان بطيء أو من غير رصيد؛ هنا الفيديو بيفضل يتعمل دايمًا.
-        const VS_PALETTES = [
-            { bgFrom: '#2b1055', bgTo: '#7597de', avatarLight: '#ffd3a5', avatarDark: '#fd6585', accent: '#fd9a8f', bullet: '#ffe8d6' },
-            { bgFrom: '#0f2027', bgTo: '#2c5364', avatarLight: '#89f7fe', avatarDark: '#3a7bd5', accent: '#66a6ff', bullet: '#d4f1ff' },
-            { bgFrom: '#41295a', bgTo: '#5b1e59', avatarLight: '#f6d365', avatarDark: '#fda085', accent: '#ffb997', bullet: '#ffe9d6' },
-            { bgFrom: '#134e5e', bgTo: '#4c8577', avatarLight: '#c2e9fb', avatarDark: '#38ef7d', accent: '#7bf1a8', bullet: '#e4fff0' },
-            { bgFrom: '#5f0a87', bgTo: '#a4508b', avatarLight: '#f6d5f7', avatarDark: '#be93c5', accent: '#f7979d', bullet: '#ffe1f0' },
-            { bgFrom: '#1a2980', bgTo: '#26869c', avatarLight: '#a1ffce', avatarDark: '#4facfe', accent: '#7dd8ff', bullet: '#dffaff' }
+        // ====================== فلاتر شكل الفيديو (20 استايل) + أيقونات موضوعية موزّعة بأماكن مناسبة ======================
+        // كل فلتر لوحده كامل: تدرّج ألوان مختلف تمامًا + نوع زخرفة خلفية مختلف (نقط/مويجات/
+        // خطوط/حلقات/فقاعات) — عشان يكون فيه تنوع بصري حقيقي مش مجرد تغيير لون واحد.
+        // مفيش أي فلتر لونه أساسي أبيض أو أسود خالص — كلها ألوان وتدرجات حيّة.
+        const VS_FILTERS = [
+            { name: 'ليلي بنفسجي', bgFrom: '#2b1055', bgTo: '#7597de', avatarLight: '#ffd3a5', avatarDark: '#fd6585', accent: '#fd9a8f', bullet: '#ffe8d6', pattern: 'blobs' },
+            { name: 'محيط هادئ', bgFrom: '#0f2027', bgTo: '#2c5364', avatarLight: '#89f7fe', avatarDark: '#3a7bd5', accent: '#66a6ff', bullet: '#d4f1ff', pattern: 'waves' },
+            { name: 'غروب دافئ', bgFrom: '#41295a', bgTo: '#5b1e59', avatarLight: '#f6d365', avatarDark: '#fda085', accent: '#ffb997', bullet: '#ffe9d6', pattern: 'rings' },
+            { name: 'غابة خضراء', bgFrom: '#134e5e', bgTo: '#4c8577', avatarLight: '#c2e9fb', avatarDark: '#38ef7d', accent: '#7bf1a8', bullet: '#e4fff0', pattern: 'grid' },
+            { name: 'وردي ناعم', bgFrom: '#5f0a87', bgTo: '#a4508b', avatarLight: '#f6d5f7', avatarDark: '#be93c5', accent: '#f7979d', bullet: '#ffe1f0', pattern: 'stars' },
+            { name: 'سماء زرقاء', bgFrom: '#1a2980', bgTo: '#26869c', avatarLight: '#a1ffce', avatarDark: '#4facfe', accent: '#7dd8ff', bullet: '#dffaff', pattern: 'stripes' },
+            { name: 'نيون ليلي', bgFrom: '#1a1440', bgTo: '#3d2b73', avatarLight: '#00f5ff', avatarDark: '#ff00c8', accent: '#00f5ff', bullet: '#e0e0ff', pattern: 'grid' },
+            { name: 'رمال ذهبية', bgFrom: '#7a4a1e', bgTo: '#c78a3f', avatarLight: '#fff2c2', avatarDark: '#e08a2b', accent: '#ffdd99', bullet: '#fff3d6', pattern: 'stripes' },
+            { name: 'ثلجي بارد', bgFrom: '#1e3c72', bgTo: '#2a5298', avatarLight: '#e0f7ff', avatarDark: '#a1c4fd', accent: '#bde0ff', bullet: '#eaf6ff', pattern: 'stars' },
+            { name: 'فضائي', bgFrom: '#1a0533', bgTo: '#4a1a73', avatarLight: '#c9a7ff', avatarDark: '#7b2ff7', accent: '#b16cff', bullet: '#e6d9ff', pattern: 'stars' },
+            { name: 'مرجاني', bgFrom: '#ff6a88', bgTo: '#ff9a8b', avatarLight: '#fff1e6', avatarDark: '#ff6a88', accent: '#ffd3c6', bullet: '#fff0ea', pattern: 'blobs' },
+            { name: 'نعناعي', bgFrom: '#0ba360', bgTo: '#3cba92', avatarLight: '#e6fff5', avatarDark: '#0ba360', accent: '#a0ffd8', bullet: '#e6fff2', pattern: 'waves' },
+            { name: 'عنابي أنيق', bgFrom: '#4a0e28', bgTo: '#7b1e3a', avatarLight: '#ffd9e0', avatarDark: '#ff6f91', accent: '#ff9fb4', bullet: '#ffe3ea', pattern: 'rings' },
+            { name: 'برتقالي حيوي', bgFrom: '#f2994a', bgTo: '#f2c94c', avatarLight: '#fff7e0', avatarDark: '#f2994a', accent: '#ffe1a8', bullet: '#fff6e0', pattern: 'grid' },
+            { name: 'أزرق ملكي', bgFrom: '#0f2447', bgTo: '#1b4b91', avatarLight: '#cfe3ff', avatarDark: '#4a7fd6', accent: '#8ab4ff', bullet: '#e3edff', pattern: 'stripes' },
+            { name: 'خوخي', bgFrom: '#ffafbd', bgTo: '#ffc3a0', avatarLight: '#fff3ec', avatarDark: '#ff9a8b', accent: '#ffd9c9', bullet: '#fff4ee', pattern: 'blobs' },
+            { name: 'غابة ليلية', bgFrom: '#0b3d2e', bgTo: '#1f6f5c', avatarLight: '#c9ffe5', avatarDark: '#2ecc91', accent: '#7cffcb', bullet: '#e2fff2', pattern: 'stars' },
+            { name: 'بنفسجي ملكي', bgFrom: '#4a1258', bgTo: '#7b2ff7', avatarLight: '#f0d9ff', avatarDark: '#c56cf0', accent: '#e6b8ff', bullet: '#f4e6ff', pattern: 'rings' },
+            { name: 'رمادي دافئ', bgFrom: '#3a3d5c', bgTo: '#6a6f9e', avatarLight: '#e8e9f7', avatarDark: '#8f94c9', accent: '#c2c6ec', bullet: '#eef0fb', pattern: 'grid' },
+            { name: 'توتي', bgFrom: '#6a0572', bgTo: '#ab206b', avatarLight: '#ffd6ec', avatarDark: '#ff5da2', accent: '#ff9fd0', bullet: '#ffe6f4', pattern: 'waves' }
         ];
 
-        function vsPickPalette(text) {
+        // بيختار فلتر تلقائي ثابت حسب النص (نفس النص هيرجّع نفس الفلتر دايمًا) — بيتستخدم
+        // بس لو الطالب سايب الاختيار على "تلقائي" وماحددش فلتر بنفسه.
+        function vsAutoFilterIndex(text) {
             let hash = 0;
             for (let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
-            return VS_PALETTES[hash % VS_PALETTES.length];
+            return hash % VS_FILTERS.length;
         }
 
-        // بيحاول يلاقي رمز بصري يعبّر عن موضوع النص (مصطلحات تمريضية شائعة) عشان يتحط
-        // شفاف في خلفية الفيديو، ولو مفيش تطابق بيرجع رمز افتراضي عام.
+        // ====================== أنيميشن ظهور النص والأفاتار (20+ حركة) ======================
+        // كل حركة بترجع إزاحة/تكبير/دوران/شفافية حسب نسبة تقدّم الظهور (0 → 1)، وبتتطبّق
+        // بنفس المنطق على العنوان والنقاط والأفاتار — عشان اختيار واحد يغيّر شكل الفيديو كله.
+        const VS_ANIMATIONS = [
+            { id: 'fade', name: 'تلاشي' }, { id: 'slide-up', name: 'صعود لأعلى' },
+            { id: 'slide-down', name: 'نزول لأسفل' }, { id: 'slide-left', name: 'انزلاق لليسار' },
+            { id: 'slide-right', name: 'انزلاق لليمين' }, { id: 'zoom-in', name: 'تكبير تدريجي' },
+            { id: 'zoom-out', name: 'تصغير تدريجي' }, { id: 'pop', name: 'قفزة مرنة' },
+            { id: 'bounce', name: 'ارتداد' }, { id: 'rotate-in', name: 'دوران بسيط' },
+            { id: 'swing', name: 'تأرجح' }, { id: 'drop', name: 'سقوط من فوق' },
+            { id: 'rise', name: 'طلوع من تحت' }, { id: 'shake-settle', name: 'اهتزاز خفيف' },
+            { id: 'wave', name: 'تموّج' }, { id: 'spiral', name: 'دوامة' },
+            { id: 'elastic', name: 'مطاطي' }, { id: 'blur-pop', name: 'ظهور ناعم' },
+            { id: 'corner-in', name: 'دخول قطري' }, { id: 'flip-swing', name: 'ميلان خفيف' },
+            { id: 'settle-large', name: 'استقرار من كبير' }
+        ];
+
+        function vsEase(p, type) {
+            if (type === 'outCubic') return 1 - Math.pow(1 - p, 3);
+            if (type === 'outBack') { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2); }
+            if (type === 'outElastic') { const c4 = (2 * Math.PI) / 3; return p === 0 ? 0 : p === 1 ? 1 : Math.pow(2, -10 * p) * Math.sin((p * 10 - 0.75) * c4) + 1; }
+            return p;
+        }
+
+        function vsApplyAnimation(id, p) {
+            p = Math.max(0, Math.min(1, p));
+            const eC = vsEase(p, 'outCubic');
+            const t = { dx: 0, dy: 0, scale: 1, rot: 0, alpha: p };
+            switch (id) {
+                case 'slide-up': t.dy = (1 - eC) * 50; break;
+                case 'slide-down': t.dy = -(1 - eC) * 50; break;
+                case 'slide-left': t.dx = (1 - eC) * 70; break;
+                case 'slide-right': t.dx = -(1 - eC) * 70; break;
+                case 'zoom-in': t.scale = 0.5 + 0.5 * eC; break;
+                case 'zoom-out': t.scale = 1.4 - 0.4 * eC; break;
+                case 'pop': t.scale = vsEase(p, 'outBack'); t.alpha = Math.min(1, p * 2); break;
+                case 'bounce': t.dy = -30 * Math.exp(-4 * p) * Math.sin(p * 10); break;
+                case 'rotate-in': t.rot = (1 - eC) * 20; break;
+                case 'swing': t.rot = Math.sin(p * 10) * 15 * (1 - p); break;
+                case 'drop': t.dy = -(1 - eC) * 120; break;
+                case 'rise': t.dy = (1 - eC) * 120; break;
+                case 'shake-settle': t.dx = Math.sin(p * 20) * 10 * (1 - p); break;
+                case 'wave': t.dy = Math.sin(p * 6) * 15 * (1 - p); break;
+                case 'spiral': t.rot = (1 - eC) * 180; t.scale = 0.3 + 0.7 * eC; break;
+                case 'elastic': t.scale = vsEase(p, 'outElastic'); break;
+                case 'blur-pop': t.scale = 0.9 + 0.1 * eC; break;
+                case 'corner-in': t.dx = (1 - eC) * 40; t.dy = (1 - eC) * 40; break;
+                case 'flip-swing': t.rot = (1 - eC) * -25; t.scale = 0.85 + 0.15 * eC; break;
+                case 'settle-large': t.scale = 1.3 - 0.3 * eC; t.dy = (1 - eC) * 20; break;
+                default: break; // fade
+            }
+            return t;
+        }
+
+        let vsSelectedFilterIndex = null; // null = تلقائي حسب النص
+        let vsSelectedAnimationId = 'fade';
+
+        function vsRenderFilterPicker() {
+            const el = document.getElementById('vsFilterChips');
+            if (!el) return;
+            let html = `<button type="button" class="vs-filter-chip auto ${vsSelectedFilterIndex === null ? 'active' : ''}" onclick="vsSetFilter(null, this)">🎲 تلقائي حسب النص</button>`;
+            html += VS_FILTERS.map((f, i) =>
+                `<button type="button" class="vs-filter-chip ${i === vsSelectedFilterIndex ? 'active' : ''}" style="background:linear-gradient(135deg, ${f.bgFrom}, ${f.bgTo});" onclick="vsSetFilter(${i}, this)">${f.name}</button>`
+            ).join('');
+            el.innerHTML = html;
+        }
+        function vsSetFilter(i, btn) {
+            vsSelectedFilterIndex = i;
+            document.querySelectorAll('#vsFilterChips button').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+        }
+        function vsRenderAnimationPicker() {
+            const el = document.getElementById('vsAnimationChips');
+            if (!el) return;
+            el.innerHTML = VS_ANIMATIONS.map(a =>
+                `<button type="button" class="vs-anim-chip ${a.id === vsSelectedAnimationId ? 'active' : ''}" onclick="vsSetAnimation('${a.id}', this)">${a.name}</button>`
+            ).join('');
+        }
+        function vsSetAnimation(id, btn) {
+            vsSelectedAnimationId = id;
+            document.querySelectorAll('#vsAnimationChips button').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+        }
+        vsRenderFilterPicker();
+        vsRenderAnimationPicker();
+
+        // بيحاول يلاقي رمز بصري يعبّر عن موضوع أي نص (مصطلحات تمريضية شائعة)، وبيتستخدم
+        // مرتين: مرة للخلفية العامة، ومرة جنب كل نقطة على حدة عشان الأيقونة تكون في مكانها
+        // المناسب المرتبط فعليًا بمحتوى النقطة دي مش مجرد ديكور عشوائي.
         function vsDetectTopicIcon(text) {
             const map = [
                 [/قلب|شريان|ضغط الدم|دوري/i, '🫀'], [/رئ|تنفس|ربو/i, '🫁'],
@@ -13398,7 +13511,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         }
 
         // بيحسب متوسط شدة الصوت (RMS) حوالين لحظة زمنية معيّنة من الـ audio buffer
-        // المفكوك مسبقًا، عشان نحرّك بيها فم الأفاتار بالظبط مع الكلام الفعلي (مش حركة عشوائية).
+        // المفكوك مسبقًا، عشان نحرّك بيها الأفاتار بالظبط مع الكلام الفعلي (مش حركة عشوائية).
         function vsGetAmplitudeAt(audioBuffer, t) {
             if (!audioBuffer) return 0;
             const data = audioBuffer.getChannelData(0);
@@ -13413,64 +13526,123 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             return Math.min(1, Math.sqrt(sum / count) * 4.5);
         }
 
-        function vsDrawBackground(ctx, canvas, palette, t, topicIcon) {
-            const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            grad.addColorStop(0, palette.bgFrom);
-            grad.addColorStop(1, palette.bgTo);
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // بقع ضوء ناعمة بتتحرك ببطء — بتدّي حيوية للخلفية من غير ما تشتت الانتباه عن النص
+        function vsDrawPatternBlobs(ctx, canvas, t) {
             [[0.22, 0.22, 260], [0.85, 0.7, 230], [0.5, 0.92, 200]].forEach(([fx, fy, r], i) => {
-                const ox = Math.sin(t * 0.15 + i * 2) * 40;
-                const oy = Math.cos(t * 0.12 + i * 3) * 40;
+                const ox = Math.sin(t * 0.15 + i * 2) * 40, oy = Math.cos(t * 0.12 + i * 3) * 40;
                 const blob = ctx.createRadialGradient(canvas.width * fx + ox, canvas.height * fy + oy, 0, canvas.width * fx + ox, canvas.height * fy + oy, r);
-                blob.addColorStop(0, 'rgba(255,255,255,0.16)');
-                blob.addColorStop(1, 'rgba(255,255,255,0)');
-                ctx.fillStyle = blob;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                blob.addColorStop(0, 'rgba(255,255,255,0.16)'); blob.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = blob; ctx.fillRect(0, 0, canvas.width, canvas.height);
             });
-
+        }
+        function vsDrawPatternGrid(ctx, canvas, t) {
+            ctx.save(); ctx.globalAlpha = 0.10; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+            const gap = 70, offset = (t * 12) % gap;
+            for (let x = -gap; x < canvas.width + gap; x += gap) { ctx.beginPath(); ctx.moveTo(x + offset, 0); ctx.lineTo(x + offset, canvas.height); ctx.stroke(); }
+            for (let y = -gap; y < canvas.height + gap; y += gap) { ctx.beginPath(); ctx.moveTo(0, y + offset * 0.5); ctx.lineTo(canvas.width, y + offset * 0.5); ctx.stroke(); }
+            ctx.restore();
+        }
+        function vsDrawPatternStars(ctx, canvas, t, seedText) {
             ctx.save();
-            ctx.globalAlpha = 0.15;
-            ctx.font = '260px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(topicIcon, canvas.width / 2, canvas.height * 0.4);
+            let seed = 0;
+            for (let i = 0; i < seedText.length; i++) seed = (seed * 31 + seedText.charCodeAt(i)) >>> 0;
+            for (let i = 0; i < 40; i++) {
+                seed = (seed * 1103515245 + 12345) >>> 0; const x = (seed % 1000) / 1000 * canvas.width;
+                seed = (seed * 1103515245 + 12345) >>> 0; const y = (seed % 1000) / 1000 * canvas.height;
+                const twinkle = 0.3 + 0.5 * Math.abs(Math.sin(t * 1.5 + i));
+                ctx.globalAlpha = twinkle * 0.5; ctx.fillStyle = '#ffffff';
+                ctx.beginPath(); ctx.arc(x, y, 2 + (i % 3), 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.restore();
+        }
+        function vsDrawPatternWaves(ctx, canvas, t) {
+            ctx.save(); ctx.globalAlpha = 0.12; ctx.fillStyle = '#ffffff';
+            for (let band = 0; band < 3; band++) {
+                ctx.beginPath();
+                const baseY = canvas.height * (0.3 + band * 0.25);
+                ctx.moveTo(0, baseY);
+                for (let x = 0; x <= canvas.width; x += 20) ctx.lineTo(x, baseY + Math.sin(x * 0.01 + t * 1.2 + band) * 18);
+                ctx.lineTo(canvas.width, baseY + 60); ctx.lineTo(0, baseY + 60);
+                ctx.closePath(); ctx.fill();
+            }
+            ctx.restore();
+        }
+        function vsDrawPatternStripes(ctx, canvas, t) {
+            ctx.save(); ctx.globalAlpha = 0.09; ctx.fillStyle = '#ffffff';
+            const gap = 90, offset = (t * 25) % (gap * 2);
+            for (let x = -canvas.height; x < canvas.width + canvas.height; x += gap) {
+                ctx.beginPath();
+                ctx.moveTo(x + offset, 0); ctx.lineTo(x + offset + 40, 0);
+                ctx.lineTo(x + offset + 40 - canvas.height, canvas.height); ctx.lineTo(x + offset - canvas.height, canvas.height);
+                ctx.closePath(); ctx.fill();
+            }
+            ctx.restore();
+        }
+        function vsDrawPatternRings(ctx, canvas, t) {
+            ctx.save();
+            const cx = canvas.width * 0.5, cy = canvas.height * 0.35;
+            for (let i = 0; i < 4; i++) {
+                ctx.globalAlpha = 0.08; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(cx, cy, 100 + i * 90 + Math.sin(t * 0.5 + i) * 10, 0, Math.PI * 2); ctx.stroke();
+            }
             ctx.restore();
         }
 
-        // أفاتار الطالب المُختار — بيتحط جوه دائرة متوهجة، وبيكبر شوية مع شدة الصوت
-        // عشان يدي إحساس إنه بيتكلم فعلًا (زي نبضة) بدل ما يفضل ثابت طول الوقت.
-        function vsDrawAvatar(ctx, canvas, palette, amplitude, t, avatarEmoji) {
-            const cx = canvas.width / 2;
-            const cy = canvas.height - 210;
+        // خلفية الفيديو: تدرّج لوني حسب الفلتر المختار + زخرفة متحركة + أيقونات الموضوع
+        // موزّعة في أماكن مناسبة (ركنين علويين فاضيين + وسط أسفل النص) بدل ما تتكدس فوق بعض.
+        function vsDrawBackground(ctx, canvas, filter, t, topicIcon, seedText) {
+            const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            grad.addColorStop(0, filter.bgFrom); grad.addColorStop(1, filter.bgTo);
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (filter.pattern === 'grid') vsDrawPatternGrid(ctx, canvas, t);
+            else if (filter.pattern === 'stars') vsDrawPatternStars(ctx, canvas, t, seedText);
+            else if (filter.pattern === 'waves') vsDrawPatternWaves(ctx, canvas, t);
+            else if (filter.pattern === 'stripes') vsDrawPatternStripes(ctx, canvas, t);
+            else if (filter.pattern === 'rings') vsDrawPatternRings(ctx, canvas, t);
+            else vsDrawPatternBlobs(ctx, canvas, t);
+
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.globalAlpha = 0.12; ctx.font = '200px sans-serif';
+            ctx.fillText(topicIcon, canvas.width * 0.5, canvas.height * 0.62);
+            ctx.globalAlpha = 0.17; ctx.font = '60px sans-serif';
+            ctx.fillText(topicIcon, canvas.width * 0.13, canvas.height * 0.09);
+            ctx.fillText(topicIcon, canvas.width * 0.87, canvas.height * 0.09);
+            ctx.restore();
+        }
+
+        // أفاتار الطالب المُختار — بيتحط جوه دائرة متوهجة، وبيكبر شوية مع شدة الصوت عشان
+        // يدّي إحساس إنه بيتكلم فعلًا، وبياخد نفس أنيميشن الظهور المختار زي باقي عناصر الشريحة.
+        function vsDrawAvatar(ctx, canvas, filter, amplitude, t, avatarEmoji, anim) {
+            anim = anim || { dx: 0, dy: 0, scale: 1, rot: 0, alpha: 1 };
             const bob = Math.sin(t * 2.2) * 6;
             const r = 90;
+            ctx.save();
+            ctx.globalAlpha = anim.alpha;
+            ctx.translate(canvas.width / 2 + anim.dx, canvas.height - 210 + bob + anim.dy);
+            ctx.rotate(anim.rot * Math.PI / 180);
+            ctx.scale(anim.scale, anim.scale);
 
             ctx.save();
             ctx.globalAlpha = 0.4 + amplitude * 0.35;
             const glowR = r * 1.5 + amplitude * 30;
-            const glow = ctx.createRadialGradient(cx, cy + bob, r * 0.6, cx, cy + bob, glowR);
-            glow.addColorStop(0, palette.accent);
-            glow.addColorStop(1, 'rgba(255,255,255,0)');
+            const glow = ctx.createRadialGradient(0, 0, r * 0.6, 0, 0, glowR);
+            glow.addColorStop(0, filter.accent); glow.addColorStop(1, 'rgba(255,255,255,0)');
             ctx.fillStyle = glow;
-            ctx.beginPath(); ctx.arc(cx, cy + bob, glowR, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 0, glowR, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
 
-            const bodyGrad = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
-            bodyGrad.addColorStop(0, palette.avatarLight);
-            bodyGrad.addColorStop(1, palette.avatarDark);
+            const bodyGrad = ctx.createLinearGradient(-r, -r, r, r);
+            bodyGrad.addColorStop(0, filter.avatarLight); bodyGrad.addColorStop(1, filter.avatarDark);
             ctx.fillStyle = bodyGrad;
-            ctx.beginPath(); ctx.arc(cx, cy + bob, r, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
 
-            const scale = 1 + amplitude * 0.18;
+            const pulse = 1 + amplitude * 0.18;
             ctx.save();
-            ctx.translate(cx, cy + bob);
-            ctx.scale(scale, scale);
-            ctx.font = '92px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+            ctx.scale(pulse, pulse);
+            ctx.font = '92px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText(avatarEmoji || '🤖', 0, 4);
+            ctx.restore();
             ctx.restore();
         }
 
@@ -13488,7 +13660,8 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             vsSetProgress(4, 'بنفهم النص ونقسّمه لشرائح...');
 
             try {
-                const palette = vsPickPalette(rawText);
+                const chosenFilter = VS_FILTERS[vsSelectedFilterIndex !== null ? vsSelectedFilterIndex : vsAutoFilterIndex(rawText)];
+                const chosenAnimation = vsSelectedAnimationId || 'fade';
                 const topicIcon = vsDetectTopicIcon(rawText);
                 const chosenAvatar = vsSelectedAvatarEmoji;
                 const slides = await vsBuildSlides(rawText, vsSelectedSlideCount);
@@ -13532,43 +13705,60 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 
                 function drawSlide(slideIndex, tInSlide, tGlobal) {
                     const s = slides[slideIndex] || { title: '', bullets: [] };
-                    vsDrawBackground(ctx, canvas, palette, tGlobal, topicIcon);
+                    vsDrawBackground(ctx, canvas, chosenFilter, tGlobal, topicIcon, rawText);
 
                     ctx.fillStyle = 'rgba(255,255,255,.7)';
                     ctx.font = '700 26px Cairo, sans-serif';
                     ctx.textAlign = 'center';
                     ctx.fillText('Chat X', canvas.width / 2, 90);
 
-                    const fade = Math.min(1, tInSlide / 0.5);
-                    ctx.globalAlpha = fade;
+                    const titleP = Math.min(1, tInSlide / 0.5);
+                    const titleAnim = vsApplyAnimation(chosenAnimation, titleP);
+                    ctx.save();
+                    ctx.globalAlpha = titleAnim.alpha;
+                    ctx.translate(canvas.width / 2 + titleAnim.dx, 260 + titleAnim.dy);
+                    ctx.rotate(titleAnim.rot * Math.PI / 180);
+                    ctx.scale(titleAnim.scale, titleAnim.scale);
                     ctx.fillStyle = '#ffffff';
                     ctx.font = '800 44px Cairo, sans-serif';
-                    vsWrapText(ctx, s.title || '', canvas.width / 2, 260, 620, 54);
+                    ctx.textAlign = 'center';
+                    vsWrapText(ctx, s.title || '', 0, 0, 620, 54);
+                    ctx.restore();
 
                     const bullets = s.bullets || [];
                     const perBulletDelay = 0.4;
                     bullets.forEach((b, bi) => {
-                        const bulletFade = Math.min(1, Math.max(0, (tInSlide - bi * perBulletDelay) / 0.5));
-                        if (bulletFade <= 0) return;
-                        ctx.globalAlpha = bulletFade;
+                        const bp = Math.min(1, Math.max(0, (tInSlide - bi * perBulletDelay) / 0.5));
+                        if (bp <= 0) return;
+                        const anim = vsApplyAnimation(chosenAnimation, bp);
+                        const icon = vsDetectTopicIcon(b); // أيقونة النقطة دي بالذات — في مكانها الصح جنب كلامها
+                        ctx.save();
+                        ctx.globalAlpha = anim.alpha;
+                        ctx.translate(canvas.width / 2 + anim.dx, 390 + bi * 100 + anim.dy);
+                        ctx.rotate(anim.rot * Math.PI / 180);
+                        ctx.scale(anim.scale, anim.scale);
                         ctx.font = '600 30px Cairo, sans-serif';
-                        ctx.fillStyle = palette.bullet;
-                        vsWrapText(ctx, '• ' + b, canvas.width / 2, 390 + bi * 100, 600, 38);
+                        ctx.fillStyle = chosenFilter.bullet;
+                        ctx.textAlign = 'center';
+                        vsWrapText(ctx, icon + ' ' + b, 0, 0, 600, 38);
+                        ctx.restore();
                     });
-                    ctx.globalAlpha = 1;
 
-                    // أفاتار متحرك في أسفل الشريحة، فمه بيتحرك مع شدة الصوت الفعلية في هذه اللحظة
                     const amplitude = vsGetAmplitudeAt(audioBuffers[slideIndex], tInSlide);
-                    vsDrawAvatar(ctx, canvas, palette, amplitude, tGlobal, chosenAvatar);
+                    const avatarP = Math.min(1, tInSlide / 0.6);
+                    const avatarAnim = vsApplyAnimation(chosenAnimation, avatarP);
+                    avatarAnim.alpha = Math.max(avatarAnim.alpha, 0.92); // الأفاتار يفضل واضح حتى لو الحركة بتقلل الشفافية بسرعة
+                    vsDrawAvatar(ctx, canvas, chosenFilter, amplitude, tGlobal, chosenAvatar, avatarAnim);
 
                     const overallT = slideStarts[slideIndex] + tInSlide;
                     const progress = Math.min(1, overallT / totalDuration);
                     ctx.fillStyle = 'rgba(255,255,255,.2)';
                     ctx.fillRect(60, canvas.height - 40, canvas.width - 120, 6);
-                    ctx.fillStyle = palette.accent;
+                    ctx.fillStyle = chosenFilter.accent;
                     ctx.fillRect(60, canvas.height - 40, (canvas.width - 120) * progress, 6);
                 }
 
+                drawSlide(0, 0, 0); // فريم أول ملوّن فورًا قبل بدء التسجيل، عشان أول لحظة في الفيديو متبقاش سودة أو فاضية
                 recorder.start(200);
                 const startTime = audioCtx.currentTime + 0.15;
                 audioBuffers.forEach((buf, i) => {
