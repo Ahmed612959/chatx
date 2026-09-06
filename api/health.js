@@ -79,6 +79,13 @@ const PROVIDERS = [
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 })
     })
+  },
+  {
+    name: 'cometapiTts',
+    envKey: 'COMETAPI_API_KEY',
+    // فحص وجود المفتاح بس هنا (زي أغلب المزودين) — فحص "حي" فعلي هيكلّف صوت مولّد
+    // فعليًا كل مرة حد يدوس "فحص حقيقي"، فمش هنعمله لتوفير الكوتة.
+    ping: null
   }
 ];
 
@@ -98,7 +105,8 @@ export default async function handler(request) {
         sambanovaConfigured: Boolean(process.env.SAMBANOVA_API_KEY),
         qwenConfigured: Boolean(process.env.QWEN_API_KEY),
         deepseekConfigured: Boolean(process.env.DEEPSEEK_API_KEY),
-        zimageConfigured: Boolean(process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY)
+        zimageConfigured: Boolean(process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY),
+        cometapiTtsConfigured: Boolean(process.env.COMETAPI_API_KEY)
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
@@ -107,6 +115,7 @@ export default async function handler(request) {
   const results = await Promise.all(PROVIDERS.map(async (p) => {
     const key = process.env[p.envKey];
     if (!key) return { name: p.name, status: 'not_configured' };
+    if (!p.ping) return { name: p.name, status: 'ok', detail: 'المفتاح موجود (فحص وجود بس، مفيش فحص حي لتوفير الكوتة)' };
     try {
       const res = await p.ping(key);
       if (res.ok) return { name: p.name, status: 'ok' };
