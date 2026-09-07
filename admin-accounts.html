@@ -297,6 +297,17 @@
             <div class="section-title"><i class="fas fa-crown" style="color:var(--gold);"></i> مميزات Premium</div>
             <div id="featureCards"></div>
 
+            <div class="section-title"><i class="fas fa-circle-check" style="color:#1d9bf0;"></i> شارة التوثيق</div>
+            <div class="feature-card" id="verifyCard" onclick="toggleVerify()">
+                <div class="feature-icon">✔️</div>
+                <div class="feature-body">
+                    <div class="feature-title">حساب موثّق</div>
+                    <div class="feature-desc">علامة صح زرقاء بجانب اسمه في كل مكان، ويقدر يرفع صورة شخصية من إعداداته</div>
+                </div>
+                <div class="feature-switch"></div>
+            </div>
+            <button class="btn" id="saveVerifyBtn" onclick="saveVerify()" style="margin-bottom:16px;">حفظ حالة التوثيق</button>
+
             <div class="section-title"><i class="fas fa-ban" style="color:var(--danger);"></i> إيقاف الحساب</div>
             <div class="suspend-box" id="suspendBox">
                 <div id="suspendCurrentInfo" style="font-size:12px;color:var(--text-2);margin-bottom:10px;"></div>
@@ -373,6 +384,7 @@
     let allStudents = [];
     let activeStudent = null;
     let pendingFeatures = new Set();
+    let pendingVerified = false;
     let currentFilter = 'all';
     let pendingSuspendHours = null; // رقم الساعات المختارة، أو 'custom'
     let refreshTimer = null;
@@ -557,6 +569,7 @@
         if (!s) return;
         activeStudent = s;
         pendingFeatures = new Set(s.premiumFeatures || []);
+        pendingVerified = !!s.isVerified;
         pendingSuspendHours = null;
         document.getElementById('sheetAvatar').textContent = (s.fullName || s.username || '?').trim().charAt(0);
         document.getElementById('sheetName').textContent = s.fullName || s.username;
@@ -574,6 +587,7 @@
 
         document.getElementById('saveStatus').textContent = '';
         renderFeatureCards();
+        renderVerifyCard();
         renderSuspendBox();
         document.getElementById('editOverlay').classList.add('active');
     }
@@ -601,6 +615,35 @@
         if (pendingFeatures.has(key)) pendingFeatures.delete(key);
         else pendingFeatures.add(key);
         renderFeatureCards();
+    }
+
+    function renderVerifyCard() {
+        document.getElementById('verifyCard').classList.toggle('checked', pendingVerified);
+    }
+
+    function toggleVerify() {
+        pendingVerified = !pendingVerified;
+        renderVerifyCard();
+    }
+
+    async function saveVerify() {
+        if (!activeStudent) return;
+        const btn = document.getElementById('saveVerifyBtn');
+        btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+        try {
+            const data = await apiFetch(`/api/admin/students/${encodeURIComponent(activeStudent.studentCode)}/verify`, {
+                method: 'POST',
+                body: JSON.stringify({ verified: pendingVerified })
+            });
+            const idx = allStudents.findIndex(s => s.studentCode === activeStudent.studentCode);
+            if (idx !== -1) allStudents[idx].isVerified = data.student.isVerified;
+            activeStudent.isVerified = data.student.isVerified;
+            showToast(data.student.isVerified ? `تم توثيق حساب ${activeStudent.fullName || activeStudent.username} ✔️` : `تم إلغاء توثيق ${activeStudent.fullName || activeStudent.username}`, 'success');
+        } catch (e) {
+            showToast(e.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = 'حفظ حالة التوثيق';
+        }
     }
 
     function renderSuspendBox() {

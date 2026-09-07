@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: data: https:; connect-src 'self' https://schoolx-eta.vercel.app https://chat-x.vercel.app https://api.alquran.cloud https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.r2.cloudflarestorage.com wss://*.firebaseio.com; frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://www.gstatic.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: data: https:; connect-src 'self' https://schoolx-eta.vercel.app https://chat-x.vercel.app https://api.alquran.cloud https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.r2.cloudflarestorage.com wss://*.firebaseio.com; base-uri 'self'; object-src 'none'; form-action 'self';">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#6366f1">
@@ -1499,7 +1499,7 @@
                         <i class="fas fa-bullhorn"></i>
                         <span id="announcementsBadge" style="display:none;position:absolute;top:2px;left:2px;width:9px;height:9px;border-radius:50%;background:var(--danger);border:1.5px solid var(--bg-2);"></span>
                     </button>
-                    <button class="icon-btn" aria-label="الإعدادات" onclick="openModal('settingsModal')"><i class="fas fa-gear"></i></button>
+                    <button class="icon-btn" aria-label="الإعدادات" onclick="openModal('settingsModal'); loadSettingsProfileBadge();"><i class="fas fa-gear"></i></button>
                 </div>
             </div>
         </aside>
@@ -1712,6 +1712,13 @@
                 <div class="modal-title"><i class="fas fa-server"></i> إعدادات السيرفر</div>
                 <button class="close-modal" aria-label="إغلاق نافذة الإعدادات" onclick="closeModal('settingsModal')"><i class="fas fa-times"></i></button>
             </div>
+
+            <!-- الصورة الشخصية وشارة التوثيق — بتظهر لأي حساب مسجّل دخوله بحساب School X
+                 (أدمن أو طالب موثّق). الأدمن موثّق تلقائي دايمًا. -->
+            <div class="tool-section" id="settingsProfileSection">
+                <div id="settingsProfileBadgeArea" style="font-size:11.5px;color:var(--text-3);">سجّل دخولك بحساب School X (من تحت) عشان تشوف صورتك وحالة التوثيق.</div>
+            </div>
+
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-link"></i> رابط سيرفر مخصص (اختياري)</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -2291,6 +2298,20 @@
                 <button class="close-modal" aria-label="إغلاق البروفايل الأكاديمي" onclick="closeModal('academicProfileModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="tool-section" id="academicProfileContent">
+                <div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- قائمة الحسابات الموثقة (كل الأدمنز + الطلاب اللي فعّلهالهم الأدمن) — علامة
+         صح زرقاء بجانب كل اسم زي فيسبوك/إنستجرام/تويتر. -->
+    <div class="modal-overlay" id="verifiedAccountsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-circle-check" style="color:#1d9bf0;"></i> الحسابات الموثقة</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('verifiedAccountsModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tool-section" id="verifiedAccountsContent">
                 <div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>
             </div>
         </div>
@@ -7699,6 +7720,116 @@
             }
         }
 
+        // ====================== شارة التوثيق (الصح الزرقاء) + الصورة الشخصية ======================
+        // نفس فكرة العلامة الزرقاء في فيسبوك/إنستجرام/تويتر — دايرة الصورة (أو حرف
+        // أول الاسم لو مفيش صورة) وشارة صغيرة فوق طرفها لو الحساب موثّق. مستخدمة في
+        // البروفايل الأكاديمي وأعلى صفحة الإعدادات وقائمة الحسابات الموثقة.
+        function renderVerifiedAvatar(name, avatarUrl, isVerified, size) {
+            size = size || 56;
+            const initial = (name || '?').trim().charAt(0) || '?';
+            const badgeSize = Math.max(14, Math.round(size * 0.34));
+            const inner = avatarUrl
+                ? `<img src="${escapeHtml(avatarUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+                : `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:${Math.round(size * 0.4)}px;">${escapeHtml(initial)}</div>`;
+            const badge = isVerified ? `
+                <div style="position:absolute;bottom:-2px;inset-inline-end:-2px;width:${badgeSize}px;height:${badgeSize}px;background:#1d9bf0;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-2);">
+                    <svg viewBox="0 0 24 24" width="${Math.round(badgeSize * 0.6)}" height="${Math.round(badgeSize * 0.6)}" fill="none"><path d="M9 12.5l2 2 4.5-4.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>` : '';
+            return `<div style="position:relative;width:${size}px;height:${size}px;flex-shrink:0;">${inner}${badge}</div>`;
+        }
+
+        // بيتحمّل أول ما صفحة الإعدادات تتفتح — بيعرض صورة/اسم/شارة توثيق الحساب
+        // المسجّل دخوله دلوقتي (أدمن أو طالب)، وزرار رفع صورة لو الحساب موثّق.
+        async function loadSettingsProfileBadge() {
+            const area = document.getElementById('settingsProfileBadgeArea');
+            if (!area) return;
+            if (!schoolToken) {
+                area.innerHTML = 'سجّل دخولك بحساب School X (من تحت) عشان تشوف صورتك وحالة التوثيق.';
+                return;
+            }
+            area.innerHTML = 'جارٍ التحميل...';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/me`, { headers: { 'Authorization': `Bearer ${schoolToken}` } });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+                const p = data.profile || {};
+                const isVerified = !!p.isVerified;
+                area.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        ${renderVerifiedAvatar(p.fullName, p.avatarUrl, isVerified, 56)}
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.fullName || p.username || '')}</div>
+                            <div style="font-size:11px;color:var(--text-3);margin-top:2px;">${data.type === 'admin' ? 'حساب أدمن' : 'طالب'} · @${escapeHtml(p.username || '')}</div>
+                        </div>
+                    </div>
+                    ${isVerified ? `
+                        <div style="margin-top:10px;">
+                            <input type="file" id="avatarUploadInput" accept="image/*" hidden onchange="uploadProfileAvatar(event)">
+                            <button class="btn-calc" style="width:100%;" onclick="document.getElementById('avatarUploadInput').click()"><i class="fas fa-camera"></i> ${p.avatarUrl ? 'تغيير الصورة الشخصية' : 'إضافة صورة شخصية'}</button>
+                            <div id="avatarUploadStatus" style="margin-top:6px;font-size:11px;"></div>
+                        </div>
+                    ` : `<div style="margin-top:8px;font-size:10.5px;color:var(--text-3);line-height:1.7;">التوثيق مش مفعّل لحسابك — لازم الأدمن يفعّله الأول عشان تقدر تضيف صورة شخصية.</div>`}
+                    <button class="btn-calc" style="width:100%;margin-top:8px;background:var(--bg-2);color:var(--text-2);" onclick="openVerifiedAccountsModal()"><i class="fas fa-circle-check" style="color:#1d9bf0;"></i> عرض الحسابات الموثقة</button>
+                `;
+            } catch (e) {
+                area.innerHTML = '<span style="color:var(--danger);">تعذر تحميل بيانات حسابك.</span>';
+            }
+        }
+
+        async function uploadProfileAvatar(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const status = document.getElementById('avatarUploadStatus');
+            if (status) { status.textContent = 'جارٍ الرفع...'; status.style.color = 'var(--text-3)'; }
+            try {
+                const form = new FormData();
+                form.append('avatar', file);
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/profile/avatar`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` },
+                    body: form
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'فشل الرفع');
+                loadSettingsProfileBadge();
+                showToast('اتحفظت الصورة الشخصية ✓', 'success');
+            } catch (e) {
+                if (status) { status.textContent = e.message; status.style.color = 'var(--danger)'; }
+                else showToast(e.message, 'error');
+            }
+        }
+
+        async function openVerifiedAccountsModal() {
+            openModal('verifiedAccountsModal');
+            const el = document.getElementById('verifiedAccountsContent');
+            if (!schoolToken) {
+                el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px;">لازم تسجّل دخول بحساب School X الأول.</div>';
+                return;
+            }
+            el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/verified-accounts`, { headers: { 'Authorization': `Bearer ${schoolToken}` } });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+                const accounts = data.accounts || [];
+                if (!accounts.length) {
+                    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-3);font-size:12px;">مفيش حسابات موثقة لسه.</div>';
+                    return;
+                }
+                el.innerHTML = accounts.map(a => `
+                    <div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border);">
+                        ${renderVerifiedAvatar(a.fullName, a.avatarUrl, true, 42)}
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.fullName || a.username)}</div>
+                            <div style="font-size:10.5px;color:var(--text-3);">${a.type === 'admin' ? 'أدمن' : 'طالب'} · @${escapeHtml(a.username)}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:12px;">تعذر تحميل القائمة.</div>';
+            }
+        }
+
         // البروفايل الأكاديمي الموحّد (Premium) — بيستخدم نفس /api/me الموجود أصلاً (مفيش
         // endpoint جديد)، وبيجمع كل حاجة عن أداء الطالب في شاشة واحدة. بيعمل نداء تاني
         // لطلب بيانات محدّثة كل مرة يتفتح فيها (بدل ما يعتمد على schoolContext النصي
@@ -7753,9 +7884,12 @@
                 : null;
 
             let html = `
-                <div style="text-align:center;margin-bottom:16px;">
-                    <div style="font-size:15px;font-weight:800;">${escapeHtml(p.fullName || '')}</div>
-                    <div style="font-size:11.5px;color:var(--text-3);margin-top:2px;">${escapeHtml(ACADEMIC_GRADE_LABELS[p.grade] || p.grade || '')} · كود ${escapeHtml(p.studentCode || '')}</div>
+                <div style="display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:16px;">
+                    ${renderVerifiedAvatar(p.fullName, p.avatarUrl, !!p.isVerified, 60)}
+                    <div style="text-align:start;">
+                        <div style="font-size:15px;font-weight:800;">${escapeHtml(p.fullName || '')}</div>
+                        <div style="font-size:11.5px;color:var(--text-3);margin-top:2px;">${escapeHtml(ACADEMIC_GRADE_LABELS[p.grade] || p.grade || '')} · كود ${escapeHtml(p.studentCode || '')}</div>
+                    </div>
                 </div>
 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
