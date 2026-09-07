@@ -239,7 +239,9 @@
             display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; flex-shrink: 0;
         }
         .user-info { flex: 1; min-width: 0; }
-        .user-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-name { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 4px; min-width: 0; }
+        .user-name .sb-name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+        .user-name #sbUserNameBadge img { width: 13px; height: 13px; display: block; }
         .user-status { font-size: 11px; color: var(--success); display: flex; align-items: center; gap: 5px; margin-top: 2px; }
         .user-status::before { content: ''; width: 6px; height: 6px; background: var(--success); border-radius: 50%; box-shadow: 0 0 6px var(--success); }
 
@@ -1520,9 +1522,9 @@
             </div>
             <div class="sb-footer">
                 <div class="sb-footer-user">
-                    <div class="user-avatar"><i class="fas fa-user-graduate"></i></div>
+                    <div class="user-avatar" id="sbUserAvatarBox"><i class="fas fa-user-graduate"></i></div>
                     <div class="user-info">
-                        <div class="user-name" id="sbUserName">طالب Chat X</div>
+                        <div class="user-name"><span class="sb-name-text" id="sbUserNameText">طالب Chat X</span><span id="sbUserNameBadge" style="display:none;flex-shrink:0;"></span></div>
                         <div class="user-status" id="sbUserStatus">متصل الآن</div>
                     </div>
                 </div>
@@ -1576,7 +1578,7 @@
                 <div class="vt-arrow"></div>
                 <div class="vt-eyebrow"><i class="fas fa-sparkles"></i> جديد</div>
                 <div class="vt-title"><img src="data:image/png;base64,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" alt=""> الحسابات الموثقة</div>
-                <div class="vt-body">دلوقتي تقدر تشوف كل الحسابات الموثقة (الأدمنز والطلاب) من هنا وتتعرف عليهم بعلامة الصح الزرقاء ✓ جنب اسمهم.</div>
+                <div class="vt-body">دلوقتي تقدر تشوف كل الحسابات الموثقة (الأدمنز والطلاب) من هنا، وتتعرف عليهم بعلامة الصح الزرقاء ✓ جنب اسمهم. أي حساب يتفعّله التوثيق يقدر كمان يضيف صورة شخصية ليه، وتظهرله في رسايله جوه الشات.</div>
                 <div class="vt-actions">
                     <button class="vt-btn-primary" onclick="dismissVerifiedTip(true)">تمام، أشوفها</button>
                     <button class="vt-btn-ghost" onclick="dismissVerifiedTip(false)">لاحقًا</button>
@@ -4047,6 +4049,9 @@
             }
         }
         let schoolUser = JSON.parse(localStorage.getItem('sx_school_user') || 'null');
+        // بروفايل الحساب الحالي كامل (فيه isVerified وavatarUrl) — بيتحدّث من /api/me في
+        // fetchSchoolProfile، ومستخدم في شارة السايدبار وأفاتار رسايل المستخدم في الشات.
+        let currentUserProfile = null;
         let schoolContext = localStorage.getItem('sx_school_context') || '';
         let isGenerating = false;
         let abortController = null;
@@ -6286,7 +6291,16 @@
 
             const avatar = document.createElement('div');
             avatar.className = 'msg-avatar';
-            avatar.innerHTML = `<i class="fas fa-${msg.role === 'user' ? 'user' : 'graduation-cap'}"></i>`;
+            // لو ده حساب طالب موثّق، بنستبدل أيقونة الطالب الافتراضية بصورته الشخصية
+            // (أو دايرة باسمه لو لسه مضافش صورة) مع شارة التوثيق الزرقاء فوق طرفها —
+            // بنفس شكل الشارة المستخدم في الإعدادات وقائمة الحسابات الموثقة.
+            if (msg.role === 'user' && currentUserProfile && currentUserProfile.isVerified) {
+                avatar.style.background = 'transparent';
+                avatar.style.border = 'none';
+                avatar.innerHTML = renderVerifiedAvatar(currentUserProfile.fullName, currentUserProfile.avatarUrl, true, 34);
+            } else {
+                avatar.innerHTML = `<i class="fas fa-${msg.role === 'user' ? 'user' : 'graduation-cap'}"></i>`;
+            }
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'msg-content';
@@ -7431,7 +7445,7 @@
             const loggedOutBox = document.getElementById('schoolLoggedOutBox');
             const loggedInBox = document.getElementById('schoolLoggedInBox');
             const loggedInText = document.getElementById('schoolLoggedInText');
-            const sbUserName = document.getElementById('sbUserName');
+            const sbUserName = document.getElementById('sbUserNameText');
             const sbUserStatus = document.getElementById('sbUserStatus');
             const sbQuickLogoutBtn = document.getElementById('sbQuickLogoutBtn');
             const contactAdminSection = document.getElementById('contactAdminSection');
@@ -7579,6 +7593,8 @@
             myPremiumFeatures = [];
             localStorage.removeItem('sx_premium_features');
             applyPremiumGatesUI();
+            currentUserProfile = null;
+            applySidebarIdentity();
             updateSchoolLoginUI();
             showToast('تم تسجيل الخروج من School X', 'success');
         }
@@ -7869,6 +7885,7 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'فشل الرفع');
                 loadSettingsProfileBadge();
+                fetchSchoolProfile(true); // يحدّث currentUserProfile فورًا عشان الصورة تظهر جنب اسمه وفي رسايله على طول
                 showToast('اتحفظت الصورة الشخصية ✓', 'success');
             } catch (e) {
                 if (status) { status.textContent = e.message; status.style.color = 'var(--danger)'; }
@@ -10257,11 +10274,42 @@
                 schoolContextFetchedAt = Date.now();
                 localStorage.setItem('sx_school_context', schoolContext);
                 localStorage.setItem('sx_school_context_at', String(schoolContextFetchedAt));
+                // بنحتفظ بالبروفايل كامل (فيه isVerified وavatarUrl) عشان نحدّث بيه شارة
+                // التوثيق جنب اسم الطالب في السايدبار، وصورته في فقاعات رسايله في الشات.
+                currentUserProfile = { ...(data.profile || {}), type: data.type };
+                applySidebarIdentity();
                 if (data.type === 'student') {
                     checkUpcomingHomeworkAlert(data.pendingHomework || []);
                     handlePremiumFeaturesUpdate(data.profile?.premiumFeatures || []);
                 }
             } catch (e) { /* السيرفر مش متاح دلوقتي، هنستخدم آخر نسخة متخزنة */ }
+        }
+
+        // بتحدّث دايرة الصورة وشارة التوثيق جنب اسم الطالب في أسفل السايدبار، بناءً على
+        // آخر بروفايل معروف (currentUserProfile). بترجع للحالة الافتراضية (أيقونة الكاب،
+        // من غير شارة) لو مفيش تسجيل دخول أو الحساب لسه مش موثّق.
+        function applySidebarIdentity() {
+            const nameTextEl = document.getElementById('sbUserNameText');
+            const badgeEl = document.getElementById('sbUserNameBadge');
+            const avatarBox = document.getElementById('sbUserAvatarBox');
+            if (!nameTextEl) return;
+            const p = currentUserProfile;
+            if (schoolToken && p) {
+                const name = p.fullName || (schoolUser && (schoolUser.fullName || schoolUser.username)) || 'طالب Chat X';
+                nameTextEl.textContent = name;
+                if (badgeEl) {
+                    if (p.isVerified) { badgeEl.innerHTML = verifiedBadgeIconHtml(13); badgeEl.style.display = 'inline-flex'; }
+                    else { badgeEl.style.display = 'none'; badgeEl.innerHTML = ''; }
+                }
+                if (avatarBox) {
+                    avatarBox.innerHTML = p.avatarUrl
+                        ? `<img src="${escapeHtml(p.avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`
+                        : '<i class="fas fa-user-graduate"></i>';
+                }
+            } else {
+                if (badgeEl) { badgeEl.style.display = 'none'; badgeEl.innerHTML = ''; }
+                if (avatarBox) avatarBox.innerHTML = '<i class="fas fa-user-graduate"></i>';
+            }
         }
 
         // ====================== الإعلانات (نصية + استماع صوتي) ======================
