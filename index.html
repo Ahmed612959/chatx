@@ -4187,6 +4187,9 @@
         function showHomeworkAlert(urgentList) {
             const container = document.getElementById('duaOverlayContainer');
             if (!container || duaReminderShowing) return; // منزحمش على تذكير تاني لو ظاهر دلوقتي
+            // لو تلميح "الحسابات الموثقة" لسه ظاهر، منستناش نغطّي عليه بأوفرلاي كامل
+            // الشاشة — بنأجّل التنبيه شوية بدل ما نضيّع فرصة الطالب إنه يشوف التلميح.
+            if (isVerifiedTipShowing()) { setTimeout(() => showHomeworkAlert(urgentList), 1500); return; }
             duaReminderShowing = true;
 
             const itemsHTML = urgentList.map(h => `
@@ -4235,6 +4238,9 @@
 
         function showDuaReminder(quick) {
             if (duaReminderShowing) return;
+            // نفس الفكرة: لو تلميح الحسابات الموثقة ظاهر دلوقتي، منسيبوش أوفرلاي "لحظة مع
+            // الله" (اللي بيغطي الشاشة كلها) يخفيه من غير ما الطالب ياخد باله منه أصلاً.
+            if (isVerifiedTipShowing()) { setTimeout(() => showDuaReminder(quick), 1500); return; }
             duaReminderShowing = true;
             const container = document.getElementById('duaOverlayContainer');
             if (!container) { duaReminderShowing = false; return; }
@@ -8022,6 +8028,13 @@
             }
         }
 
+        // بيرجع true لو تلميح الحسابات الموثقة ظاهر دلوقتي — مستخدمة عشان أوفرلايز
+        // تانية (زي "لحظة مع الله" وتنبيه الواجبات) تأجّل نفسها بدل ما تغطّي عليه.
+        function isVerifiedTipShowing() {
+            const tip = document.getElementById('verifiedTipPopover');
+            return !!(tip && tip.classList.contains('show'));
+        }
+
         function maybeShowVerifiedAccountsTip() {
             const btn = document.getElementById('verifiedAccountsTopBtn');
             const tip = document.getElementById('verifiedTipPopover');
@@ -8031,8 +8044,9 @@
                 if (dot) dot.style.display = 'none';
                 return;
             }
-            // مانوريهوش وهو مودال تاني (زي الترحيب) فاتح فوقه — نأجّله شوية بدل ما نضايقه
-            if (document.querySelector('.modal-overlay.active')) {
+            // مانوريهوش وهو مودال تاني (زي الترحيب) أو أوفرلاي "لحظة مع الله" فاتح فوقه —
+            // نأجّله شوية بدل ما نضايقه أو نخليه يظهر تحت حاجة تانية من غير ما حد ياخد باله.
+            if (document.querySelector('.modal-overlay.active') || document.querySelector('.dua-overlay.show')) {
                 setTimeout(maybeShowVerifiedAccountsTip, 1500);
                 return;
             }
@@ -8048,6 +8062,10 @@
             const tip = document.getElementById('verifiedTipPopover');
             const btn = document.getElementById('verifiedAccountsTopBtn');
             if (!tip || tip.contains(e.target) || (btn && btn.contains(e.target))) return;
+            // كليك جوه أوفرلاي تاني (زي تذكير "لحظة مع الله" أو أي مودال) مش قصده يقفل
+            // التلميح ده — ده مجرد تفاعل مع حاجة تانية ظهرت فوقه بالصدفة، فمنعتبروش
+            // "كليك بره" يقفل التلميح ويسجّله كـ"اتشاف" نهائيًا.
+            if (e.target.closest('.dua-overlay') || e.target.closest('.modal-overlay')) return;
             dismissVerifiedTip(false);
         }
 
