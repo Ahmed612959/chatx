@@ -1938,7 +1938,10 @@
 
             <div class="tool-section" id="adminInboxSection" style="display:none;">
                 <div class="tool-title"><i class="fas fa-inbox"></i> الرسايل الواردة من الطلاب</div>
-                <button class="btn-calc" style="margin-bottom:10px;background:var(--bg-2);color:var(--text-2);" onclick="loadAdminInbox()"><i class="fas fa-rotate"></i> تحديث</button>
+                <div style="display:flex;gap:8px;margin-bottom:10px;">
+                    <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);" onclick="loadAdminInbox()"><i class="fas fa-rotate"></i> تحديث</button>
+                    <button class="btn-calc" style="flex:1;background:var(--danger);color:#fff;" onclick="deleteAllAdminMessages()"><i class="fas fa-trash"></i> حذف كل الرسايل</button>
+                </div>
                 <div id="adminInboxList" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;"></div>
             </div>
 
@@ -6947,7 +6950,8 @@
 - لما الطالب يكتب جملة أو يحاول يترجم حاجة، صحح غلطه بأسلوب مشجّع ومحترم، ووضح سبب الغلط بشكل مختصر، وإديله الصيغة الصحيحة.
 - بعد كل شرح، اقترح تمرين قصير جدًا (سؤال أو جملة يكملها الطالب) عشان تتأكد إنه فاهم قبل ما تكمل.
 - خلّي أسلوبك صبور، ودود، ومشجّع طول الوقت، ومتدرج فى الصعوبة حسب رد الطالب.
-- لو الطالب سأل سؤال مالوش علاقة باللغة الألمانية، جاوبه بإيجاز ورجّعه بلطف لموضوع تعلم الألمانية.`;
+- لو الطالب سأل سؤال مالوش علاقة باللغة الألمانية، جاوبه بإيجاز ورجّعه بلطف لموضوع تعلم الألمانية.
+- لو حد سألك "مين عملك؟" أو "مين صنعك؟" أو "مين المطور بتاعك؟" أو أي سؤال عن هويتك، جاوبه إنك جزء من منصة Chat X، اتصنعت بواسطة web developer اسمه Ahmed Moussa Ahmed Hussin (أحمد موسى أحمد حسين) من محافظة الأقصر.`;
 
         // "الممتحن الشرس" — امتحان شفهي تفاعلي مبني حصريًا على ملف/نص بيرفعه الطالب
         // (بيستخدم نفس آلية استخراج النص من المرفقات الموجودة أصلاً فى formatAttachmentForMessage
@@ -6976,7 +6980,8 @@
 ## الأسلوب
 - مباشر وصارم لكن مش مهين خالص — زي دكتور بيدرّبك على امتحان حقيقي، مش بيسخر منك. ضغط بنّاء، مش تنمر.
 - من غير مجاملات زيادة ("رائع!"، "ممتاز جدًا!") إلا لو الإجابة فعلاً كانت كاملة ودقيقة.
-- لو الطالب قال "كفاية" أو "وقف" أو طلب ينهي الجلسة، اديله ملخص سريع: النقط اللي كان قوي فيها، والنقط اللي محتاجة مراجعة أكتر — وبس، من غير سؤال جديد بعده.`;
+- لو الطالب قال "كفاية" أو "وقف" أو طلب ينهي الجلسة، اديله ملخص سريع: النقط اللي كان قوي فيها، والنقط اللي محتاجة مراجعة أكتر — وبس، من غير سؤال جديد بعده.
+- لو حد سألك "مين عملك؟" أو "مين صنعك؟" أو "مين المطور بتاعك؟" أو أي سؤال عن هويتك، اخرج من وضع الامتحان لحظة واحدة وجاوبه إنك جزء من منصة Chat X، اتصنعت بواسطة web developer اسمه Ahmed Moussa Ahmed Hussin (أحمد موسى أحمد حسين) من محافظة الأقصر، وبعدين ارجع كمّل الامتحان.`;
 
         async function streamGemini(messages, signal, systemPrompt) {
             const lastUserMsg = [...messages].reverse().find(m => m.role === 'user') || messages[messages.length - 1];
@@ -7601,6 +7606,7 @@
             applyPremiumGatesUI();
             currentUserProfile = null;
             applySidebarIdentity();
+            refreshRenderedUserAvatars();
             updateSchoolLoginUI();
             showToast('تم تسجيل الخروج من School X', 'success');
         }
@@ -7736,14 +7742,18 @@
                 messages.slice().reverse().forEach(m => {
                     const item = document.createElement('div');
                     item.style.cssText = 'padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-glass);';
+                    const badge = m.senderVerified ? ` ${verifiedBadgeIconHtml(12)}` : '';
                     const senderLabel = m.anonymous
                         ? '<span style="color:var(--text-3);"><i class="fas fa-user-secret"></i> طالب مجهول</span>'
-                        : `<span style="color:var(--text-1);font-weight:700;"><i class="fas fa-user"></i> ${escapeHtml(m.senderName || 'غير معروف')}</span>`;
+                        : `<span style="color:var(--text-1);font-weight:700;"><i class="fas fa-user"></i> ${escapeHtml(m.senderName || 'غير معروف')}${badge}</span>`;
                     const date = m.createdAt ? new Date(m.createdAt).toLocaleString('ar-EG') : '';
                     item.innerHTML = `
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11.5px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11.5px;gap:8px;">
                             ${senderLabel}
-                            <span style="color:var(--text-3);">${date}</span>
+                            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                                <span style="color:var(--text-3);">${date}</span>
+                                <button aria-label="حذف الرسالة" title="حذف الرسالة" onclick="deleteAdminMessage('${m._id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:2px 4px;"><i class="fas fa-trash"></i></button>
+                            </div>
                         </div>
                         <div style="font-size:13px;line-height:1.7;white-space:pre-wrap;">${escapeHtml(m.text || '')}</div>
                     `;
@@ -7751,6 +7761,40 @@
                 });
             } catch (e) {
                 listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل الرسايل — endpoint الرسايل لسه مش متاح على سيرفر School X</div>';
+            }
+        }
+
+        // بيحذف رسالة واحدة بعينها من رسايل الطلاب (بعد تأكيد من الأدمن) وبيحدّث القايمة
+        async function deleteAdminMessage(id) {
+            if (!schoolToken || !id) return;
+            if (!confirm('تحذف الرسالة دي نهائيًا؟')) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/admin-messages/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                showToast('اتحذفت الرسالة', 'success');
+                loadAdminInbox();
+            } catch (e) {
+                showToast('تعذر حذف الرسالة، جرب تاني', 'error');
+            }
+        }
+
+        // بيحذف كل رسايل الطلاب دفعة واحدة (بعد تأكيد من الأدمن) وبيفضّي القايمة
+        async function deleteAllAdminMessages() {
+            if (!schoolToken) return;
+            if (!confirm('متأكد إنك عايز تحذف كل الرسايل نهائيًا؟ الإجراء ده مينفعش يترجع فيه.')) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/admin-messages`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                showToast('اتحذفت كل الرسايل', 'success');
+                loadAdminInbox();
+            } catch (e) {
+                showToast('تعذر حذف الرسايل، جرب تاني', 'error');
             }
         }
 
@@ -7858,7 +7902,7 @@
                         ${renderVerifiedAvatar(p.fullName, p.avatarUrl, isVerified, 56)}
                         <div style="flex:1;min-width:0;">
                             <div style="font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.fullName || p.username || '')}</div>
-                            <div style="font-size:11px;color:var(--text-3);margin-top:2px;">${data.type === 'admin' ? 'حساب أدمن' : 'طالب'} · @${escapeHtml(p.username || '')}</div>
+                            <div style="font-size:11px;color:var(--text-3);margin-top:2px;display:flex;align-items:center;gap:4px;">${data.type === 'admin' ? 'حساب أدمن' : 'طالب'} · @${escapeHtml(p.username || '')}${isVerified ? verifiedBadgeIconHtml(12) : ''}</div>
                         </div>
                     </div>
                     ${isVerified ? `
@@ -7944,7 +7988,7 @@
                         <div style="display:flex;align-items:center;gap:4px;">
                             <div style="font-size:13.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.fullName || a.username)}</div>
                         </div>
-                        <div style="font-size:10.5px;color:var(--text-3);margin-top:1px;">@${escapeHtml(a.username)}</div>
+                        <div style="font-size:10.5px;color:var(--text-3);margin-top:1px;display:flex;align-items:center;gap:4px;">@${escapeHtml(a.username)}${verifiedBadgeIconHtml(11)}</div>
                     </div>
                     <div style="font-size:10px;font-weight:700;color:${roleColor};background:color-mix(in srgb, ${roleColor} 14%, transparent);padding:4px 9px;border-radius:20px;flex-shrink:0;">${roleLabel}</div>
                 </div>`;
@@ -8486,7 +8530,7 @@
                     item.innerHTML = `
                         <div style="flex:1;min-width:0;">
                             <div style="font-weight:600;">${escapeHtml(u.fullName || u.username)}</div>
-                            <div style="font-size:11px;color:var(--text-3);">@${u.username}</div>
+                            <div style="font-size:11px;color:var(--text-3);display:flex;align-items:center;gap:4px;">@${u.username}${u.isVerified ? verifiedBadgeIconHtml(11) : ''}</div>
                         </div>
                         <div style="font-size:15px;">${u.online ? '🟢' : '⚪'}</div>
                     `;
@@ -10296,6 +10340,7 @@
                 // التوثيق جنب اسم الطالب في السايدبار، وصورته في فقاعات رسايله في الشات.
                 currentUserProfile = { ...(data.profile || {}), type: data.type };
                 applySidebarIdentity();
+                refreshRenderedUserAvatars();
                 if (data.type === 'student') {
                     checkUpcomingHomeworkAlert(data.pendingHomework || []);
                     handlePremiumFeaturesUpdate(data.profile?.premiumFeatures || []);
@@ -10330,7 +10375,30 @@
             }
         }
 
-        // ====================== الإعلانات (نصية + استماع صوتي) ======================
+        // بتحدّث كل صور المستخدم (الأفاتار) المرسومة بالفعل جوه الشات الحالي فورًا لما
+        // بروفايله يتحدّث (بعد تسجيل الدخول، رفع صورة، أو تفعيل/إلغاء التوثيق) — من غير
+        // ما نحتاج نعيد رسم الشات كله. ده اللي بيضمن إن صورة الحساب الموثّق تفضل ظاهرة
+        // في كل رسايله (القديمة والجديدة) دايمًا، حتى لو الطالب راح صفحة الإعدادات
+        // ورجع تاني، من غير ما تتفقد أو ترجع لأيقونة الكاب الافتراضية غلط.
+        function refreshRenderedUserAvatars() {
+            const container = document.getElementById('chatContainer');
+            if (!container) return;
+            const p = currentUserProfile;
+            const isVerified = !!(p && p.isVerified);
+            container.querySelectorAll('.message.user .msg-avatar').forEach(avatar => {
+                if (isVerified) {
+                    avatar.style.background = 'transparent';
+                    avatar.style.border = 'none';
+                    avatar.innerHTML = renderVerifiedAvatar(p.fullName, p.avatarUrl, true, 34);
+                } else {
+                    avatar.style.background = '';
+                    avatar.style.border = '';
+                    avatar.innerHTML = '<i class="fas fa-user"></i>';
+                }
+            });
+        }
+
+
         // بتستخدم /api/notifications الموجود أصلاً (endpoint عام، من غير أي شرط
         // ربط بحساب School X — الإعلانات عامة لكل الطلاب بغض النظر عن حالة الربط).
         let announcementsCache = [];
@@ -10659,8 +10727,8 @@
             let extra = `
 
 معلومات ثابتة عن هويتك — التزم بيها حرفيًا في أي وقت حد يسأل عنها:
-- اسم المنصة اللي بتشتغل جواها هو "Chat X"، وده اسمك الرسمي. لو حد سألك "مين عملك؟" أو "مين المطور بتاعك؟" أو "مين صنعك؟" أو أي سؤال مشابه عن هوية Chat X أو مين طوّرها، جاوبه إن مطورها هو web developer اسمه Ahmed Mousaa، بأسلوب طبيعي ومختصر (متلزمش تكتب اسمه بالعربي، اكتبه زي ما هو بالإنجليزي "Ahmed Mousaa").
-- "School X" منصة مختلفة تمامًا ومنفصلة عن Chat X — هي منصة مدرسية بيربط الطالب بيها حسابه عشان تجيب بياناته الحقيقية (درجات، حضور، بنك أسئلة). متلخبطش بينها وبين اسمك إنت (Chat X)؛ لو الطالب سأل عن هوية School X أو مين عملها بلاش تتكلم نيابة عنها، وركّز إجابتك على إنك إنت (Chat X) صنعك Ahmed Mousaa.`;
+- اسم المنصة اللي بتشتغل جواها هو "Chat X"، وده اسمك الرسمي. لو حد سألك "مين عملك؟" أو "مين المطور بتاعك؟" أو "مين صنعك؟" أو "مين الشركة بتاعتك؟" أو أي سؤال مشابه عن هويتك أو هوية Chat X أو مين طوّرها، جاوبه إنك اتصنعت بواسطة web developer اسمه Ahmed Moussa Ahmed Hussin (أحمد موسى أحمد حسين)، وهو من محافظة الأقصر، بأسلوب طبيعي ومختصر.
+- "School X" منصة مختلفة تمامًا ومنفصلة عن Chat X — هي منصة مدرسية بيربط الطالب بيها حسابه عشان تجيب بياناته الحقيقية (درجات، حضور، بنك أسئلة). متلخبطش بينها وبين اسمك إنت (Chat X)؛ لو الطالب سأل عن هوية School X أو مين عملها بلاش تتكلم نيابة عنها، وركّز إجابتك على إنك إنت (Chat X) صنعك Ahmed Moussa Ahmed Hussin من محافظة الأقصر.`;
             if (schoolContext) {
                 extra += `
 
