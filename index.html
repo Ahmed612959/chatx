@@ -969,8 +969,17 @@
         .call-ring { position:absolute; inset:0; border-radius:50%; border:2px solid rgba(139,92,246,.35); animation: callRing 2.2s ease-out infinite; pointer-events:none; }
         .call-ring:nth-child(3){ animation-delay: .75s; }
         @keyframes callRing { 0% { transform: scale(.76); opacity:.9;} 100% { transform: scale(1.5); opacity:0;} }
-        .call-transcript { max-width: 320px; min-height: 70px; font-size: 14px; line-height:1.85; color: rgba(255,255,255,.92); margin-top: 22px; }
-        .call-transcript .u { color: #a5b4fc; }
+        .call-transcript-wrap { width:100%; max-width:340px; flex:1; min-height:0; display:flex; flex-direction:column; justify-content:flex-end; margin-top: 18px; overflow:hidden; }
+        .call-transcript-log { width:100%; max-height:100%; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:6px 4px; scroll-behavior:smooth; }
+        .call-transcript-log::-webkit-scrollbar { width:4px; }
+        .call-transcript-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius:4px; }
+        .call-bubble {
+            max-width:86%; padding:9px 14px; border-radius:16px; font-size:13.5px; line-height:1.65;
+            text-align: right; word-wrap: break-word; animation: callBubbleIn .25s ease;
+        }
+        .call-bubble.user { margin-left: auto; background: rgba(165,180,252,.15); color:#c7d2fe; border-bottom-left-radius:5px; }
+        .call-bubble.assistant { margin-right: auto; background: rgba(255,255,255,.08); color: rgba(255,255,255,.92); border-bottom-right-radius:5px; }
+        @keyframes callBubbleIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
         .call-controls { display:flex; align-items:center; justify-content:center; gap: 26px; width:100%; max-width:320px; }
         .call-ctrl-btn { width:56px; height:56px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:19px; color:#fff; }
         .call-ctrl-btn.end { background: var(--danger); width:64px; height:64px; font-size:23px; box-shadow: 0 4px 18px rgba(239,68,68,.5); }
@@ -992,8 +1001,9 @@
         }
         .call-overlay.call-light .call-brand { color: rgba(30,33,64,.55); }
         .call-overlay.call-light .call-status-text { color: rgba(30,33,64,.8); }
-        .call-overlay.call-light .call-transcript { color: rgba(30,33,64,.92); }
-        .call-overlay.call-light .call-transcript .u { color: #6d5bd0; font-weight: 700; }
+        .call-overlay.call-light .call-bubble.user { background: rgba(109,91,208,.12); color: #4c3fa8; }
+        .call-overlay.call-light .call-bubble.assistant { background: rgba(30,33,64,.06); color: rgba(30,33,64,.92); }
+        .call-overlay.call-light .call-transcript-log::-webkit-scrollbar-thumb { background: rgba(30,33,64,.15); }
         .call-overlay.call-light .call-orb {
             box-shadow: 0 0 40px 6px rgba(99,102,241,.28), 0 6px 22px rgba(30,33,64,.18);
         }
@@ -1606,8 +1616,8 @@
             <div class="chat-search-bar" id="chatSearchBar">
                 <input type="text" id="chatSearchBarInput" placeholder="دوّر في رسايل المحادثة دي..." aria-label="دوّر في المحادثة" oninput="performChatSearch(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); goToSearchMatch(event.shiftKey ? -1 : 1);}">
                 <span class="csb-count" id="chatSearchCount"></span>
-                <button aria-label="النتيجة السابقة" title="السابق" onclick="goToSearchMatch(-1)" id="chatSearchPrevBtn"><i class="fas fa-chevron-up"></i></button>
-                <button aria-label="النتيجة التالية" title="التالي" onclick="goToSearchMatch(1)" id="chatSearchNextBtn"><i class="fas fa-chevron-down"></i></button>
+                <button aria-label="النتيجة السابقة" title="السابق" onclick="goToSearchMatch(-1)" id="chatSearchPrevBtn" disabled><i class="fas fa-chevron-up"></i></button>
+                <button aria-label="النتيجة التالية" title="التالي" onclick="goToSearchMatch(1)" id="chatSearchNextBtn" disabled><i class="fas fa-chevron-down"></i></button>
                 <button aria-label="إغلاق البحث" title="إغلاق" onclick="toggleChatSearchBar(false)"><i class="fas fa-xmark"></i></button>
             </div>
 
@@ -2109,7 +2119,9 @@
             <div class="call-ring"></div>
             <button class="call-orb" id="callOrb" onclick="callBargeIn()" aria-label="اضغط عشان تقاطع الرد"><i class="fas fa-graduation-cap"></i></button>
         </div>
-        <div class="call-transcript" id="callTranscript">اتكلم براحتك، وهسمعك وأرد عليك زي المكالمة العادية 🎧</div>
+        <div class="call-transcript-wrap" id="callTranscriptWrap">
+            <div class="call-transcript-log" id="callTranscriptLog"></div>
+        </div>
         <div class="call-controls">
             <button class="call-ctrl-btn secondary" id="callMuteBtn" onclick="toggleCallMute()" title="كتم المايك" aria-label="كتم المايك"><i class="fas fa-microphone" id="callMuteIcon"></i></button>
             <button class="call-ctrl-btn end" onclick="endVoiceCall()" title="إنهاء المكالمة" aria-label="إنهاء المكالمة"><i class="fas fa-phone-slash"></i></button>
@@ -4817,6 +4829,8 @@
                 chatSearchMatches = [];
                 chatSearchIndex = -1;
                 document.getElementById('chatSearchCount').textContent = '';
+                document.getElementById('chatSearchPrevBtn').disabled = true;
+                document.getElementById('chatSearchNextBtn').disabled = true;
             }
         }
 
@@ -7943,7 +7957,8 @@
             delete_admin_message: { icon: '🗑️', label: 'حذف رسالة طالب' },
             delete_all_admin_messages: { icon: '🗑️', label: 'حذف كل رسايل الطلاب' },
             update_premium_features: { icon: '👑', label: 'تعديل مميزات Premium' },
-            toggle_student_verification: { icon: '✅', label: 'تعديل حالة التوثيق' }
+            toggle_student_verification: { icon: '✅', label: 'تعديل حالة التوثيق' },
+            approve_premium_request: { icon: '🎉', label: 'الموافقة على طلب تفعيل Premium' }
         };
         async function loadAdminAuditLog() {
             const listEl = document.getElementById('adminAuditLogList');
@@ -7968,6 +7983,10 @@
                         if (l.details.studentUsername) detailsLine = `الطالب: @${escapeHtml(l.details.studentUsername)}`;
                         else if (l.details.senderName) detailsLine = `المرسل: ${escapeHtml(l.details.senderName)}`;
                         else if (typeof l.details.deletedCount === 'number') detailsLine = `عدد الرسايل: ${l.details.deletedCount}`;
+                        if (l.details.featureKey) {
+                            const featureTitle = PREMIUM_LABELS[l.details.featureKey]?.title || l.details.featureKey;
+                            detailsLine += (detailsLine ? ' · ' : '') + `الميزة: ${escapeHtml(featureTitle)}`;
+                        }
                     }
                     return `
                         <div style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-glass);font-size:11.5px;">
@@ -13661,9 +13680,29 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         let callLastVoiceAt = 0;
 
         const CALL_VAD_THRESHOLD = 0.025;   // حساسية كشف الكلام (أعلى = محتاج صوت أوضح عشان يبدأ يسجّل)
-        const CALL_VAD_SILENCE_MS = 700;    // سكوت بعد الكلام قبل ما نعتبر إن الطالب خلص كلامه — زودناها شوية
-                                             // (كانت 550) عشان مايتقطعش كلام الطالب وهو لسه بيفكر وسط الجملة
-        const CALL_MIN_SPEECH_MS = 280;     // أقل مدة كلام عشان منبعتش نفخة أو ضوضاء بسيطة لـ Whisper
+        const CALL_VAD_SILENCE_MS = 900;    // سكوت بعد الكلام قبل ما نعتبر إن الطالب خلص كلامه — زودناها
+                                             // من 700 لـ 900 عشان مايتقطعش كلامه وهو لسه بيفكر وسط الجملة
+        const CALL_VAD_SILENCE_MS_LONG = 1400; // لو الطالب فضل يتكلم متواصل فترة طويلة (سؤال مركب أو
+                                                // شرح)، بندي مساحة أكبر للسكتة قبل ما نقفل عليه — الكلام
+                                                // الطويل بيكون فيه وقفات تفكير طبيعية أكتر من جملة قصيرة.
+        const CALL_LONG_UTTERANCE_MS = 3000;   // بعد 3 ثواني كلام متواصل، نعتبره "كلام طويل" ونستخدم
+                                                // مهلة السكوت الأطول بدل العادية.
+        const CALL_MIN_SPEECH_MS = 320;     // أقل مدة كلام عشان منبعتش نفخة أو ضوضاء بسيطة لـ Whisper
+
+        // مقاطعة صوتية حقيقية (Barge-in): لو الطالب بدأ يتكلم فعلاً وإحنا لسه بنفكر أو
+        // بنتكلم، بنوقف الرد فورًا ونبدأ نسجّل كلامه الجديد — زي أي مكالمة تليفون حقيقية،
+        // بدل ما يضطر يدوس على الدائرة يدويًا عشان يقاطع. بنطلب صوت أعلى من العتبة
+        // العادية (خصوصًا وإحنا بنتكلم) عشان صدى صوت المساعد نفسه من السماعة (لو
+        // echo cancellation المتصفح مش كامل) ميطلقش مقاطعة غلط، وبنستنى شوية وقت
+        // (debounce) قبل ما نأكد إنه كلام حقيقي مش مجرد صوت لحظي.
+        let callBargeInLoudSince = 0;
+        const CALL_BARGE_IN_DEBOUNCE_MS = 220;
+        const CALL_BARGE_IN_THRESHOLD_MULTIPLIER_SPEAKING = 1.7;
+        const CALL_BARGE_IN_THRESHOLD_MULTIPLIER_THINKING = 1.15;
+
+        // لو الكلام رجع فاضي أو حرف واحد كذا مرة ورا بعض (صوت مش واضح، ضوضاء خلفية
+        // عالية، مايك بعيد)، بنطلع تلميح للطالب بدل ما نفضل ساكتين من غير سبب واضح.
+        let callConsecutiveUnclear = 0;
 
         // كاشف الصوت بيتكيّف مع ضوضاء الخلفية بدل ما يعتمد على رقم ثابت بس — لو الطالب
         // في مكان فيه ضوضاء خلفية دايمة (مروحة، شارع..)، عتبة ثابتة صغيرة كانت بتخلي
@@ -13700,6 +13739,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 قواعد صارمة لازم تلتزم بيها:
 - رد بلهجة مصرية عامية طبيعية جدًا، زي ما بتتكلم مع زميلك في التليفون.
 - افهم قصد الطالب من أول مرة وردّ على السؤال بالظبط من غير لف ودوران، وجملة لحد 3 جمل بالكتير في كل رد — إنت في مكالمة، مش بتكتب مقال.
+- الكلام اللي بيوصلك جاي من تفريغ صوتي (Speech-to-Text) وممكن يبقى فيه كلمة ناقصة، غلط إملائي، أو جملة متقطعة وسط الكلام. لو حسّيت إن الكلام مش مفهوم، ناقص، أو معناه مش واضح، **متخمّنش ومتجاوبش على حاجة تانية غير اللي هو قاصده** — اسأله سؤال قصير جدًا يوضح بيه قصده أو يعيد كلامه، زي "معلش متسمعتكش كويس، تقدر تعيد السؤال؟" أو "تقصد كذا ولا كذا؟" لو كان فيه احتمالين واضحين.
 - ممنوع تمامًا أي رموز ماركداون أو نجوم أو عناوين أو قوائم مرقمة أو أقواس — الكلام هيتحول صوت حرفيًا زي ما هو.
 - لو السؤال محتاج شرح طويل فعلاً، اديله الفكرة الأهم بس دلوقتي واسأله لو عايز يكمل في التفاصيل.
 - ابدأ بالإجابة على طول من غير مقدمات زي "بالطبع" أو "تمام".`;
@@ -13711,8 +13751,25 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             if (!orb || !statusText) return;
             orb.classList.remove('listening', 'speaking', 'thinking');
             if (callState === 'thinking') { orb.classList.add('thinking'); statusText.textContent = 'بفكر...'; }
-            else if (callState === 'speaking') { orb.classList.add('speaking'); statusText.textContent = 'بيتكلم — دوس تقاطعه لو عايز'; }
+            else if (callState === 'speaking') { orb.classList.add('speaking'); statusText.textContent = 'بيتكلم — اتكلم فوقيه لو عايز تقاطعه'; }
             else { orb.classList.add('listening'); statusText.textContent = 'بسمعك...'; } // idle/listening = المايك بيراقب منتظر كلامك
+        }
+
+        // ====================== سجل محادثة المكالمة (شكل فقاعات زي أي تطبيق مكالمات
+        // احترافي، بدل سطر نص واحد بيتمسح ويتكتب فوقه كل شوية) ======================
+        function clearCallTranscriptLog() {
+            const log = document.getElementById('callTranscriptLog');
+            if (log) log.innerHTML = '';
+        }
+        function addCallBubble(role, text) {
+            const log = document.getElementById('callTranscriptLog');
+            if (!log) return null;
+            const bubble = document.createElement('div');
+            bubble.className = `call-bubble ${role}`;
+            bubble.textContent = text;
+            log.appendChild(bubble);
+            log.scrollTop = log.scrollHeight;
+            return bubble;
         }
 
         // ثيم شاشة المكالمة (غامق افتراضيًا / أبيض أنيق اختياري) — متخزن في localStorage
@@ -13745,11 +13802,14 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             callHistory = [];
             callActive = true;
             callMuted = false;
+            callConsecutiveUnclear = 0;
             document.getElementById('callMuteIcon').className = 'fas fa-microphone';
             document.getElementById('callMuteBtn').classList.remove('on');
-            document.getElementById('callTranscript').textContent = 'اتكلم براحتك، وهسمعك وأرد عليك زي المكالمة العادية 🎧';
+            clearCallTranscriptLog();
             callState = 'idle';
             updateCallUI();
+            const statusEl = document.getElementById('callStatusText');
+            if (statusEl) statusEl.textContent = 'اتكلم براحتك، وهسمعك وأرد عليك زي المكالمة العادية 🎧';
 
             const micOk = await initCallMic();
             if (!micOk) return; // initCallMic بيقفل المكالمة ويبلّغ المستخدم لو رفض إذن المايك
@@ -13794,8 +13854,9 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         function runCallVadLoop() {
             if (!callActive) return;
             callVadRafId = requestAnimationFrame(runCallVadLoop);
-            if (!callAnalyser || callMuted || callState === 'thinking' || callState === 'speaking') {
-                if (callIsRecordingSpeech) stopCallRecordingAndSend(true); // المايك اتقفل فجأة (كتم/بدأ رد) — اتجاهل أي تسجيل ناقص
+            if (!callAnalyser || callMuted) {
+                if (callIsRecordingSpeech) stopCallRecordingAndSend(true); // المايك اتقفل فجأة (كتم) — اتجاهل أي تسجيل ناقص
+                callBargeInLoudSince = 0;
                 return;
             }
 
@@ -13805,8 +13866,25 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             for (let i = 0; i < data.length; i++) { const v = (data[i] - 128) / 128; sum += v * v; }
             const rms = Math.sqrt(sum / data.length);
             const now = performance.now();
-
             const effectiveThreshold = Math.max(CALL_VAD_THRESHOLD, callNoiseFloor * CALL_NOISE_FLOOR_MULTIPLIER);
+
+            // المساعد بيفكر أو بيتكلم دلوقتي — مش بنسجل عادي، بس بنراقب لو الطالب بدأ
+            // يتكلم فعلاً (صوت واضح فضل شوية، مش لحظة واحدة) عشان نقاطع تلقائيًا.
+            if (callState === 'thinking' || callState === 'speaking') {
+                const multiplier = callState === 'speaking' ? CALL_BARGE_IN_THRESHOLD_MULTIPLIER_SPEAKING : CALL_BARGE_IN_THRESHOLD_MULTIPLIER_THINKING;
+                if (rms > effectiveThreshold * multiplier) {
+                    if (!callBargeInLoudSince) callBargeInLoudSince = now;
+                    if (now - callBargeInLoudSince > CALL_BARGE_IN_DEBOUNCE_MS) {
+                        callBargeInLoudSince = 0;
+                        callBargeIn();
+                        startCallRecording();
+                    }
+                } else {
+                    callBargeInLoudSince = 0;
+                }
+                return;
+            }
+            callBargeInLoudSince = 0;
 
             if (rms > effectiveThreshold) {
                 callLastVoiceAt = now;
@@ -13816,9 +13894,14 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                 // عشان صوت الطالب نفسه ميرفعش تقدير "الضوضاء" غلط.
                 if (!callIsRecordingSpeech) {
                     callNoiseFloor += (rms - callNoiseFloor) * CALL_NOISE_FLOOR_SMOOTHING;
-                }
-                if (callIsRecordingSpeech && now - callLastVoiceAt > CALL_VAD_SILENCE_MS) {
-                    stopCallRecordingAndSend(false);
+                } else {
+                    // كلام طويل متواصل بياخد مهلة سكوت أطول قبل ما نقفل عليه — وقفات
+                    // التفكير وسط شرح طويل بتبقى أطول من وقفة وسط جملة قصيرة.
+                    const speechSoFarMs = now - callSpeechStartAt;
+                    const silenceNeeded = speechSoFarMs > CALL_LONG_UTTERANCE_MS ? CALL_VAD_SILENCE_MS_LONG : CALL_VAD_SILENCE_MS;
+                    if (now - callLastVoiceAt > silenceNeeded) {
+                        stopCallRecordingAndSend(false);
+                    }
                 }
             }
         }
@@ -13863,15 +13946,19 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 
             callState = 'thinking';
             updateCallUI();
-            document.getElementById('callTranscript').textContent = 'بنفهم كلامك...';
+            const statusEl = document.getElementById('callStatusText');
+            if (statusEl) statusEl.textContent = 'بنفهم كلامك...';
 
             // نظام التعرف الأساسي: Whisper بتاع Groq (أسرع وأدق نظام للتفريغ الفوري).
             // لو فشل لأي سبب (السيرفر واقع، الشبكة اتقطعت..)، بنجرب فورًا نظام تاني
             // (فهم الصوت المباشر بتاع Gemini) كشبكة أمان بدل ما المكالمة تفضل من غير
             // رد خالص — أقوى من الاعتماد على مزوّد واحد بس.
+            // بنبعت language=ar صراحة عشان نجنّب أي كشف لغة تلقائي غلط لو السيرفر
+            // بيقرا الحقل ده (خصوصًا مع مصطلحات إنجليزية طبية جوه كلام عربي).
             async function tryTranscribe(endpoint) {
                 const form = new FormData();
                 form.append('audio', blob, 'speech.webm');
+                form.append('language', 'ar');
                 const res = await fetch(`${settings.backendUrl}${endpoint}`, { method: 'POST', body: form });
                 if (!res.ok) throw new Error('transcribe-failed');
                 const data = await res.json();
@@ -13885,7 +13972,19 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                 } catch (primaryErr) {
                     text = await tryTranscribe('/api/gemini-transcribe'); // شبكة أمان لو Whisper وقع
                 }
-                if (!text) { callState = 'idle'; updateCallUI(); return; } // كلام مش مفهوم/سكوت — رجّع تسمع من غير ما تضايق الطالب برسالة
+                // كلام فاضي أو حرف/حرفين بس (ضوضاء، نفخة، صوت مش واضح) — منبعتوش
+                // للموديل كأنه سؤال حقيقي؛ لو تكرر كذا مرة ورا بعض نطلع تلميح للطالب.
+                if (!text || text.length < 2) {
+                    callConsecutiveUnclear++;
+                    callState = 'idle';
+                    updateCallUI();
+                    if (callConsecutiveUnclear >= 2 && statusEl) {
+                        statusEl.textContent = 'مسمعتكش كويس، جرب تتكلم أوضح شوية أو قرّب من المايك';
+                        callConsecutiveUnclear = 0;
+                    }
+                    return;
+                }
+                callConsecutiveUnclear = 0;
                 handleCallUserTurn(text);
             } catch (e) {
                 callState = 'idle';
@@ -13904,7 +14003,10 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         // لو الرد ابتدا وبعدين سكت فجأة لمدة طويلة (شبكة اتقطعت نص الرد)، بنقفل الرد
         // بأدب باللي اتقال لحد دلوقتي بدل ما نستنى للأبد ونعلّق المكالمة كلها.
         const CALL_STALL_TIMEOUT_MS = 9000;
-        const CALL_OPENAI_STYLE_MODELS = { groq: 'openai/gpt-oss-20b', deepseek: 'deepseek-chat', qwen: 'qwen-plus', openrouter: 'openrouter/free' };
+        // gpt-oss-120b هو أقوى موديل إنتاجي متاح على Groq دلوقتي (فهم واستدلال أعلى بكتير
+        // من الـ 20b القديم)، وبرضو سريع جدًا بفضل هاردوير Groq المتخصص — يعني فهم أدق
+        // للطالب من غير ما نضحي بسرعة الرد اللي المكالمة الحية محتاجاها.
+        const CALL_OPENAI_STYLE_MODELS = { groq: 'openai/gpt-oss-120b', deepseek: 'deepseek-chat', qwen: 'qwen-plus', openrouter: 'openrouter/free' };
 
         // بيجهّز رابط الطلب وجسمه وطريقة قراءة القطعة النصية من كل سطر SSE، حسب شكل
         // كل مزوّد (Gemini شكله مختلف عن باقي المزودين اللي بيتبعوا شكل OpenAI).
@@ -13943,7 +14045,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             if (!callActive) return;
             callState = 'thinking';
             updateCallUI();
-            document.getElementById('callTranscript').innerHTML = `<span class="u">${escapeHtml(text)}</span>`;
+            addCallBubble('user', text);
             callHistory.push({ role: 'user', content: text });
             if (callHistory.length > 12) callHistory = callHistory.slice(-12); // آخر ستة تبادلات كافية لسياق المكالمة
 
@@ -13951,7 +14053,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             callAbortController = new AbortController();
             const mySignal = callAbortController.signal;
 
-            let fullText = '', spokenSoFar = '', anySpoken = false;
+            let fullText = '', spokenSoFar = '', anySpoken = false, assistantBubbleEl = null;
 
             try {
                 for (const provider of CALL_PROVIDER_CHAIN) {
@@ -13996,9 +14098,18 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                         for (const line of lines) {
                             const piece = parseLine(line);
                             if (piece) {
-                                if (!gotFirstChunk) { gotFirstChunk = true; callState = 'speaking'; updateCallUI(); }
+                                if (!gotFirstChunk) {
+                                    gotFirstChunk = true;
+                                    callState = 'speaking';
+                                    updateCallUI();
+                                    assistantBubbleEl = addCallBubble('assistant', '');
+                                }
                                 fullText += piece;
-                                document.getElementById('callTranscript').textContent = fullText;
+                                if (assistantBubbleEl) {
+                                    assistantBubbleEl.textContent = fullText;
+                                    const log = document.getElementById('callTranscriptLog');
+                                    if (log) log.scrollTop = log.scrollHeight;
+                                }
                             }
                         }
                         const rest = fullText.slice(spokenSoFar.length);
@@ -14017,11 +14128,19 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                 if (!mySignal.aborted) {
                     const remaining = fullText.slice(spokenSoFar.length).trim();
                     if (remaining) { anySpoken = true; queueCallSpeech(remaining); }
-                    if (!anySpoken) queueCallSpeech('معلش، الاتصال بالموديلات بطيء دلوقتي، ممكن تعيد سؤالك تاني؟');
+                    if (!anySpoken) {
+                        const fallbackMsg = 'معلش، الاتصال بالموديلات بطيء دلوقتي، ممكن تعيد سؤالك تاني؟';
+                        addCallBubble('assistant', fallbackMsg);
+                        queueCallSpeech(fallbackMsg);
+                    }
                     if (fullText.trim()) callHistory.push({ role: 'assistant', content: fullText });
                 }
             } catch (err) {
-                if (!mySignal.aborted) queueCallSpeech('حصل عطل بسيط في الاتصال، جرب تاني.');
+                if (!mySignal.aborted) {
+                    const errMsg = 'حصل عطل بسيط في الاتصال، جرب تاني.';
+                    addCallBubble('assistant', errMsg);
+                    queueCallSpeech(errMsg);
+                }
             } finally {
                 // شبكة أمان أخيرة: مهما حصل فوق، لازم المكالمة ترجع تسمع تاني ولا تفضل
                 // عالقة في "بفكر" من غير حد يرد عليها. مفيش داعي لأي "إعادة تشغيل" يدوية
@@ -14094,6 +14213,8 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 
         // "قاطعني" — بيوقف أي صوت شغال دلوقتي وأي رد لسه بيتولّد، وبيرجّع الحالة لـ"بيسمع"
         // فورًا عشان كاشف الصوت يمسك كلام الطالب من أول لحظة، زي أي مكالمة حقيقية.
+        // بتتنادى يدويًا (دوسة على الدائرة) أو تلقائيًا (كاشف الصوت حس إن الطالب بدأ
+        // يتكلم فوق رد المساعد).
         function callBargeIn() {
             if (!callActive) return;
             callQueueGeneration++; // يلغي أي صوت متجهّز مسبقًا (pipelined) من الرد اللي اتقاطع
@@ -14101,9 +14222,10 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             if (callCurrentAudio) { try { callCurrentAudio.pause(); } catch (e) {} callCurrentAudio = null; }
             if (callAbortController) callAbortController.abort();
             callQueueRunning = false;
-            document.getElementById('callTranscript').textContent = 'تمام، قول اللي عايزه...';
             callState = 'idle';
             updateCallUI();
+            const statusEl = document.getElementById('callStatusText');
+            if (statusEl) statusEl.textContent = 'تمام، قول اللي عايزه...';
         }
 
         function toggleCallMute() {
