@@ -556,6 +556,21 @@
         .msg-bubble.pinned-msg { box-shadow: 0 0 0 2px var(--warning) inset; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
+        /* شريط البحث جوه المحادثة الحالية — بيدوّر في نصوص الرسايل الموجودة بالفعل */
+        .chat-search-bar {
+            display: none; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border);
+            background: var(--bg-glass); flex-shrink: 0;
+        }
+        .chat-search-bar.active { display: flex; }
+        .chat-search-bar input {
+            flex: 1; min-width: 0; background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px;
+            padding: 7px 10px; font-size: 12.5px; color: var(--text-1); font-family: var(--font);
+        }
+        .chat-search-bar .csb-count { font-size: 11px; color: var(--text-3); flex-shrink: 0; white-space: nowrap; }
+        .chat-search-bar button { background: none; border: none; color: var(--text-2); cursor: pointer; font-size: 14px; padding: 4px 6px; flex-shrink: 0; }
+        .chat-search-bar button:disabled { opacity: 0.35; cursor: default; }
+        .msg-bubble.search-current { box-shadow: 0 0 0 2px var(--accent) inset; }
+
         /* Inline edit mode for a sent (user) message */
         .msg-edit-textarea {
             width: 100%; min-height: 60px; resize: vertical; border-radius: 10px; padding: 8px 10px;
@@ -1562,6 +1577,7 @@
                         <img src="data:image/png;base64,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" alt="">
                         <span class="verified-new-dot" id="verifiedNewDot"></span>
                     </button>
+                    <button class="action-btn" aria-label="بحث في المحادثة الحالية" title="بحث في المحادثة" onclick="toggleChatSearchBar()"><i class="fas fa-magnifying-glass"></i></button>
                     <button class="action-btn" aria-label="تصدير المحادثة كملف PDF" onclick="exportPDF()"><i class="fas fa-file-pdf"></i></button>
                     <button class="action-btn" aria-label="تبديل الوضع الليلي والنهاري" onclick="toggleTheme(event)"><i class="fas fa-moon" id="themeIcon"></i></button>
                     <button class="action-btn" aria-label="القسم الديني" onclick="openReligionSection()"><i class="fas fa-mosque"></i></button>
@@ -1586,6 +1602,14 @@
             </div>
 
             <div class="pinned-bar" id="pinnedBar"></div>
+
+            <div class="chat-search-bar" id="chatSearchBar">
+                <input type="text" id="chatSearchBarInput" placeholder="دوّر في رسايل المحادثة دي..." aria-label="دوّر في المحادثة" oninput="performChatSearch(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); goToSearchMatch(event.shiftKey ? -1 : 1);}">
+                <span class="csb-count" id="chatSearchCount"></span>
+                <button aria-label="النتيجة السابقة" title="السابق" onclick="goToSearchMatch(-1)" id="chatSearchPrevBtn"><i class="fas fa-chevron-up"></i></button>
+                <button aria-label="النتيجة التالية" title="التالي" onclick="goToSearchMatch(1)" id="chatSearchNextBtn"><i class="fas fa-chevron-down"></i></button>
+                <button aria-label="إغلاق البحث" title="إغلاق" onclick="toggleChatSearchBar(false)"><i class="fas fa-xmark"></i></button>
+            </div>
 
             <div class="chat-container" id="chatContainer" role="log" aria-live="polite" aria-label="سجل المحادثة">
                 <div class="welcome-screen" id="welcomeScreen">
@@ -1938,11 +1962,18 @@
 
             <div class="tool-section" id="adminInboxSection" style="display:none;">
                 <div class="tool-title"><i class="fas fa-inbox"></i> الرسايل الواردة من الطلاب</div>
+                <input type="text" id="adminInboxSearch" class="tool-input" placeholder="دوّر بالاسم أو بنص الرسالة..." style="margin-bottom:8px;" oninput="filterAdminInbox(this.value)">
                 <div style="display:flex;gap:8px;margin-bottom:10px;">
                     <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);" onclick="loadAdminInbox()"><i class="fas fa-rotate"></i> تحديث</button>
                     <button class="btn-calc" style="flex:1;background:var(--danger);color:#fff;" onclick="deleteAllAdminMessages()"><i class="fas fa-trash"></i> حذف كل الرسايل</button>
                 </div>
                 <div id="adminInboxList" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;"></div>
+            </div>
+
+            <div class="tool-section" id="adminAuditLogSection" style="display:none;">
+                <div class="tool-title"><i class="fas fa-clipboard-list"></i> سجل عمليات الأدمن</div>
+                <button class="btn-calc" style="margin-bottom:10px;background:var(--bg-2);color:var(--text-2);" onclick="loadAdminAuditLog()"><i class="fas fa-rotate"></i> تحديث</button>
+                <div id="adminAuditLogList" style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;"></div>
             </div>
 
             <div class="tool-section" id="adminSharingSection" style="display:none;">
@@ -4090,6 +4121,29 @@
         // الحقيقي، مش 'admin' دايمًا)، والصح إنها تتأكد من schoolUser.type اللي هو دايمًا
         // 'admin' لأي حساب أدمن مهما كان الـ role الفرعي بتاعه.
         function hasPremium(key) { return schoolUser?.type === 'admin' || myPremiumFeatures.includes(key); }
+
+        // بدل ما الطالب يشوف رسالة "الميزة دي محتاجة تفعيل من الأدمن" وبس، ده بيديله
+        // خيار إنه يبعت طلب تفعيل جاهز للأدمن فورًا (زي رسايل "تواصل مع الأدمن" بالظبط)
+        // من غير ما يضطر يروح لقسم الرسايل ويكتب بنفسه. بيتحط باسمه دايمًا (مش مجهول)
+        // عشان الأدمن يعرف مين يفعّلها له.
+        async function requestPremiumFeatureFromAdmin(featureKey) {
+            const meta = PREMIUM_LABELS[featureKey];
+            const title = meta ? meta.title : featureKey;
+            showToast(`ميزة "${title}" محتاجة تفعيل Premium من الأدمن`, 'error');
+            if (!schoolToken) return;
+            if (!confirm(`تحب تبعت طلب تفعيل ميزة "${title}" للأدمن دلوقتي؟`)) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/admin-messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ text: `طلب تفعيل ميزة Premium: "${title}" لحسابي، لو ممكن حضرتك تفعّلها.`, anonymous: false })
+                });
+                if (!res.ok) throw new Error('failed');
+                showToast('اتبعت طلب التفعيل للأدمن ✓', 'success');
+            } catch (e) {
+                showToast('تعذر إرسال الطلب — جرب تبعتله من قسم "تواصل مع الأدمن"', 'error');
+            }
+        }
         let stats = JSON.parse(localStorage.getItem('sx_stats')) || { streak: 0, lastActiveDay: null, todayCount: 0 };
         let recognition = null;
         let isListening = false;
@@ -4679,6 +4733,9 @@
             const chat = chats.find(c => c.id === chatId);
             const container = document.getElementById('chatContainer');
             const welcome = document.getElementById('welcomeScreen');
+
+            // بنقفل شريط البحث ونصفّر نتايجه — عناصر الـ DOM اللي كان بيدوّر فيها هتتشال دلوقتي
+            toggleChatSearchBar(false);
             
             // Remove old messages only
             Array.from(container.children).forEach(child => {
@@ -4733,6 +4790,74 @@
                 chip.appendChild(removeBtn);
                 bar.appendChild(chip);
             });
+        }
+
+        // ====================== بحث داخل المحادثة الحالية ======================
+        // بيدوّر في نصوص كل الرسايل الظاهرة في الشات المفتوح دلوقتي بس (مش كل المحادثات)،
+        // وبيدّي نتيجة "X من Y" مع أزرار تنقل بين النتائج، وبيوضّح الرسالة الحالية بإطار.
+        let chatSearchMatches = [];
+        let chatSearchIndex = -1;
+
+        function toggleChatSearchBar(forceState) {
+            const bar = document.getElementById('chatSearchBar');
+            if (!bar) return;
+            const show = forceState !== undefined ? forceState : !bar.classList.contains('active');
+            bar.classList.toggle('active', show);
+            if (show) {
+                document.getElementById('chatSearchBarInput').focus();
+            } else {
+                document.getElementById('chatSearchBarInput').value = '';
+                clearChatSearchHighlight();
+                chatSearchMatches = [];
+                chatSearchIndex = -1;
+                document.getElementById('chatSearchCount').textContent = '';
+            }
+        }
+
+        function clearChatSearchHighlight() {
+            document.querySelectorAll('.msg-bubble.search-current').forEach(el => el.classList.remove('search-current'));
+        }
+
+        function performChatSearch(query) {
+            clearChatSearchHighlight();
+            const q = (query || '').trim().toLowerCase();
+            const countEl = document.getElementById('chatSearchCount');
+            const prevBtn = document.getElementById('chatSearchPrevBtn');
+            const nextBtn = document.getElementById('chatSearchNextBtn');
+            if (!q) {
+                chatSearchMatches = [];
+                chatSearchIndex = -1;
+                countEl.textContent = '';
+                prevBtn.disabled = nextBtn.disabled = true;
+                return;
+            }
+            const bubbles = Array.from(document.querySelectorAll('#chatContainer .message .msg-bubble'));
+            chatSearchMatches = bubbles.filter(b => (b.textContent || '').toLowerCase().includes(q));
+            if (!chatSearchMatches.length) {
+                chatSearchIndex = -1;
+                countEl.textContent = 'مفيش نتايج';
+                prevBtn.disabled = nextBtn.disabled = true;
+                return;
+            }
+            prevBtn.disabled = nextBtn.disabled = false;
+            chatSearchIndex = 0;
+            countEl.textContent = `1 من ${chatSearchMatches.length}`;
+            highlightCurrentSearchMatch();
+        }
+
+        function highlightCurrentSearchMatch() {
+            clearChatSearchHighlight();
+            const el = chatSearchMatches[chatSearchIndex];
+            if (!el) return;
+            el.classList.add('search-current');
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function goToSearchMatch(direction) {
+            if (!chatSearchMatches.length) return;
+            chatSearchIndex = (chatSearchIndex + direction + chatSearchMatches.length) % chatSearchMatches.length;
+            document.getElementById('chatSearchCount').textContent = `${chatSearchIndex + 1} من ${chatSearchMatches.length}`;
+            highlightCurrentSearchMatch();
         }
 
         // Toggles the pinned state of a message, keeps the on-screen button/bubble in sync,
@@ -7492,6 +7617,11 @@
                     adminInboxSection.style.display = isAdmin ? 'block' : 'none';
                     if (isAdmin) loadAdminInbox();
                 }
+                const adminAuditLogSection = document.getElementById('adminAuditLogSection');
+                if (adminAuditLogSection) {
+                    adminAuditLogSection.style.display = isAdmin ? 'block' : 'none';
+                    if (isAdmin) loadAdminAuditLog();
+                }
                 const adminReviewSection = document.getElementById('adminReviewSection');
                 if (adminReviewSection) {
                     adminReviewSection.style.display = isAdmin ? 'block' : 'none';
@@ -7519,6 +7649,8 @@
                 if (sbQuickLogoutBtn) sbQuickLogoutBtn.style.display = 'none';
                 if (contactAdminSection) contactAdminSection.style.display = 'none';
                 if (adminInboxSection) adminInboxSection.style.display = 'none';
+                const adminAuditLogSectionOff = document.getElementById('adminAuditLogSection');
+                if (adminAuditLogSectionOff) adminAuditLogSectionOff.style.display = 'none';
                 const adminReviewSectionOff = document.getElementById('adminReviewSection');
                 if (adminReviewSectionOff) adminReviewSectionOff.style.display = 'none';
                 const adminRatingsSectionOff = document.getElementById('adminRatingsSection');
@@ -7723,6 +7855,7 @@
         }
 
         // بيظهر بس للأدمن (schoolUser.type === 'admin') — بيجيب كل الرسايل المتبعتة
+        let lastAdminInboxMessages = [];
         async function loadAdminInbox() {
             const listEl = document.getElementById('adminInboxList');
             if (!schoolToken) return;
@@ -7733,34 +7866,105 @@
                 });
                 if (!res.ok) throw new Error('failed');
                 const data = await res.json();
-                const messages = data.messages || [];
-                if (!messages.length) {
-                    listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش رسايل لسه</div>';
-                    return;
-                }
-                listEl.innerHTML = '';
-                messages.slice().reverse().forEach(m => {
-                    const item = document.createElement('div');
-                    item.style.cssText = 'padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-glass);';
-                    const badge = m.senderVerified ? ` ${verifiedBadgeIconHtml(12)}` : '';
-                    const senderLabel = m.anonymous
-                        ? '<span style="color:var(--text-3);"><i class="fas fa-user-secret"></i> طالب مجهول</span>'
-                        : `<span style="color:var(--text-1);font-weight:700;"><i class="fas fa-user"></i> ${escapeHtml(m.senderName || 'غير معروف')}${badge}</span>`;
-                    const date = m.createdAt ? new Date(m.createdAt).toLocaleString('ar-EG') : '';
-                    item.innerHTML = `
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11.5px;gap:8px;">
-                            ${senderLabel}
-                            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                                <span style="color:var(--text-3);">${date}</span>
-                                <button aria-label="حذف الرسالة" title="حذف الرسالة" onclick="deleteAdminMessage('${m._id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:2px 4px;"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                        <div style="font-size:13px;line-height:1.7;white-space:pre-wrap;">${escapeHtml(m.text || '')}</div>
-                    `;
-                    listEl.appendChild(item);
-                });
+                lastAdminInboxMessages = data.messages || [];
+                const searchInput = document.getElementById('adminInboxSearch');
+                renderAdminInboxList(searchInput ? searchInput.value : '');
             } catch (e) {
                 listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل الرسايل — endpoint الرسايل لسه مش متاح على سيرفر School X</div>';
+            }
+        }
+
+        // بيفلتر الرسايل المحمّلة بالفعل (من غير ما نعيد النداء على السيرفر) بالاسم أو
+        // بنص الرسالة نفسه — بيتنادى مباشرة كل ما الأدمن يكتب في مربع البحث.
+        function filterAdminInbox(query) {
+            renderAdminInboxList(query);
+        }
+
+        function renderAdminInboxList(query) {
+            const listEl = document.getElementById('adminInboxList');
+            if (!listEl) return;
+            const q = (query || '').trim().toLowerCase();
+            const messages = q
+                ? lastAdminInboxMessages.filter(m =>
+                    (m.senderName || '').toLowerCase().includes(q) ||
+                    (m.text || '').toLowerCase().includes(q))
+                : lastAdminInboxMessages;
+
+            if (!lastAdminInboxMessages.length) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش رسايل لسه</div>';
+                return;
+            }
+            if (!messages.length) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش نتايج تطابق البحث</div>';
+                return;
+            }
+            listEl.innerHTML = '';
+            messages.slice().reverse().forEach(m => {
+                const item = document.createElement('div');
+                item.style.cssText = 'padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-glass);';
+                const badge = m.senderVerified ? ` ${verifiedBadgeIconHtml(12)}` : '';
+                const senderLabel = m.anonymous
+                    ? '<span style="color:var(--text-3);"><i class="fas fa-user-secret"></i> طالب مجهول</span>'
+                    : `<span style="color:var(--text-1);font-weight:700;"><i class="fas fa-user"></i> ${escapeHtml(m.senderName || 'غير معروف')}${badge}</span>`;
+                const date = m.createdAt ? new Date(m.createdAt).toLocaleString('ar-EG') : '';
+                item.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11.5px;gap:8px;">
+                        ${senderLabel}
+                        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                            <span style="color:var(--text-3);">${date}</span>
+                            <button aria-label="حذف الرسالة" title="حذف الرسالة" onclick="deleteAdminMessage('${m._id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:2px 4px;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div style="font-size:13px;line-height:1.7;white-space:pre-wrap;">${escapeHtml(m.text || '')}</div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        // ====================== سجل عمليات الأدمن (Audit Log) ======================
+        // بيعرض للأدمن آخر الإجراءات الحساسة اللي اتعملت في الموقع (حذف رسايل، تفعيل
+        // Premium، تفعيل/إلغاء توثيق) — للشفافية والمراجعة، مش قابل للتعديل من الواجهة.
+        const AUDIT_ACTION_LABELS = {
+            delete_admin_message: { icon: '🗑️', label: 'حذف رسالة طالب' },
+            delete_all_admin_messages: { icon: '🗑️', label: 'حذف كل رسايل الطلاب' },
+            update_premium_features: { icon: '👑', label: 'تعديل مميزات Premium' },
+            toggle_student_verification: { icon: '✅', label: 'تعديل حالة التوثيق' }
+        };
+        async function loadAdminAuditLog() {
+            const listEl = document.getElementById('adminAuditLogList');
+            if (!schoolToken || !listEl) return;
+            listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">جارٍ التحميل...</div>';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/admin-audit-log`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+                const logs = data.logs || [];
+                if (!logs.length) {
+                    listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش عمليات مسجّلة لسه</div>';
+                    return;
+                }
+                listEl.innerHTML = logs.map(l => {
+                    const meta = AUDIT_ACTION_LABELS[l.action] || { icon: '📌', label: l.action };
+                    const date = l.createdAt ? new Date(l.createdAt).toLocaleString('ar-EG') : '';
+                    let detailsLine = '';
+                    if (l.details) {
+                        if (l.details.studentUsername) detailsLine = `الطالب: @${escapeHtml(l.details.studentUsername)}`;
+                        else if (l.details.senderName) detailsLine = `المرسل: ${escapeHtml(l.details.senderName)}`;
+                        else if (typeof l.details.deletedCount === 'number') detailsLine = `عدد الرسايل: ${l.details.deletedCount}`;
+                    }
+                    return `
+                        <div style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-glass);font-size:11.5px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                                <span style="font-weight:700;">${meta.icon} ${meta.label}</span>
+                                <span style="color:var(--text-3);">${date}</span>
+                            </div>
+                            <div style="color:var(--text-2);margin-top:3px;">بواسطة: ${escapeHtml(l.adminUsername || 'غير معروف')}${detailsLine ? ' · ' + detailsLine : ''}</div>
+                        </div>`;
+                }).join('');
+            } catch (e) {
+                listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل السجل — endpoint سجل العمليات لسه مش متاح على سيرفر School X</div>';
             }
         }
 
@@ -7781,10 +7985,16 @@
             }
         }
 
-        // بيحذف كل رسايل الطلاب دفعة واحدة (بعد تأكيد من الأدمن) وبيفضّي القايمة
+        // بيحذف كل رسايل الطلاب دفعة واحدة — لازم الأدمن يكتب "تأكيد" حرفيًا الأول عشان
+        // نتجنب حذف كل الرسايل بالغلط بدوسة واحدة (الإجراء ده نهائي ومينفعش يترجع فيه).
         async function deleteAllAdminMessages() {
             if (!schoolToken) return;
-            if (!confirm('متأكد إنك عايز تحذف كل الرسايل نهائيًا؟ الإجراء ده مينفعش يترجع فيه.')) return;
+            const typed = prompt('الإجراء ده هيحذف كل رسايل الطلاب نهائيًا ومينفعش يترجع فيه.\nاكتب "تأكيد" عشان تكمل:');
+            if (typed === null) return;
+            if (typed.trim() !== 'تأكيد') {
+                showToast('اتلغى الحذف — لازم تكتب "تأكيد" بالظبط', 'error');
+                return;
+            }
             try {
                 const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/admin-messages`, {
                     method: 'DELETE',
@@ -11247,7 +11457,7 @@ ${r.pathSummary}
         function openImageStudio() {
             if (!hasPremium('premium_image_studio')) {
                 closeModal('toolsModal');
-                showToast('ميزة استوديو الصور محتاجة تفعيل Premium من الأدمن', 'error');
+                requestPremiumFeatureFromAdmin('premium_image_studio');
                 return;
             }
             if (!schoolToken) { showToast('لازم تسجّل دخول School X الأول', 'error'); return; }
@@ -11911,7 +12121,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         function openSkillPicker() {
             if (!hasPremium('premium_skills')) {
                 closeModal('attachMenuModal');
-                showToast('ميزة المهارات محتاجة تفعيل من الأدمن', 'error');
+                requestPremiumFeatureFromAdmin('premium_skills');
                 return;
             }
             const skills = getCustomSkills();
@@ -11960,7 +12170,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 
         // ====================== Premium: امتحان محاكاة شامل (كذا فصل مع بعض + تقرير أداء) ======================
         function openMockExamBuilder() {
-            if (!hasPremium('premium_mock_exams')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            if (!hasPremium('premium_mock_exams')) { requestPremiumFeatureFromAdmin('premium_mock_exams'); return; }
             reportFeatureUsage('premium_mock_exams');
             populateMockSubjects();
             renderMockExamChapterList();
@@ -12044,7 +12254,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         }
 
         function startMockExam() {
-            if (!hasPremium('premium_mock_exams')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            if (!hasPremium('premium_mock_exams')) { requestPremiumFeatureFromAdmin('premium_mock_exams'); return; }
             const status = document.getElementById('mockExamStatus');
             if (mockExamChapters.length < 1) { status.innerHTML = '<span style="color:var(--danger)">ضيف فصل واحد على الأقل</span>'; return; }
             const countRaw = parseInt(document.getElementById('mockExamQuestionCount').value);
@@ -12137,7 +12347,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             img.src = dataUrl;
         }
         function openDrugLibrary() {
-            if (!hasPremium('premium_drug_library')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            if (!hasPremium('premium_drug_library')) { requestPremiumFeatureFromAdmin('premium_drug_library'); return; }
             reportFeatureUsage('premium_drug_library');
             const grid = document.getElementById('drugLibraryGrid');
             const empty = document.getElementById('drugLibraryEmpty');
@@ -12306,7 +12516,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 
         // ====================== محاكي المواقف الإكلينيكية ======================
         function openClinicalSimPicker() {
-            if (!hasPremium('premium_clinical_sim')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            if (!hasPremium('premium_clinical_sim')) { requestPremiumFeatureFromAdmin('premium_clinical_sim'); return; }
             reportFeatureUsage('premium_clinical_sim');
             openModal('clinicalSimPickerModal');
         }
@@ -12485,7 +12695,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         }
 
         async function openVideoSimList() {
-            if (!hasPremium('premium_video_sim')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            if (!hasPremium('premium_video_sim')) { requestPremiumFeatureFromAdmin('premium_video_sim'); return; }
             reportFeatureUsage('premium_video_sim');
             const seen = JSON.parse(localStorage.getItem('sx_video_sim_endings') || '{}');
             const wrap = document.getElementById('videoSimListWrap');
@@ -12550,7 +12760,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         // ====================== استوديو الحالات ======================
         let scenarioFormAiRandom = false;
         function openCustomScenarioForm(aiRandom) {
-            if (!hasPremium('premium_video_sim')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            if (!hasPremium('premium_video_sim')) { requestPremiumFeatureFromAdmin('premium_video_sim'); return; }
             reportFeatureUsage('premium_video_sim');
             scenarioFormAiRandom = Boolean(aiRandom);
             closeModal('scenarioStudioModal');
@@ -12578,7 +12788,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 
         // ====================== استخراج من بنك أسئلة المواقف ======================
         function openBankScenarioPicker() {
-            if (!hasPremium('premium_video_sim')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            if (!hasPremium('premium_video_sim')) { requestPremiumFeatureFromAdmin('premium_video_sim'); return; }
             reportFeatureUsage('premium_video_sim');
             closeModal('scenarioStudioModal');
             const sel = document.getElementById('bankScenarioSubjectSelect');
@@ -12903,7 +13113,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         let lectureRecStream = null;
 
         function openLectureRecorder() {
-            if (!hasPremium('premium_lecture_audio')) { showToast('الميزة دي محتاجة تفعيل من الأدمن', 'error'); return; }
+            if (!hasPremium('premium_lecture_audio')) { requestPremiumFeatureFromAdmin('premium_lecture_audio'); return; }
             reportFeatureUsage('premium_lecture_audio');
             lectureRecSeconds = 0;
             document.getElementById('lectureRecTimer').textContent = '00:00';
