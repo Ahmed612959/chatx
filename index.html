@@ -4113,7 +4113,8 @@
             premium_academic_profile: { icon: '📊', title: 'البروفايل الأكاديمي الموحّد', desc: 'كل حاجة عن أدائك (حضور، نتائج امتحانات، واجبات، مخالفات) في شاشة واحدة، بدل ما تكون متفرقة.' },
             premium_german_pro: { icon: '🇩🇪', title: 'German Pro — الألمانية الاحترافية للتمريض', desc: 'مدرّس ألماني ذكي بيبنيلك خطة تعلّم شخصية (أساسيات + محادثات يومية + Fachsprache Pflege/التمريض) ويمشي معاك خطوة بخطوة مع مراجعة مستمرة عشان متنساش.' },
             premium_english_pro: { icon: '🇬🇧', title: 'English Pro — الإنجليزية الاحترافية للتمريض', desc: 'مدرّس إنجليزي ذكي بيبنيلك خطة تعلّم شخصية (أساسيات + محادثات يومية + إنجليزية التمريض/OET-IELTS) مع قاموس طبي وتمريضي وصيدلي كامل، ويمشي معاك خطوة بخطوة.' },
-            premium_image_studio: { icon: '🖼️', title: 'استوديو الصور الذكي', desc: 'حلّل أي صورة (صفحة كتاب، رسم تشريحي، جهاز، تحليل) بدقة عالية عن طريق رؤية ذكاء اصطناعي حقيقية — مش OCR بس. وكمان أنشئ أي صورة توضيحية تتخيلها من وصف نصي.' }
+            premium_image_studio: { icon: '🖼️', title: 'استوديو الصور الذكي', desc: 'حلّل أي صورة (صفحة كتاب، رسم تشريحي، جهاز، تحليل) بدقة عالية عن طريق رؤية ذكاء اصطناعي حقيقية — مش OCR بس. وكمان أنشئ أي صورة توضيحية تتخيلها من وصف نصي.' },
+            premium_video_sim: { icon: '🎬', title: 'محاكاة الفيديو التفاعلية', desc: 'حوّل أي ملخص أو نص تعليمي لسلسلة فيديو تعليمي قصير بشرائح متتالية.' }
         };
         // الأدمن (type === 'admin' جاية من بيانات School X) عنده كل مميزات Premium تلقائيًا
         // من غير ما يحتاج يفعّلها لنفسه — طبيعي إنه يقدر يجرب أي حاجة بيفعّلها للطلاب.
@@ -4136,7 +4137,12 @@
                 const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/admin-messages`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
-                    body: JSON.stringify({ text: `طلب تفعيل ميزة Premium: "${title}" لحسابي، لو ممكن حضرتك تفعّلها.`, anonymous: false })
+                    body: JSON.stringify({
+                        text: `طلب تفعيل ميزة Premium: "${title}" لحسابي، لو ممكن حضرتك تفعّلها.`,
+                        anonymous: false,
+                        requestType: 'premium_feature',
+                        requestFeatureKey: featureKey
+                    })
                 });
                 if (!res.ok) throw new Error('failed');
                 showToast('اتبعت طلب التفعيل للأدمن ✓', 'success');
@@ -7907,6 +7913,14 @@
                     ? '<span style="color:var(--text-3);"><i class="fas fa-user-secret"></i> طالب مجهول</span>'
                     : `<span style="color:var(--text-1);font-weight:700;"><i class="fas fa-user"></i> ${escapeHtml(m.senderName || 'غير معروف')}${badge}</span>`;
                 const date = m.createdAt ? new Date(m.createdAt).toLocaleString('ar-EG') : '';
+                const isPremiumRequest = m.requestType === 'premium_feature' && m.requestFeatureKey;
+                const featureTitle = isPremiumRequest ? (PREMIUM_LABELS[m.requestFeatureKey]?.title || m.requestFeatureKey) : '';
+                let approveHtml = '';
+                if (isPremiumRequest) {
+                    approveHtml = m.requestHandled
+                        ? `<div style="margin-top:8px;font-size:11px;color:var(--success);"><i class="fas fa-circle-check"></i> اتفعّلت الميزة دي بالفعل</div>`
+                        : `<button class="btn-calc" style="margin-top:8px;width:100%;background:var(--success);color:#fff;font-size:12px;padding:7px;" onclick="approvePremiumRequest('${m._id}', this)"><i class="fas fa-check"></i> وافق وفعّل "${escapeHtml(featureTitle)}"</button>`;
+                }
                 item.innerHTML = `
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11.5px;gap:8px;">
                         ${senderLabel}
@@ -7916,6 +7930,7 @@
                         </div>
                     </div>
                     <div style="font-size:13px;line-height:1.7;white-space:pre-wrap;">${escapeHtml(m.text || '')}</div>
+                    ${approveHtml}
                 `;
                 listEl.appendChild(item);
             });
@@ -7982,6 +7997,27 @@
                 loadAdminInbox();
             } catch (e) {
                 showToast('تعذر حذف الرسالة، جرب تاني', 'error');
+            }
+        }
+
+        // بيوافق على طلب تفعيل ميزة Premium مباشرة من صندوق الرسايل — بيفعّل الميزة
+        // للطالب فورًا على السيرفر من غير ما الأدمن يحتاج يفتح لوحة تحكم Premium
+        // المنفصلة ويدوّر على الطالب بنفسه.
+        async function approvePremiumRequest(messageId, btnEl) {
+            if (!schoolToken || !messageId) return;
+            if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = 'جارٍ التفعيل...'; }
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/admin-messages/${messageId}/approve-premium`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'failed');
+                showToast(`اتفعّلت الميزة لـ ${data.student?.username || 'الطالب'} ✓`, 'success');
+                loadAdminInbox();
+            } catch (e) {
+                showToast(e.message === 'failed' ? 'تعذر تفعيل الميزة، جرب تاني' : e.message, 'error');
+                if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-check"></i> إعادة المحاولة'; }
             }
         }
 
