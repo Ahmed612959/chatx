@@ -636,6 +636,78 @@
             .typing-dots .ecg-line, .typing-dots .ecg-dot { animation: none !important; stroke-dashoffset: 0; opacity: .7; }
         }
 
+        /* ====================== Deep Thinking (تفكير عميق) ======================
+           زرار التفعيل جنب صندوق الكتابة + مؤشر التفكير الحي تحت آخر رسالة + بلوك
+           "فكّر لمدة X ثانية" القابل للطي فوق الرد النهائي. اتصمم عشان يشتغل ويبان
+           كويس على أي مقاس شاشة (موبايل أول حاجة) من غير ما يكسر شكل صندوق الكتابة. */
+        .deep-think-bar {
+            display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box;
+            background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px;
+            padding: 9px 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+            font-family: var(--font); text-align: right; -webkit-tap-highlight-color: transparent;
+        }
+        .deep-think-bar:hover { border-color: var(--accent); }
+        .deep-think-bar-icon {
+            width: 34px; height: 34px; border-radius: 50%; background: var(--bg-glass);
+            display: flex; align-items: center; justify-content: center; color: var(--text-2);
+            font-size: 14px; flex-shrink: 0; transition: all 0.2s;
+        }
+        .deep-think-bar-text { display: flex; flex-direction: column; flex: 1; min-width: 0; text-align: right; }
+        .deep-think-bar-text strong { font-size: 13px; color: var(--text-1); font-weight: 800; }
+        .deep-think-bar-text small { font-size: 10.5px; color: var(--text-3); margin-top: 2px; }
+        .deep-think-switch {
+            width: 40px; height: 23px; border-radius: 20px; background: var(--border);
+            position: relative; flex-shrink: 0; transition: background 0.2s;
+        }
+        .deep-think-switch-knob {
+            position: absolute; top: 2px; right: 2px; width: 19px; height: 19px; border-radius: 50%;
+            background: #fff; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,.3);
+        }
+        .deep-think-bar.active { border-color: var(--accent); background: var(--accent-glow); }
+        .deep-think-bar.active .deep-think-bar-icon { background: var(--grad-bold); color: #fff; }
+        .deep-think-bar.active .deep-think-switch { background: var(--accent); }
+        .deep-think-bar.active .deep-think-switch-knob { transform: translateX(-17px); }
+        .deep-think-bar.active .deep-think-bar-icon i.fa-brain { animation: deepThinkBtnPulse 1.6s ease-in-out infinite; }
+        @keyframes deepThinkBtnPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(1.18); } }
+
+        .deep-think-indicator { display: none; gap: 10px; max-width: 90%; margin-bottom: 16px; }
+        .deep-think-indicator.active { display: flex; }
+        .deep-think-panel {
+            background: var(--bg-glass); border: 1px solid var(--border-accent); border-radius: 16px;
+            padding: 12px 14px; max-width: 100%; min-width: 0;
+        }
+        .deep-think-panel-head {
+            display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--accent);
+        }
+        .deep-think-brain { animation: deepThinkBrainPulse 1.4s ease-in-out infinite; }
+        @keyframes deepThinkBrainPulse { 0%, 100% { opacity: .5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.15); } }
+        .deep-think-timer { margin-right: auto; font-size: 10.5px; color: var(--text-3); font-weight: 600; direction: ltr; }
+        .deep-think-live-text {
+            margin-top: 8px; font-size: 11.5px; line-height: 1.7; color: var(--text-2);
+            max-height: 130px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .deep-think-brain, .deep-think-bar.active .deep-think-bar-icon i.fa-brain { animation: none !important; }
+        }
+
+        .thinking-block {
+            border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; overflow: hidden; background: var(--bg-glass);
+        }
+        .thinking-toggle {
+            display: flex; align-items: center; gap: 7px; width: 100%; background: transparent; border: none;
+            color: var(--text-3); font-family: var(--font); font-size: 11.5px; font-weight: 700; cursor: pointer;
+            padding: 8px 12px; text-align: right;
+        }
+        .thinking-toggle:hover { color: var(--accent); }
+        .thinking-toggle i.fa-brain { color: var(--accent); }
+        .thinking-chevron { margin-right: auto; transition: transform 0.2s; font-size: 10px; }
+        .thinking-block.open .thinking-chevron { transform: rotate(180deg); }
+        .thinking-body {
+            display: none; padding: 0 12px 12px; font-size: 11.5px; line-height: 1.7; color: var(--text-2);
+            white-space: pre-wrap; word-break: break-word; border-top: 1px solid var(--border); padding-top: 10px;
+        }
+        .thinking-block.open .thinking-body { display: block; }
+
         /* شارة "تم إيقاف الرد" — بتظهر جوه فقاعة الرد لما الطالب يوقف البوت وهو لسه بيكتب،
            عشان يبان بوضوح إن الرد اتقطع عمدًا مش إنه ناقص أو فيه خطأ. */
         .msg-stopped-note {
@@ -1680,6 +1752,18 @@
                     </div>
                 </div>
                 
+                <div class="deep-think-indicator" id="deepThinkIndicator">
+                    <div class="msg-avatar" style="background: var(--grad-bold); color: white;"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="deep-think-panel">
+                        <div class="deep-think-panel-head">
+                            <i class="fas fa-brain deep-think-brain"></i>
+                            <span>بيفكر بعمق...</span>
+                            <span class="deep-think-timer"><span id="deepThinkTime">0</span>s</span>
+                        </div>
+                        <div class="deep-think-live-text" id="deepThinkText"></div>
+                    </div>
+                </div>
+
                 <div class="typing-indicator" id="typingIndicator">
                     <div class="msg-avatar" style="background: var(--grad-bold); color: white;"><i class="fas fa-graduation-cap"></i></div>
                     <div class="typing-dots"><span></span><span></span><span></span><svg viewBox="0 0 64 22" xmlns="http://www.w3.org/2000/svg"><path class="ecg-line" d="M0,11 L14,11 L18,4 L22,18 L26,11 L40,11 L44,6 L48,16 L52,11 L64,11"/><circle class="ecg-dot" cx="22" cy="18" r="2"/></svg></div>
@@ -1692,6 +1776,14 @@
                     <div class="sug-chip" onclick="sendQuick('اعطني أسئلة')">اختبرني</div>
                     <div class="sug-chip" onclick="sendQuick('اشرح ببساطة')">اشرح</div>
                 </div>
+                <button type="button" class="deep-think-bar" id="deepThinkBtn" onclick="toggleDeepThink()" aria-pressed="false">
+                    <span class="deep-think-bar-icon"><i class="fas fa-brain"></i></span>
+                    <span class="deep-think-bar-text">
+                        <strong>Deep Thinking</strong>
+                        <small>تفكير عميق ودقيق قبل ما يجاوب</small>
+                    </span>
+                    <span class="deep-think-switch"><span class="deep-think-switch-knob"></span></span>
+                </button>
                 <div class="input-wrapper">
                     <button class="attach-btn" aria-label="إرفاق ملف أو مهارة" onclick="openAttachMenu()">
                         <i class="fas fa-paperclip"></i>
@@ -4035,7 +4127,7 @@
         // أول مرة يفتح فيها الطالب الموقع (مفيش إعدادات متخزنة قبل كده)، بنحترم تفضيل نظام
         // تشغيله (فاتح/غامق) بدل ما نفرض الوضع الغامق عليه دايمًا كافتراضي ثابت.
         const systemPrefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-        let settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: systemPrefersLight ? 'light' : 'dark', backendUrl: '', model: 'auto', schoolApiUrl: FIXED_SCHOOL_API_URL };
+        let settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: systemPrefersLight ? 'light' : 'dark', backendUrl: '', model: 'auto', schoolApiUrl: FIXED_SCHOOL_API_URL, deepThink: false };
         settings.schoolApiUrl = FIXED_SCHOOL_API_URL; // بنفرضه دايمًا حتى لو كان متخزن قديم مختلف
         // بيانات ربط School X (مشروع منفصل تماماً بدومين ومتغيرات بيئة مختلفة)
         let schoolToken = localStorage.getItem('sx_school_token') || null;
@@ -4102,6 +4194,25 @@
         let isGenerating = false;
         let abortController = null;
         let lastSendTime = 0;
+        // ====================== Deep Thinking (تفكير عميق) ======================
+        // بيتفعّل من زرار "Deep Thinking" جنب صندوق الكتابة. لما يكون شغال، قبل ما نبعت
+        // سؤال الطالب للموديل المختار عادي، بنعمل نداء إضافي منفصل لـ Gemini بس عشان
+        // "يفكر" فعليًا (تحليل داخلي خطوة بخطوة قبل الإجابة، مش مجرد أنيميشن شكلي) —
+        // وبنعرض التفكير ده وهو بيتكتب لحظة بلحظة تحت آخر رسالة، بالظبط زي المواقع
+        // الكبيرة. بعد ما يخلص، بنحقن نتيجة التفكير ده في الـ system prompt بتاع
+        // الموديل الأصلي (أيًا كان) عشان إجابته النهائية تبقى فعلاً مبنية على تحليل
+        // أعمق، مش بس شكل بصري. deepThinkReasoningContext بيتصفّر بعد كل رد.
+        let deepThinkReasoningContext = '';
+        let deepThinkTimerInterval = null;
+        const DEEP_THINK_REASONING_SYSTEM_PROMPT = `إنت دلوقتي في وضع "تفكير عميق" (Deep Thinking) قبل ما تجاوب على سؤال الطالب. مهمتك هنا مش إنك تكتب الإجابة النهائية خالص — مهمتك إنك تكتب تحليلك الداخلي (Reasoning) خطوة بخطوة زي ما بتفكر فعلاً قبل ما تحسم إجابة. اتبع الأسلوب ده بالظبط:
+1. افهم السؤال بدقة: إيه المطلوب فعليًا؟ فيه أكتر من جزء أو شرط في السؤال؟
+2. لو السؤال طبي/تمريضي أو فيه أكتر من احتمال، فكر في أهم الاحتمالات وقيّم كل واحد بسرعة.
+3. تأكد من دقة أي معلومة أو رقم أو خطوة قبل ما تعتمد عليها في الإجابة.
+4. حدد أفضل ترتيب وأسلوب لعرض الإجابة النهائية (نقاط، خطوات، جدول، شرح متصل).
+اكتب التحليل ده مباشرة كنقاط أو جمل قصيرة متتالية بالعربي المصري، من غير أي مقدمة زي "حاضر" أو "تمام هفكر"، ومن غير ما تكتب الإجابة النهائية الكاملة هنا خالص — تحليل وتفكير بس، مختصر ومركّز (من 5 لـ 10 أسطر بحد أقصى).`;
+        const DEEP_THINK_FINAL_ANSWER_INSTRUCTION = `
+
+وضع "التفكير العميق" (Deep Thinking) مفعّل من الطالب لسؤاله ده: قبل ما تكتب إجابتك، تأكد داخليًا إنك فاهم السؤال بكل جوانبه، مراجع دقة أي معلومة أو رقم هتذكره، وغطّيت أهم الاحتمالات المهمة. جاوب بعمق وتركيز وتنظيم أكتر من العادي، من غير حشو أو إطالة زيادة عن اللزوم.`;
         let recentSendTimestamps = []; // للـ rate limiting: تايم ستامب كل رسالة اتبعتت في آخر دقيقة
         let pendingAttachment = null;
         // فحص الدواء بالكاميرا: نسخة الماسح الحالية، آخر كود متقروء، والصورة الملتقطة قبل التأكيد
@@ -4169,6 +4280,7 @@
         window.onload = () => {
             applyTheme(settings.theme);
             if (settings.model) document.getElementById('modelSelect').value = settings.model;
+            applyDeepThinkBtnState();
             if (chats.length === 0) createNewChat();
             else {
                 if (!currentChatId || !chats.find(c => c.id === currentChatId)) currentChatId = chats[0].id;
@@ -4603,6 +4715,22 @@
         function saveModelChoice() {
             settings.model = document.getElementById('modelSelect').value;
             saveData();
+        }
+
+        // بيقلّب حالة "Deep Thinking" (تفكير عميق) — بيتحفظ في الإعدادات ويفضل شغال
+        // في كل المحادثات لحد ما الطالب يقفله بنفسه.
+        function toggleDeepThink() {
+            settings.deepThink = !settings.deepThink;
+            saveData();
+            applyDeepThinkBtnState();
+            showToast(settings.deepThink ? 'اتفعّل التفكير العميق 🧠 — هيفكر أعمق قبل كل رد' : 'اتقفل التفكير العميق', 'success');
+        }
+
+        function applyDeepThinkBtnState() {
+            const btn = document.getElementById('deepThinkBtn');
+            if (!btn) return;
+            btn.classList.toggle('active', !!settings.deepThink);
+            btn.setAttribute('aria-pressed', settings.deepThink ? 'true' : 'false');
         }
 
         function toggleDuaReminders(enabled) {
@@ -5101,6 +5229,115 @@
             pendingSkillContext = '';
         }
 
+        // ====================== Deep Thinking: نداء تفكير حقيقي منفصل ======================
+        // بيتنادى قبل أي رد عادي لو الطالب مفعّل زرار "Deep Thinking". بيبعت سؤاله لـ
+        // Gemini بس (مش الموديل المختار) مع تعليمات "فكّر ومتجاوبش"، وبيعرض التحليل وهو
+        // بيتكتب لحظة بلحظة تحت المحادثة — ده تفكير فعلي بيتنفّذ فعلاً، مش أنيميشن وهمي.
+        // لو النداء فشل لأي سبب (شبكة، مفتاح API، إلخ) بنكمل عادي من غير تفكير عشان
+        // فشل الميزة الإضافية دي ميوقفش رد الطالب الأساسي.
+        async function runDeepThinkingPass(chat, signal) {
+            const indicator = document.getElementById('deepThinkIndicator');
+            const textEl = document.getElementById('deepThinkText');
+            const timeEl = document.getElementById('deepThinkTime');
+            if (textEl) textEl.textContent = '';
+            if (timeEl) timeEl.textContent = '0';
+            document.getElementById('typingIndicator').classList.remove('active');
+            if (indicator) {
+                // بننقل العنصر (مش بننسخه) لآخر المحادثة تحت آخر رسالة مباشرة، بنفس مكان
+                // مؤشر "جاري الكتابة..." بالظبط، عشان يفضل ظاهر تحت آخر رسالة دايمًا مهما
+                // كان عدد الرسايل اللي اتضافت قبل كده.
+                document.getElementById('chatContainer').insertBefore(indicator, document.getElementById('typingIndicator'));
+                indicator.classList.add('active');
+            }
+            scrollToBottom();
+
+            const startTime = Date.now();
+            deepThinkTimerInterval = setInterval(() => {
+                if (timeEl) timeEl.textContent = String(Math.round((Date.now() - startTime) / 1000));
+            }, 500);
+
+            try {
+                const messages = chat.messages;
+                const lastUserMsg = messages[messages.length - 1];
+                const parts = [{ text: lastUserMsg.content }];
+                if (lastUserMsg.image && lastUserMsg.image.base64) {
+                    parts.push({ inline_data: { mime_type: lastUserMsg.image.mimeType, data: lastUserMsg.image.base64 } });
+                }
+                const history = messages.slice(0, -1);
+                const requestBody = {
+                    contents: history.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })).concat([{ role: 'user', parts }]),
+                    systemInstruction: { parts: [{ text: DEEP_THINK_REASONING_SYSTEM_PROMPT }] }
+                };
+
+                const response = await fetchWithRetry(`${settings.backendUrl}/api/gemini`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody),
+                    signal
+                });
+                if (!response.ok || !response.body) throw new Error('deep-think-unavailable');
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let fullText = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            const piece = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                            if (piece) {
+                                fullText += piece;
+                                if (textEl) { textEl.textContent = fullText; textEl.scrollTop = textEl.scrollHeight; }
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+                const elapsedSeconds = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+                if (!fullText.trim()) return null;
+                return { reasoningText: fullText.trim(), elapsedSeconds };
+            } finally {
+                clearInterval(deepThinkTimerInterval);
+                deepThinkTimerInterval = null;
+                if (indicator) indicator.classList.remove('active');
+            }
+        }
+
+        // بتبني الـ HTML بتاع بلوك "فكّر لمدة X ثانية" القابل للطي، سواء كان بيتحط لحظة
+        // ما الرد بيوصل أو بعد كده لما نعرض محادثة قديمة من الذاكرة.
+        function buildThinkingBlockHTML(reasoningText, seconds) {
+            const s = Number(seconds) || 0;
+            const label = s > 0 ? `فكّر لمدة ${s} ${s === 1 ? 'ثانية' : 'ثواني'}` : 'فكّر قبل الإجابة';
+            return `
+                <div class="thinking-block">
+                    <button type="button" class="thinking-toggle" onclick="this.parentElement.classList.toggle('open')">
+                        <i class="fas fa-brain"></i>
+                        <span>${escapeHtml(label)}</span>
+                        <i class="fas fa-chevron-down thinking-chevron"></i>
+                    </button>
+                    <div class="thinking-body">${escapeHtml(reasoningText)}</div>
+                </div>`;
+        }
+
+        // بتحقن بلوك التفكير جوه رسالة رد جاهزة بالفعل في الـ DOM (لسه سخنة من رد جديد).
+        function attachThinkingBlockToMessage(msgId, reasoningText, seconds) {
+            const msgDiv = document.getElementById(msgId);
+            if (!msgDiv) return;
+            const bubble = msgDiv.querySelector('.msg-bubble');
+            if (!bubble || !bubble.parentElement) return;
+            const wrap = document.createElement('div');
+            wrap.innerHTML = buildThinkingBlockHTML(reasoningText, seconds);
+            bubble.parentElement.insertBefore(wrap.firstElementChild, bubble);
+        }
+
         // Calls the selected AI provider (with auto-fallback chain) for the given chat and
         // appends its reply. Shared by sendMessage (new question) and regenerateMessage
         // (re-asking after deleting the previous bot reply) so both behave identically.
@@ -5126,6 +5363,29 @@
             // so an attached image always actually gets looked at.
             if (hasImage && model !== 'gemini' && model !== 'zimage' && model !== 'german-teacher' && model !== 'examiner') {
                 model = 'zimage';
+            }
+
+            // Deep Thinking: لو مفعّل من الطالب، بنعمل نداء تفكير حقيقي منفصل الأول (شوف
+            // runDeepThinkingPass) قبل ما نكمّل لرد الموديل الأصلي المختار. لو فشل النداء
+            // ده لأي سبب مش AbortError، بنتجاهله ونكمل عادي من غير ما نوقف رد الطالب.
+            let deepThinkResult = null;
+            if (settings.deepThink && model !== 'local') {
+                try {
+                    deepThinkResult = await runDeepThinkingPass(chat, abortController.signal);
+                    if (deepThinkResult) deepThinkReasoningContext = deepThinkResult.reasoningText;
+                } catch (deepThinkError) {
+                    if (deepThinkError.name === 'AbortError') {
+                        isGenerating = false;
+                        abortController = null;
+                        setSendButtonState(false);
+                        document.getElementById('typingIndicator').classList.remove('active');
+                        showToast('تم إيقاف الرد', 'error');
+                        return;
+                    }
+                    console.error('Deep think pass failed', deepThinkError);
+                    deepThinkResult = null;
+                }
+                document.getElementById('typingIndicator').classList.add('active');
             }
 
             try {
@@ -5232,6 +5492,17 @@
                 } else {
                     await respondLocally(fallbackText, chat, abortController.signal);
                 }
+                // Deep Thinking نجح: نلزّق بلوك "فكّر لمدة X ثانية" القابل للطي فوق آخر رد
+                // اتضاف للمحادثة، ونحفظه مع الرسالة عشان يفضل ظاهر لو اترجع للمحادثة دي تاني.
+                if (deepThinkResult) {
+                    const lastBotMsg = chat.messages[chat.messages.length - 1];
+                    if (lastBotMsg && lastBotMsg.role === 'bot') {
+                        lastBotMsg.thinking = deepThinkResult.reasoningText;
+                        lastBotMsg.thinkingSeconds = deepThinkResult.elapsedSeconds;
+                        attachThinkingBlockToMessage(lastBotMsg.id, deepThinkResult.reasoningText, deepThinkResult.elapsedSeconds);
+                        saveData();
+                    }
+                }
                 // ====================== بنك الأسئلة الشائعة ======================
                 // بعد أي رد ناجح (وصلنا هنا يبقى معدّيش استثناء)، نبعت السؤال وآخر
                 // رد للبنك المشترك — مجهول تمامًا (مفيش توكن ولا اسم مستخدم في
@@ -5258,6 +5529,10 @@
                 abortController = null;
                 setSendButtonState(false);
                 document.getElementById('typingIndicator').classList.remove('active');
+                const dtIndicator = document.getElementById('deepThinkIndicator');
+                if (dtIndicator) dtIndicator.classList.remove('active');
+                if (deepThinkTimerInterval) { clearInterval(deepThinkTimerInterval); deepThinkTimerInterval = null; }
+                deepThinkReasoningContext = '';
                 updateCharCount();
             }
         }
@@ -6497,6 +6772,11 @@
             buildMsgActionButtons(msg, actionsDiv, msg.role === 'bot' && isLastMsg);
             meta.appendChild(actionsDiv);
 
+            if (msg.role === 'bot' && msg.thinking) {
+                const thinkWrap = document.createElement('div');
+                thinkWrap.innerHTML = buildThinkingBlockHTML(msg.thinking, msg.thinkingSeconds);
+                contentDiv.appendChild(thinkWrap.firstElementChild);
+            }
             contentDiv.appendChild(bubble);
             contentDiv.appendChild(meta);
             div.appendChild(avatar);
@@ -7141,8 +7421,17 @@
             const requestBody = {
                 contents: history.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })).concat([{ role: 'user', parts }])
             };
-            if (systemPrompt) {
-                requestBody.systemInstruction = { parts: [{ text: systemPrompt }] };
+            // لو Deep Thinking مفعّل، نضيف تعليمات التركيز والتحليل السابق حتى لو الموديل
+            // ده اتنادى من غير system prompt خاص بيه أصلاً (حالة Gemini الافتراضية).
+            let effectiveSystemPrompt = systemPrompt || '';
+            if (settings.deepThink) {
+                effectiveSystemPrompt = (effectiveSystemPrompt || 'أنت مساعد أكاديمي ذكي.') + DEEP_THINK_FINAL_ANSWER_INSTRUCTION;
+                if (deepThinkReasoningContext) {
+                    effectiveSystemPrompt += `\n\nده تحليلك الداخلي اللي عملته بنفسك من شوية على نفس سؤال الطالب ده — استخدمه عشان تجاوب بدقة وتركيز، من غير ما تكرره أو تشير إنه موجود:\n${deepThinkReasoningContext}`;
+                }
+            }
+            if (effectiveSystemPrompt) {
+                requestBody.systemInstruction = { parts: [{ text: effectiveSystemPrompt }] };
             }
             const response = await fetchWithRetry(`${settings.backendUrl}/api/gemini`, {
                 method: 'POST',
@@ -11044,6 +11333,15 @@ ${r.pathSummary}
             }
             if (activeStudyChapterContext) {
                 extra += `\n\nالطالب حاليًا "مركّز" على مذاكرة الفصل ده بالذات من بنك المدرسة الحقيقي، فاستخدم محتواه الفعلي في كل شرح أو سؤال بدل معلومات عامة من عندك، وميجيبش حاجة من برا الفصل ده إلا لو الطالب سأل عن حاجة تانية صراحة:\n${activeStudyChapterContext}`;
+            }
+            // Deep Thinking مفعّل: نضيف تعليمات التركيز والدقة، وكمان نتيجة التحليل
+            // الداخلي الحقيقي اللي عمله الموديل في نداء منفصل قبل كده (لو نجح) — شوف
+            // runDeepThinkingPass. الهدف إن الإجابة النهائية تتبني فعلاً على تفكير أعمق.
+            if (settings.deepThink) {
+                extra += DEEP_THINK_FINAL_ANSWER_INSTRUCTION;
+                if (deepThinkReasoningContext) {
+                    extra += `\n\nده تحليلك الداخلي اللي عملته بنفسك من شوية على نفس سؤال الطالب ده — استخدمه عشان تجاوب بدقة وتركيز، من غير ما تكرره أو تشير إنه موجود:\n${deepThinkReasoningContext}`;
+                }
             }
             return base + extra;
         }
