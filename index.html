@@ -13662,6 +13662,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         let callMuted = false;
         let callState = 'idle'; // idle | listening | thinking | speaking
         let callHistory = [];
+        let callActiveSystemPrompt = ''; // CALL_SYSTEM_PROMPT + سياق آخر كام رسالة من الشات المكتوب، بيتبني تاني كل مكالمة
         let callAbortController = null;
         let callAudioQueue = [];
         let callQueueRunning = false;
@@ -13785,6 +13786,21 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             applyCallTheme(next);
         }
 
+        // بيلمّ آخر كام رسالة من الشات المكتوب الحالي (لو موجود) عشان المكالمة تبدأ
+        // وهي عارفة عن إيه كانت الدردشة قبلها بالظبط — بدل ما تحس إنها "أول مرة"
+        // كل ما تفتح مكالمة، حتى لو إنت لسه بتكمل نفس الموضوع اللي كنت بتكتب فيه.
+        function buildCallContextPrimer() {
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat || !Array.isArray(chat.messages) || !chat.messages.length) return '';
+            const recent = chat.messages.slice(-6); // آخر 3 تبادلات كافية كسياق من غير ما تطوّل الـ prompt أوي
+            const lines = recent
+                .filter(m => m.role === 'user' || m.role === 'bot')
+                .map(m => `${m.role === 'user' ? 'الطالب' : 'المساعد'}: ${(m.content || '').replace(/\s+/g, ' ').trim().slice(0, 220)}`)
+                .filter(Boolean);
+            if (!lines.length) return '';
+            return `\n\nسياق من الشات المكتوب اللي كان بين الطالب والمساعد قبل ما المكالمة دي تبدأ — استخدمه عشان تكمل الموضوع من غير ما تسأله يعيد اللي قاله قبل كده:\n${lines.join('\n')}`;
+        }
+
         async function openVoiceCallScreen() {
             if (!window.isSecureContext) { showToast('المكالمة الصوتية محتاجة HTTPS', 'error'); return; }
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
@@ -13795,6 +13811,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             applyCallTheme(getSelectedCallTheme());
             document.getElementById('voiceCallOverlay').classList.add('active');
             callHistory = [];
+            callActiveSystemPrompt = CALL_SYSTEM_PROMPT + buildCallContextPrimer();
             callActive = true;
             callMuted = false;
             callConsecutiveUnclear = 0;
@@ -14038,6 +14055,134 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             };
         }
 
+        // بيقرا استريم رد موديل واحد قطعة قطعة وبيحدّث الفقاعة + طابور الصوت أول
+        // بأول (نفس منطق القراءة اللي كان متكرر قبل كده، دلوقتي في مكان واحد
+        // يُستخدم سواء مع الموديل الفايز في السباق أو أي موديل احتياطي بعده).
+        // state = { fullText, spokenSoFar, anySpoken, assistantBubbleEl, gotFirstChunk }
+        async function consumeProviderStream(reader, decoder, initialBuffer, parseLine, mySignal, state) {
+            let buffer = initialBuffer || '';
+            while (true) {
+                const stallMs = state.gotFirstChunk ? CALL_STALL_TIMEOUT_MS : CALL_FIRST_CHUNK_TIMEOUT_MS;
+                let readResult;
+                try {
+                    readResult = await Promise.race([
+                        reader.read(),
+                        new Promise((_, rej) => setTimeout(() => rej(new Error('call-stall')), stallMs))
+                    ]);
+                } catch (stallErr) {
+                    try { reader.cancel(); } catch (e) {}
+                    if (mySignal.aborted) throw stallErr; // إنهاء/قطع مقصود من المستخدم
+                    return; // تعليق فعلي — رجّع اللي وصلنا له لحد دلوقتي (الأصل هيقرر لو يجرب موديل تاني)
+                }
+                const { done, value } = readResult;
+                if (done) return;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+                for (const line of lines) {
+                    const piece = parseLine(line);
+                    if (piece) {
+                        if (!state.gotFirstChunk) {
+                            state.gotFirstChunk = true;
+                            callState = 'speaking';
+                            updateCallUI();
+                            state.assistantBubbleEl = addCallBubble('assistant', '');
+                        }
+                        state.fullText += piece;
+                        if (state.assistantBubbleEl) {
+                            state.assistantBubbleEl.textContent = state.fullText;
+                            const log = document.getElementById('callTranscriptLog');
+                            if (log) log.scrollTop = log.scrollHeight;
+                        }
+                    }
+                }
+                const rest = state.fullText.slice(state.spokenSoFar.length);
+                const match = rest.match(/^[\s\S]*?[.!؟?]+(\s|$)/);
+                if (match) {
+                    state.spokenSoFar += match[0];
+                    const sentence = match[0].trim();
+                    if (sentence) { state.anySpoken = true; queueCallSpeech(sentence); }
+                }
+            }
+        }
+
+        // بيسابق كذا مزوّد مع بعض في نفس اللحظة (مش واحد وراء التاني) لأول "قطعة كلام
+        // حقيقية" — أول مزوّد يرد بيها بيكسب، وبنلغي الباقيين فورًا. ده بيقلل زمن
+        // الانتظار الفعلي جدًا (بدل ما نستنى مزوّد يفشل/يبطئ الأول قبل ما نجرب التاني،
+        // بنجربهم مع بعض من الأول) — من غير ما نضحي بالموثوقية لو واحد فيهم واقع.
+        // بيرجّع null لو كل المزودين المتسابقين فشلوا، عشان الكود اللي بينادي عليه
+        // يقدر يكمل على باقي السلسلة بالطريقة العادية (شبكة أمان).
+        function raceCallProviders(providers, systemPrompt, history, mySignal) {
+            return new Promise((resolve) => {
+                let settled = false, remaining = providers.length;
+                const controllers = [];
+
+                function finishWith(result) {
+                    if (settled) return;
+                    settled = true;
+                    resolve(result);
+                }
+
+                providers.forEach((provider) => {
+                    const controller = new AbortController();
+                    controllers.push(controller);
+                    const onOuterAbort = () => controller.abort();
+                    mySignal.addEventListener('abort', onOuterAbort);
+                    let iWon = false;
+
+                    (async () => {
+                        try {
+                            const { url, body, parseLine } = callBuildRequest(provider, systemPrompt, history);
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(body),
+                                signal: controller.signal
+                            });
+                            if (!response.ok || !response.body) throw new Error('bad-response');
+                            const reader = response.body.getReader();
+                            const decoder = new TextDecoder();
+                            let buffer = '';
+                            while (true) {
+                                const readResult = await Promise.race([
+                                    reader.read(),
+                                    new Promise((_, rej) => setTimeout(() => rej(new Error('race-timeout')), CALL_FIRST_CHUNK_TIMEOUT_MS))
+                                ]);
+                                const { done, value } = readResult;
+                                if (done) throw new Error('ended-with-no-content');
+                                buffer += decoder.decode(value, { stream: true });
+                                const lines = buffer.split('\n');
+                                buffer = lines.pop();
+                                let firstPiece = '';
+                                for (const line of lines) {
+                                    const piece = parseLine(line);
+                                    if (piece) firstPiece += piece;
+                                }
+                                if (firstPiece) {
+                                    iWon = true;
+                                    controllers.forEach(c => { if (c !== controller) c.abort(); }); // الباقيين خسروا
+                                    finishWith({ provider, reader, decoder, buffer, parseLine, firstPiece });
+                                    return;
+                                }
+                                if (controller.signal.aborted) return; // خسر أو المستخدم قاطع فعلاً
+                            }
+                        } catch (e) {
+                            // المزوّد ده فشل أو اتلغى — ممكن مزوّد تاني يكسب، مفيش داعي نعمل حاجة
+                        } finally {
+                            // مهم: مبنشيلش المستمع (listener) بتاع الفايز — لسه محتاجينه شغّال
+                            // طول ما consumeProviderStream مستمر بيقرا من الـ stream بتاعه بعد
+                            // كده، عشان لو المستخدم قفل المكالمة أو قاطع، الإلغاء يوصله صح. غير
+                            // كده (خسران/فشل)، منضمن تسريب استماع (listener) على إشارة هتتلغي
+                            // أو تتبدّل على أي حال في الدور اللي بعده.
+                            if (!iWon) mySignal.removeEventListener('abort', onOuterAbort);
+                            remaining--;
+                            if (remaining === 0) finishWith(null); // كل المتسابقين فشلوا/اتلغوا من غير فايز
+                        }
+                    })();
+                });
+            });
+        }
+
         async function handleCallUserTurn(text) {
             if (!callActive) return;
             callState = 'thinking';
@@ -14050,87 +14195,77 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             callAbortController = new AbortController();
             const mySignal = callAbortController.signal;
 
-            let fullText = '', spokenSoFar = '', anySpoken = false, assistantBubbleEl = null;
+            const state = { fullText: '', spokenSoFar: '', anySpoken: false, assistantBubbleEl: null, gotFirstChunk: false };
 
             try {
-                for (const provider of CALL_PROVIDER_CHAIN) {
-                    if (mySignal.aborted) break;
-                    const { url, body, parseLine } = callBuildRequest(provider, CALL_SYSTEM_PROMPT, callHistory);
-                    let response;
-                    try {
-                        response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(body),
-                            signal: mySignal
-                        });
-                    } catch (e) {
-                        if (mySignal.aborted) throw e; // المستخدم قاطع أو قفل المكالمة — وقف فورًا
-                        continue; // فشل الاتصال بهذا المزوّد، جرّب اللي بعده
-                    }
-                    if (!response.ok || !response.body) continue;
+                const systemPrompt = callActiveSystemPrompt || CALL_SYSTEM_PROMPT;
+                // أسرع اتنين مزوّدين (Groq وGemini) بيتسابقوا مع بعض؛ الباقي شبكة أمان
+                // تتابعية لو السباق فشل تمامًا.
+                const raceProviders = CALL_PROVIDER_CHAIN.slice(0, 2);
+                const restProviders = CALL_PROVIDER_CHAIN.slice(2);
 
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
-                    let buffer = '', gotFirstChunk = false;
+                let won = null;
+                if (!mySignal.aborted) {
+                    won = await raceCallProviders(raceProviders, systemPrompt, callHistory, mySignal);
+                }
 
-                    while (true) {
-                        const stallMs = gotFirstChunk ? CALL_STALL_TIMEOUT_MS : CALL_FIRST_CHUNK_TIMEOUT_MS;
-                        let readResult;
-                        try {
-                            readResult = await Promise.race([
-                                reader.read(),
-                                new Promise((_, rej) => setTimeout(() => rej(new Error('call-stall')), stallMs))
-                            ]);
-                        } catch (stallErr) {
-                            try { reader.cancel(); } catch (e) {}
-                            if (mySignal.aborted) throw stallErr; // إنهاء/قطع مقصود من المستخدم
-                            break; // تعليق فعلي — اخرج من القراءة (هنجرب موديل تاني لو ماجاش ولا حرف)
-                        }
-                        const { done, value } = readResult;
-                        if (done) break;
-                        buffer += decoder.decode(value, { stream: true });
-                        const lines = buffer.split('\n');
-                        buffer = lines.pop();
-                        for (const line of lines) {
-                            const piece = parseLine(line);
-                            if (piece) {
-                                if (!gotFirstChunk) {
-                                    gotFirstChunk = true;
-                                    callState = 'speaking';
-                                    updateCallUI();
-                                    assistantBubbleEl = addCallBubble('assistant', '');
-                                }
-                                fullText += piece;
-                                if (assistantBubbleEl) {
-                                    assistantBubbleEl.textContent = fullText;
-                                    const log = document.getElementById('callTranscriptLog');
-                                    if (log) log.scrollTop = log.scrollHeight;
-                                }
-                            }
-                        }
-                        const rest = fullText.slice(spokenSoFar.length);
+                if (won) {
+                    if (won.firstPiece) {
+                        state.gotFirstChunk = true;
+                        callState = 'speaking';
+                        updateCallUI();
+                        state.assistantBubbleEl = addCallBubble('assistant', '');
+                        state.fullText += won.firstPiece;
+                        state.assistantBubbleEl.textContent = state.fullText;
+                        // نفس فحص "نهاية جملة" اللي بيحصل جوه consumeProviderStream — عشان
+                        // لو القطعة الأولى اللي كسبت بيها السباق كانت فيها جملة كاملة
+                        // (نادر بس ممكن)، متتأخرش لحد آخر الرد عشان تتقال بالصوت.
+                        const rest = state.fullText.slice(state.spokenSoFar.length);
                         const match = rest.match(/^[\s\S]*?[.!؟?]+(\s|$)/);
                         if (match) {
-                            spokenSoFar += match[0];
+                            state.spokenSoFar += match[0];
                             const sentence = match[0].trim();
-                            if (sentence) { anySpoken = true; queueCallSpeech(sentence); }
+                            if (sentence) { state.anySpoken = true; queueCallSpeech(sentence); }
                         }
                     }
-                    // موديل جاوب (حتى لو انقطع بدري وسط الرد) — منجربش موديل تاني عشان
-                    // منكررش نفس الكلام تاني بصوت مختلف؛ نقفل الرد باللي وصلنا لحد دلوقتي.
-                    if (gotFirstChunk) break;
+                    await consumeProviderStream(won.reader, won.decoder, won.buffer, won.parseLine, mySignal, state);
+                }
+
+                // لو السباق ماجابش أي رد خالص، نكمل بالطريقة التتابعية القديمة على باقي
+                // السلسلة (شبكة أمان أخيرة) — من غير ما نكرر المزودين اللي اتسابقوا فعلاً.
+                if (!state.gotFirstChunk && !mySignal.aborted) {
+                    for (const provider of restProviders) {
+                        if (mySignal.aborted) break;
+                        const { url, body, parseLine } = callBuildRequest(provider, systemPrompt, callHistory);
+                        let response;
+                        try {
+                            response = await fetch(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(body),
+                                signal: mySignal
+                            });
+                        } catch (e) {
+                            if (mySignal.aborted) throw e;
+                            continue;
+                        }
+                        if (!response.ok || !response.body) continue;
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+                        await consumeProviderStream(reader, decoder, '', parseLine, mySignal, state);
+                        if (state.gotFirstChunk) break;
+                    }
                 }
 
                 if (!mySignal.aborted) {
-                    const remaining = fullText.slice(spokenSoFar.length).trim();
-                    if (remaining) { anySpoken = true; queueCallSpeech(remaining); }
-                    if (!anySpoken) {
+                    const remaining = state.fullText.slice(state.spokenSoFar.length).trim();
+                    if (remaining) { state.anySpoken = true; queueCallSpeech(remaining); }
+                    if (!state.anySpoken) {
                         const fallbackMsg = 'معلش، الاتصال بالموديلات بطيء دلوقتي، ممكن تعيد سؤالك تاني؟';
                         addCallBubble('assistant', fallbackMsg);
                         queueCallSpeech(fallbackMsg);
                     }
-                    if (fullText.trim()) callHistory.push({ role: 'assistant', content: fullText });
+                    if (state.fullText.trim()) callHistory.push({ role: 'assistant', content: state.fullText });
                 }
             } catch (err) {
                 if (!mySignal.aborted) {
@@ -14243,6 +14378,38 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             }
         }
 
+        // بعد ما المكالمة تخلص، بننقل كل الكلام اللي اتقال فيها لنفس الشات المكتوب
+        // اللي المكالمة اتفتحت من جواه — عشان المكالمة متبقاش حاجة مؤقتة بتتنسى أول
+        // ما تقفل، الطالب يقدر يرجع يقرا اللي اتقال أو يكمل يسأل بالكتابة عادي وكأنه
+        // فعلاً استمرار لنفس المحادثة (لأنه فعلاً بقى كذلك في تاريخ الشات).
+        function persistCallTranscriptToChat() {
+            if (!callHistory.length) return;
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat) return;
+
+            const startMarker = { role: 'bot', content: '📞 مكالمة صوتية', source: 'call-marker', timestamp: Date.now(), id: `msg-${Date.now()}-callstart` };
+            chat.messages.push(startMarker);
+            callHistory.forEach((turn, i) => {
+                const msg = {
+                    role: turn.role === 'user' ? 'user' : 'bot',
+                    content: turn.content,
+                    timestamp: Date.now() + i + 1,
+                    id: `msg-${Date.now()}-call-${i}`
+                };
+                if (msg.role === 'bot') msg.source = 'call';
+                chat.messages.push(msg);
+            });
+
+            if (!chat.title || chat.title === 'محادثة جديدة') {
+                const firstUserTurn = callHistory.find(t => t.role === 'user');
+                if (firstUserTurn) chat.title = firstUserTurn.content.substring(0, 35) + (firstUserTurn.content.length > 35 ? '...' : '');
+            }
+
+            saveData();
+            renderChatList();
+            if (currentChatId === chat.id) renderChat(chat.id);
+        }
+
         function endVoiceCall() {
             callActive = false;
             callMuted = false;
@@ -14253,6 +14420,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             stopCallMic();
             if (callCurrentAudio) { try { callCurrentAudio.pause(); } catch (e) {} callCurrentAudio = null; }
             if (callAbortController) callAbortController.abort();
+            persistCallTranscriptToChat();
             document.getElementById('voiceCallOverlay').classList.remove('active');
         }
 
