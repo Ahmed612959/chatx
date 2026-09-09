@@ -13678,6 +13678,9 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         let callIsRecordingSpeech = false;
         let callSpeechStartAt = 0;
         let callLastVoiceAt = 0;
+        let callRecordingPeakRms = 0; // أعلى مستوى صوت اتسجّل في المقطع الحالي — بنستخدمه
+                                      // كحماية إضافية ضد إرسال مقطع شبه فاضي/ضوضاء لـ Whisper
+                                      // (اللي بيميل "يهلوس" كلام وهمي من الصمت أو الضوضاء الخفيفة).
 
         const CALL_VAD_THRESHOLD = 0.025;   // حساسية كشف الكلام (أعلى = محتاج صوت أوضح عشان يبدأ يسجّل)
         const CALL_VAD_SILENCE_MS = 900;    // سكوت بعد الكلام قبل ما نعتبر إن الطالب خلص كلامه — زودناها
@@ -13687,18 +13690,10 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                                                 // الطويل بيكون فيه وقفات تفكير طبيعية أكتر من جملة قصيرة.
         const CALL_LONG_UTTERANCE_MS = 3000;   // بعد 3 ثواني كلام متواصل، نعتبره "كلام طويل" ونستخدم
                                                 // مهلة السكوت الأطول بدل العادية.
-        const CALL_MIN_SPEECH_MS = 320;     // أقل مدة كلام عشان منبعتش نفخة أو ضوضاء بسيطة لـ Whisper
-
-        // مقاطعة صوتية حقيقية (Barge-in): لو الطالب بدأ يتكلم فعلاً وإحنا لسه بنفكر أو
-        // بنتكلم، بنوقف الرد فورًا ونبدأ نسجّل كلامه الجديد — زي أي مكالمة تليفون حقيقية،
-        // بدل ما يضطر يدوس على الدائرة يدويًا عشان يقاطع. بنطلب صوت أعلى من العتبة
-        // العادية (خصوصًا وإحنا بنتكلم) عشان صدى صوت المساعد نفسه من السماعة (لو
-        // echo cancellation المتصفح مش كامل) ميطلقش مقاطعة غلط، وبنستنى شوية وقت
-        // (debounce) قبل ما نأكد إنه كلام حقيقي مش مجرد صوت لحظي.
-        let callBargeInLoudSince = 0;
-        const CALL_BARGE_IN_DEBOUNCE_MS = 220;
-        const CALL_BARGE_IN_THRESHOLD_MULTIPLIER_SPEAKING = 1.7;
-        const CALL_BARGE_IN_THRESHOLD_MULTIPLIER_THINKING = 1.15;
+        const CALL_MIN_SPEECH_MS = 380;     // أقل مدة كلام عشان منبعتش نفخة أو ضوضاء بسيطة لـ Whisper
+        const CALL_MIN_PEAK_RMS_MULTIPLIER = 1.4; // لازم يوصل الصوت لمستوى أعلى من عتبة الكشف بهامش
+                                                    // معقول (مش بس يلمسها لحظة) عشان نعتبره كلام حقيقي
+                                                    // يستاهل نبعته لـ Whisper.
 
         // لو الكلام رجع فاضي أو حرف واحد كذا مرة ورا بعض (صوت مش واضح، ضوضاء خلفية
         // عالية، مايك بعيد)، بنطلع تلميح للطالب بدل ما نفضل ساكتين من غير سبب واضح.
@@ -13751,7 +13746,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             if (!orb || !statusText) return;
             orb.classList.remove('listening', 'speaking', 'thinking');
             if (callState === 'thinking') { orb.classList.add('thinking'); statusText.textContent = 'بفكر...'; }
-            else if (callState === 'speaking') { orb.classList.add('speaking'); statusText.textContent = 'بيتكلم — اتكلم فوقيه لو عايز تقاطعه'; }
+            else if (callState === 'speaking') { orb.classList.add('speaking'); statusText.textContent = 'بيتكلم — دوس على الدائرة لو عايز تقاطعه'; }
             else { orb.classList.add('listening'); statusText.textContent = 'بسمعك...'; } // idle/listening = المايك بيراقب منتظر كلامك
         }
 
@@ -13851,12 +13846,22 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         // كاشف نشاط صوتي (VAD) شغّال طول المكالمة عن طريق requestAnimationFrame: بيبدأ
         // يسجّل أول ما يحس بكلام فعلي، ويوقف ويبعت أول ما يحس بسكوت قصير بعده. أسرع
         // وأثبت بكتير من نظام "جلسة تعرف على صوت" بيتقفل ويتفتح كل شوية.
+        //
+        // ملحوظة مهمة: وقت "بيفكر/بيتكلم" مبنسجلش من المايك خالص (غير لو المستخدم
+        // دوس يدويًا على الدائرة عشان يقاطع). كان فيه محاولة سابقة لمقاطعة تلقائية
+        // بالصوت وقت رد المساعد، لكن اتلغت لأنها كانت بتلتقط صدى صوت المساعد نفسه
+        // من السماعة (echo cancellation في المتصفح مش كافي على معظم الموبايلات)،
+        // وده كان بيسبب: (1) قطع رد المساعد الحقيقي فجأة، و(2) تسجيل مقطع فاضي/صدى
+        // بيتبعت لـ Whisper وبيرجع كلام مش حقيقي (Hallucination)، وده بالظبط سبب
+        // إحساس "بيرد بحاجة تانية خالص" و"مش فاهم سياق المحادثة" (لأن الكلام الوهمي
+        // ده كان بيتسجل في التاريخ وكأنه كلام حقيقي من الطالب). المقاطعة اليدوية
+        // (دوسة على الدائرة) أكيدة 100% إن الطالب فعلاً قاصد يقاطع، فهي الطريقة
+        // المعتمدة دلوقتي.
         function runCallVadLoop() {
             if (!callActive) return;
             callVadRafId = requestAnimationFrame(runCallVadLoop);
-            if (!callAnalyser || callMuted) {
-                if (callIsRecordingSpeech) stopCallRecordingAndSend(true); // المايك اتقفل فجأة (كتم) — اتجاهل أي تسجيل ناقص
-                callBargeInLoudSince = 0;
+            if (!callAnalyser || callMuted || callState === 'thinking' || callState === 'speaking') {
+                if (callIsRecordingSpeech) stopCallRecordingAndSend(true); // المايك اتقفل فجأة (كتم/بدأ رد) — اتجاهل أي تسجيل ناقص
                 return;
             }
 
@@ -13868,26 +13873,9 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             const now = performance.now();
             const effectiveThreshold = Math.max(CALL_VAD_THRESHOLD, callNoiseFloor * CALL_NOISE_FLOOR_MULTIPLIER);
 
-            // المساعد بيفكر أو بيتكلم دلوقتي — مش بنسجل عادي، بس بنراقب لو الطالب بدأ
-            // يتكلم فعلاً (صوت واضح فضل شوية، مش لحظة واحدة) عشان نقاطع تلقائيًا.
-            if (callState === 'thinking' || callState === 'speaking') {
-                const multiplier = callState === 'speaking' ? CALL_BARGE_IN_THRESHOLD_MULTIPLIER_SPEAKING : CALL_BARGE_IN_THRESHOLD_MULTIPLIER_THINKING;
-                if (rms > effectiveThreshold * multiplier) {
-                    if (!callBargeInLoudSince) callBargeInLoudSince = now;
-                    if (now - callBargeInLoudSince > CALL_BARGE_IN_DEBOUNCE_MS) {
-                        callBargeInLoudSince = 0;
-                        callBargeIn();
-                        startCallRecording();
-                    }
-                } else {
-                    callBargeInLoudSince = 0;
-                }
-                return;
-            }
-            callBargeInLoudSince = 0;
-
             if (rms > effectiveThreshold) {
                 callLastVoiceAt = now;
+                if (rms > callRecordingPeakRms) callRecordingPeakRms = rms;
                 if (!callIsRecordingSpeech) startCallRecording();
             } else {
                 // مبنحدّثش متوسط الضوضاء وإحنا بنسجّل كلام فعلي — بس وقت السكوت الحقيقي،
@@ -13912,6 +13900,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             callSpeechStartAt = performance.now();
             callLastVoiceAt = callSpeechStartAt;
             callRecordedChunks = [];
+            callRecordingPeakRms = 0;
             let mimeType = 'audio/webm;codecs=opus';
             if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'audio/webm';
             try { callMediaRecorder = new MediaRecorder(callMicStream, { mimeType }); }
@@ -13928,6 +13917,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         async function stopCallRecordingAndSend(discard) {
             if (!callIsRecordingSpeech || !callMediaRecorder) { callIsRecordingSpeech = false; return; }
             const duration = performance.now() - callSpeechStartAt;
+            const peakRms = callRecordingPeakRms; // نلقطها هنا فورًا قبل ما تسجيل جديد يصفّرها
             callIsRecordingSpeech = false;
             const recorder = callMediaRecorder;
             callMediaRecorder = null;
@@ -13939,6 +13929,13 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             });
 
             if (discard || duration < CALL_MIN_SPEECH_MS) { callRecordedChunks = []; return; }
+
+            // لو أعلى مستوى صوت في المقطع كله بالكاد لمس عتبة الكشف (مش هامش واضح
+            // فوقها)، الأغلب إنه مقطع ضوضاء/صدى مش كلام حقيقي — بنرميه من غير ما
+            // نضيّع طلب Whisper عليه أو نخاطر بكلام وهمي (Hallucination) يتسجل
+            // كأنه كلام الطالب ويبوّظ سياق المحادثة.
+            const effectiveThreshold = Math.max(CALL_VAD_THRESHOLD, callNoiseFloor * CALL_NOISE_FLOOR_MULTIPLIER);
+            if (peakRms < effectiveThreshold * CALL_MIN_PEAK_RMS_MULTIPLIER) { callRecordedChunks = []; return; }
 
             const blob = new Blob(callRecordedChunks, { type: recorder.mimeType || 'audio/webm' });
             callRecordedChunks = [];
@@ -14213,8 +14210,11 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 
         // "قاطعني" — بيوقف أي صوت شغال دلوقتي وأي رد لسه بيتولّد، وبيرجّع الحالة لـ"بيسمع"
         // فورًا عشان كاشف الصوت يمسك كلام الطالب من أول لحظة، زي أي مكالمة حقيقية.
-        // بتتنادى يدويًا (دوسة على الدائرة) أو تلقائيًا (كاشف الصوت حس إن الطالب بدأ
-        // يتكلم فوق رد المساعد).
+        // بتتنادى يدويًا بس (دوسة على الدائرة) — مفيش مقاطعة تلقائية بالصوت وقت رد
+        // المساعد عمدًا، لأن المايك بيلقط صدى صوت المساعد نفسه من السماعة على أغلب
+        // الموبايلات (echo cancellation المتصفح مش كافي)، وده كان بيسبب قطع الرد
+        // غلط وتسجيل كلام وهمي (Hallucination من Whisper) بيتحط في تاريخ المحادثة
+        // وكأنه كلام حقيقي من الطالب — فبيبوّظ فهم السياق بالكامل.
         function callBargeIn() {
             if (!callActive) return;
             callQueueGeneration++; // يلغي أي صوت متجهّز مسبقًا (pipelined) من الرد اللي اتقاطع
