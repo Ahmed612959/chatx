@@ -679,6 +679,8 @@
         .deep-think-panel-head {
             display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--accent);
         }
+        .deep-think-status { transition: opacity 0.25s ease; }
+        .deep-think-status.fade { opacity: 0; }
         .deep-think-brain { animation: deepThinkBrainPulse 1.4s ease-in-out infinite; }
         @keyframes deepThinkBrainPulse { 0%, 100% { opacity: .5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.15); } }
         .deep-think-timer { margin-right: auto; font-size: 10.5px; color: var(--text-3); font-weight: 600; direction: ltr; }
@@ -1457,7 +1459,7 @@
         @keyframes toastIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         .fab {
-            position: fixed; bottom: max(100px, env(safe-area-inset-bottom)); left: 16px; width: 52px; height: 52px; border-radius: 50%;
+            position: fixed; bottom: max(170px, env(safe-area-inset-bottom)); left: 16px; width: 52px; height: 52px; border-radius: 50%;
             background: var(--grad-bold); color: white;
             border: none; font-size: 20px; cursor: pointer; box-shadow: 0 8px 25px var(--accent-glow);
             display: none; align-items: center; justify-content: center; z-index: 40;
@@ -1757,7 +1759,7 @@
                     <div class="deep-think-panel">
                         <div class="deep-think-panel-head">
                             <i class="fas fa-brain deep-think-brain"></i>
-                            <span>بيفكر بعمق...</span>
+                            <span class="deep-think-status" id="deepThinkStatus">جاري التفكير...</span>
                             <span class="deep-think-timer"><span id="deepThinkTime">0</span>s</span>
                         </div>
                         <div class="deep-think-live-text" id="deepThinkText"></div>
@@ -4204,6 +4206,19 @@
         // أعمق، مش بس شكل بصري. deepThinkReasoningContext بيتصفّر بعد كل رد.
         let deepThinkReasoningContext = '';
         let deepThinkTimerInterval = null;
+        let deepThinkStatusInterval = null;
+        // العبارات اللي بتتبدّل مع بعض تحت الرسالة وهو "بيفكر" — بتدّي إحساس إنه فعلاً
+        // بيمر بمراحل تفكير حقيقية (فهم السؤال، مراجعة المعلومات، ترتيب الإجابة...) بدل
+        // ما تفضل نفس الجملة الثابتة طول الوقت.
+        const DEEP_THINK_STATUS_MESSAGES = [
+            'جاري التفكير...',
+            'بفهم السؤال كويس...',
+            'بحلل كل جوانب السؤال...',
+            'براجع دقة المعلومات...',
+            'بفكر في أفضل طريقة للإجابة...',
+            'برتب الأفكار...',
+            'قربت أخلص التحليل...'
+        ];
         const DEEP_THINK_REASONING_SYSTEM_PROMPT = `إنت دلوقتي في وضع "تفكير عميق" (Deep Thinking) قبل ما تجاوب على سؤال الطالب. مهمتك هنا مش إنك تكتب الإجابة النهائية خالص — مهمتك إنك تكتب تحليلك الداخلي (Reasoning) خطوة بخطوة زي ما بتفكر فعلاً قبل ما تحسم إجابة. اتبع الأسلوب ده بالظبط:
 1. افهم السؤال بدقة: إيه المطلوب فعليًا؟ فيه أكتر من جزء أو شرط في السؤال؟
 2. لو السؤال طبي/تمريضي أو فيه أكتر من احتمال، فكر في أهم الاحتمالات وقيّم كل واحد بسرعة.
@@ -5229,6 +5244,27 @@
             pendingSkillContext = '';
         }
 
+        // بتبدأ تبديل جملة "بيفكر..." تحت العنوان كل شوية عشان تديله إحساس إنه بيمر
+        // بمراحل تفكير حقيقية (فهم السؤال، مراجعة المعلومات، ترتيب الإجابة...).
+        function startDeepThinkStatusCycle() {
+            const statusEl = document.getElementById('deepThinkStatus');
+            if (!statusEl) return;
+            let idx = 0;
+            statusEl.textContent = DEEP_THINK_STATUS_MESSAGES[0];
+            statusEl.classList.remove('fade');
+            deepThinkStatusInterval = setInterval(() => {
+                idx = (idx + 1) % DEEP_THINK_STATUS_MESSAGES.length;
+                statusEl.classList.add('fade');
+                setTimeout(() => {
+                    statusEl.textContent = DEEP_THINK_STATUS_MESSAGES[idx];
+                    statusEl.classList.remove('fade');
+                }, 250);
+            }, 2200);
+        }
+        function stopDeepThinkStatusCycle() {
+            if (deepThinkStatusInterval) { clearInterval(deepThinkStatusInterval); deepThinkStatusInterval = null; }
+        }
+
         // ====================== Deep Thinking: نداء تفكير حقيقي منفصل ======================
         // بيتنادى قبل أي رد عادي لو الطالب مفعّل زرار "Deep Thinking". بيبعت سؤاله لـ
         // Gemini بس (مش الموديل المختار) مع تعليمات "فكّر ومتجاوبش"، وبيعرض التحليل وهو
@@ -5249,6 +5285,7 @@
                 document.getElementById('chatContainer').insertBefore(indicator, document.getElementById('typingIndicator'));
                 indicator.classList.add('active');
             }
+            startDeepThinkStatusCycle();
             scrollToBottom();
 
             const startTime = Date.now();
@@ -5307,6 +5344,7 @@
             } finally {
                 clearInterval(deepThinkTimerInterval);
                 deepThinkTimerInterval = null;
+                stopDeepThinkStatusCycle();
                 if (indicator) indicator.classList.remove('active');
             }
         }
@@ -5532,6 +5570,7 @@
                 const dtIndicator = document.getElementById('deepThinkIndicator');
                 if (dtIndicator) dtIndicator.classList.remove('active');
                 if (deepThinkTimerInterval) { clearInterval(deepThinkTimerInterval); deepThinkTimerInterval = null; }
+                stopDeepThinkStatusCycle();
                 deepThinkReasoningContext = '';
                 updateCharCount();
             }
