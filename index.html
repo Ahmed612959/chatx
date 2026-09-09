@@ -888,27 +888,6 @@
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
         .mic-btn.unsupported { display: none; }
-        .mic-btn#deepThinkBtn.active {
-            background: var(--grad-bold); color: #fff;
-            box-shadow: 0 0 0 3px var(--accent-glow);
-            animation: deepThinkGlow 2.2s ease-in-out infinite;
-        }
-        @keyframes deepThinkGlow {
-            0%, 100% { box-shadow: 0 0 0 3px var(--accent-glow); }
-            50% { box-shadow: 0 0 0 6px var(--accent-glow); }
-        }
-        .deep-think-status {
-            display: none; align-items: center; gap: 8px; max-width: 80%; margin-bottom: 16px;
-            padding: 10px 14px; border-radius: 14px; background: var(--bg-glass); border: 1px solid var(--border);
-            font-size: 12.5px; color: var(--text-2); margin-right: 48px;
-        }
-        .deep-think-status.active { display: flex; }
-        .deep-think-status i { color: var(--accent); animation: deepThinkPulse 1.4s ease-in-out infinite; }
-        @keyframes deepThinkPulse { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.15); } }
-        .msg-bubble details.thinking-trace { margin-bottom: 10px; border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; background: var(--bg-glass); }
-        .msg-bubble details.thinking-trace summary { cursor: pointer; font-size: 12px; color: var(--text-2); font-weight: 600; }
-        .msg-bubble details.thinking-trace[open] summary { margin-bottom: 6px; }
-        .msg-bubble details.thinking-trace .thinking-trace-body { font-size: 12px; color: var(--text-2); white-space: pre-wrap; line-height: 1.7; }
 
         #messageInput {
             flex: 1; background: transparent; border: none; color: var(--text-1); font-family: var(--font);
@@ -1705,10 +1684,6 @@
                     <div class="msg-avatar" style="background: var(--grad-bold); color: white;"><i class="fas fa-graduation-cap"></i></div>
                     <div class="typing-dots"><span></span><span></span><span></span><svg viewBox="0 0 64 22" xmlns="http://www.w3.org/2000/svg"><path class="ecg-line" d="M0,11 L14,11 L18,4 L22,18 L26,11 L40,11 L44,6 L48,16 L52,11 L64,11"/><circle class="ecg-dot" cx="22" cy="18" r="2"/></svg></div>
                 </div>
-                <div class="deep-think-status" id="deepThinkStatus">
-                    <i class="fas fa-brain"></i>
-                    <span id="deepThinkStatusText">بيحلل سؤالك بعمق...</span>
-                </div>
             </div>
 
             <div class="input-area">
@@ -1727,9 +1702,6 @@
                     </button>
                     <button class="mic-btn" id="voiceCallBtn" onclick="openVoiceCallScreen()" title="مكالمة صوتية حية مع المساعد" aria-label="مكالمة صوتية حية مع المساعد" style="background:var(--grad-bold);color:#fff;">
                         <i class="fas fa-phone-volume"></i>
-                    </button>
-                    <button class="mic-btn" id="deepThinkBtn" onclick="toggleDeepThink()" title="تفكير عميق: أي موديل تختاره من القايمة بيحلل سؤالك فعليًا في نداء منفصل قبل ما يجاوب" aria-label="تفعيل التفكير العميق">
-                        <i class="fas fa-brain"></i>
                     </button>
                     <textarea id="messageInput" rows="1" placeholder="اكتب سؤالك هنا..." aria-label="اكتب رسالتك" oninput="autoResize(this); updateCharCount()" onkeydown="handleKeyDown(event)"></textarea>
                     <button class="send-btn" id="sendBtn" aria-label="إرسال الرسالة" onclick="sendMessage()" disabled>
@@ -4065,7 +4037,6 @@
         const systemPrefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
         let settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: systemPrefersLight ? 'light' : 'dark', backendUrl: '', model: 'auto', schoolApiUrl: FIXED_SCHOOL_API_URL };
         settings.schoolApiUrl = FIXED_SCHOOL_API_URL; // بنفرضه دايمًا حتى لو كان متخزن قديم مختلف
-        if (typeof settings.deepThink !== 'boolean') settings.deepThink = false; // وضع "تفكير عميق" — متفعّلش افتراضيًا
         // بيانات ربط School X (مشروع منفصل تماماً بدومين ومتغيرات بيئة مختلفة)
         let schoolToken = localStorage.getItem('sx_school_token') || null;
 
@@ -4198,7 +4169,6 @@
         window.onload = () => {
             applyTheme(settings.theme);
             if (settings.model) document.getElementById('modelSelect').value = settings.model;
-            initDeepThinkButton();
             if (chats.length === 0) createNewChat();
             else {
                 if (!currentChatId || !chats.find(c => c.id === currentChatId)) currentChatId = chats[0].id;
@@ -4633,42 +4603,6 @@
         function saveModelChoice() {
             settings.model = document.getElementById('modelSelect').value;
             saveData();
-        }
-
-        // ====================== وضع التفكير العميق (Deep Think) ======================
-        // لما مفعّل، أي رسالة بتتبعت بتعدي على /api/gemini/deep-think بدل المسار
-        // العادي: نداءين فعليين للموديل (تحليل الأول، رد نهائي مبني عليه التاني)
-        // بدل رد واحد مباشر — فعلاً بيفكر أكتر، مش مجرد تأخير شكلي.
-        function toggleDeepThink() {
-            settings.deepThink = !settings.deepThink;
-            saveData();
-            document.getElementById('deepThinkBtn').classList.toggle('active', settings.deepThink);
-            showToast(settings.deepThink ? '🧠 اتفعّل التفكير العميق — هيحلل قبل ما يجاوب' : 'اتقفل التفكير العميق', 'success');
-        }
-
-        function initDeepThinkButton() {
-            document.getElementById('deepThinkBtn').classList.toggle('active', !!settings.deepThink);
-        }
-
-        let deepThinkTimerInterval = null;
-        function startDeepThinkStatus() {
-            const el = document.getElementById('deepThinkStatus');
-            const textEl = document.getElementById('deepThinkStatusText');
-            document.getElementById('typingIndicator').classList.remove('active');
-            el.classList.add('active');
-            const startedAt = Date.now();
-            const phases = ['بيحلل سؤالك بعمق...', 'بيراجع المفاهيم المرتبطة...', 'بيبني الإجابة على التحليل...'];
-            let phaseIdx = 0;
-            textEl.textContent = `${phases[0]} 0ث`;
-            deepThinkTimerInterval = setInterval(() => {
-                const secs = Math.floor((Date.now() - startedAt) / 1000);
-                phaseIdx = Math.min(phases.length - 1, Math.floor(secs / 4));
-                textEl.textContent = `${phases[phaseIdx]} ${secs}ث`;
-            }, 400);
-        }
-        function stopDeepThinkStatus() {
-            if (deepThinkTimerInterval) { clearInterval(deepThinkTimerInterval); deepThinkTimerInterval = null; }
-            document.getElementById('deepThinkStatus').classList.remove('active');
         }
 
         function toggleDuaReminders(enabled) {
@@ -5194,71 +5128,6 @@
                 model = 'zimage';
             }
 
-            // وضع التفكير العميق: مفعّل، مفيش صورة مرفقة (المسار ده نصي بس حاليًا)،
-            // والموديل مش "محلي" أو "تحليل صور" (دول مالهمش تفكير حقيقي أصلاً).
-            // كل موديل بيفكر بعمق بنفس منطقه ومصدره هو (نداءين فعليين: تحليل ثم رد
-            // نهائي مبني عليه) — مش كله بيتحوّل لـ Gemini.
-            const deepThinkSupported = model !== 'zimage' && model !== 'local';
-            if (settings.deepThink && !hasImage && deepThinkSupported) {
-                source = model === 'auto' ? 'auto-deep-think' : `${model}-deep-think`;
-                try {
-                    if (model === 'gemini') {
-                        await runDeepThinkGemini(chat.messages, abortController.signal);
-                    } else if (model === 'german-teacher') {
-                        await runDeepThinkGemini(chat.messages, abortController.signal, GERMAN_TEACHER_SYSTEM_PROMPT);
-                    } else if (model === 'examiner') {
-                        await runDeepThinkGemini(chat.messages, abortController.signal, EXAMINER_SYSTEM_PROMPT);
-                    } else if (['groq', 'openrouter', 'cerebras', 'claude-opus', 'mistral', 'sambanova', 'qwen', 'onehop'].includes(model)) {
-                        await runDeepThinkOpenAICompat(model, chat, chat.messages, abortController.signal);
-                    } else {
-                        // auto: بنجرب بنفس ترتيب أولوية الوضع التلقائي العادي، وكل محاولة
-                        // بتفكر بعمق فعليًا (مش رد مباشر) — لو موديل فشل بننتقل للي بعده.
-                        const autoChain = [
-                            () => runDeepThinkOpenAICompat('groq', chat, chat.messages, abortController.signal),
-                            () => runDeepThinkGemini(chat.messages, abortController.signal),
-                            () => runDeepThinkOpenAICompat('openrouter', chat, chat.messages, abortController.signal),
-                            () => runDeepThinkOpenAICompat('mistral', chat, chat.messages, abortController.signal),
-                            () => runDeepThinkOpenAICompat('sambanova', chat, chat.messages, abortController.signal),
-                            () => runDeepThinkOpenAICompat('qwen', chat, chat.messages, abortController.signal)
-                        ];
-                        let lastError = null;
-                        let succeeded = false;
-                        for (const attempt of autoChain) {
-                            try {
-                                await attempt();
-                                succeeded = true;
-                                break;
-                            } catch (attemptError) {
-                                if (attemptError.name === 'AbortError') throw attemptError;
-                                lastError = attemptError;
-                            }
-                        }
-                        if (!succeeded) throw (lastError || new Error('كل الموديلات فشلت في وضع التفكير العميق'));
-                    }
-                    submitToSharedQuestionBank(fallbackText, chat.messages[chat.messages.length - 1]);
-                    reportFeatureUsage('main_chat', source);
-                } catch (error) {
-                    if (error.name === 'AbortError') {
-                        showToast('تم إيقاف الرد', 'error');
-                    } else {
-                        console.error(error);
-                        const shortDetail = (error.message || '').slice(0, 80);
-                        showToast(shortDetail ? `${shortDetail} — تم استخدام رد محلي` : 'حصل خطأ أثناء التفكير العميق، تم استخدام رد محلي', 'error');
-                        const lastMsg = chat.messages[chat.messages.length - 1];
-                        const alreadyReplied = lastMsg && lastMsg.role === 'bot' && (!lastUserMsg || lastMsg.timestamp >= lastUserMsg.timestamp);
-                        if (!alreadyReplied) await respondLocally(fallbackText, chat, new AbortController().signal);
-                    }
-                } finally {
-                    isGenerating = false;
-                    abortController = null;
-                    setSendButtonState(false);
-                    document.getElementById('typingIndicator').classList.remove('active');
-                    stopDeepThinkStatus();
-                    updateCharCount();
-                }
-                return;
-            }
-
             try {
                 if (model === 'groq') {
                     source = 'groq';
@@ -5513,12 +5382,11 @@
         // بتتنادى مرة واحدة بس، أول ما نص الرد يكون جاهز بالكامل — إما لأن البوت خلّص
         // الرد كله، أو لأن الطالب وقف الرد وعندنا الجزء اللي وصل لحد دلوقتي. بتقفل
         // النقط وبتبني فقاعة الرد بالنص كله دفعة واحدة (من غير كتابة تدريجية).
-        function renderFinishedBotMessage(text, source, stopped, thinking) {
+        function renderFinishedBotMessage(text, source, stopped) {
             document.getElementById('typingIndicator').classList.remove('active');
-            stopDeepThinkStatus();
             const chat = chats.find(c => c.id === currentChatId);
             const finalText = stopped ? cleanupTruncatedMarkdown(text) : text;
-            const botMsg = { role: 'bot', content: finalText, source, timestamp: Date.now(), id: `msg-${Date.now()}-b`, thinking: thinking || null };
+            const botMsg = { role: 'bot', content: finalText, source, timestamp: Date.now(), id: `msg-${Date.now()}-b` };
             chat.messages.push(botMsg);
             const msgDiv = createBotMessageShell(botMsg);
             if (stopped) {
@@ -6549,17 +6417,14 @@
 
         function finalizeBotMessage(msgDiv, botMsg) {
             const bubbleDiv = msgDiv.querySelector('.msg-bubble');
-            const thinkingHTML = botMsg.thinking
-                ? `<details class="thinking-trace"><summary>🧠 عرض تحليل الموديل قبل الرد</summary><div class="thinking-trace-body">${escapeHtml(botMsg.thinking)}</div></details>`
-                : '';
-            bubbleDiv.innerHTML = thinkingHTML + DOMPurify.sanitize(marked.parse(botMsg.content));
+            bubbleDiv.innerHTML = DOMPurify.sanitize(marked.parse(botMsg.content));
             bubbleDiv.classList.toggle('pinned-msg', !!botMsg.pinned);
             enhanceCodeBlocks(bubbleDiv);
             const timeSpan = msgDiv.querySelector('.msg-time');
             const sourceSpan = msgDiv.querySelector('.msg-source-icon');
             const actionsDiv = msgDiv.querySelector('.msg-actions');
             timeSpan.textContent = new Date(botMsg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
-            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'gemini-deep-think' ? '🧠' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'claude-opus' ? '✨' : botMsg.source === 'mistral' ? '🌬️' : botMsg.source === 'sambanova' ? '🚀' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'onehop' ? '🐋' : botMsg.source === 'zimage' ? '🖼️' : '💻';
+            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'claude-opus' ? '✨' : botMsg.source === 'mistral' ? '🌬️' : botMsg.source === 'sambanova' ? '🚀' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'onehop' ? '🐋' : botMsg.source === 'zimage' ? '🖼️' : '💻';
             // This message was just pushed as the newest one, so it's always eligible for regenerate.
             buildMsgActionButtons(botMsg, actionsDiv, true);
             syncRegenerateButtons(chats.find(c => c.id === currentChatId));
@@ -7329,165 +7194,6 @@
             }
 
             renderFinishedBotMessage(fullText, 'gemini', false);
-        }
-
-        // وضع "التفكير العميق": بيبعت الرسالة على /api/gemini/deep-think، اللي بيعمل
-        // نداءين حقيقيين متتاليين للموديل (تحليل ثم رد نهائي مبني عليه) — مش
-        // streaming زي باقي المسارات، لأن لازم نستنى النداء التاني كامل. بنعرض
-        // مؤشر "بيفكر بعمق..." حقيقي بعداد وقت فعلي طول ما بننتظر الرد، وبعد
-        // ما يوصل بنعرض الرد النهائي مع إمكانية فتح "التحليل" اللي بنى عليه الرد.
-        async function runDeepThinkGemini(messages, signal, systemPrompt) {
-            const lastUserMsg = [...messages].reverse().find(m => m.role === 'user') || messages[messages.length - 1];
-            startDeepThinkStatus();
-            let response;
-            try {
-                response = await fetchWithRetry(`${settings.backendUrl}/api/gemini/deep-think`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: lastUserMsg.content, systemPrompt: systemPrompt || undefined }),
-                    signal
-                });
-            } finally {
-                stopDeepThinkStatus();
-            }
-
-            if (!response.ok) {
-                let detail = '';
-                try { detail = (await response.text()).slice(0, 200); } catch (e) {}
-                throw new Error(`Deep Think API Error (${response.status}): ${detail || 'no detail'}`);
-            }
-
-            const data = await response.json();
-            if (!data || !data.reply) {
-                await respondLocally(lastUserMsg.content, chats.find(c => c.id === currentChatId), signal);
-                return;
-            }
-            renderFinishedBotMessage(data.reply, 'gemini-deep-think', false, data.thinking || null);
-        }
-
-        // ====================== Deep Think لباقي الموديلات (Groq/OpenRouter/Cerebras/...) ======================
-        // نفس مبدأ Gemini بالظبط، بس هنا بنبعت نداءين حقيقيين لنفس مسار الـ streaming
-        // العادي بتاع كل موديل (نفس الـ endpoint ونفس اسم الموديل) — مرة نطلب تحليل
-        // بس (مش رد نهائي)، ومرة تانية نطلب الرد النهائي مبني فعليًا على التحليل ده.
-        // كده أي موديل مختار من القايمة بيفكر بعمق فعليًا بنفس منطقه هو، مش Gemini
-        // بس. بنجمع كل الرد أول ما يخلص الـ stream (من غير ما نعرضه أول بأول) عشان
-        // نقدر نستخدمه كسياق للنداء التاني.
-        const DEEP_THINK_ANALYSIS_INSTRUCTIONS = `
-
-مهمتك دلوقتي مش الرد على الطالب. حلل سؤاله بعمق قبل أي رد:
-1) إيه بالظبط المطلوب في السؤال؟ لو فيه أكتر من جزء، افصلهم.
-2) إيه المفاهيم أو المعلومات اللي محتاج تستحضرها عشان تجاوب بدقة؟
-3) فيه أي لبس أو افتراض لازم تاخده بالك منه؟
-4) إيه أفضل ترتيب/هيكل للإجابة عشان تبقى واضحة ومفيدة؟
-اكتب التحليل ده بس، مختصر في نقاط، من غير مقدمات ومن غير ما تكتب الإجابة النهائية.`;
-
-        function deepThinkFinalSystemPrompt(baseSystemPrompt, thinking) {
-            if (!thinking) return baseSystemPrompt;
-            return `${baseSystemPrompt}
-
-🧠 التحليل اللي عملته لنفسك قبل الرد (استخدمه كأساس لإجابتك، ومتكتبوش تاني حرفيًا في الرد):
-${thinking}
-
-اكتب دلوقتي الرد النهائي الكامل والدقيق للطالب، مبني على التحليل ده، بأسلوب واضح ومنظم ومفيد.`;
-        }
-
-        // بتعمل نداء واحد stream كامل وترجع النص الكامل من غير ما تعرضه في الشاشة —
-        // نفس منطق قراءة SSE المستخدم في كل دوال streamX، بس هنا بترجع النتيجة
-        // بدل ما تعرضها مباشرة، عشان نقدر نستخدمها كمرحلة تحليل أو كمرحلة نهائية.
-        async function fetchOpenAICompatFullText(url, model, systemPrompt, messages, signal, extraHeaders, maxRetries, timeoutMs) {
-            const response = await fetchWithRetry(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...(extraHeaders || {}) },
-                body: JSON.stringify({
-                    model,
-                    messages: [{ role: 'system', content: systemPrompt }, ...messages.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))],
-                    stream: true
-                }),
-                signal
-            }, maxRetries, timeoutMs);
-
-            if (!response.ok) {
-                let detail = '';
-                try { detail = (await response.text()).slice(0, 200); } catch (e) {}
-                throw new Error(`API Error (${response.status}): ${detail || 'no detail'}`);
-            }
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-            let fullText = '';
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop();
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    const payload = line.slice(6).trim();
-                    if (payload === '[DONE]') continue;
-                    try {
-                        const data = JSON.parse(payload);
-                        const content = data.choices?.[0]?.delta?.content || '';
-                        if (content) fullText += content;
-                    } catch (e) {}
-                }
-            }
-            return fullText;
-        }
-
-        // بيانات كل موديل (رابط الـ endpoint، اسم الموديل، أي هيدرز إضافية، مهلة
-        // مخصصة) — نفس القيم بالظبط المستخدمة في دوال streamX العادية، عشان
-        // التفكير العميق يستخدم نفس الموديل والمصدر اللي الطالب مختاره فعلاً.
-        function getDeepThinkProviderConfig(providerKey) {
-            const premiumHeaders = schoolToken ? { 'Authorization': `Bearer ${schoolToken}` } : {};
-            const configs = {
-                groq: { url: `${settings.backendUrl}/api/groq`, model: 'openai/gpt-oss-20b' },
-                openrouter: { url: `${settings.backendUrl}/api/openrouter`, model: 'openrouter/free' },
-                cerebras: { url: `${settings.backendUrl}/api/cerebras`, model: 'gpt-oss-120b', headers: premiumHeaders, maxRetries: 1, timeoutMs: CEREBRAS_TIMEOUT_MS },
-                'claude-opus': { url: `${settings.backendUrl}/api/claude-opus`, model: undefined, headers: premiumHeaders, maxRetries: 1, timeoutMs: CLAUDE_OPUS_TIMEOUT_MS },
-                mistral: { url: `${settings.backendUrl}/api/mistral`, model: 'mistral-small-latest' },
-                sambanova: { url: `${settings.backendUrl}/api/sambanova`, model: 'Meta-Llama-3.3-70B-Instruct' },
-                qwen: { url: `${settings.backendUrl}/api/qwen`, model: 'qwen-plus' },
-                onehop: { url: `${settings.backendUrl}/api/onehop`, model: 'deepseek/deepseek-v4-pro' }
-            };
-            return configs[providerKey];
-        }
-
-        async function runDeepThinkOpenAICompat(providerKey, chat, messages, signal) {
-            const cfg = getDeepThinkProviderConfig(providerKey);
-            if (!cfg) throw new Error(`Deep Think: موديل غير مدعوم (${providerKey})`);
-            const baseSystemPrompt = getSystemPrompt();
-
-            startDeepThinkStatus();
-            let thinking = null;
-            let fullText = '';
-            try {
-                // المرحلة 1: تحليل حقيقي — نداء فعلي لنفس الموديل، الناتج مش بيتعرض للطالب.
-                try {
-                    thinking = await fetchOpenAICompatFullText(
-                        cfg.url, cfg.model, baseSystemPrompt + DEEP_THINK_ANALYSIS_INSTRUCTIONS,
-                        messages, signal, cfg.headers, cfg.maxRetries, cfg.timeoutMs
-                    );
-                } catch (analysisError) {
-                    if (analysisError.name === 'AbortError') throw analysisError;
-                    thinking = null; // فشل مرحلة التحليل مايوقفش الرد نفسه — نكمل عادي من غيرها
-                }
-
-                // المرحلة 2: الرد النهائي — نداء تاني فعلي، مبني على التحليل لو نجح.
-                fullText = await fetchOpenAICompatFullText(
-                    cfg.url, cfg.model, deepThinkFinalSystemPrompt(baseSystemPrompt, thinking),
-                    messages, signal, cfg.headers, cfg.maxRetries, cfg.timeoutMs
-                );
-            } finally {
-                stopDeepThinkStatus();
-            }
-
-            if (!fullText) {
-                await respondLocally(messages[messages.length - 1].content, chat, signal);
-                return;
-            }
-            renderFinishedBotMessage(fullText, providerKey, false, thinking);
         }
 
         // Sends the last user message (with its attached image, if any) to the vision-capable
