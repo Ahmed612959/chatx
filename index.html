@@ -1829,8 +1829,6 @@
         </main>
     </div>
 
-    <button class="fab" aria-label="فتح الأدوات" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
-
     <!-- Settings Modal -->
     <!-- شاشة ترحيب أول استخدام -->
     <div class="modal-overlay" id="onboardingModal">
@@ -5693,16 +5691,53 @@
             return msgDiv;
         }
 
+        // ====================== كتابة الرد لحظة بلحظة (Live Streaming) ======================
+        // كل دوال stream* بتقرأ الرد من السيرفر chunk-by-chunk فعليًا، لكن كانت بتراكم
+        // الأجزاء دي في متغيّر مخفي وميحطهاش في الشات إلا بعد ما الرد يخلص تمامًا —
+        // فكان الطالب بيشوف نقط "بيكتب..." لفترة، وبعدين الرد كله يظهر مرة واحدة.
+        // beginBotMessageStream() و streamChunkToUI() بيحلوا المشكلة دي: بيعرضوا الفقاعة
+        // فور ما أول جزء من النص يوصل، وبيحدّثوا محتواها مباشرة مع كل جزء جديد.
+        function beginBotMessageStream() {
+            return { msgDiv: null, botMsg: null };
+        }
+
+        function streamChunkToUI(streamState, textSoFar, source) {
+            if (!textSoFar) return;
+            const chat = chats.find(c => c.id === currentChatId);
+            if (!chat) return;
+            if (!streamState.msgDiv) {
+                // أول جزء نص بيوصل: نقفل نقط "بيكتب..." ونضيف فقاعة الرد فعليًا دلوقتي
+                // بدل ما نستناها لحد النهاية.
+                document.getElementById('typingIndicator').classList.remove('active');
+                streamState.botMsg = { role: 'bot', content: '', source, timestamp: Date.now(), id: `msg-${Date.now()}-b` };
+                chat.messages.push(streamState.botMsg);
+                streamState.msgDiv = createBotMessageShell(streamState.botMsg);
+            }
+            streamState.botMsg.content = textSoFar;
+            const bubbleDiv = streamState.msgDiv.querySelector('.msg-bubble');
+            if (bubbleDiv) bubbleDiv.innerHTML = DOMPurify.sanitize(marked.parse(textSoFar));
+            scrollToBottom();
+        }
+
         // بتتنادى مرة واحدة بس، أول ما نص الرد يكون جاهز بالكامل — إما لأن البوت خلّص
-        // الرد كله، أو لأن الطالب وقف الرد وعندنا الجزء اللي وصل لحد دلوقتي. بتقفل
-        // النقط وبتبني فقاعة الرد بالنص كله دفعة واحدة (من غير كتابة تدريجية).
-        function renderFinishedBotMessage(text, source, stopped) {
+        // الرد كله، أو لأن الطالب وقف الرد وعندنا الجزء اللي وصل لحد دلوقتي. لو الرد
+        // كان بيتكتب لحظة بلحظة بالفعل (streamState من streamChunkToUI)، بنستخدم نفس
+        // الفقاعة اللي ظهرت أول أول بدل ما نضيف فقاعة تانية مكررة — وبنقفل عليها
+        // بالتنسيق النهائي (أزرار، مصدر، صوت...).
+        function renderFinishedBotMessage(text, source, stopped, streamState) {
             document.getElementById('typingIndicator').classList.remove('active');
             const chat = chats.find(c => c.id === currentChatId);
             const finalText = stopped ? cleanupTruncatedMarkdown(text) : text;
-            const botMsg = { role: 'bot', content: finalText, source, timestamp: Date.now(), id: `msg-${Date.now()}-b` };
-            chat.messages.push(botMsg);
-            const msgDiv = createBotMessageShell(botMsg);
+            let msgDiv, botMsg;
+            if (streamState && streamState.msgDiv && streamState.botMsg) {
+                botMsg = streamState.botMsg;
+                botMsg.content = finalText;
+                msgDiv = streamState.msgDiv;
+            } else {
+                botMsg = { role: 'bot', content: finalText, source, timestamp: Date.now(), id: `msg-${Date.now()}-b` };
+                chat.messages.push(botMsg);
+                msgDiv = createBotMessageShell(botMsg);
+            }
             if (stopped) {
                 finalizeStoppedBotMessage(msgDiv, botMsg);
             } else {
@@ -6922,6 +6957,7 @@
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
+            const streamState = beginBotMessageStream();
 
             try {
                 while (true) {
@@ -6939,13 +6975,13 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) fullText += content;
+                            if (content) { fullText += content; streamChunkToUI(streamState, fullText, 'groq'); }
                         } catch (e) {}
                     }
                 }
             } catch (err) {
                 if (err.name === 'AbortError' && fullText) {
-                    renderFinishedBotMessage(fullText, 'groq', true);
+                    renderFinishedBotMessage(fullText, 'groq', true, streamState);
                 }
                 throw err;
             }
@@ -6955,7 +6991,7 @@
                 return;
             }
 
-            renderFinishedBotMessage(fullText, 'groq', false);
+            renderFinishedBotMessage(fullText, 'groq', false, streamState);
         }
 
         async function streamOpenRouter(messages, signal) {
@@ -6984,6 +7020,7 @@
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
+            const streamState = beginBotMessageStream();
 
             try {
                 while (true) {
@@ -7001,13 +7038,13 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) fullText += content;
+                            if (content) { fullText += content; streamChunkToUI(streamState, fullText, 'openrouter'); }
                         } catch (e) {}
                     }
                 }
             } catch (err) {
                 if (err.name === 'AbortError' && fullText) {
-                    renderFinishedBotMessage(fullText, 'openrouter', true);
+                    renderFinishedBotMessage(fullText, 'openrouter', true, streamState);
                 }
                 throw err;
             }
@@ -7017,7 +7054,7 @@
                 return;
             }
 
-            renderFinishedBotMessage(fullText, 'openrouter', false);
+            renderFinishedBotMessage(fullText, 'openrouter', false, streamState);
         }
 
         // مهلة أعلى شوية من الافتراضي (20 ثانية بدل 12) — بعد ما ضفنا فحص الاشتراك
@@ -7053,6 +7090,7 @@
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
+            const streamState = beginBotMessageStream();
 
             try {
                 while (true) {
@@ -7070,13 +7108,13 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) fullText += content;
+                            if (content) { fullText += content; streamChunkToUI(streamState, fullText, 'cerebras'); }
                         } catch (e) {}
                     }
                 }
             } catch (err) {
                 if (err.name === 'AbortError' && fullText) {
-                    renderFinishedBotMessage(fullText, 'cerebras', true);
+                    renderFinishedBotMessage(fullText, 'cerebras', true, streamState);
                 }
                 throw err;
             }
@@ -7086,7 +7124,7 @@
                 return;
             }
 
-            renderFinishedBotMessage(fullText, 'cerebras', false);
+            renderFinishedBotMessage(fullText, 'cerebras', false, streamState);
         }
 
         // موديل Claude Opus عن طريق OneHop — Premium بس (زي Cerebras بالظبط)، بيعدي على
@@ -7126,6 +7164,7 @@
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
+            const streamState = beginBotMessageStream();
 
             try {
                 while (true) {
@@ -7143,13 +7182,13 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) fullText += content;
+                            if (content) { fullText += content; streamChunkToUI(streamState, fullText, 'claude-opus'); }
                         } catch (e) {}
                     }
                 }
             } catch (err) {
                 if (err.name === 'AbortError' && fullText) {
-                    renderFinishedBotMessage(fullText, 'claude-opus', true);
+                    renderFinishedBotMessage(fullText, 'claude-opus', true, streamState);
                 }
                 throw err;
             }
@@ -7159,7 +7198,7 @@
                 return;
             }
 
-            renderFinishedBotMessage(fullText, 'claude-opus', false);
+            renderFinishedBotMessage(fullText, 'claude-opus', false, streamState);
         }
 
         async function streamMistral(messages, signal) {
@@ -7185,6 +7224,7 @@
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
+            const streamState = beginBotMessageStream();
 
             try {
                 while (true) {
@@ -7202,13 +7242,13 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) fullText += content;
+                            if (content) { fullText += content; streamChunkToUI(streamState, fullText, 'mistral'); }
                         } catch (e) {}
                     }
                 }
             } catch (err) {
                 if (err.name === 'AbortError' && fullText) {
-                    renderFinishedBotMessage(fullText, 'mistral', true);
+                    renderFinishedBotMessage(fullText, 'mistral', true, streamState);
                 }
                 throw err;
             }
@@ -7218,7 +7258,7 @@
                 return;
             }
 
-            renderFinishedBotMessage(fullText, 'mistral', false);
+            renderFinishedBotMessage(fullText, 'mistral', false, streamState);
         }
 
         async function streamSambanova(messages, signal) {
@@ -7246,6 +7286,7 @@
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
+            const streamState = beginBotMessageStream();
 
             try {
                 while (true) {
@@ -7263,13 +7304,13 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) fullText += content;
+                            if (content) { fullText += content; streamChunkToUI(streamState, fullText, 'sambanova'); }
                         } catch (e) {}
                     }
                 }
             } catch (err) {
                 if (err.name === 'AbortError' && fullText) {
-                    renderFinishedBotMessage(fullText, 'sambanova', true);
+                    renderFinishedBotMessage(fullText, 'sambanova', true, streamState);
                 }
                 throw err;
             }
@@ -7279,7 +7320,7 @@
                 return;
             }
 
-            renderFinishedBotMessage(fullText, 'sambanova', false);
+            renderFinishedBotMessage(fullText, 'sambanova', false, streamState);
         }
 
         async function streamQwen(messages, signal) {
@@ -7305,6 +7346,7 @@
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
+            const streamState = beginBotMessageStream();
 
             try {
                 while (true) {
@@ -7322,13 +7364,13 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) fullText += content;
+                            if (content) { fullText += content; streamChunkToUI(streamState, fullText, 'qwen'); }
                         } catch (e) {}
                     }
                 }
             } catch (err) {
                 if (err.name === 'AbortError' && fullText) {
-                    renderFinishedBotMessage(fullText, 'qwen', true);
+                    renderFinishedBotMessage(fullText, 'qwen', true, streamState);
                 }
                 throw err;
             }
@@ -7338,7 +7380,7 @@
                 return;
             }
 
-            renderFinishedBotMessage(fullText, 'qwen', false);
+            renderFinishedBotMessage(fullText, 'qwen', false, streamState);
         }
 
         // موديل DeepSeek عن طريق OneHop — نفس شكل باقي الموديلات بالظبط، بيعدي على
@@ -7367,6 +7409,7 @@
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
+            const streamState = beginBotMessageStream();
 
             try {
                 while (true) {
@@ -7384,13 +7427,13 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) fullText += content;
+                            if (content) { fullText += content; streamChunkToUI(streamState, fullText, 'onehop'); }
                         } catch (e) {}
                     }
                 }
             } catch (err) {
                 if (err.name === 'AbortError' && fullText) {
-                    renderFinishedBotMessage(fullText, 'onehop', true);
+                    renderFinishedBotMessage(fullText, 'onehop', true, streamState);
                 }
                 throw err;
             }
@@ -7400,7 +7443,7 @@
                 return;
             }
 
-            renderFinishedBotMessage(fullText, 'onehop', false);
+            renderFinishedBotMessage(fullText, 'onehop', false, streamState);
         }
 
         // System prompt for the "معلم الألماني" mode: a professional German teacher
@@ -7490,6 +7533,7 @@
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
+            const streamState = beginBotMessageStream();
 
             try {
                 while (true) {
@@ -7505,13 +7549,13 @@
                         try {
                             const data = JSON.parse(line.slice(6));
                             const piece = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                            if (piece) fullText += piece;
+                            if (piece) { fullText += piece; streamChunkToUI(streamState, fullText, 'gemini'); }
                         } catch (e) {}
                     }
                 }
             } catch (err) {
                 if (err.name === 'AbortError' && fullText) {
-                    renderFinishedBotMessage(fullText, 'gemini', true);
+                    renderFinishedBotMessage(fullText, 'gemini', true, streamState);
                 }
                 throw err;
             }
@@ -7521,7 +7565,7 @@
                 return;
             }
 
-            renderFinishedBotMessage(fullText, 'gemini', false);
+            renderFinishedBotMessage(fullText, 'gemini', false, streamState);
         }
 
         // Sends the last user message (with its attached image, if any) to the vision-capable
@@ -7566,6 +7610,7 @@
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
+            const streamState = beginBotMessageStream();
 
             try {
                 while (true) {
@@ -7583,13 +7628,13 @@
                         try {
                             const data = JSON.parse(payload);
                             const content = data.choices[0]?.delta?.content || '';
-                            if (content) fullText += content;
+                            if (content) { fullText += content; streamChunkToUI(streamState, fullText, 'zimage'); }
                         } catch (e) {}
                     }
                 }
             } catch (err) {
                 if (err.name === 'AbortError' && fullText) {
-                    renderFinishedBotMessage(fullText, 'zimage', true);
+                    renderFinishedBotMessage(fullText, 'zimage', true, streamState);
                 }
                 throw err;
             }
@@ -7599,7 +7644,7 @@
                 return;
             }
 
-            renderFinishedBotMessage(fullText, 'zimage', false);
+            renderFinishedBotMessage(fullText, 'zimage', false, streamState);
         }
 
         function getLocalResponse(prompt) {
