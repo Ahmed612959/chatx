@@ -1773,11 +1773,7 @@
             </div>
 
             <div class="input-area">
-                <div class="smart-suggestions" id="smartSuggestions">
-                    <div class="sug-chip" onclick="sendQuick('لخص لي هذا')">لخص</div>
-                    <div class="sug-chip" onclick="sendQuick('اعطني أسئلة')">اختبرني</div>
-                    <div class="sug-chip" onclick="sendQuick('اشرح ببساطة')">اشرح</div>
-                </div>
+                <div class="smart-suggestions" id="smartSuggestions"></div>
                 <button type="button" class="deep-think-bar" id="deepThinkBtn" onclick="toggleDeepThink()" aria-pressed="false">
                     <span class="deep-think-bar-icon"><i class="fas fa-brain"></i></span>
                     <span class="deep-think-bar-text">
@@ -5260,7 +5256,7 @@
                     statusEl.textContent = DEEP_THINK_STATUS_MESSAGES[idx];
                     statusEl.classList.remove('fade');
                 }, 250);
-            }, 2200);
+            }, 4200);
         }
         function stopDeepThinkStatusCycle() {
             if (deepThinkStatusInterval) { clearInterval(deepThinkStatusInterval); deepThinkStatusInterval = null; }
