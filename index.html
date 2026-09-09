@@ -4896,9 +4896,12 @@
             // بنقفل شريط البحث ونصفّر نتايجه — عناصر الـ DOM اللي كان بيدوّر فيها هتتشال دلوقتي
             toggleChatSearchBar(false);
             
-            // Remove old messages only
+            // Remove old messages only — لازم نستثني صندوق "جاري التفكير..." (deep-think-indicator)
+            // زي ما بنستثني نقط "بيكتب..." بالظبط، وإلا هيتشال من الـ DOM أول ما أي محادثة
+            // تترندر (حتى أول ما الصفحة تفتح)، وبعدها كل نداءات getElementById بتاعته هترجع
+            // null للأبد فيبقى مفيش أي حاجة بتظهر لما الطالب يفعّل Deep Thinking.
             Array.from(container.children).forEach(child => {
-                if (!child.classList.contains('welcome-screen') && !child.classList.contains('typing-indicator')) {
+                if (!child.classList.contains('welcome-screen') && !child.classList.contains('typing-indicator') && !child.classList.contains('deep-think-indicator')) {
                     child.remove();
                 }
             });
