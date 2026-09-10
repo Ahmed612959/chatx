@@ -1521,6 +1521,35 @@
         .skeleton-line { height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--border) 25%, var(--bg-2, #2a2d3a) 37%, var(--border) 63%); background-size: 400px 100%; animation: skeletonShimmer 1.4s ease-in-out infinite; }
         .skeleton-line.short { width: 40%; }
         .skeleton-line.long { width: 75%; }
+
+        /* ====================== فيديوهات شرح المنصة (Video Lessons) ====================== */
+        .vl-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:12px 16px; border-bottom:1px solid var(--border); }
+        .vl-search-wrap { position:relative; flex:1; min-width:160px; }
+        .vl-search-wrap i { position:absolute; top:50%; right:12px; transform:translateY(-50%); color:var(--text-3); font-size:12px; pointer-events:none; }
+        .vl-search-wrap input { width:100%; padding-right:32px; }
+        .vl-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap:14px; padding:16px; }
+        @media (max-width: 480px) { .vl-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px; padding:12px; } }
+        .vl-card { background:var(--bg-2); border:1px solid var(--border); border-radius:14px; overflow:hidden; cursor:pointer; display:flex; flex-direction:column; transition:transform .15s ease, box-shadow .15s ease; position:relative; }
+        .vl-card:hover { transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.18); }
+        .vl-thumb { position:relative; aspect-ratio:16/9; background:var(--grad-bold); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+        .vl-thumb video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; pointer-events:none; opacity:.9; }
+        .vl-play-badge { position:relative; z-index:1; width:42px; height:42px; border-radius:50%; background:rgba(0,0,0,.45); backdrop-filter:blur(2px); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; }
+        .vl-views-badge { position:absolute; bottom:6px; left:6px; background:rgba(0,0,0,.55); color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; display:flex; align-items:center; gap:4px; z-index:1; }
+        .vl-delete-btn { position:absolute; top:6px; left:6px; z-index:2; width:26px; height:26px; border-radius:50%; background:var(--danger); color:#fff; border:none; display:flex; align-items:center; justify-content:center; font-size:11px; cursor:pointer; opacity:.92; }
+        .vl-body { padding:10px 12px 12px; display:flex; flex-direction:column; gap:4px; flex:1; }
+        .vl-title { font-size:13px; font-weight:700; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .vl-creator { font-size:11px; color:var(--text-3); display:flex; align-items:center; gap:5px; }
+        .vl-desc { font-size:11px; color:var(--text-2); line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-top:2px; }
+        .vl-skel-card { background:var(--bg-2); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+        .vl-skel-thumb { aspect-ratio:16/9; background:linear-gradient(90deg, var(--border) 25%, var(--bg-2, #2a2d3a) 37%, var(--border) 63%); background-size:400px 100%; animation:skeletonShimmer 1.4s ease-in-out infinite; }
+        .vl-skel-body { padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+        .vl-empty { text-align:center; padding:40px 16px; color:var(--text-3); }
+        .vl-empty i { font-size:32px; opacity:.5; margin-bottom:10px; display:block; }
+        .vl-player-video { width:100%; max-height:60vh; border-radius:12px; background:#000; display:block; }
+        .vl-player-meta { padding:14px 2px 2px; }
+        .vl-player-title { font-size:15px; font-weight:800; margin-bottom:4px; }
+        .vl-player-creator { font-size:12px; color:var(--text-3); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+        .vl-player-desc { font-size:12.5px; color:var(--text-2); line-height:1.8; white-space:pre-wrap; }
         .dua-timer { font-size: 11px; color: rgba(255,255,255,.55); }
         .dua-extra { margin-top: 14px; font-size: 11.5px; color: rgba(255,255,255,.65); line-height: 1.8; border-top: 1px dashed rgba(212,175,55,.25); padding-top: 12px; }
         .dua-close { position: absolute; top: 14px; left: 14px; width: 28px; height: 28px; border-radius: 50%; border: none;
@@ -1697,6 +1726,7 @@
                     <button class="action-btn" aria-label="القسم الديني" onclick="openReligionSection()"><i class="fas fa-mosque"></i></button>
                     <button class="action-btn" aria-label="مميزات Premium" onclick="openPremiumHub()"><i class="fas fa-crown"></i></button>
                     <button class="action-btn" aria-label="المكتبة المشتركة" onclick="openModal('sharedLibraryModal'); switchLibraryTab('all');"><i class="fas fa-layer-group"></i></button>
+                    <button class="action-btn" aria-label="فيديوهات شرح المنصة" title="فيديوهات شرح المنصة" onclick="openModal('videoLessonsModal'); loadVideoLessons();"><i class="fas fa-video"></i></button>
                     <button class="action-btn" aria-label="فتح الأدوات" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
                     <button class="action-btn" aria-label="استوديو الفيديو التلقائي" title="حوّل أي ملخص لفيديو بالصوت" onclick="openModal('videoStudioModal')"><i class="fas fa-clapperboard"></i></button>
                 </div>
@@ -1780,6 +1810,11 @@
                             <i class="fas fa-clapperboard"></i>
                             <h4>فيديو من ملخص</h4>
                             <p>شرائح متحركة + صوت</p>
+                        </div>
+                        <div class="quick-card" onclick="openModal('videoLessonsModal'); loadVideoLessons();">
+                            <i class="fas fa-video"></i>
+                            <h4>فيديوهات الشرح</h4>
+                            <p>اتعلم تستخدم المنصة</p>
                         </div>
                     </div>
                 </div>
@@ -2627,6 +2662,74 @@
                 <button class="btn-calc" style="flex:none;width:auto;padding:0 14px;" onclick="closeModal('sharedLibraryModal'); openModal('uploadSummaryModal');"><i class="fas fa-plus"></i> شارك ملخص</button>
             </div>
             <div id="sharedLibraryList" style="flex:1;overflow-y:auto;padding:12px 16px;"></div>
+        </div>
+    </div>
+
+    <!-- فيديوهات شرح المنصة: متاحة لأي زائر يتفرج، والإضافة للأدمن بس -->
+    <div class="modal-overlay" id="videoLessonsModal">
+        <div class="modal" style="display:flex;flex-direction:column;height:82vh;max-height:680px;max-width:900px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-video"></i> فيديوهات شرح المنصة</div>
+                <button class="close-modal" aria-label="إغلاق فيديوهات الشرح" onclick="closeModal('videoLessonsModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="vl-toolbar">
+                <div class="vl-search-wrap">
+                    <i class="fas fa-magnifying-glass"></i>
+                    <input type="text" id="videoLessonSearchInput" class="tool-input" placeholder="دوّر بعنوان الفيديو أو اسم صاحبه..." oninput="filterVideoLessons(this.value)">
+                </div>
+                <button class="btn-calc" id="videoLessonAddBtn" style="display:none;flex:none;width:auto;padding:0 14px;" onclick="closeModal('videoLessonsModal'); openAddVideoLessonModal();"><i class="fas fa-plus"></i> إضافة فيديو</button>
+            </div>
+            <div id="videoLessonsGrid" class="vl-grid" style="flex:1;overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <!-- رفع فيديو شرح جديد (الأدمن فقط) -->
+    <div class="modal-overlay" id="addVideoLessonModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-cloud-upload-alt"></i> إضافة فيديو شرح</div>
+                <button class="close-modal" aria-label="إغلاق نافذة رفع الفيديو" onclick="closeModal('addVideoLessonModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tool-section">
+                <div class="input-group">
+                    <label>عنوان الفيديو</label>
+                    <input type="text" id="videoLessonTitleInput" class="tool-input" placeholder="مثال: إزاي تستخدم بنك الأسئلة" maxlength="200">
+                </div>
+                <div class="input-group">
+                    <label>اسم الشخص اللي عمل الفيديو</label>
+                    <input type="text" id="videoLessonCreatorInput" class="tool-input" placeholder="مثال: أحمد موسى" maxlength="100">
+                </div>
+                <div class="input-group">
+                    <label>الوصف (اختياري)</label>
+                    <textarea id="videoLessonDescInput" class="tool-input" rows="3" maxlength="1000" placeholder="نبذة بسيطة عن محتوى الفيديو..."></textarea>
+                </div>
+                <div class="input-group">
+                    <label>ملف الفيديو</label>
+                    <input type="file" id="videoLessonFileInput" class="tool-input" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.mkv,.m4v">
+                </div>
+                <button class="btn-calc" id="videoLessonUploadBtn" onclick="uploadVideoLesson()"><i class="fas fa-upload"></i> رفع الفيديو</button>
+                <div class="upload-progress-wrap" id="videoLessonProgressWrap">
+                    <div class="upload-progress-bar" id="videoLessonProgressBar"></div>
+                </div>
+                <div class="upload-progress-text" id="videoLessonProgressText"></div>
+                <div class="calc-result" id="videoLessonUploadStatus"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تشغيل فيديو شرح -->
+    <div class="modal-overlay" id="videoLessonPlayerModal">
+        <div class="modal" style="max-width:720px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-clapperboard"></i> تشغيل الفيديو</div>
+                <button class="close-modal" aria-label="إغلاق مشغل الفيديو" onclick="closeVideoLessonPlayer()"><i class="fas fa-times"></i></button>
+            </div>
+            <video id="videoLessonPlayerEl" class="vl-player-video" controls playsinline></video>
+            <div class="vl-player-meta">
+                <div class="vl-player-title" id="videoLessonPlayerTitle"></div>
+                <div class="vl-player-creator" id="videoLessonPlayerCreator"></div>
+                <div class="vl-player-desc" id="videoLessonPlayerDesc"></div>
+            </div>
         </div>
     </div>
 
@@ -8338,6 +8441,9 @@
                     adminSharingSection.style.display = isAdmin ? 'block' : 'none';
                     if (isAdmin) loadAccountSharingReport();
                 }
+                // زرار "إضافة فيديو" في مودال فيديوهات الشرح — للأدمن بس
+                const videoLessonAddBtn = document.getElementById('videoLessonAddBtn');
+                if (videoLessonAddBtn) videoLessonAddBtn.style.display = isAdmin ? 'inline-flex' : 'none';
             } else {
                 if (loggedOutBox && loggedInBox) {
                     loggedOutBox.style.display = 'block';
@@ -8364,6 +8470,8 @@
                 if (liveNowBtnOff) liveNowBtnOff.style.display = 'none';
                 if (groupChatBtnOff) groupChatBtnOff.style.display = 'none';
                 if (pushNotifSectionOff) pushNotifSectionOff.style.display = 'none';
+                const videoLessonAddBtnOff = document.getElementById('videoLessonAddBtn');
+                if (videoLessonAddBtnOff) videoLessonAddBtnOff.style.display = 'none';
             }
         }
 
@@ -10044,6 +10152,241 @@
                 progText.textContent = '';
             } finally {
                 btn.disabled = false;
+            }
+        }
+
+        // ====================== فيديوهات شرح المنصة (Video Lessons) ======================
+        let videoLessonsCache = [];
+        let currentVideoLessonId = null;
+
+        function formatVideoDuration(seconds) {
+            if (!seconds || isNaN(seconds)) return '';
+            const m = Math.floor(seconds / 60);
+            const s = Math.round(seconds % 60);
+            return `${m}:${String(s).padStart(2, '0')}`;
+        }
+
+        function formatVideoViews(n) {
+            n = n || 0;
+            if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'ألف';
+            return String(n);
+        }
+
+        function videoLessonSkeletonHtml() {
+            return Array.from({ length: 8 }).map(() => `
+                <div class="vl-skel-card">
+                    <div class="vl-skel-thumb"></div>
+                    <div class="vl-skel-body">
+                        <div class="skeleton-line long"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function videoLessonCardHtml(v) {
+            const isAdmin = schoolUser?.type === 'admin';
+            const desc = v.description ? `<div class="vl-desc">${escapeHtml(v.description)}</div>` : '';
+            return `
+                <div class="vl-card" onclick="openVideoLessonPlayer('${v._id}')">
+                    <div class="vl-thumb">
+                        ${isAdmin ? `<button class="vl-delete-btn" title="حذف الفيديو" aria-label="حذف الفيديو" onclick="event.stopPropagation(); deleteVideoLesson('${v._id}')"><i class="fas fa-trash"></i></button>` : ''}
+                        <video src="${v.url}#t=0.5" preload="metadata" muted></video>
+                        <div class="vl-play-badge"><i class="fas fa-play"></i></div>
+                        <div class="vl-views-badge"><i class="fas fa-eye"></i> ${formatVideoViews(v.views)}${v.duration ? ' · ' + formatVideoDuration(v.duration) : ''}</div>
+                    </div>
+                    <div class="vl-body">
+                        <div class="vl-title">${escapeHtml(v.title)}</div>
+                        <div class="vl-creator"><i class="fas fa-user-pen"></i> ${escapeHtml(v.creatorName)}</div>
+                        ${desc}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderVideoLessonsGrid(list) {
+            const grid = document.getElementById('videoLessonsGrid');
+            if (!list.length) {
+                grid.innerHTML = `<div class="vl-empty" style="grid-column:1/-1;"><i class="fas fa-video-slash"></i>مفيش فيديوهات شرح لسه${schoolUser?.type === 'admin' ? ' — دوس "إضافة فيديو" عشان تضيف أول واحد' : ''}</div>`;
+                return;
+            }
+            grid.innerHTML = list.map(videoLessonCardHtml).join('');
+        }
+
+        async function loadVideoLessons() {
+            const grid = document.getElementById('videoLessonsGrid');
+            const addBtn = document.getElementById('videoLessonAddBtn');
+            if (addBtn) addBtn.style.display = schoolUser?.type === 'admin' ? 'inline-flex' : 'none';
+            const searchInput = document.getElementById('videoLessonSearchInput');
+            if (searchInput) searchInput.value = '';
+            grid.innerHTML = videoLessonSkeletonHtml();
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/video-lessons`);
+                if (!res.ok) throw new Error('failed');
+                videoLessonsCache = await res.json();
+                renderVideoLessonsGrid(videoLessonsCache);
+            } catch (e) {
+                grid.innerHTML = `<div class="vl-empty" style="grid-column:1/-1;"><i class="fas fa-triangle-exclamation"></i>تعذر تحميل الفيديوهات، حاول تاني</div>`;
+            }
+        }
+
+        function filterVideoLessons(query) {
+            query = (query || '').trim().toLowerCase();
+            if (!query) { renderVideoLessonsGrid(videoLessonsCache); return; }
+            const filtered = videoLessonsCache.filter(v =>
+                (v.title || '').toLowerCase().includes(query) ||
+                (v.creatorName || '').toLowerCase().includes(query) ||
+                (v.description || '').toLowerCase().includes(query)
+            );
+            renderVideoLessonsGrid(filtered);
+        }
+
+        function openVideoLessonPlayer(id) {
+            const v = videoLessonsCache.find(x => x._id === id);
+            if (!v) return;
+            currentVideoLessonId = id;
+            const videoEl = document.getElementById('videoLessonPlayerEl');
+            videoEl.src = v.url;
+            document.getElementById('videoLessonPlayerTitle').textContent = v.title;
+            document.getElementById('videoLessonPlayerCreator').innerHTML = `<i class="fas fa-user-pen"></i> ${escapeHtml(v.creatorName)}`;
+            document.getElementById('videoLessonPlayerDesc').textContent = v.description || '';
+            closeModal('videoLessonsModal');
+            openModal('videoLessonPlayerModal');
+            videoEl.play().catch(() => {});
+            // تسجيل مشاهدة — إحصائية بسيطة، مش لازم نستنى ردها ولا توقف تشغيل الفيديو لو فشلت
+            fetch(`${FIXED_SCHOOL_API_URL}/api/video-lessons/${id}/view`, { method: 'POST' }).catch(() => {});
+        }
+
+        function closeVideoLessonPlayer() {
+            const videoEl = document.getElementById('videoLessonPlayerEl');
+            videoEl.pause();
+            videoEl.removeAttribute('src');
+            videoEl.load();
+            closeModal('videoLessonPlayerModal');
+            openModal('videoLessonsModal');
+        }
+
+        function openAddVideoLessonModal() {
+            if (schoolUser?.type !== 'admin') { showToast('إضافة الفيديوهات متاحة للأدمن فقط', 'error'); return; }
+            document.getElementById('videoLessonTitleInput').value = '';
+            document.getElementById('videoLessonCreatorInput').value = '';
+            document.getElementById('videoLessonDescInput').value = '';
+            document.getElementById('videoLessonFileInput').value = '';
+            const statusEl = document.getElementById('videoLessonUploadStatus');
+            statusEl.innerHTML = ''; statusEl.classList.remove('show');
+            openModal('addVideoLessonModal');
+        }
+
+        // بيقرا مدة الفيديو محليًا من الملف نفسه قبل الرفع (مفيدة تتعرض بعدين على الكارت)
+        function readVideoDuration(file) {
+            return new Promise((resolve) => {
+                try {
+                    const url = URL.createObjectURL(file);
+                    const tempVideo = document.createElement('video');
+                    tempVideo.preload = 'metadata';
+                    tempVideo.onloadedmetadata = () => {
+                        URL.revokeObjectURL(url);
+                        resolve(isFinite(tempVideo.duration) ? Math.round(tempVideo.duration) : null);
+                    };
+                    tempVideo.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+                    tempVideo.src = url;
+                } catch (e) { resolve(null); }
+            });
+        }
+
+        async function uploadVideoLesson() {
+            const fileInput = document.getElementById('videoLessonFileInput');
+            const title = document.getElementById('videoLessonTitleInput').value.trim();
+            const creatorName = document.getElementById('videoLessonCreatorInput').value.trim();
+            const description = document.getElementById('videoLessonDescInput').value.trim();
+            const statusEl = document.getElementById('videoLessonUploadStatus');
+            const btn = document.getElementById('videoLessonUploadBtn');
+            const wrap = document.getElementById('videoLessonProgressWrap');
+            const bar = document.getElementById('videoLessonProgressBar');
+            const progText = document.getElementById('videoLessonProgressText');
+            const showStatus = (html) => { statusEl.innerHTML = html; statusEl.classList.add('show'); };
+
+            if (!schoolToken || schoolUser?.type !== 'admin') { showStatus('<span style="color:var(--danger);">لازم تكون مسجل دخول كأدمن</span>'); return; }
+            const file = fileInput.files[0];
+            if (!file) { showStatus('<span style="color:var(--danger);">اختار ملف الفيديو الأول</span>'); return; }
+            if (!title) { showStatus('<span style="color:var(--danger);">اكتب عنوان الفيديو</span>'); return; }
+            if (!creatorName) { showStatus('<span style="color:var(--danger);">اكتب اسم اللي عمل الفيديو</span>'); return; }
+            if (file.size > 500 * 1024 * 1024) { showStatus('<span style="color:var(--danger);">حجم الفيديو أكبر من الحد المسموح (500MB)</span>'); return; }
+
+            btn.disabled = true;
+            statusEl.innerHTML = ''; statusEl.classList.remove('show');
+            wrap.style.display = 'block';
+            bar.style.width = '0%';
+            progText.textContent = 'جارٍ التحضير...';
+            try {
+                const duration = await readVideoDuration(file);
+
+                const urlRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/video-lessons/upload-url`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ fileName: file.name })
+                });
+                if (!urlRes.ok) {
+                    let msg = 'تعذر تجهيز رابط الرفع';
+                    try { const errData = await urlRes.json(); if (errData?.error) msg = errData.error; } catch (_) {}
+                    throw new Error(msg);
+                }
+                const { path, uploadUrl, publicUrl, contentType } = await urlRes.json();
+
+                await uploadFileWithProgress(uploadUrl, file, (pct) => {
+                    bar.style.width = pct + '%';
+                    progText.textContent = `جارٍ الرفع... ${pct}%`;
+                }, contentType);
+
+                progText.textContent = 'جارٍ حفظ البيانات...';
+
+                const saveRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/video-lessons`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({
+                        title, description, creatorName,
+                        url: publicUrl, publicId: path,
+                        size: file.size, duration
+                    })
+                });
+                if (!saveRes.ok) {
+                    let msg = 'تعذر حفظ بيانات الفيديو';
+                    try { const errData = await saveRes.json(); if (errData?.error) msg = errData.error; } catch (_) {}
+                    throw new Error(msg);
+                }
+
+                bar.style.width = '100%';
+                progText.textContent = 'تم الرفع بنجاح ✅';
+                showStatus('<span style="color:var(--success);">تم رفع الفيديو بنجاح ✅</span>');
+                showToast('تم رفع الفيديو بنجاح', 'success');
+                setTimeout(() => {
+                    wrap.style.display = 'none'; progText.textContent = ''; bar.style.width = '0%';
+                    closeModal('addVideoLessonModal');
+                    openModal('videoLessonsModal');
+                    loadVideoLessons();
+                }, 1200);
+            } catch (e) {
+                showStatus(`<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر رفع الفيديو، حاول تاني')}</span>`);
+                wrap.style.display = 'none';
+                progText.textContent = '';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function deleteVideoLesson(id) {
+            if (!confirm('متأكد إنك عايز تحذف الفيديو ده؟')) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/video-lessons/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                videoLessonsCache = videoLessonsCache.filter(v => v._id !== id);
+                renderVideoLessonsGrid(videoLessonsCache);
+                showToast('تم حذف الفيديو', 'success');
+            } catch (e) {
+                showToast('تعذر حذف الفيديو، حاول تاني', 'error');
             }
         }
 
