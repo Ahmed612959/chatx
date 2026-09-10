@@ -4371,6 +4371,80 @@
             saveMistakesBank();
         }
 
+        // ====================== كاشف الأخطاء الذكي في الشات العادي ======================
+        // بتتنادى بعد أي رد ناجح من المساعد في الشات العادي (مش في اختبار رسمي —
+        // ده متغطّى أصلاً بـ tryGradeActiveQuiz). بتبعت آخر تبادل (سؤال الطالب + رد
+        // المساعد) لنداء منفصل تمامًا وصامت للذكاء الاصطناعي، بمهمة واحدة بس: يحدد
+        // هل الطالب قال إجابة/معلومة علمية غلط ولا لأ، ويرجع JSON بس. النداء ده
+        // "fire and forget" زي submitToSharedQuestionBank بالظبط: مش بيوقف ولا بيلمس
+        // رد الشات المعروض للطالب خالص، وأي فشل فيه بيتجاهل بصمت.
+        //
+        // ⚠️ حدود مهمة لازم تعرفها: الكشف ده تقديري بالذكاء الاصطناعي مش تصحيح برمجي
+        // 100% زي بنك الأسئلة الرسمي — ممكن يفوّت غلطة أو (نادرًا) يسجل حاجة مش غلطة
+        // فعلية. لو حصل كده كتير، الطالب يقدر يمسح أي سطر غلط من "بنك أخطائي" يدويًا.
+        async function detectMistakeInBackground(userText, botMsg) {
+            try {
+                if (!settings.backendUrl) return; // مفيش باك إند متظبط، تجاهل بصمت
+                const cleanUserText = String(userText || '').trim();
+                if (cleanUserText.length < 4) return; // تحية/شكر/رسايل قصيرة جدًا مش مفيد نحللها
+                const botText = (botMsg && botMsg.role === 'bot') ? stripMarkdownForSpeech(botMsg.content).slice(0, 3000) : '';
+                if (!botText) return;
+
+                const classifierPrompt = `مهمتك الوحيدة دلوقتي: تحليل التبادل ده بين طالب تمريض ومساعد أكاديمي، وتحديد هل الطالب ذكر إجابة أو معلومة علمية/دراسية غلط (سواء جاوب على سؤال بشكل غلط، أو قال معلومة طبية/تمريضية غلط وصححها المساعد في رده).
+
+رسالة الطالب:
+"""${cleanUserText.slice(0, 1500)}"""
+
+رد المساعد:
+"""${botText}"""
+
+رد فقط بكائن JSON صالح واحد، من غير أي نص أو ماركداون أو تعليق قبله أو بعده، بالشكل ده بالظبط:
+{"mistake": true, "question": "نص السؤال أو النقطة العلمية المختصرة", "studentAnswer": "إجابة الطالب كما قالها", "correctAnswer": "الإجابة الصحيحة كما وضحها المساعد", "chapter": "اسم المادة أو الموضوع لو واضح، وإلا اتركه فاضي"}
+
+لو مفيش غلطة علمية واضحة (كلام عادي، سلام، شكر، سؤال عام من غير إجابة غلط، أو المساعد لسه بيشرح من غير ما الطالب يجاوب حاجة أصلاً)، رجّع بالظبط: {"mistake": false}`;
+
+                const response = await fetch(`${settings.backendUrl}/api/gemini`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: classifierPrompt }] }] })
+                });
+                if (!response.ok || !response.body) return;
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '', fullText = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            const piece = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                            if (piece) fullText += piece;
+                        } catch (e) {}
+                    }
+                }
+                if (!fullText.trim()) return;
+
+                // احتياطًا لو الموديل حاطط ```json``` حوالين الرد رغم التعليمات
+                const cleaned = fullText.trim().replace(/^```json\s*|^```\s*|```\s*$/g, '').trim();
+                const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) return;
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (!parsed || parsed.mistake !== true || !parsed.question || !parsed.correctAnswer) return;
+
+                const q = { type: 'chat', text: String(parsed.question).slice(0, 400), correct: String(parsed.correctAnswer).slice(0, 400) };
+                const chapter = (parsed.chapter && String(parsed.chapter).trim()) || 'من الشات';
+                addMistakeToBank(q, chapter, String(parsed.studentAnswer || cleanUserText).slice(0, 400));
+            } catch (e) {
+                console.error('detectMistakeInBackground error:', e); // فشل صامت — متأثرش على تجربة الشات الأساسية
+            }
+        }
+
         function updateMistakesBankBadge() {
             const badge = document.getElementById('mistakesBankBadge');
             if (!badge) return;
@@ -4403,7 +4477,7 @@
                 (byChapter[m.chapterName] = byChapter[m.chapterName] || []).push(m);
             });
 
-            const typeLabel = { mcq: 'اختيار من متعدد', truefalse: 'صح / خطأ', complete: 'إكمال الفراغ' };
+            const typeLabel = { mcq: 'اختيار من متعدد', truefalse: 'صح / خطأ', complete: 'إكمال الفراغ', chat: 'من محادثة عادية' };
             let html = '';
             Object.entries(byChapter).forEach(([chapter, items]) => {
                 html += `<div style="font-size:12px;font-weight:800;color:var(--text-2);margin:10px 0 6px;display:flex;align-items:center;justify-content:space-between;">
@@ -4442,6 +4516,8 @@
                     msg += `**${i + 1}. [صح / خطأ] ${q.text}**\n`;
                 } else if (q.type === 'complete') {
                     msg += `**${i + 1}. [إكمال] ${q.text}**\n`;
+                } else if (q.type === 'chat') {
+                    msg += `**${i + 1}. [من محادثة سابقة] ${q.text}**\n`;
                 }
                 msg += '\n';
             });
@@ -5717,6 +5793,11 @@
                 // الطلب ده خالص). "fire and forget": مش بنستنى النتيجة ولا بنوقف
                 // ظهور الرد للطالب لو الطلب ده فشل أو اتأخر.
                 submitToSharedQuestionBank(fallbackText, chat.messages[chat.messages.length - 1]);
+                // بنك أخطائي الذكي: نشغّله بس لو الرسالة دي مش إجابة اختبار رسمي
+                // اتصححت أصلاً فوق (tryGradeActiveQuiz)، عشان منحللش نفس الحاجة مرتين.
+                if (!lastTurnWasGradedQuiz) {
+                    detectMistakeInBackground(fallbackText, chat.messages[chat.messages.length - 1]);
+                }
                 reportFeatureUsage('main_chat', source);
             } catch (error) {
                 if (error.name === 'AbortError') {
@@ -11705,6 +11786,10 @@ ${r.pathSummary}
         }
 
         let activeQuiz = null; // {chapterName, questions:[{type, text, options?, correct, completion?}], isMockExam?, timers?}
+        // بيتسجل true لما tryGradeActiveQuiz يكون فعلاً صحح إجابات اختبار في الرسالة
+        // دي — عشان ميحصلش تعارض مع الكاشف الذكي لأخطاء الشات العادي (detectMistakeInBackground)
+        // اللي مايتفعّلش إلا لو الرسالة مش إجابة اختبار رسمي أصلاً.
+        let lastTurnWasGradedQuiz = false;
         let mockExamChapters = []; // {cacheKey, subjectName, chapterName} — "عربية" الفصول المضافة لامتحان المحاكاة قبل ما يبدأ
         let mockExamTimers = []; // setTimeout ids لتنبيهات وقت امتحان المحاكاة، بنمسحهم لو الامتحان اتصحح قبل الوقت
         let pendingQuizContext = ''; // بيتحط في الـ system prompt مرة واحدة بعد التصحيح عشان الـ AI يشرح الأخطاء
@@ -11794,6 +11879,7 @@ ${r.pathSummary}
         // شكل "رقم: إجابة"، بيتم تصحيحها فعليًا هنا (مش بالذكاء الاصطناعي) عشان النتيجة تبقى دقيقة 100%،
         // وبعدين بنسيب الـ AI يشرح الأخطاء بس.
         function tryGradeActiveQuiz(userText) {
+            lastTurnWasGradedQuiz = false;
             if (!activeQuiz || !activeQuiz.questions.length) return;
             const lines = userText.split('\n').map(l => l.trim()).filter(Boolean);
             const answerMap = {};
@@ -11803,6 +11889,7 @@ ${r.pathSummary}
             });
             const answeredCount = Object.keys(answerMap).length;
             if (answeredCount < Math.ceil(activeQuiz.questions.length / 2)) return; // مش شكل إجابة اختبار، سيبها عادي
+            lastTurnWasGradedQuiz = true;
 
             let correctCount = 0;
             const details = [];
@@ -11829,6 +11916,14 @@ ${r.pathSummary}
                     const norm = s => (s || '').toString().trim().toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '');
                     isCorrect = norm(rawAns) === norm(q.completion);
                     correctLabel = q.completion;
+                } else if (q.type === 'chat') {
+                    // أسئلة اكتشفها الذكاء الاصطناعي من شات عادي (مش من بنك الأسئلة الرسمي)،
+                    // فمفيش خيارات محددة — تصحيح بمطابقة نصية مرنة (مش حرفية 100%) لأن
+                    // صياغة الطالب ممكن تختلف عن الصياغة الأصلية حتى لو المعنى صح.
+                    const norm = s => (s || '').toString().trim().toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '');
+                    const a = norm(rawAns), c = norm(q.correct);
+                    isCorrect = !!a && !!c && (a === c || a.includes(c) || c.includes(a));
+                    correctLabel = q.correct;
                 }
                 if (isCorrect) correctCount++;
                 details.push(`سؤال ${qNum} (${q.type}): إجابة الطالب "${rawAns}" — ${isCorrect ? 'صح ✅' : `غلط ❌ (الصح: ${correctLabel})`}`);
