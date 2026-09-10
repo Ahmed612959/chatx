@@ -1451,16 +1451,38 @@
         .drug-lib-item img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
         .drug-lib-item .date { position: absolute; bottom: 0; right: 0; left: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 9px; text-align: center; padding: 2px; }
 
-        .toast-container { position: fixed; bottom: max(20px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: 8px; align-items: center; width: 90%; max-width: 380px; pointer-events: none; }
-        .toast {
-            padding: 12px 20px; background: var(--bg-glass-heavy); border: 1px solid var(--border);
-            border-radius: 14px; color: var(--text-1); font-size: 13px; font-weight: 600;
-            display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            animation: toastIn 0.3s ease; pointer-events: auto; width: 100%;
+        /* ===== إشعارات بأسلوب الأيفون (iOS-style banners) — طابور واحد مرتّب،
+           إشعار واحد ظاهر في كل لحظة عشان محدش يتكدّس فوق التاني ===== */
+        .toast-container {
+            position: fixed; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+            z-index: 100000; display: flex; flex-direction: column; align-items: center;
+            width: calc(100% - 24px); max-width: 420px; pointer-events: none;
         }
-        .toast.error { border-color: var(--danger); color: var(--danger); }
-        .toast.success { border-color: var(--success); color: var(--success); }
-        @keyframes toastIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .ios-toast {
+            pointer-events: auto; width: 100%; display: flex; align-items: flex-start; gap: 10px;
+            padding: 12px 14px; background: var(--bg-glass-heavy);
+            backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--border); border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.32), 0 1px 0 rgba(255,255,255,0.05) inset;
+            opacity: 0; transform: translateY(-18px) scale(0.96);
+            transition: transform 0.32s cubic-bezier(.2,.9,.25,1.15), opacity 0.28s ease;
+            cursor: pointer; user-select: none; touch-action: pan-x;
+        }
+        .ios-toast.show { opacity: 1; transform: translateY(0) scale(1); }
+        .ios-toast.hide { opacity: 0; transform: translateY(-14px) scale(0.97); }
+        .ios-toast-icon {
+            flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; margin-top: 1px;
+            display: flex; align-items: center; justify-content: center; background: var(--grad-bold);
+            color: #fff; font-size: 13px;
+        }
+        .ios-toast.error .ios-toast-icon { background: linear-gradient(135deg, var(--danger), #f87171); }
+        .ios-toast.success .ios-toast-icon { background: linear-gradient(135deg, var(--success), #34d399); }
+        .ios-toast.info .ios-toast-icon { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+        .ios-toast-body { flex: 1; min-width: 0; }
+        .ios-toast-top-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+        .ios-toast-app { font-size: 10.5px; font-weight: 800; color: var(--text-2); letter-spacing: .2px; }
+        .ios-toast-time { font-size: 10px; color: var(--text-3); flex-shrink: 0; }
+        .ios-toast-msg { font-size: 13px; font-weight: 500; color: var(--text-1); line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
 
         .fab {
             position: fixed; bottom: max(170px, env(safe-area-inset-bottom)); left: 16px; width: 52px; height: 52px; border-radius: 50%;
@@ -5672,6 +5694,14 @@
                 document.getElementById('typingIndicator').classList.add('active');
             }
 
+            // إعادة محاولة تلقائية لو النت اتقطع أثناء التوليد: بنلف منطق النداء كله
+            // جوه حلقة، وأي خطأ اتصال (مش خطأ من نوع تاني) بيوقف عند waitForReconnectAndRetry
+            // بدل ما يسقط على طول لرد محلي — لحد ما ينجح، أو يوصل لأقصى عدد محاولات،
+            // أو الطالب يدوس "إيقاف" بنفسه وهو مستني.
+            const MAX_NETWORK_RETRIES = 3;
+            let networkRetryAttempt = 0;
+            try {
+            while (true) {
             try {
                 if (model === 'groq') {
                     source = 'groq';
@@ -5799,20 +5829,40 @@
                     detectMistakeInBackground(fallbackText, chat.messages[chat.messages.length - 1]);
                 }
                 reportFeatureUsage('main_chat', source);
+                break; // نجح الرد — نخرج من حلقة إعادة المحاولة
             } catch (error) {
                 if (error.name === 'AbortError') {
                     showToast('تم إيقاف الرد', 'error');
-                } else {
-                    console.error(error);
-                    const shortDetail = (error.message || '').slice(0, 80);
-                    showToast(shortDetail ? `${shortDetail} — تم استخدام رد محلي` : 'حدث خطأ في الاتصال، تم استخدام رد محلي', 'error');
-                    // Only add a local fallback reply if no bot reply was already added for this turn
-                    const lastMsg = chat.messages[chat.messages.length - 1];
-                    const alreadyReplied = lastMsg && lastMsg.role === 'bot' && (!lastUserMsg || lastMsg.timestamp >= lastUserMsg.timestamp);
-                    if (!alreadyReplied) {
-                        await respondLocally(fallbackText, chat, new AbortController().signal);
-                    }
+                    break;
                 }
+                // خطأ اتصال فعلي (النت مقطوع أو فشل مؤقت) ولسه معندناش محاولات كفاية؟
+                // نستنى رجوع النت (أو محاولة سريعة تانية) ونعيد نفس الطلب تلقائيًا
+                // من غير ما نزعج الطالب برد محلي ضعيف كان ممكن نتجنبه.
+                if (isConnectivityError(error) && networkRetryAttempt < MAX_NETWORK_RETRIES) {
+                    networkRetryAttempt++;
+                    const outcome = await waitForReconnectAndRetry(abortController.signal, networkRetryAttempt, MAX_NETWORK_RETRIES);
+                    if (outcome.userCancelled) {
+                        showToast('تم إيقاف الرد', 'error');
+                        break;
+                    }
+                    if (outcome.shouldRetry) {
+                        abortController = new AbortController();
+                        continue; // نعيد نفس محاولة التوليد من الأول
+                    }
+                    // استنينا وماعادش النت رجع في الوقت المسموح — نكمل عادي لرد محلي تحت
+                }
+                console.error(error);
+                const shortDetail = (error.message || '').slice(0, 80);
+                showToast(shortDetail ? `${shortDetail} — تم استخدام رد محلي` : 'حدث خطأ في الاتصال، تم استخدام رد محلي', 'error');
+                // Only add a local fallback reply if no bot reply was already added for this turn
+                const lastMsg = chat.messages[chat.messages.length - 1];
+                const alreadyReplied = lastMsg && lastMsg.role === 'bot' && (!lastUserMsg || lastMsg.timestamp >= lastUserMsg.timestamp);
+                if (!alreadyReplied) {
+                    await respondLocally(fallbackText, chat, new AbortController().signal);
+                }
+                break;
+            }
+            } // نهاية حلقة إعادة المحاولة (while)
             } finally {
                 isGenerating = false;
                 abortController = null;
@@ -5824,6 +5874,9 @@
                 stopDeepThinkStatusCycle();
                 deepThinkReasoningContext = '';
                 updateCharCount();
+                // لو الطالب مبعّد عن التاب (تاب/تطبيق تاني) وقت ما الرد خلص، يوصله إشعار
+                // حقيقي من نظام التشغيل بدل ما يفوته من غير ما يعرف.
+                notifyResponseReadyIfHidden(chat);
             }
         }
 
@@ -8347,8 +8400,11 @@
                 status.innerHTML = '<span style="color:var(--success)">تم تسجيل الدخول ✓</span>';
                 startSchoolHeartbeat();
                 updateSchoolLoginUI();
+                // بنعرض توست تأكيد الربط ده الأول قبل استدعاء fetchSchoolProfile عمدًا —
+                // لو فيه ميزات بريميوم جديدة هتتفتحله، توستاتها هتتضاف بعده في نفس
+                // الطابور وتظهر واحد ورا التاني بالترتيب الصح، بدل ما تتزاحم كلها مع بعض.
+                showToast('تم ربط حسابك بمنصة School X', 'success', { icon: 'fa-link' });
                 await fetchSchoolProfile(true); // force=true: نجيب بيانات جديدة فورًا (منتجنبش استخدام كاش حساب قديم)
-                showToast('تم ربط حسابك بمنصة School X', 'success');
             } catch (e) {
                 status.innerHTML = '<span style="color:var(--danger)">تعذر الاتصال بالسيرفر — تأكد من الرابط</span>';
             }
@@ -15700,16 +15756,185 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             }
         }
 
-        function showToast(message, type = 'success') {
+        // ====================== إشعارات بأسلوب الأيفون (iOS-style toast queue) ======================
+        // بدل ما كل الإشعارات تظهر مرة واحدة فوق بعض (زي ما كان بيحصل بعد ربط
+        // School X — كذا showToast بيتنادوا في نفس اللحظة تقريبًا)، هنا كل إشعار
+        // بيدخل طابور، وبيظهر واحد بس في كل لحظة زي بانر إشعارات الأيفون بالظبط،
+        // وبعدين اللي بعده يظهر — ده اللي بيخلي الترتيب واضح ومريح مهما كان
+        // عدد الإشعارات اللي جت مع بعض.
+        let toastQueue = [];
+        let toastActiveId = null;
+
+        // options اختياري: { title, icon (اسم كلاس Font Awesome من غير fa-)، duration بالميلي ثانية }
+        function showToast(message, type = 'success', options = {}) {
+            const id = 'toast-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+            toastQueue.push({ id, message, type, options: options || {} });
+            // لو حصل "طوفان" إشعارات سريع (زي كذا تهنئة بريميوم ورا بعض وقت ربط
+            // School X)، منسيبش الطابور يكبر من غير حدود — بنفضّل آخر 4 بس عشان
+            // الطالب ميستناش يشوف رسايل قديمة كتير وهو مركّز في حاجة تانية دلوقتي.
+            if (toastQueue.length > 4) toastQueue.splice(0, toastQueue.length - 4);
+            processToastQueue();
+        }
+
+        function processToastQueue() {
+            if (toastActiveId || toastQueue.length === 0) return;
+            const item = toastQueue.shift();
+            toastActiveId = item.id;
+            renderIOSToast(item);
+        }
+
+        function renderIOSToast({ id, message, type, options }) {
             const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
-            container.appendChild(toast);
+            if (!container) { toastActiveId = null; return; }
+            const iconMap = { success: 'fa-circle-check', error: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+            const icon = options.icon || iconMap[type] || iconMap.success;
+            const title = options.title || (type === 'error' ? 'تنبيه' : 'Chat X');
+
+            const el = document.createElement('div');
+            el.className = `ios-toast ${type}`;
+            el.id = id;
+            el.innerHTML = `
+                <div class="ios-toast-icon"><i class="fas ${icon}"></i></div>
+                <div class="ios-toast-body">
+                    <div class="ios-toast-top-row">
+                        <span class="ios-toast-app">${escapeHtml(title)}</span>
+                        <span class="ios-toast-time">الآن</span>
+                    </div>
+                    <div class="ios-toast-msg">${escapeHtml(message)}</div>
+                </div>`;
+            container.appendChild(el);
+            requestAnimationFrame(() => el.classList.add('show'));
+
+            attachToastSwipeDismiss(el, () => dismissIOSToast(id));
+            el.addEventListener('click', () => { if (!el._toastDragged) dismissIOSToast(id); });
+
+            const duration = options.duration || (type === 'error' ? 4200 : 3000);
+            el._dismissTimer = setTimeout(() => dismissIOSToast(id), duration);
+        }
+
+        function dismissIOSToast(id) {
+            if (toastActiveId === id) toastActiveId = null;
+            const el = document.getElementById(id);
+            if (!el) { processToastQueue(); return; }
+            clearTimeout(el._dismissTimer);
+            el.classList.remove('show');
+            el.classList.add('hide');
             setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+                el.remove();
+                processToastQueue();
+            }, 260);
+        }
+
+        // سحب الإشعار لفوق زي بانر الأيفون بالظبط عشان يتقفل بإيده لو مش عايز
+        // يستناه لحد ما يختفي لوحده — بيشتغل باللمس وبالماوس.
+        function attachToastSwipeDismiss(el, onDismiss) {
+            let startY = null, dragging = false, moved = false;
+            const threshold = 34;
+            const onStart = (y) => { startY = y; dragging = true; moved = false; el.style.transition = 'none'; };
+            const onMove = (y) => {
+                if (!dragging) return;
+                const dy = Math.min(0, y - startY); // بس لفوق
+                if (Math.abs(dy) > 6) moved = true;
+                el.style.transform = `translateY(${dy}px)`;
+                el.style.opacity = String(Math.max(0.25, 1 - Math.abs(dy) / 70));
+            };
+            const onEnd = (y) => {
+                if (!dragging) return;
+                dragging = false;
+                el.style.transition = '';
+                const dy = (typeof y === 'number' && startY != null) ? (y - startY) : 0;
+                if (dy < -threshold) {
+                    el.style.transform = 'translateY(-60px)';
+                    el.style.opacity = '0';
+                    el._toastDragged = true;
+                    onDismiss();
+                } else {
+                    el.style.transform = '';
+                    el.style.opacity = '';
+                    setTimeout(() => { el._toastDragged = false; }, 0);
+                }
+            };
+            el.addEventListener('touchstart', (e) => onStart(e.touches[0].clientY), { passive: true });
+            el.addEventListener('touchmove', (e) => onMove(e.touches[0].clientY), { passive: true });
+            el.addEventListener('touchend', (e) => onEnd((e.changedTouches[0] || {}).clientY));
+            el.addEventListener('mousedown', (e) => onStart(e.clientY));
+            window.addEventListener('mousemove', (e) => { if (dragging) onMove(e.clientY); });
+            window.addEventListener('mouseup', (e) => { if (dragging) onEnd(e.clientY); });
+        }
+
+        // ====================== إعادة محاولة تلقائية لو النت اتقطع أثناء الرد ======================
+        // بيفرّق بين خطأ شبكة فعلي (النت مقطوع/فشل الاتصال) وأي خطأ تاني (زي رفض
+        // من السيرفر أو مشكلة في المفتاح) — عشان منعملش retry لا نهاية له على خطأ
+        // مش هيتحل بمجرد إعادة المحاولة.
+        function isConnectivityError(error) {
+            if (!error) return false;
+            if (typeof navigator !== 'undefined' && navigator.onLine === false) return true;
+            const msg = (error.message || '').toLowerCase();
+            return (error instanceof TypeError) && (
+                msg.includes('failed to fetch') ||
+                msg.includes('network') ||
+                msg.includes('load failed') // Safari
+            );
+        }
+
+        // بيستنى رجوع النت (أو يدي فرصة محاولة سريعة تانية لو الخطأ كان عابر ومش
+        // قطع فعلي) قبل ما يوافق على إعادة توليد الرد تلقائيًا. بيوقف فورًا لو
+        // الطالب دوس "إيقاف" بنفسه وهو مستني، ومش بيستنى أكتر من نص دقيقة.
+        function waitForReconnectAndRetry(signal, attempt, maxAttempts) {
+            return new Promise((resolve) => {
+                if (signal.aborted) { resolve({ shouldRetry: false, userCancelled: true }); return; }
+                let settled = false;
+                let giveUpTimer = null;
+                const onOnline = () => finishRetry();
+                const onAbort = () => {
+                    if (settled) return; settled = true;
+                    cleanup();
+                    resolve({ shouldRetry: false, userCancelled: true });
+                };
+                function cleanup() {
+                    window.removeEventListener('online', onOnline);
+                    signal.removeEventListener('abort', onAbort);
+                    clearTimeout(giveUpTimer);
+                }
+                function finishRetry() {
+                    if (settled) return; settled = true;
+                    cleanup();
+                    showToast(`رجع الاتصال بالنت — جاري إعادة المحاولة (${attempt}/${maxAttempts})`, 'success', { title: 'Chat X', icon: 'fa-wifi' });
+                    resolve({ shouldRetry: true, userCancelled: false });
+                }
+                function giveUp() {
+                    if (settled) return; settled = true;
+                    cleanup();
+                    resolve({ shouldRetry: false, userCancelled: false });
+                }
+                signal.addEventListener('abort', onAbort);
+                if (navigator.onLine === false) {
+                    showToast('قطع الاتصال بالنت — هنحاول تاني تلقائيًا أول ما يرجع', 'error', { title: 'مفيش إنترنت', icon: 'fa-wifi' });
+                    window.addEventListener('online', onOnline);
+                    giveUpTimer = setTimeout(giveUp, 25000);
+                } else {
+                    showToast(`حصلت مشكلة مؤقتة في الاتصال — بنحاول تاني (${attempt}/${maxAttempts})`, 'error', { title: 'Chat X', icon: 'fa-arrows-rotate' });
+                    giveUpTimer = setTimeout(finishRetry, 1500 * attempt);
+                }
+            });
+        }
+
+        // ====================== إشعار "الرد جاهز" لو الطالب مبعّد عن التاب ======================
+        // بيشتغل بس لو الطالب أصلاً موافق على إذن الإشعارات من قبل (من إعدادات
+        // "تفعيل الإشعارات") — منطلبش إذن جديد هنا عشان منقاطعوش في لحظة مش
+        // مناسبة. لو موافق ومبعّد عن الصفحة (تاب تاني/تطبيق تاني)، بيوصله إشعار
+        // حقيقي من نظام التشغيل بمجرد ما الرد يخلص.
+        function notifyResponseReadyIfHidden(chat) {
+            try {
+                if (document.visibilityState !== 'hidden') return;
+                if (!window.Notification || Notification.permission !== 'granted') return;
+                const lastMsg = chat && chat.messages && chat.messages[chat.messages.length - 1];
+                const preview = (lastMsg && lastMsg.role === 'bot' && lastMsg.content)
+                    ? stripMarkdownForSpeech(lastMsg.content).slice(0, 120)
+                    : 'ردّك جاهز، ارجع شوف';
+                const notif = new Notification('✅ الرد جاهز', { body: preview, icon: '/icons/favicon-32.png', tag: 'chatx-response-ready' });
+                notif.onclick = () => { window.focus(); notif.close(); };
+            } catch (e) { /* إشعار إضافي مش أساسي — أي فشل هنا منسيبوش يأثر على أي حاجة تانية */ }
         }
 
         window.onclick = (e) => {
