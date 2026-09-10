@@ -1642,6 +1642,10 @@
                     <button class="icon-btn" id="academicProfileBtn" style="display:none;" title="البروفايل الأكاديمي (Premium)" aria-label="البروفايل الأكاديمي" onclick="openAcademicProfile()"><i class="fas fa-id-card-clip"></i></button>
                     <button class="icon-btn" id="germanProBtn" style="display:none;" title="German Pro — الألمانية الاحترافية للتمريض (Premium)" aria-label="German Pro" onclick="window.open('german-pro.html', '_blank')">🇩🇪</button>
                     <button class="icon-btn" id="englishProBtn" style="display:none;" title="English Pro — الإنجليزية الاحترافية للتمريض (Premium)" aria-label="English Pro" onclick="window.open('english-pro.html', '_blank')">🇬🇧</button>
+                    <button class="icon-btn" aria-label="بنك أخطائي" title="بنك أخطائي" onclick="openMistakesBankModal()" style="position:relative;">
+                        <i class="fas fa-brain"></i>
+                        <span id="mistakesBankBadge" style="display:none;position:absolute;top:-4px;left:-4px;min-width:16px;height:16px;padding:0 3px;border-radius:8px;background:var(--danger);color:#fff;font-size:9.5px;font-weight:800;align-items:center;justify-content:center;border:1.5px solid var(--bg-2);">0</span>
+                    </button>
                     <button class="icon-btn" aria-label="سؤال اليوم من زميل" title="سؤال اليوم من زميل" onclick="openSharedQuestionsModal()"><i class="fas fa-users-line"></i></button>
                     <button class="icon-btn" aria-label="الإعلانات" onclick="openAnnouncementsModal()" style="position:relative;">
                         <i class="fas fa-bullhorn"></i>
@@ -2137,6 +2141,28 @@
                 </div>
                 <div id="leaderboardList" style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;"></div>
                 <button class="btn-calc" style="margin-top:12px;background:var(--bg-2);color:var(--text-2);" onclick="loadWeeklyLeaderboard()"><i class="fas fa-rotate"></i> تحديث</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- بنك أخطائي الشخصي: كل سؤال يغلطه الطالب في أي اختبار بيتجمع هنا تلقائي عشان
+         يراجعه لوحده. راجع addMistakeToBank / tryGradeActiveQuiz للربط. -->
+    <div class="modal-overlay" id="mistakesBankModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-brain"></i> بنك أخطائي</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('mistakesBankModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tool-section">
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    أي سؤال تغلط فيه في أي اختبار (بنك أسئلة أو امتحان محاكاة) بيتجمع هنا تلقائي، عشان تقدر ترجعله وتراجعه لوحده لحد ما تتقنه.
+                </p>
+                <div id="mistakesBankEmpty" style="display:none;text-align:center;padding:30px 10px;color:var(--text-3);font-size:12.5px;">
+                    <i class="fas fa-circle-check" style="font-size:24px;margin-bottom:10px;display:block;opacity:.5;"></i>
+                    مفيش أخطاء متسجلة دلوقتي — كمّل كده 👏
+                </div>
+                <button id="mistakesBankReviewBtn" class="btn-calc" style="display:none;margin-bottom:12px;" onclick="startMistakeReview(null)"><i class="fas fa-rotate"></i> راجع كل أخطائي كاختبار</button>
+                <div id="mistakesBankList" style="display:flex;flex-direction:column;max-height:420px;overflow-y:auto;"></div>
             </div>
         </div>
     </div>
@@ -4290,6 +4316,148 @@
         let recognition = null;
         let isListening = false;
 
+        // ====================== بنك أخطائي الشخصي ======================
+        // كل سؤال يغلطه الطالب في أي اختبار (بنك أسئلة أو امتحان محاكاة) بيتجمع هنا
+        // تلقائي، عشان يقدر يرجعله ويراجعه لوحده لحد ما يتقنه فعلاً. التخزين محلي
+        // بالكامل (localStorage) زي باقي بيانات الطالب في التطبيق ده.
+        let mistakesBank = JSON.parse(localStorage.getItem('sx_mistakes_bank')) || [];
+
+        function saveMistakesBank() {
+            localStorage.setItem('sx_mistakes_bank', JSON.stringify(mistakesBank));
+            updateMistakesBankBadge();
+        }
+
+        // هاش بسيط ومتزامن (sync) — مش محتاجين قوة crypto.subtle هنا، مجرد مفتاح
+        // ثابت لنفس السؤال عشان منكررش نفس الغلطة في البنك مرتين كسطرين منفصلين.
+        function simpleHashKey(str) {
+            let h = 0;
+            for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+            return 'q' + h.toString(36);
+        }
+
+        function mistakeIdFor(q, chapterName) {
+            return simpleHashKey(`${chapterName}::${q.type}::${q.text}`);
+        }
+
+        // بتتنادى من tryGradeActiveQuiz لكل سؤال غلط فيه الطالب.
+        function addMistakeToBank(q, chapterName, studentAnswer) {
+            const id = mistakeIdFor(q, chapterName);
+            const existing = mistakesBank.find(m => m.id === id);
+            if (existing) {
+                existing.timesWrong += 1;
+                existing.lastWrongAnswer = studentAnswer;
+                existing.lastWrongAt = Date.now();
+            } else {
+                mistakesBank.push({
+                    id,
+                    chapterName: chapterName || 'غير محدد',
+                    type: q.type,
+                    text: q.text,
+                    options: q.options || null,
+                    correct: q.correct !== undefined ? q.correct : null,
+                    completion: q.completion || null,
+                    lastWrongAnswer: studentAnswer,
+                    timesWrong: 1,
+                    lastWrongAt: Date.now()
+                });
+            }
+            saveMistakesBank();
+        }
+
+        // بتتنادى لما الطالب يجاوب صح على سؤال أثناء "مراجعة بنك الأخطاء" — بيتشال
+        // من البنك لأنه بقى متقن له (إلا لو غلط فيه تاني، وقتها هيتضاف تاني عادي).
+        function removeMistakeFromBank(id) {
+            mistakesBank = mistakesBank.filter(m => m.id !== id);
+            saveMistakesBank();
+        }
+
+        function updateMistakesBankBadge() {
+            const badge = document.getElementById('mistakesBankBadge');
+            if (!badge) return;
+            badge.style.display = mistakesBank.length ? 'flex' : 'none';
+            badge.textContent = mistakesBank.length > 99 ? '99+' : mistakesBank.length;
+        }
+
+        function openMistakesBankModal() {
+            renderMistakesBankList();
+            openModal('mistakesBankModal');
+        }
+
+        function renderMistakesBankList() {
+            const box = document.getElementById('mistakesBankList');
+            const empty = document.getElementById('mistakesBankEmpty');
+            const reviewBtn = document.getElementById('mistakesBankReviewBtn');
+            if (!box) return;
+            if (!mistakesBank.length) {
+                box.innerHTML = '';
+                if (empty) empty.style.display = 'block';
+                if (reviewBtn) reviewBtn.style.display = 'none';
+                return;
+            }
+            if (empty) empty.style.display = 'none';
+            if (reviewBtn) reviewBtn.style.display = 'block';
+
+            // بنجمعهم حسب الفصل عشان يبقوا منظمين وسهل يعرف يذاكر إيه بالظبط
+            const byChapter = {};
+            mistakesBank.slice().sort((a, b) => b.lastWrongAt - a.lastWrongAt).forEach(m => {
+                (byChapter[m.chapterName] = byChapter[m.chapterName] || []).push(m);
+            });
+
+            const typeLabel = { mcq: 'اختيار من متعدد', truefalse: 'صح / خطأ', complete: 'إكمال الفراغ' };
+            let html = '';
+            Object.entries(byChapter).forEach(([chapter, items]) => {
+                html += `<div style="font-size:12px;font-weight:800;color:var(--text-2);margin:10px 0 6px;display:flex;align-items:center;justify-content:space-between;">
+                    <span>${escapeHtml(chapter)} (${items.length})</span>
+                    <button class="btn-calc" style="width:auto;padding:4px 10px;font-size:11px;background:var(--bg-2);color:var(--text-2);" onclick="startMistakeReview('${escapeHtml(chapter).replace(/'/g, "\\'")}')"><i class="fas fa-rotate"></i> راجع الفصل ده بس</button>
+                </div>`;
+                items.forEach(m => {
+                    const correctText = m.type === 'complete' ? m.completion : (m.type === 'truefalse' ? (m.correct ? 'صح' : 'خطأ') : m.correct);
+                    html += `
+                    <div style="background:var(--bg-glass);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;">
+                        <div style="font-size:12px;color:var(--text-3);margin-bottom:4px;">${typeLabel[m.type] || m.type} · غلط فيه ${m.timesWrong} مرة</div>
+                        <div style="font-size:13px;font-weight:600;margin-bottom:6px;line-height:1.6;">${escapeHtml(m.text)}</div>
+                        <div style="font-size:12px;color:var(--success);margin-bottom:8px;">الإجابة الصح: ${escapeHtml(String(correctText))}</div>
+                        <button class="btn-calc" style="width:auto;padding:4px 10px;font-size:11px;background:var(--bg-2);color:var(--text-2);" onclick="removeMistakeFromBank('${m.id}'); renderMistakesBankList();"><i class="fas fa-check"></i> اتقنتها، امسحها</button>
+                    </div>`;
+                });
+            });
+            box.innerHTML = html;
+        }
+
+        // بيبني اختبار من أسئلة البنك (كلها أو فصل معين بس) ويبعته في الشات، بنفس
+        // آلية generateBankQuiz بالظبط عشان يتصحح بنفس نظام tryGradeActiveQuiz.
+        function startMistakeReview(chapterFilter) {
+            const pool = chapterFilter ? mistakesBank.filter(m => m.chapterName === chapterFilter) : mistakesBank.slice();
+            if (!pool.length) { showToast('مفيش أسئلة في بنك الأخطاء دلوقتي', 'error'); return; }
+
+            const picked = shuffleArray(pool.map(m => ({ ...m })));
+            activeQuiz = { chapterName: chapterFilter ? chapterFilter : 'مراجعة بنك الأخطاء', questions: picked, isMistakeReview: true };
+
+            let msg = `🧠 **مراجعة بنك أخطائي** (${picked.length} سؤال)\n\n`;
+            picked.forEach((q, i) => {
+                if (q.type === 'mcq') {
+                    msg += `**${i + 1}. [اختيار من متعدد] ${q.text}**\n`;
+                    (q.options || []).forEach(o => { msg += `${o}\n`; });
+                } else if (q.type === 'truefalse') {
+                    msg += `**${i + 1}. [صح / خطأ] ${q.text}**\n`;
+                } else if (q.type === 'complete') {
+                    msg += `**${i + 1}. [إكمال] ${q.text}**\n`;
+                }
+                msg += '\n';
+            });
+            msg += `---\nجاوب بنفس شكل \`رقم: إجابة\` زي أي اختبار. أي سؤال تجاوبه صح هيتشال من بنك أخطائك تلقائي.`;
+
+            const chat = chats.find(c => c.id === currentChatId);
+            if (chat) {
+                const botMsg = { role: 'bot', content: msg, source: 'local', timestamp: Date.now(), id: `msg-${Date.now()}-mistakereview` };
+                chat.messages.push(botMsg);
+                appendMessageToDOM(botMsg);
+                saveData();
+            }
+            closeModal('mistakesBankModal');
+            showToast('اتعمل اختبار من بنك أخطائك — جاوب عليه في الشات', 'success');
+        }
+
         window.onload = () => {
             applyTheme(settings.theme);
             if (settings.model) document.getElementById('modelSelect').value = settings.model;
@@ -4301,6 +4469,7 @@
                 renderChat(currentChatId);
             }
             renderStats();
+            updateMistakesBankBadge();
             initSpeechRecognition();
             const backendInput = document.getElementById('backendUrlInput');
             if (backendInput) backendInput.value = settings.backendUrl || '';
@@ -11663,6 +11832,18 @@ ${r.pathSummary}
                 }
                 if (isCorrect) correctCount++;
                 details.push(`سؤال ${qNum} (${q.type}): إجابة الطالب "${rawAns}" — ${isCorrect ? 'صح ✅' : `غلط ❌ (الصح: ${correctLabel})`}`);
+
+                // بنك أخطائي: لو غلط، يتسجل تلقائي؛ ولو ده كان سؤال من "مراجعة بنك
+                // الأخطاء" وجاوبه صح، يتشال من البنك لأنه بقى متقن له.
+                // ترتيب الأولوية: sourceChapter (بيجي من امتحان المحاكاة الشامل) ثم
+                // chapterName الأصلي بتاع السؤال نفسه (بيجي لو السؤال ده أصلاً راجع
+                // من بنك أخطائي وقاعدين بنراجعه تاني) ثم اسم الاختبار الحالي كحل أخير.
+                const mistakeChapter = q.sourceChapter || q.chapterName || activeQuiz.chapterName;
+                if (!isCorrect) {
+                    addMistakeToBank(q, mistakeChapter, rawAns);
+                } else if (activeQuiz.isMistakeReview && q.id) {
+                    removeMistakeFromBank(q.id);
+                }
             });
 
             const total = activeQuiz.questions.length;
