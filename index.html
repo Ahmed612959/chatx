@@ -670,8 +670,12 @@
         .deep-think-bar.active .deep-think-bar-icon i.fa-brain { animation: deepThinkBtnPulse 1.6s ease-in-out infinite; }
         @keyframes deepThinkBtnPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(1.18); } }
 
-        .deep-think-indicator { display: none; gap: 10px; max-width: 90%; margin-bottom: 16px; }
-        .deep-think-indicator.active { display: flex; }
+        .deep-think-indicator {
+            display: flex; gap: 10px; max-width: 90%; margin-bottom: 0;
+            opacity: 0; max-height: 0; overflow: hidden; pointer-events: none;
+            transition: opacity 0.7s ease, max-height 0.7s ease, margin-bottom 0.7s ease;
+        }
+        .deep-think-indicator.active { opacity: 1; max-height: 400px; margin-bottom: 16px; pointer-events: auto; }
         .deep-think-panel {
             background: var(--bg-glass); border: 1px solid var(--border-accent); border-radius: 16px;
             padding: 12px 14px; max-width: 100%; min-width: 0;
