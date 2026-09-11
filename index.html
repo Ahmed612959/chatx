@@ -59,7 +59,19 @@
             --text-1: #f1f5f9; --text-2: #94a3b8; --text-3: #7c8aa3;
             --border: rgba(255, 255, 255, 0.08); --border-accent: rgba(99, 102, 241, 0.4);
             --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
-            --radius: 16px; --radius-sm: 10px;
+            /* سلّم انحناءات موحّد — القيم هنا هي نفسها أكتر القيم استخدامًا في
+               الكود قبل كده (8/10/12/16/20/24px)، فتعريفها كمتغيّرات مبيغيّرش
+               شكل أي حاجة دلوقتي، بس بيخلي أي تعديل مستقبلي (زي "خلي كل حاجة
+               أكتر استدارة") تغيير سطر واحد بدل ما تدوّر في آلاف الأسطر. */
+            --radius-xs: 8px; --radius-sm: 10px; --radius-md: 12px; --radius: 16px; --radius-lg: 20px; --radius-xl: 24px; --radius-full: 999px;
+            /* سلّم سرعات موحّد لنفس السبب — .2s كانت أكتر مدة استخدام فعليًا. */
+            --transition-fast: 0.15s ease; --transition-base: 0.2s ease; --transition-slow: 0.35s ease;
+            /* سلّم أحجام خط مرجعي للكود الجديد — القيم الحالية في باقي الموقع
+               (51+ قيمة مختلفة تراكمت بمرور الوقت) متسيبناش زي ما هي عمدًا:
+               تغييرها كلها دفعة واحدة يعني تعديل شكل كل مكوّن في الموقع من غير
+               إمكانية نتأكد بصريًا إن حاجة مانكسرتش. أي كومبوننت جديد يتكتب من
+               دلوقتي يستخدم المتغيّرات دي بدل رقم px مباشر. */
+            --text-xs: 11px; --text-sm: 12.5px; --text-base: 14px; --text-md: 16px; --text-lg: 19px; --text-xl: 24px;
             --font: 'Cairo', sans-serif;
             --grad-bold: linear-gradient(120deg, var(--accent), var(--accent-2) 55%, var(--accent-3));
         }
@@ -141,7 +153,7 @@
            broke the sidebar's fixed positioning (it got measured against this container instead of
            the viewport and clipped by overflow:hidden), which is what caused the blurry/broken look. */
         @media (min-width: 768px) {
-            .app-container { backdrop-filter: blur(20px); height: 94vh; margin: 3vh auto; border-radius: 24px; box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.5); }
+            .app-container { backdrop-filter: blur(20px); height: 94vh; margin: 3vh auto; border-radius: var(--radius-xl); box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.5); }
         }
 
         /* Sidebar Overlay - Fixed for mobile */
@@ -200,7 +212,7 @@
             width: 100%; padding: 12px; background: var(--grad-bold);
             border: none; border-radius: var(--radius-sm); color: white; font-family: var(--font);
             font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center;
-            justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 15px var(--accent-glow);
+            justify-content: center; gap: 8px; transition: all var(--transition-slow); box-shadow: 0 4px 15px var(--accent-glow);
         }
         .btn-new:active { transform: scale(0.98); }
         
@@ -226,7 +238,7 @@
         .chat-item:hover { background: rgba(255,255,255,0.04); }
         .chat-item.active { background: rgba(99, 102, 241, 0.12); border-color: var(--border-accent); box-shadow: 0 0 0 1px var(--border-accent), 0 4px 16px -4px var(--accent-glow); }
         .chat-item .icon {
-            width: 36px; height: 36px; border-radius: 10px; background: var(--bg-2);
+            width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--bg-2);
             display: flex; align-items: center; justify-content: center; color: var(--text-2); font-size: 14px; flex-shrink: 0;
             transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
@@ -234,16 +246,17 @@
         .chat-item .info { flex: 1; min-width: 0; }
         .chat-item .title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .chat-item .date { font-size: 10px; color: var(--text-3); margin-top: 2px; }
-        .chat-item .actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.2s; }
+        .chat-item .actions { display: flex; gap: 2px; opacity: 0; transition: opacity var(--transition-base); }
         .chat-item:hover .actions, .chat-item.active .actions { opacity: 1; }
         @media (max-width: 767px) { .chat-item .actions { opacity: 1; } }
         
         .icon-btn {
-            width: 32px; height: 32px; border-radius: 8px; border: none; background: transparent;
+            width: 32px; height: 32px; border-radius: var(--radius-xs); border: none; background: transparent;
             color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s; font-size: 12px;
+            transition: all var(--transition-base); font-size: 12px;
         }
         .icon-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-1); }
+        .icon-btn:active { transform: scale(0.9); }
         .icon-btn.delete:hover { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
 
         .sb-footer {
@@ -253,7 +266,7 @@
         .sb-footer-user { display: flex; align-items: center; gap: 10px; }
         .sb-footer-actions { display: flex; flex-wrap: wrap; gap: 6px; }
         .user-avatar {
-            width: 40px; height: 40px; border-radius: 10px; background: var(--grad-bold);
+            width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--grad-bold);
             display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; flex-shrink: 0;
         }
         .user-info { flex: 1; min-width: 0; }
@@ -282,7 +295,7 @@
             flex-shrink: 0; padding-top: max(12px, env(safe-area-inset-top));
         }
         .menu-btn {
-            width: 40px; height: 40px; border-radius: 10px; background: var(--bg-2); border: 1px solid var(--border);
+            width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--bg-2); border: 1px solid var(--border);
             color: var(--text-2); cursor: pointer; display: none; align-items: center; justify-content: center;
             font-size: 16px; flex-shrink: 0;
         }
@@ -290,7 +303,7 @@
         
         .bot-identity { display: flex; align-items: center; justify-content: center; gap: 10px; min-width: 0; }
         .bot-logo {
-            width: 40px; height: 40px; border-radius: 12px; 
+            width: 40px; height: 40px; border-radius: var(--radius-md); 
             background: var(--grad-bold);
             background-size: 200% 200%;
             animation: gradientFlow 6s ease infinite, glowPulse 2.5s ease-in-out infinite;
@@ -302,7 +315,7 @@
         .bot-name-badge {
             position: relative;
             padding: 7px 26px;
-            border-radius: 999px;
+            border-radius: var(--radius-full);
             border: 1px solid transparent;
             background:
                 linear-gradient(var(--bg-2), var(--bg-2)) padding-box,
@@ -330,11 +343,11 @@
 
         /* ====================== شريط تقدم الرفع/التحميل (أنيميشن) ====================== */
         .upload-progress-wrap {
-            margin-top: 10px; height: 9px; border-radius: 999px; background: var(--bg-2);
+            margin-top: 10px; height: 9px; border-radius: var(--radius-full); background: var(--bg-2);
             overflow: hidden; display: none; position: relative;
         }
         .upload-progress-bar {
-            height: 100%; width: 0%; border-radius: 999px; background: var(--grad-bold);
+            height: 100%; width: 0%; border-radius: var(--radius-full); background: var(--grad-bold);
             transition: width 0.25s ease; position: relative; overflow: hidden;
         }
         .upload-progress-bar::after {
@@ -363,8 +376,8 @@
             flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center;
             background: var(--bg-1); padding: 10px;
         }
-        #filePreviewBody img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
-        #filePreviewBody iframe { width: 100%; height: 100%; border: none; border-radius: 8px; background: #fff; }
+        #filePreviewBody img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: var(--radius-xs); }
+        #filePreviewBody iframe { width: 100%; height: 100%; border: none; border-radius: var(--radius-xs); background: #fff; }
         #filePreviewBody pre { white-space: pre-wrap; word-break: break-word; width: 100%; height: 100%; overflow: auto; font-size: 13px; line-height: 1.9; padding: 6px; }
 
         .bot-text h2 { 
@@ -392,9 +405,9 @@
 
         .top-actions { display: flex; gap: 6px; flex-shrink: 0; justify-content: center; flex-wrap: wrap; }
         .action-btn {
-            width: 38px; height: 38px; border-radius: 10px; background: var(--bg-2); border: 1px solid var(--border);
+            width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--bg-2); border: 1px solid var(--border);
             color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); font-size: 14px; flex-shrink: 0;
+            transition: all var(--transition-base) cubic-bezier(0.34, 1.56, 0.64, 1); font-size: 14px; flex-shrink: 0;
         }
         .action-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px) scale(1.08); box-shadow: 0 4px 14px var(--accent-glow); }
         .action-btn:active { transform: translateY(0) scale(0.94); }
@@ -426,7 +439,7 @@
         }
         .verified-tip-popover .vt-eyebrow {
             display: inline-flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 800;
-            color: #fff; background: var(--grad-bold); padding: 2px 8px; border-radius: 20px; margin-bottom: 8px;
+            color: #fff; background: var(--grad-bold); padding: 2px 8px; border-radius: var(--radius-lg); margin-bottom: 8px;
         }
         .verified-tip-popover .vt-title { font-size: 12.5px; font-weight: 800; color: var(--text-1); display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
         .verified-tip-popover .vt-title img { width: 15px; height: 15px; }
@@ -447,7 +460,7 @@
             display: flex; flex-direction: column; gap: 16px;
         }
         .chat-container::-webkit-scrollbar { width: 4px; }
-        .chat-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        .chat-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-sm); }
 
         .welcome-screen {
             flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -456,7 +469,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         .welcome-logo {
-            width: 80px; height: 80px; border-radius: 24px; background: var(--grad-bold);
+            width: 80px; height: 80px; border-radius: var(--radius-xl); background: var(--grad-bold);
             display: flex; align-items: center; justify-content: center; font-size: 36px; color: white;
             margin-bottom: 20px; box-shadow: 0 0 40px var(--accent-glow);
         }
@@ -474,7 +487,7 @@
         
         .quick-card {
             background: var(--bg-glass); border: 1px solid var(--border); border-radius: var(--radius);
-            padding: 14px; text-align: right; cursor: pointer; transition: all 0.3s;
+            padding: 14px; text-align: right; cursor: pointer; transition: all var(--transition-slow);
         }
         .quick-card:hover { border-color: var(--accent); transform: translateY(-2px); }
         .quick-card i { font-size: 20px; color: var(--accent); margin-bottom: 10px; display: block; }
@@ -487,7 +500,7 @@
         .message.user { flex-direction: row-reverse; margin-left: auto; }
         
         .msg-avatar {
-            width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: flex;
+            width: 34px; height: 34px; border-radius: var(--radius-sm); flex-shrink: 0; display: flex;
             align-items: center; justify-content: center; font-size: 14px; margin-top: 2px;
         }
         .message.bot .msg-avatar { background: var(--grad-bold); color: white; }
@@ -495,7 +508,7 @@
         
         .msg-content { flex: 1; min-width: 0; max-width: 100%; }
         .msg-bubble {
-            padding: 12px 14px; border-radius: 16px; font-size: 14px; line-height: 1.7;
+            padding: 12px 14px; border-radius: var(--radius); font-size: 14px; line-height: 1.7;
             word-wrap: break-word; overflow-wrap: anywhere; max-width: 100%; position: relative;
         }
         .msg-bubble img, .msg-bubble video { max-width: 100%; height: auto; }
@@ -510,7 +523,7 @@
         /* Image attached/sent by the user, shown inline in the chat */
         .msg-image {
             display: block; width: 100%; max-width: 260px; height: auto;
-            border-radius: 12px; margin-bottom: 8px; cursor: zoom-in;
+            border-radius: var(--radius-md); margin-bottom: 8px; cursor: zoom-in;
         }
         @media (min-width: 768px) { .msg-image { max-width: 320px; } }
 
@@ -518,7 +531,7 @@
         .msg-bubble pre {
             position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%;
             margin: 8px 0; padding: 30px 12px 12px; background: rgba(0, 0, 0, 0.35);
-            border: 1px solid var(--border); border-radius: 10px; direction: ltr; text-align: left;
+            border: 1px solid var(--border); border-radius: var(--radius-sm); direction: ltr; text-align: left;
         }
         .message.user .msg-bubble pre { background: rgba(0, 0, 0, 0.2); }
         .msg-bubble pre code {
@@ -533,7 +546,7 @@
             position: absolute; top: 6px; left: 6px; z-index: 2; width: 26px; height: 26px;
             border-radius: 6px; border: 1px solid var(--border); background: var(--bg-2); color: var(--text-3);
             cursor: pointer; display: flex; align-items: center; justify-content: center;
-            font-size: 11px; transition: all 0.2s; opacity: 0.9;
+            font-size: 11px; transition: all var(--transition-base); opacity: 0.9;
         }
         .code-copy-btn:hover { color: var(--accent); opacity: 1; }
         .code-copy-btn.copied { color: #22c55e; border-color: #22c55e; }
@@ -543,7 +556,7 @@
         }
         .table-wrap {
             max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
-            margin: 8px 0; border: 1px solid var(--border); border-radius: 10px;
+            margin: 8px 0; border: 1px solid var(--border); border-radius: var(--radius-sm);
         }
         .msg-bubble table { border-collapse: collapse; width: 100%; min-width: 340px; table-layout: auto; }
         .msg-bubble table th, .msg-bubble table td {
@@ -562,7 +575,7 @@
         .msg-action-btn {
             width: 28px; height: 28px; border-radius: 7px; border: none; background: var(--bg-2);
             color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s; font-size: 11px;
+            transition: all var(--transition-base); font-size: 11px;
         }
         .msg-action-btn:hover { color: var(--accent); }
         .msg-action-btn.stop-btn { background: var(--danger); color: white; animation: pulse 1.5s infinite; }
@@ -581,7 +594,7 @@
         }
         .chat-search-bar.active { display: flex; }
         .chat-search-bar input {
-            flex: 1; min-width: 0; background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px;
+            flex: 1; min-width: 0; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-xs);
             padding: 7px 10px; font-size: 12.5px; color: var(--text-1); font-family: var(--font);
         }
         .chat-search-bar .csb-count { font-size: 11px; color: var(--text-3); flex-shrink: 0; white-space: nowrap; }
@@ -591,15 +604,15 @@
 
         /* Inline edit mode for a sent (user) message */
         .msg-edit-textarea {
-            width: 100%; min-height: 60px; resize: vertical; border-radius: 10px; padding: 8px 10px;
+            width: 100%; min-height: 60px; resize: vertical; border-radius: var(--radius-sm); padding: 8px 10px;
             background: rgba(0, 0, 0, 0.2); color: inherit; border: 1px solid rgba(255, 255, 255, 0.3);
             font-family: var(--font); font-size: 14px; line-height: 1.6;
         }
         .msg-edit-actions { display: flex; gap: 8px; margin-top: 8px; }
         .msg-edit-btn {
-            padding: 6px 12px; border-radius: 8px; border: none; font-family: var(--font);
+            padding: 6px 12px; border-radius: var(--radius-xs); border: none; font-family: var(--font);
             font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;
-            transition: opacity 0.2s;
+            transition: opacity var(--transition-base);
         }
         .msg-edit-btn:active { opacity: 0.8; }
         .msg-edit-btn.save { background: #fff; color: var(--accent); }
@@ -614,7 +627,7 @@
         .pinned-bar.active { display: flex; }
         .pinned-chip {
             display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--bg-2);
-            border: 1px solid var(--border-accent); border-radius: 12px; font-size: 11px; color: var(--text-2);
+            border: 1px solid var(--border-accent); border-radius: var(--radius-md); font-size: 11px; color: var(--text-2);
             white-space: nowrap; cursor: pointer; flex-shrink: 0; max-width: 220px;
         }
         .pinned-chip:hover { border-color: var(--warning); }
@@ -629,7 +642,7 @@
         .typing-indicator.active { display: flex; }
         .typing-dots {
             display: flex; align-items: center; gap: 4px; padding: 14px 18px; background: var(--bg-glass);
-            border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+            border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
         }
         .typing-dots span {
             width: 7px; height: 7px; background: var(--accent); border-radius: 50%;
@@ -660,26 +673,26 @@
            كويس على أي مقاس شاشة (موبايل أول حاجة) من غير ما يكسر شكل صندوق الكتابة. */
         .deep-think-bar {
             display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box;
-            background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px;
-            padding: 9px 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+            background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 9px 12px; margin-bottom: 8px; cursor: pointer; transition: all var(--transition-base);
             font-family: var(--font); text-align: right; -webkit-tap-highlight-color: transparent;
         }
         .deep-think-bar:hover { border-color: var(--accent); }
         .deep-think-bar-icon {
             width: 34px; height: 34px; border-radius: 50%; background: var(--bg-glass);
             display: flex; align-items: center; justify-content: center; color: var(--text-2);
-            font-size: 14px; flex-shrink: 0; transition: all 0.2s;
+            font-size: 14px; flex-shrink: 0; transition: all var(--transition-base);
         }
         .deep-think-bar-text { display: flex; flex-direction: column; flex: 1; min-width: 0; text-align: right; }
         .deep-think-bar-text strong { font-size: 13px; color: var(--text-1); font-weight: 800; }
         .deep-think-bar-text small { font-size: 10.5px; color: var(--text-3); margin-top: 2px; }
         .deep-think-switch {
-            width: 40px; height: 23px; border-radius: 20px; background: var(--border);
-            position: relative; flex-shrink: 0; transition: background 0.2s;
+            width: 40px; height: 23px; border-radius: var(--radius-lg); background: var(--border);
+            position: relative; flex-shrink: 0; transition: background var(--transition-base);
         }
         .deep-think-switch-knob {
             position: absolute; top: 2px; right: 2px; width: 19px; height: 19px; border-radius: 50%;
-            background: #fff; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,.3);
+            background: #fff; transition: transform var(--transition-base); box-shadow: 0 1px 3px rgba(0,0,0,.3);
         }
         .deep-think-bar.active { border-color: var(--accent); background: var(--accent-glow); }
         .deep-think-bar.active .deep-think-bar-icon { background: var(--grad-bold); color: #fff; }
@@ -699,7 +712,7 @@
         }
         .deep-think-speed-row.show { max-height: 60px; opacity: 1; }
         .deep-think-speed-chip {
-            flex: 1; font-size: 11.5px; font-weight: 700; padding: 7px 8px; border-radius: 10px;
+            flex: 1; font-size: 11.5px; font-weight: 700; padding: 7px 8px; border-radius: var(--radius-sm);
             border: 1px solid var(--border); background: var(--bg-2); color: var(--text-2);
             cursor: pointer; transition: all .18s ease; text-align: center;
         }
@@ -710,7 +723,7 @@
            السبب من الرسالة الصغيرة بدل ما يفتكر إن الميزة اختفت بالغلط. */
         .deep-think-bar.disabled-by-admin { opacity: .55; cursor: not-allowed; pointer-events: none; }
         .deep-think-bar-limit-badge {
-            font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 8px;
+            font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: var(--radius-xs);
             background: var(--bg-glass); color: var(--text-3); flex-shrink: 0; direction: ltr;
         }
 
@@ -721,7 +734,7 @@
         }
         .deep-think-indicator.active { opacity: 1; max-height: 400px; margin-bottom: 16px; pointer-events: auto; }
         .deep-think-panel {
-            background: var(--bg-glass); border: 1px solid var(--border-accent); border-radius: 16px;
+            background: var(--bg-glass); border: 1px solid var(--border-accent); border-radius: var(--radius);
             padding: 12px 14px; max-width: 100%; min-width: 0;
         }
         .deep-think-panel-head {
@@ -741,7 +754,7 @@
         }
 
         .thinking-block {
-            border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; overflow: hidden; background: var(--bg-glass);
+            border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 8px; overflow: hidden; background: var(--bg-glass);
         }
         .thinking-toggle {
             display: flex; align-items: center; gap: 7px; width: 100%; background: transparent; border: none;
@@ -750,7 +763,7 @@
         }
         .thinking-toggle:hover { color: var(--accent); }
         .thinking-toggle i.fa-brain { color: var(--accent); }
-        .thinking-chevron { margin-right: auto; transition: transform 0.2s; font-size: 10px; }
+        .thinking-chevron { margin-right: auto; transition: transform var(--transition-base); font-size: 10px; }
         .thinking-block.open .thinking-chevron { transform: rotate(180deg); }
         .thinking-body {
             display: none; padding: 0 12px 12px; font-size: 11.5px; line-height: 1.7; color: var(--text-2);
@@ -762,7 +775,7 @@
            عشان يبان بوضوح إن الرد اتقطع عمدًا مش إنه ناقص أو فيه خطأ. */
         .msg-stopped-note {
             display: flex; align-items: center; gap: 6px; margin-top: 10px; padding: 5px 10px;
-            background: var(--bg-2); border: 1px dashed var(--border-accent); border-radius: 8px;
+            background: var(--bg-2); border: 1px dashed var(--border-accent); border-radius: var(--radius-xs);
             font-size: 11px; font-weight: 600; color: var(--text-3); width: fit-content; animation: floatIn 0.25s ease;
         }
         .msg-stopped-note i { color: var(--warning); font-size: 10px; }
@@ -778,9 +791,9 @@
         }
         .smart-suggestions::-webkit-scrollbar { display: none; }
         .sug-chip {
-            padding: 7px 12px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px;
+            padding: 7px 12px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius);
             color: var(--text-2); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;
-            display: flex; align-items: center; gap: 5px; transition: all 0.2s; flex-shrink: 0;
+            display: flex; align-items: center; gap: 5px; transition: all var(--transition-base); flex-shrink: 0;
         }
         .sug-chip:hover { border-color: var(--accent); color: var(--accent); }
 
@@ -803,9 +816,9 @@
         .rel-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 12px; scrollbar-width: none; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
         .rel-tabs::-webkit-scrollbar { display: none; }
         .rel-tab-btn {
-            flex-shrink: 0; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--border);
+            flex-shrink: 0; padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border);
             background: var(--bg-2); color: var(--text-2); font-family: var(--font); font-size: 12px; font-weight: 700;
-            cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+            cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all var(--transition-base);
         }
         .rel-tab-btn.active { background: var(--grad-bold); color: #fff; border-color: transparent; }
         .rel-panel { display: none; }
@@ -822,7 +835,7 @@
         :root { --quran-gold: rgba(212, 175, 55, 0.55); --quran-gold-dim: rgba(212, 175, 55, 0.28); }
         body.light { --quran-gold: rgba(180, 138, 22, 0.5); --quran-gold-dim: rgba(180, 138, 22, 0.25); }
 
-        .quran-frame-wrap { position: relative; padding: 3px; border-radius: 20px; background: linear-gradient(135deg, rgba(212,175,55,0.35), rgba(212,175,55,0.06) 30%, rgba(212,175,55,0.06) 70%, rgba(212,175,55,0.35)); }
+        .quran-frame-wrap { position: relative; padding: 3px; border-radius: var(--radius-lg); background: linear-gradient(135deg, rgba(212,175,55,0.35), rgba(212,175,55,0.06) 30%, rgba(212,175,55,0.06) 70%, rgba(212,175,55,0.35)); }
         .quran-reader {
             position: relative;
             background: var(--bg-2);
@@ -872,15 +885,15 @@
         .quran-empty { text-align: center; padding: 30px 10px; color: var(--text-3); font-size: 13px; }
 
         .quran-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-        .quran-fontsize-ctrl { display: flex; align-items: center; gap: 4px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 3px; }
+        .quran-fontsize-ctrl { display: flex; align-items: center; gap: 4px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px; }
         .quran-fontsize-ctrl button {
-            width: 28px; height: 28px; border-radius: 8px; border: none; background: transparent; color: var(--text-2);
+            width: 28px; height: 28px; border-radius: var(--radius-xs); border: none; background: transparent; color: var(--text-2);
             font-family: var(--font); font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px;
         }
         .quran-fontsize-ctrl button:active { background: var(--accent); color: #fff; }
         .quran-openTab-btn {
             display: flex; align-items: center; gap: 6px; background: var(--bg-2); border: 1px solid var(--border);
-            border-radius: 10px; padding: 0 12px; height: 34px; color: var(--text-2); font-family: var(--font);
+            border-radius: var(--radius-sm); padding: 0 12px; height: 34px; color: var(--text-2); font-family: var(--font);
             font-size: 12px; font-weight: 700; cursor: pointer;
         }
         .quran-openTab-btn:active { background: var(--accent); color: #fff; border-color: transparent; }
@@ -892,7 +905,7 @@
         }
         .quran-continue-btn {
             display: flex; align-items: center; gap: 5px; background: var(--grad-bold); color: #fff; border: none;
-            border-radius: 8px; padding: 5px 10px; font-family: var(--font); font-size: 11px; font-weight: 700; cursor: pointer;
+            border-radius: var(--radius-xs); padding: 5px 10px; font-family: var(--font); font-size: 11px; font-weight: 700; cursor: pointer;
             flex-shrink: 0;
         }
 
@@ -933,7 +946,7 @@
         .adhkar-item {
             background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
             padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px;
-            cursor: pointer; transition: all 0.2s;
+            cursor: pointer; transition: all var(--transition-base);
         }
         .adhkar-item.done { opacity: 0.45; }
         .adhkar-text { font-family: 'Amiri', 'Cairo', serif; font-size: 15px; line-height: 1.9; color: var(--text-1); }
@@ -985,22 +998,22 @@
 
         .input-wrapper {
             display: flex; align-items: flex-end; gap: 6px; background: var(--bg-2);
-            border: 1px solid var(--border); border-radius: 20px; padding: 4px;
-            transition: all 0.3s;
+            border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 4px;
+            transition: all var(--transition-slow);
         }
         .input-wrapper:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
         
         .attach-btn {
             width: 38px; height: 38px; border-radius: 50%; border: none; background: transparent;
             color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s; flex-shrink: 0; font-size: 15px;
+            transition: all var(--transition-base); flex-shrink: 0; font-size: 15px;
         }
         .attach-btn:hover { color: var(--accent); }
 
         .mic-btn {
             width: 38px; height: 38px; border-radius: 50%; border: none; background: transparent;
             color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s; flex-shrink: 0; font-size: 15px;
+            transition: all var(--transition-base); flex-shrink: 0; font-size: 15px;
         }
         .mic-btn:hover { color: var(--accent); }
         .mic-btn.listening { background: var(--danger); color: white; animation: micPulse 1.4s infinite; }
@@ -1021,7 +1034,7 @@
             width: 38px; height: 38px; border-radius: 50%; border: none;
             background: var(--grad-bold);
             color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            font-size: 14px; transition: all 0.2s; flex-shrink: 0;
+            font-size: 14px; transition: all var(--transition-base); flex-shrink: 0;
         }
         .send-btn:active { transform: scale(0.9); }
         .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -1037,7 +1050,7 @@
 
         .attachment-chip {
             display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--bg-2);
-            border: 1px solid var(--border-accent); border-radius: 12px; font-size: 11px; color: var(--text-2);
+            border: 1px solid var(--border-accent); border-radius: var(--radius-md); font-size: 11px; color: var(--text-2);
             margin-bottom: 8px; max-width: 100%;
         }
         .attachment-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1050,7 +1063,7 @@
         }
         .modal-overlay.active { display: flex; }
         .modal {
-            background: var(--bg-glass-heavy); border: 1px solid var(--border); border-radius: 20px;
+            background: var(--bg-glass-heavy); border: 1px solid var(--border); border-radius: var(--radius-lg);
             width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; padding: 20px;
             animation: modalIn 0.3s ease;
         }
@@ -1059,7 +1072,7 @@
         .modal-title { font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
         .modal-title i { color: var(--accent); }
         .close-modal { 
-            width: 34px; height: 34px; border-radius: 8px; background: var(--bg-2); border: 1px solid var(--border);
+            width: 34px; height: 34px; border-radius: var(--radius-xs); background: var(--bg-2); border: 1px solid var(--border);
             color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;
         }
         .close-modal:hover { color: var(--danger); border-color: var(--danger); }
@@ -1096,7 +1109,7 @@
         .call-transcript-log::-webkit-scrollbar { width:4px; }
         .call-transcript-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius:4px; }
         .call-bubble {
-            max-width:86%; padding:9px 14px; border-radius:16px; font-size:13.5px; line-height:1.65;
+            max-width:86%; padding:9px 14px; border-radius: var(--radius); font-size:13.5px; line-height:1.65;
             text-align: right; word-wrap: break-word; animation: callBubbleIn .25s ease;
         }
         .call-bubble.user { margin-left: auto; background: rgba(165,180,252,.15); color:#c7d2fe; border-bottom-left-radius:5px; }
@@ -1138,7 +1151,7 @@
         }
 
         /* ====================== مين فاتح دلوقتي (Live Now) ====================== */
-        .live-now-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background: var(--bg-glass); border:1px solid var(--border); }
+        .live-now-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius: var(--radius-md); background: var(--bg-glass); border:1px solid var(--border); }
         .live-now-avatar { width:36px; height:36px; border-radius:50%; background: var(--grad-bold); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:#fff; flex-shrink:0; position:relative; }
         .live-now-dot { position:absolute; bottom:-1px; left:-1px; width:11px; height:11px; border-radius:50%; background:#22c55e; border:2px solid var(--bg-2); animation: liveDotPulse 1.8s ease-in-out infinite; }
         @keyframes liveDotPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.55);} 50% { box-shadow: 0 0 0 4px rgba(34,197,94,0);} }
@@ -1147,19 +1160,19 @@
 
         /* ====================== استوديو الفيديو التلقائي (ملخص → فيديو) ====================== */
         #videoStudioModal .modal { max-width: 480px; }
-        .vs-progress-wrap { background: var(--bg-2); border-radius: 10px; height: 8px; overflow: hidden; margin-top: 10px; }
+        .vs-progress-wrap { background: var(--bg-2); border-radius: var(--radius-sm); height: 8px; overflow: hidden; margin-top: 10px; }
         .vs-progress-bar { height: 100%; width: 0%; background: var(--grad-bold); transition: width .25s ease; }
         .vs-preview-video { width: 100%; border-radius: 14px; margin-top: 12px; background:#000; max-height: 360px; display:block; }
         .vs-slide-count-opt { display:flex; gap:8px; margin-top:8px; }
-        .vs-slide-count-opt button { flex:1; padding:9px 4px; border-radius:10px; border:1px solid var(--border); background: var(--bg-2); color:var(--text-2); font-size:12.5px; font-weight:700; cursor:pointer; }
+        .vs-slide-count-opt button { flex:1; padding:9px 4px; border-radius: var(--radius-sm); border:1px solid var(--border); background: var(--bg-2); color:var(--text-2); font-size:12.5px; font-weight:700; cursor:pointer; }
         .vs-slide-count-opt button.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
         .vs-avatar-groups { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-top:8px; -webkit-overflow-scrolling:touch; }
-        .vs-avatar-groups button { flex:0 0 auto; padding:7px 13px; border-radius:20px; border:1px solid var(--border); background: var(--bg-2); color:var(--text-2); font-size:11.5px; font-weight:700; cursor:pointer; white-space:nowrap; }
+        .vs-avatar-groups button { flex:0 0 auto; padding:7px 13px; border-radius: var(--radius-lg); border:1px solid var(--border); background: var(--bg-2); color:var(--text-2); font-size:11.5px; font-weight:700; cursor:pointer; white-space:nowrap; }
         .vs-avatar-groups button.active { border-color: var(--accent); color:#fff; background: var(--grad-bold); }
         .vs-avatar-grid { display:grid; grid-template-columns: repeat(6, 1fr); gap:8px; margin-top:10px; max-height:190px; overflow-y:auto; }
-        .vs-avatar-grid button { aspect-ratio:1; border-radius:12px; border:2px solid transparent; background: var(--bg-2); font-size:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+        .vs-avatar-grid button { aspect-ratio:1; border-radius: var(--radius-md); border:2px solid transparent; background: var(--bg-2); font-size:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
         .vs-avatar-grid button.selected { border-color: var(--accent); background: var(--accent-glow); }
-        .vs-filter-chip, .vs-anim-chip { flex:0 0 auto; padding:8px 14px; border-radius:20px; border:2px solid var(--border); color:#fff; font-size:11.5px; font-weight:700; cursor:pointer; white-space:nowrap; text-shadow:0 1px 3px rgba(0,0,0,.6); }
+        .vs-filter-chip, .vs-anim-chip { flex:0 0 auto; padding:8px 14px; border-radius: var(--radius-lg); border:2px solid var(--border); color:#fff; font-size:11.5px; font-weight:700; cursor:pointer; white-space:nowrap; text-shadow:0 1px 3px rgba(0,0,0,.6); }
         .vs-anim-chip { background: var(--bg-2); color:var(--text-2); text-shadow:none; }
         .vs-filter-chip.auto, .vs-anim-chip { border-color: var(--border); }
         .vs-filter-chip.active, .vs-anim-chip.active { border-color:#fff; box-shadow:0 0 0 2px var(--accent); }
@@ -1175,7 +1188,7 @@
         .lib-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
         .lib-status-badge {
             display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px;
-            border-radius: 20px; margin-inline-start: 6px;
+            border-radius: var(--radius-lg); margin-inline-start: 6px;
         }
         .lib-status-pending { background: rgba(234,179,8,.15); color: #b58900; }
         .lib-status-approved { background: rgba(34,197,94,.15); color: var(--success); }
@@ -1213,10 +1226,11 @@
             font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 6px; direction: ltr;
         }
         .tv-delete-btn {
-            position: absolute; top: 6px; left: 6px; width: 26px; height: 26px; border-radius: 8px; border: none;
+            position: absolute; top: 6px; left: 6px; width: 26px; height: 26px; border-radius: var(--radius-xs); border: none;
             background: rgba(239,68,68,.88); color: #fff; display: flex; align-items: center; justify-content: center;
-            font-size: 11px; cursor: pointer; z-index: 2;
+            font-size: 11px; cursor: pointer; z-index: 2; transition: transform var(--transition-fast);
         }
+        .tv-delete-btn:active { transform: scale(0.88); }
         .tv-body { padding: 10px 12px 12px; flex: 1; display: flex; flex-direction: column; }
         .tv-title { font-size: 13px; font-weight: 700; line-height: 1.5; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .tv-meta { font-size: 11px; color: var(--text-3); margin-top: auto; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
@@ -1242,7 +1256,7 @@
         .tv-count-text { font-size: 11px; color: var(--text-3); flex-shrink: 0; white-space: nowrap; padding: 0 2px; }
         .tv-sort-chips { display: flex; gap: 6px; padding: 0 18px 12px; flex-wrap: wrap; }
         .tv-sort-chip {
-            font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+            font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: var(--radius-lg); border: 1px solid var(--border);
             background: var(--bg-2); color: var(--text-2); cursor: pointer; transition: all .18s ease; flex-shrink: 0;
         }
         .tv-sort-chip.active { background: var(--grad-bold); color: #fff; border-color: transparent; }
@@ -1292,12 +1306,12 @@
         }
         #groupChatThemeMenu {
             position: absolute; top: 46px; left: 12px; z-index: 20; display: none;
-            background: var(--bg-glass-heavy); border: 1px solid var(--border); border-radius: 12px;
+            background: var(--bg-glass-heavy); border: 1px solid var(--border); border-radius: var(--radius-md);
             padding: 8px; box-shadow: 0 10px 30px -8px rgba(0,0,0,.4); min-width: 176px;
         }
         #groupChatThemeMenu.active { display: block; }
         .gc-theme-option {
-            display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 8px;
+            display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: var(--radius-xs);
             cursor: pointer; font-size: 12.5px; color: var(--text-1);
         }
         .gc-theme-option:hover { background: var(--bg-2); }
@@ -1328,7 +1342,7 @@
         .btn-calc:active { transform: scale(0.96); }
         .calc-result {
             margin-top: 12px; padding: 14px; background: rgba(99, 102, 241, 0.1); border: 1px solid var(--border-accent);
-            border-radius: 10px; text-align: center; font-size: 16px; font-weight: 800; color: var(--accent);
+            border-radius: var(--radius-sm); text-align: center; font-size: 16px; font-weight: 800; color: var(--accent);
             display: none;
         }
         .calc-result.show { display: block; }
@@ -1382,8 +1396,8 @@
         .premium-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
         .premium-card-icon { font-size: 22px; }
         .premium-card-title { font-weight: 700; font-size: 14px; flex: 1; }
-        .premium-badge-locked { font-size: 10.5px; color: var(--text-3); background: var(--bg-2); padding: 3px 8px; border-radius: 20px; }
-        .premium-badge-on { font-size: 10.5px; color: #0a0e1a; background: var(--grad-bold); padding: 3px 8px; border-radius: 20px; font-weight: 700; }
+        .premium-badge-locked { font-size: 10.5px; color: var(--text-3); background: var(--bg-2); padding: 3px 8px; border-radius: var(--radius-lg); }
+        .premium-badge-on { font-size: 10.5px; color: #0a0e1a; background: var(--grad-bold); padding: 3px 8px; border-radius: var(--radius-lg); font-weight: 700; }
         .premium-card-desc { font-size: 11.5px; color: var(--text-2); line-height: 1.7; margin-bottom: 10px; }
         .premium-hub-header {
             text-align: center; padding: 6px 0 16px; font-size: 12px; color: var(--text-2); line-height: 1.8;
@@ -1392,7 +1406,7 @@
         .prompt-cat-title:first-child { margin-top: 0; }
         .prompt-card {
             background: var(--bg-glass); border: 1px solid var(--border); border-radius: var(--radius-sm);
-            padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all .2s;
+            padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all var(--transition-base);
         }
         .prompt-card:active { transform: scale(0.98); background: var(--bg-2); }
         .prompt-card-label { font-weight: 700; font-size: 12.5px; margin-bottom: 4px; }
@@ -1457,7 +1471,7 @@
 
         .sim-speaker-tag {
             display: inline-block; font-size: 10.5px; font-weight: 800; color: var(--accent);
-            background: var(--accent-glow, rgba(99,102,241,.15)); padding: 2px 10px; border-radius: 10px;
+            background: var(--accent-glow, rgba(99,102,241,.15)); padding: 2px 10px; border-radius: var(--radius-sm);
             margin-bottom: 6px;
         }
 
@@ -1489,7 +1503,7 @@
         }
         .sim-choice-btn:hover, .sim-choice-btn:active { border-color: var(--accent); background: var(--bg-2); transform: translateY(-1px); }
         .sim-ending-badge {
-            display: inline-block; padding: 6px 18px; border-radius: 20px; font-weight: 800; font-size: 13px;
+            display: inline-block; padding: 6px 18px; border-radius: var(--radius-lg); font-weight: 800; font-size: 13px;
             color: #0a0e1a; margin-top: 4px;
         }
 
@@ -1530,7 +1544,7 @@
 
         /* مونيتور حقيقي: شاشة سوداء + خط ECG لايف على Canvas + خطوط مسح (scanline) */
         .sim-monitor-screen {
-            position: relative; height: 58px; border-radius: 8px; overflow: hidden;
+            position: relative; height: 58px; border-radius: var(--radius-xs); overflow: hidden;
             background: #04140c; margin-bottom: 10px; border: 1px solid rgba(16,185,129,.3);
             box-shadow: inset 0 0 14px rgba(0,0,0,.6);
         }
@@ -1562,7 +1576,7 @@
         }
         .mock-exam-chapter-chip button { background: none; border: none; color: var(--danger); font-size: 14px; cursor: pointer; }
         .drug-lib-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
-        .drug-lib-item { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; position: relative; }
+        .drug-lib-item { border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); cursor: pointer; position: relative; }
         .drug-lib-item img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
         .drug-lib-item .date { position: absolute; bottom: 0; right: 0; left: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 9px; text-align: center; padding: 2px; }
 
@@ -1577,7 +1591,7 @@
             pointer-events: auto; width: 100%; display: flex; align-items: flex-start; gap: 10px;
             padding: 12px 14px; background: var(--bg-glass-heavy);
             backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid var(--border); border-radius: 16px;
+            border: 1px solid var(--border); border-radius: var(--radius);
             box-shadow: 0 10px 30px rgba(0,0,0,0.32), 0 1px 0 rgba(255,255,255,0.05) inset;
             opacity: 0; transform: translateY(-18px) scale(0.96);
             transition: transform 0.32s cubic-bezier(.2,.9,.25,1.15), opacity 0.28s ease;
@@ -1586,7 +1600,7 @@
         .ios-toast.show { opacity: 1; transform: translateY(0) scale(1); }
         .ios-toast.hide { opacity: 0; transform: translateY(-14px) scale(0.97); }
         .ios-toast-icon {
-            flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; margin-top: 1px;
+            flex-shrink: 0; width: 30px; height: 30px; border-radius: var(--radius-xs); margin-top: 1px;
             display: flex; align-items: center; justify-content: center; background: var(--grad-bold);
             color: #fff; font-size: 13px;
         }
@@ -1610,7 +1624,7 @@
         .dua-overlay { position: fixed; inset: 0; background: rgba(4, 10, 8, 0.72); backdrop-filter: blur(6px);
             display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; transition: opacity .5s ease; padding: 20px; }
         .dua-overlay.show { opacity: 1; }
-        .dua-card { width: 100%; max-width: 380px; border-radius: 24px; padding: 28px 24px;
+        .dua-card { width: 100%; max-width: 380px; border-radius: var(--radius-xl); padding: 28px 24px;
             background: linear-gradient(160deg, #0d3b2e 0%, #114b3a 45%, #1a5c46 100%);
             border: 1px solid rgba(212, 175, 55, 0.35); box-shadow: 0 20px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
             text-align: center; position: relative; transform: translateY(14px) scale(.96); transition: transform .5s cubic-bezier(.2,.9,.3,1.3); overflow: hidden; }
@@ -1632,7 +1646,7 @@
         [dir="ltr"] .dua-progress-bar, html:not([dir="rtl"]) .dua-progress-bar { transform-origin: left; }
         @keyframes duaCountdown { from { width: 100%; } to { width: 0%; } }
         @keyframes skeletonShimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
-        .skeleton-row { padding:10px 12px; border:1px solid var(--border); border-radius:10px; display:flex; flex-direction:column; gap:6px; }
+        .skeleton-row { padding:10px 12px; border:1px solid var(--border); border-radius: var(--radius-sm); display:flex; flex-direction:column; gap:6px; }
         .skeleton-line { height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--border) 25%, var(--bg-2, #2a2d3a) 37%, var(--border) 63%); background-size: 400px 100%; animation: skeletonShimmer 1.4s ease-in-out infinite; }
         .skeleton-line.short { width: 40%; }
         .skeleton-line.long { width: 75%; }
@@ -1641,6 +1655,7 @@
         .dua-close { position: absolute; top: 14px; left: 14px; width: 28px; height: 28px; border-radius: 50%; border: none;
             background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: .2s; }
         .dua-close:hover { background: rgba(255,255,255,.2); }
+        .dua-close:active { transform: scale(0.88); }
     </style>
 </head>
 <body>
@@ -1664,7 +1679,7 @@
       .chatx-splash-ring { position: absolute; inset: 0; border-radius: 26px; border: 1px solid rgba(129,140,248,.45); animation: chatxRingPulse 2.2s ease-out infinite; }
       .chatx-splash-ring2 { animation-delay: .55s; border-color: rgba(192,132,252,.35); }
       @keyframes chatxRingPulse { 0% { transform: scale(.78); opacity: .9; } 100% { transform: scale(1.55); opacity: 0; } }
-      .chatx-splash-logo { position: relative; z-index: 1; width: 72px; height: 72px; border-radius: 20px; box-shadow: 0 10px 30px rgba(99,102,241,.45); animation: chatxLogoPop .6s cubic-bezier(.34,1.56,.64,1) both, chatxLogoFloat 2.6s ease-in-out .6s infinite; }
+      .chatx-splash-logo { position: relative; z-index: 1; width: 72px; height: 72px; border-radius: var(--radius-lg); box-shadow: 0 10px 30px rgba(99,102,241,.45); animation: chatxLogoPop .6s cubic-bezier(.34,1.56,.64,1) both, chatxLogoFloat 2.6s ease-in-out .6s infinite; }
       @keyframes chatxLogoPop { 0% { transform: scale(.4); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
       @keyframes chatxLogoFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
       .chatx-splash-title { direction: ltr; font-family: 'Poppins','Tajawal',Arial,sans-serif; font-weight: 800; font-size: clamp(28px, 8vw, 44px); letter-spacing: 1px; margin: 0; min-height: 1.2em; }
@@ -1782,7 +1797,7 @@
                     <button class="icon-btn" id="englishProBtn" style="display:none;" title="English Pro — الإنجليزية الاحترافية للتمريض (Premium)" aria-label="English Pro" onclick="window.open('english-pro.html', '_blank')">🇬🇧</button>
                     <button class="icon-btn" aria-label="بنك أخطائي" title="بنك أخطائي" onclick="openMistakesBankModal()" style="position:relative;">
                         <i class="fas fa-brain"></i>
-                        <span id="mistakesBankBadge" style="display:none;position:absolute;top:-4px;left:-4px;min-width:16px;height:16px;padding:0 3px;border-radius:8px;background:var(--danger);color:#fff;font-size:9.5px;font-weight:800;align-items:center;justify-content:center;border:1.5px solid var(--bg-2);">0</span>
+                        <span id="mistakesBankBadge" style="display:none;position:absolute;top:-4px;left:-4px;min-width:16px;height:16px;padding:0 3px;border-radius: var(--radius-xs);background:var(--danger);color:#fff;font-size:9.5px;font-weight:800;align-items:center;justify-content:center;border:1.5px solid var(--bg-2);">0</span>
                     </button>
                     <button class="icon-btn" aria-label="فيديوهات الشرح" title="فيديوهات الشرح" style="position:relative;" onclick="dismissTvNewDot(); openModal('tutorialVideosModal'); loadTutorialVideos();">
                         <i class="fas fa-video"></i>
@@ -2032,7 +2047,7 @@
                 أسئلة سألها أكتر من طالب في آخر كام يوم — مجهولة تمامًا، مفيش أسماء ولا حسابات مربوطة بيها. دوس على أي سؤال عشان تشوف آخر إجابة معروفة له.
             </p>
             <div id="sharedQuestionsList" style="padding:16px;max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
-                <p style="text-align:center;color:var(--text-3);font-size:12.5px;">جاري التحميل...</p>
+                <p style="text-align:center;color:var(--text-3);font-size:12.5px;"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</p>
             </div>
         </div>
     </div>
@@ -2044,7 +2059,7 @@
                 <button class="close-modal" aria-label="إغلاق نافذة الإعلانات" onclick="closeModal('announcementsModal')"><i class="fas fa-times"></i></button>
             </div>
             <div id="announcementsList" style="padding:16px;max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
-                <p style="text-align:center;color:var(--text-3);font-size:12.5px;">جاري التحميل...</p>
+                <p style="text-align:center;color:var(--text-3);font-size:12.5px;"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</p>
             </div>
         </div>
     </div>
@@ -2103,10 +2118,10 @@
                     "كليني هادي" هوية بديلة مستوحاة من عالم التمريض (بني/كهرماني دافئ) بدل الألوان الافتراضية.
                 </p>
                 <div id="colorwayOptions" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                    <label class="colorway-opt" data-colorway="default" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;">
+                    <label class="colorway-opt" data-colorway="default" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius: var(--radius-sm);cursor:pointer;font-size:12.5px;">
                         <input type="radio" name="colorwayRadio" value="default" style="accent-color:var(--accent);"> الافتراضي
                     </label>
-                    <label class="colorway-opt" data-colorway="clinical" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;">
+                    <label class="colorway-opt" data-colorway="clinical" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius: var(--radius-sm);cursor:pointer;font-size:12.5px;">
                         <input type="radio" name="colorwayRadio" value="clinical" style="accent-color:var(--accent);"> كليني هادي
                     </label>
                 </div>
@@ -2118,16 +2133,16 @@
                     اختار الشخصية الصوتية اللي هتستخدمها زراير "استمع" والتحميل الصوتي. التغيير بيتطبق على أي رد جديد تسمعه.
                 </p>
                 <div id="ttsVoiceOptions" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                    <label class="tts-voice-opt" data-voice="salma" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;">
+                    <label class="tts-voice-opt" data-voice="salma" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius: var(--radius-sm);cursor:pointer;font-size:12.5px;">
                         <input type="radio" name="ttsVoiceRadio" value="salma" style="accent-color:var(--accent);"> سلمى (مصري)
                     </label>
-                    <label class="tts-voice-opt" data-voice="shakir" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;">
+                    <label class="tts-voice-opt" data-voice="shakir" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius: var(--radius-sm);cursor:pointer;font-size:12.5px;">
                         <input type="radio" name="ttsVoiceRadio" value="shakir" style="accent-color:var(--accent);"> شاكر (مصري)
                     </label>
-                    <label class="tts-voice-opt" data-voice="zariyah" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;">
+                    <label class="tts-voice-opt" data-voice="zariyah" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius: var(--radius-sm);cursor:pointer;font-size:12.5px;">
                         <input type="radio" name="ttsVoiceRadio" value="zariyah" style="accent-color:var(--accent);"> زارية (سعودي)
                     </label>
-                    <label class="tts-voice-opt" data-voice="hamed" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:12.5px;">
+                    <label class="tts-voice-opt" data-voice="hamed" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius: var(--radius-sm);cursor:pointer;font-size:12.5px;">
                         <input type="radio" name="ttsVoiceRadio" value="hamed" style="accent-color:var(--accent);"> حامد (سعودي)
                     </label>
                 </div>
@@ -2148,7 +2163,7 @@
                     منصتين من تطوير <b style="color:var(--text-1);">Ahmed Mousaa</b>، بيشتغلوا مع بعض عشان يقدملك تجربة تعليمية متكاملة.
                 </p>
                 <div style="display:flex;flex-direction:column;gap:10px;">
-                    <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-glass);border:1px solid var(--border-accent);border-radius:12px;">
+                    <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-glass);border:1px solid var(--border-accent);border-radius: var(--radius-md);">
                         <div style="width:42px;height:42px;flex-shrink:0;border-radius:11px;background:var(--grad-bold);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;box-shadow:0 4px 14px var(--accent-glow);">
                             <i class="fas fa-graduation-cap"></i>
                         </div>
@@ -2157,7 +2172,7 @@
                             <div style="font-size:11px;color:var(--text-2);margin-top:1px;">المساعد الأكاديمي الذكي — الشات ده</div>
                         </div>
                     </div>
-                    <a href="https://schoolx-eta.vercel.app" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;transition:all .2s;">
+                    <a href="https://schoolx-eta.vercel.app" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-2);border:1px solid var(--border);border-radius: var(--radius-md);transition: all var(--transition-base);">
                         <div style="width:42px;height:42px;flex-shrink:0;border-radius:11px;background:var(--bg-glass);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:17px;">
                             <i class="fas fa-school"></i>
                         </div>
@@ -2198,11 +2213,11 @@
                 </p>
                 <textarea id="adminMsgText" class="tool-input" rows="4" placeholder="اكتب رسالتك هنا..." style="resize:vertical;font-family:inherit;"></textarea>
                 <div style="margin:12px 0;display:flex;flex-direction:column;gap:8px;">
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;padding:10px;border:1px solid var(--border);border-radius:10px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;padding:10px;border:1px solid var(--border);border-radius: var(--radius-sm);">
                         <input type="radio" name="adminMsgIdentity" value="named" checked style="accent-color:var(--accent);">
                         <span>ابعتها <b>باسمي</b> — الأدمن هيشوف إني أنا اللي بعتها</span>
                     </label>
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;padding:10px;border:1px solid var(--border);border-radius:10px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;padding:10px;border:1px solid var(--border);border-radius: var(--radius-sm);">
                         <input type="radio" name="adminMsgIdentity" value="anonymous" style="accent-color:var(--accent);">
                         <span>ابعتها <b>من غير اسمي</b> — هتتبعت فعليًا من غير أي معرّف لهويتي، والأدمن مش هيقدر يعرف مين بعتها</span>
                     </label>
@@ -2282,11 +2297,11 @@
                     ترتيبك بيتحسب من نشاطك الأسبوعي (شات + حل بنك الأسئلة). أعلى 10 طلاب كل أسبوع
                     بيفتحلهم مميزات إضافية، والترتيب بيرجع صفر تاني كل أسبوع جديد.
                 </p>
-                <div id="myRankBox" style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-glass);border:1px solid var(--border-accent);border-radius:12px;margin-bottom:10px;">
+                <div id="myRankBox" style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-glass);border:1px solid var(--border-accent);border-radius: var(--radius-md);margin-bottom:10px;">
                     <div style="font-size:12.5px;color:var(--text-2);">ترتيبك الأسبوع ده</div>
                     <div style="font-weight:800;font-size:15px;" id="myRankText">—</div>
                 </div>
-                <div id="myRewardsBox" style="display:none;padding:12px;background:linear-gradient(135deg, rgba(255,215,0,0.14), var(--bg-glass));border:1px solid rgba(255,215,0,0.5);border-radius:12px;margin-bottom:14px;">
+                <div id="myRewardsBox" style="display:none;padding:12px;background:linear-gradient(135deg, rgba(255,215,0,0.14), var(--bg-glass));border:1px solid rgba(255,215,0,0.5);border-radius: var(--radius-md);margin-bottom:14px;">
                     <div style="font-weight:800;font-size:13px;margin-bottom:8px;" id="myRewardsMessage"></div>
                     <div id="myRewardsList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
                 </div>
@@ -2409,7 +2424,7 @@
                 <div class="tool-title"><i class="fas fa-user-plus"></i> ابدأ مذاكرة مع زميلك</div>
                 <div style="position:relative;">
                     <input type="text" id="mentionSearchInput" class="tool-input" placeholder="اكتب @ ثم اسم زميلك..." oninput="handleMentionSearch(this.value)" autocomplete="off">
-                    <div id="mentionSuggestions" style="display:none;position:absolute;top:100%;right:0;left:0;margin-top:4px;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;overflow:hidden;z-index:10;max-height:200px;overflow-y:auto;"></div>
+                    <div id="mentionSuggestions" style="display:none;position:absolute;top:100%;right:0;left:0;margin-top:4px;background:var(--bg-2);border:1px solid var(--border);border-radius: var(--radius-sm);overflow:hidden;z-index:10;max-height:200px;overflow-y:auto;"></div>
                 </div>
                 <div id="mentionSearchStatus" style="margin-top:8px;font-size:11px;color:var(--text-3);"></div>
             </div>
@@ -2487,7 +2502,7 @@
                 <div class="modal-title"><i class="fas fa-crop-simple"></i> تعديل الصورة</div>
                 <button class="close-modal" aria-label="إلغاء" onclick="giCancelEdit()"><i class="fas fa-times"></i></button>
             </div>
-            <div id="giEditorStage" style="position:relative;width:100%;aspect-ratio:4/3;background:#000;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;touch-action:none;">
+            <div id="giEditorStage" style="position:relative;width:100%;aspect-ratio:4/3;background:#000;border-radius: var(--radius-md);overflow:hidden;display:flex;align-items:center;justify-content:center;touch-action:none;">
                 <canvas id="giCanvas" style="max-width:100%;max-height:100%;display:block;"></canvas>
                 <div id="giCropBox" style="position:absolute;border:2px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.45);cursor:move;" onpointerdown="giCropPointerDown(event,'move')">
                     <div class="gi-handle" style="top:-8px;right:-8px;cursor:nesw-resize;" onpointerdown="giCropPointerDown(event,'ne')"></div>
@@ -2516,7 +2531,7 @@
     <!-- عارض صور بملء الشاشة — بديل window.open(dataURL) اللي المتصفحات الحديثة بترفضه
          (بيرجع صفحة سودة/فاضية لأي data: URL كـ navigation مباشر). العرض هنا داخلي 100%. -->
     <div id="imageLightbox" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);align-items:center;justify-content:center;cursor:zoom-out;" onclick="closeImageLightbox()">
-        <img id="imageLightboxImg" alt="معاينة الصورة" style="max-width:92vw;max-height:92vh;border-radius:8px;object-fit:contain;cursor:default;" onclick="event.stopPropagation()">
+        <img id="imageLightboxImg" alt="معاينة الصورة" style="max-width:92vw;max-height:92vh;border-radius: var(--radius-xs);object-fit:contain;cursor:default;" onclick="event.stopPropagation()">
         <button onclick="closeImageLightbox()" aria-label="إغلاق" style="position:absolute;top:16px;left:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:18px;cursor:pointer;">✕</button>
     </div>
 
@@ -2611,7 +2626,7 @@
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
                     تحكّم في تفعيل ميزة التفكير العميق للطلاب كلهم، وحدّد سقف استخدام يومي لكل طالب (0 = بلا حد). الأدمن مش بيتأثر بالسقف.
                 </p>
-                <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-2);border:1px solid var(--border);border-radius: var(--radius-md);padding:10px 12px;margin-bottom:10px;">
                     <span style="font-size:12.5px;font-weight:700;">تفعيل الميزة للطلاب</span>
                     <span class="deep-think-switch" id="dtaEnabledSwitch" onclick="toggleDtaEnabled()" style="cursor:pointer;"><span class="deep-think-switch-knob"></span></span>
                 </div>
@@ -2642,7 +2657,7 @@
                 <button class="close-modal" aria-label="إغلاق جدول المذاكرة" onclick="closeModal('studyScheduleModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="tool-section">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg-2);border-radius:10px;padding:10px 12px;margin-bottom:14px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg-2);border-radius: var(--radius-sm);padding:10px 12px;margin-bottom:14px;">
                     <span style="font-size:12.5px;color:var(--text-2);">🔔 فعّل تذكير جدول المذاكرة</span>
                     <input type="checkbox" id="studyReminderToggle" onchange="toggleStudyReminders(this.checked)" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;">
                 </div>
@@ -2923,7 +2938,7 @@
             <div id="isPaneAnalyze" style="overflow-y:auto;flex:1;">
                 <input type="file" id="isAnalyzeFileInput" accept="image/*" style="display:none;" onchange="handleImageStudioFileSelect(this.files[0])">
                 <div id="isAnalyzePreviewWrap" style="display:none;text-align:center;margin-bottom:12px;">
-                    <img id="isAnalyzePreviewImg" alt="الصورة المرفوعة للتحليل" style="max-width:100%;max-height:220px;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);">
+                    <img id="isAnalyzePreviewImg" alt="الصورة المرفوعة للتحليل" style="max-width:100%;max-height:220px;border-radius: var(--radius-sm);box-shadow:0 2px 12px rgba(0,0,0,.2);">
                 </div>
                 <button class="btn-calc" style="background:var(--bg-2);color:var(--text-2);margin-bottom:10px;" onclick="document.getElementById('isAnalyzeFileInput').click()">
                     <i class="fas fa-camera"></i> اختر صورة أو صوّرها
@@ -2938,7 +2953,7 @@
 
             <!-- تبويب: إنشاء صورة -->
             <div id="isPaneGenerate" style="display:none;overflow-y:auto;flex:1;">
-                <div id="isQuotaBadge" style="font-size:11px;color:var(--text-3);text-align:center;margin-bottom:10px;padding:6px;border-radius:8px;background:var(--bg-2);"></div>
+                <div id="isQuotaBadge" style="font-size:11px;color:var(--text-3);text-align:center;margin-bottom:10px;padding:6px;border-radius: var(--radius-xs);background:var(--bg-2);"></div>
 
                 <div class="input-group">
                     <label>قوالب جاهزة (اختياري)</label>
@@ -2952,7 +2967,7 @@
                     <label>اوصف الصورة اللي عايزها</label>
                     <input type="text" id="isGeneratePrompt" class="tool-input" placeholder="مثلًا: رسم توضيحي لجهاز الدوران في جسم الإنسان">
                     <button type="button" class="btn-calc" id="isImproveBtn" style="margin-top:6px;background:var(--bg-2);color:var(--text-2);font-size:12px;" onclick="runImproveImagePrompt()"><i class="fas fa-sparkles"></i> حسّن الوصف بالذكاء الاصطناعي</button>
-                    <div id="isImprovedPromptWrap" style="display:none;margin-top:8px;padding:10px;border-radius:8px;background:var(--bg-2);border:1px solid var(--border);">
+                    <div id="isImprovedPromptWrap" style="display:none;margin-top:8px;padding:10px;border-radius: var(--radius-xs);background:var(--bg-2);border:1px solid var(--border);">
                         <div style="font-size:10px;color:var(--text-3);margin-bottom:4px;">✨ الوصف بعد التحسين:</div>
                         <div id="isImprovedPromptText" style="font-size:12px;line-height:1.7;text-align:right;"></div>
                         <div style="display:flex;gap:6px;margin-top:8px;">
@@ -2997,7 +3012,7 @@
                 </div>
                 <button class="btn-calc" id="isGenerateBtn" onclick="runImageStudioGenerate()"><i class="fas fa-paintbrush"></i> أنشئ الصورة</button>
                 <div id="isGenerateResultWrap" style="display:none;text-align:center;margin-top:14px;">
-                    <img id="isGenerateResultImg" alt="الصورة اللي تم توليدها بالذكاء الاصطناعي" style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);" onerror="handleImageStudioGenerateError()">
+                    <img id="isGenerateResultImg" alt="الصورة اللي تم توليدها بالذكاء الاصطناعي" style="max-width:100%;border-radius: var(--radius-sm);box-shadow:0 2px 12px rgba(0,0,0,.2);" onerror="handleImageStudioGenerateError()">
                     <div style="margin-top:8px;display:flex;gap:8px;">
                         <a id="isGenerateDownloadLink" download="ai-image.jpg" class="btn-calc" style="display:inline-flex;background:var(--bg-2);color:var(--text-2);flex:1;padding:8px 12px;"><i class="fas fa-download"></i> تحميل</a>
                         <button type="button" class="btn-calc" id="isRegenerateBtn" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:8px 12px;" onclick="runImageStudioGenerate()"><i class="fas fa-arrows-rotate"></i> جرّب تاني</button>
@@ -3016,8 +3031,8 @@
 
             <!-- تبويب: إنشاء فيديو -->
             <div id="isPaneVideo" style="display:none;overflow-y:auto;flex:1;">
-                <div id="isVideoQuotaBadge" style="font-size:11px;color:var(--text-3);text-align:center;margin-bottom:10px;padding:6px;border-radius:8px;background:var(--bg-2);"></div>
-                <div style="font-size:11px;color:var(--text-3);background:var(--bg-2);border-radius:8px;padding:8px 10px;margin-bottom:12px;line-height:1.7;">
+                <div id="isVideoQuotaBadge" style="font-size:11px;color:var(--text-3);text-align:center;margin-bottom:10px;padding:6px;border-radius: var(--radius-xs);background:var(--bg-2);"></div>
+                <div style="font-size:11px;color:var(--text-3);background:var(--bg-2);border-radius: var(--radius-xs);padding:8px 10px;margin-bottom:12px;line-height:1.7;">
                     ⏱️ كل فيديو مدته 10 ثواني بس (جودة 480p) — التوليد بياخد وقت (من دقيقة لكذا دقيقة)، سيب الصفحة مفتوحة لحد ما يخلص.
                 </div>
                 <div class="input-group">
@@ -3027,7 +3042,7 @@
                 <div class="input-group">
                     <label>صورة تبدأ منها الفيديو (اختياري)</label>
                     <div id="isVideoImagePreviewWrap" style="display:none;margin-bottom:8px;position:relative;width:100px;">
-                        <img id="isVideoImagePreview" alt="الصورة المختارة لتوليد الفيديو" style="width:100px;height:100px;object-fit:cover;border-radius:8px;display:block;">
+                        <img id="isVideoImagePreview" alt="الصورة المختارة لتوليد الفيديو" style="width:100px;height:100px;object-fit:cover;border-radius: var(--radius-xs);display:block;">
                         <button type="button" onclick="clearVideoSourceImage()" style="position:absolute;top:-6px;left:-6px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;line-height:1;">✕</button>
                     </div>
                     <button type="button" class="btn-calc" style="background:var(--bg-2);color:var(--text-2);font-size:12px;" onclick="openVideoImagePicker()"><i class="fas fa-image"></i> اختر صورة من مكتبتي (اختياري)</button>
@@ -3044,7 +3059,7 @@
                 </div>
                 <button class="btn-calc" id="isVideoGenerateBtn" onclick="runVideoStudioGenerate()"><i class="fas fa-video"></i> أنشئ الفيديو</button>
                 <div id="isVideoResultWrap" style="display:none;text-align:center;margin-top:14px;">
-                    <video id="isVideoResultPlayer" controls playsinline style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);"></video>
+                    <video id="isVideoResultPlayer" controls playsinline style="max-width:100%;border-radius: var(--radius-sm);box-shadow:0 2px 12px rgba(0,0,0,.2);"></video>
                     <div style="margin-top:8px;">
                         <a id="isVideoDownloadLink" download="ai-video.mp4" class="btn-calc" style="display:inline-flex;background:var(--bg-2);color:var(--text-2);width:auto;padding:8px 16px;"><i class="fas fa-download"></i> تحميل الفيديو</a>
                     </div>
@@ -3100,7 +3115,7 @@
                 <button class="close-modal" aria-label="إغلاق" onclick="closeModal('libraryVideoViewModal')"><i class="fas fa-times"></i></button>
             </div>
             <div style="text-align:center;">
-                <video id="libraryVideoViewPlayer" controls playsinline style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);"></video>
+                <video id="libraryVideoViewPlayer" controls playsinline style="max-width:100%;border-radius: var(--radius-sm);box-shadow:0 2px 12px rgba(0,0,0,.2);"></video>
                 <div id="libraryVideoViewPrompt" style="margin-top:10px;font-size:12px;color:var(--text-3);text-align:right;line-height:1.7;"></div>
                 <div style="display:flex;gap:8px;margin-top:12px;">
                     <a id="libraryVideoViewDownload" download="ai-video.mp4" class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);"><i class="fas fa-download"></i> تحميل</a>
@@ -3118,7 +3133,7 @@
                 <button class="close-modal" aria-label="إغلاق" onclick="closeModal('libraryImageViewModal')"><i class="fas fa-times"></i></button>
             </div>
             <div style="text-align:center;">
-                <img id="libraryImageViewImg" alt="معاينة الصورة" style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);">
+                <img id="libraryImageViewImg" alt="معاينة الصورة" style="max-width:100%;border-radius: var(--radius-sm);box-shadow:0 2px 12px rgba(0,0,0,.2);">
                 <div id="libraryImageViewPrompt" style="margin-top:10px;font-size:12px;color:var(--text-3);text-align:right;line-height:1.7;"></div>
                 <div style="display:flex;gap:8px;margin-top:12px;">
                     <a id="libraryImageViewDownload" download="ai-image.jpg" class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);"><i class="fas fa-download"></i> تحميل</a>
@@ -3432,9 +3447,9 @@
             </div>
             <input type="hidden" id="skillEditorId">
             <label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;">اسم المهارة</label>
-            <input type="text" id="skillNameInput" placeholder="مثال: أسلوب تلخيص المحاضرات بتاعي" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg-2);color:var(--text-1);margin-bottom:12px;box-sizing:border-box;">
+            <input type="text" id="skillNameInput" placeholder="مثال: أسلوب تلخيص المحاضرات بتاعي" style="width:100%;padding:10px;border-radius: var(--radius-sm);border:1px solid var(--border);background:var(--bg-2);color:var(--text-1);margin-bottom:12px;box-sizing:border-box;">
             <label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;">التعليمات (إيه المفروض المساعد يعمله بالظبط لما المهارة دي تكون مفعّلة)</label>
-            <textarea id="skillInstructionsInput" placeholder="مثال: لما ألخصلك أي محتوى، استخدم نقط قصيرة، وابدأ كل نقطة بإيموجي مناسب، وحط في الآخر خلاصة سطر واحد..." rows="6" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg-2);color:var(--text-1);margin-bottom:10px;box-sizing:border-box;resize:vertical;"></textarea>
+            <textarea id="skillInstructionsInput" placeholder="مثال: لما ألخصلك أي محتوى، استخدم نقط قصيرة، وابدأ كل نقطة بإيموجي مناسب، وحط في الآخر خلاصة سطر واحد..." rows="6" style="width:100%;padding:10px;border-radius: var(--radius-sm);border:1px solid var(--border);background:var(--bg-2);color:var(--text-1);margin-bottom:10px;box-sizing:border-box;resize:vertical;"></textarea>
             <label style="font-size:11px;color:var(--text-2);display:block;margin-bottom:10px;">
                 أو ارفع ملف نصي (.txt أو .md) وهيتحط محتواه في خانة التعليمات تلقائي:
                 <input type="file" id="skillFileInput" accept=".txt,.md" onchange="handleSkillFileUpload(event)" style="display:block;margin-top:6px;">
@@ -3552,7 +3567,7 @@
                 <button class="close-modal" aria-label="إغلاق" onclick="closeLectureRecorder()"><i class="fas fa-times"></i></button>
             </div>
             <div style="text-align:center;padding:10px 4px 6px;">
-                <div id="lectureRecIndicator" style="width:90px;height:90px;border-radius:50%;background:var(--bg-2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px;color:var(--text-3);transition:all .2s;">
+                <div id="lectureRecIndicator" style="width:90px;height:90px;border-radius:50%;background:var(--bg-2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px;color:var(--text-3);transition: all var(--transition-base);">
                     <i class="fas fa-microphone"></i>
                 </div>
                 <div id="lectureRecTimer" style="font-size:20px;font-weight:800;margin-bottom:4px;font-variant-numeric:tabular-nums;">00:00</div>
@@ -4757,7 +4772,7 @@
                 items.forEach(m => {
                     const correctText = m.type === 'complete' ? m.completion : (m.type === 'truefalse' ? (m.correct ? 'صح' : 'خطأ') : m.correct);
                     html += `
-                    <div style="background:var(--bg-glass);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;">
+                    <div style="background:var(--bg-glass);border:1px solid var(--border);border-radius: var(--radius-md);padding:10px 12px;margin-bottom:8px;">
                         <div style="font-size:12px;color:var(--text-3);margin-bottom:4px;">${typeLabel[m.type] || m.type} · غلط فيه ${m.timesWrong} مرة</div>
                         <div style="font-size:13px;font-weight:600;margin-bottom:6px;line-height:1.6;">${escapeHtml(m.text)}</div>
                         <div style="font-size:12px;color:var(--success);margin-bottom:8px;">الإجابة الصح: ${escapeHtml(String(correctText))}</div>
@@ -5050,7 +5065,7 @@
                     lastDay = block.day;
                 }
                 html += `
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg-2);border-radius:10px;padding:8px 10px;margin-bottom:6px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg-2);border-radius: var(--radius-sm);padding:8px 10px;margin-bottom:6px;">
                         <div style="font-size:12.5px;">
                             <b>${escapeHtml(block.subject)}</b>
                             <div style="color:var(--text-3);font-size:11px;margin-top:2px;">${block.start} — ${block.end}</div>
@@ -6237,10 +6252,10 @@
                 return;
             }
             container.innerHTML = sharedQuestionsCache.map((q, i) => `
-                <div class="shared-q-item" data-idx="${i}" style="background:var(--bg-glass);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;">
+                <div class="shared-q-item" data-idx="${i}" style="background:var(--bg-glass);border:1px solid var(--border);border-radius: var(--radius-md);padding:12px 14px;cursor:pointer;">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
                         <p style="font-size:13px;line-height:1.6;margin:0;flex:1;">${escapeHtml(q.displayText || '')}</p>
-                        <span style="font-size:10.5px;color:var(--accent);background:var(--accent-glow);padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0;">سألها ${q.askCount} طلاب</span>
+                        <span style="font-size:10.5px;color:var(--accent);background:var(--accent-glow);padding:2px 8px;border-radius: var(--radius-lg);white-space:nowrap;flex-shrink:0;">سألها ${q.askCount} طلاب</span>
                     </div>
                     <div class="shared-q-answer" id="sharedQAnswer${i}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12.5px;line-height:1.7;color:var(--text-2);white-space:pre-wrap;"></div>
                 </div>
@@ -7111,9 +7126,9 @@
   .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 8px; flex-wrap: wrap; }
   .topbar button {
     font-family: 'Cairo', sans-serif; font-size: 12.5px; font-weight: 700; border: 1px solid var(--gold-dim);
-    background: transparent; color: inherit; border-radius: 10px; padding: 8px 14px; cursor: pointer;
+    background: transparent; color: inherit; border-radius: var(--radius-sm); padding: 8px 14px; cursor: pointer;
   }
-  .frame { position: relative; padding: 3px; border-radius: 20px; background: linear-gradient(135deg, rgba(180,138,22,0.4), rgba(180,138,22,0.05) 30%, rgba(180,138,22,0.05) 70%, rgba(180,138,22,0.4)); }
+  .frame { position: relative; padding: 3px; border-radius: var(--radius-lg); background: linear-gradient(135deg, rgba(180,138,22,0.4), rgba(180,138,22,0.05) 30%, rgba(180,138,22,0.05) 70%, rgba(180,138,22,0.4)); }
   .inner {
     position: relative; border: 1px solid var(--gold-dim); border-radius: 17px; padding: 30px 26px;
     background: rgba(255,255,255,0.55); transition: background 0.3s ease, border-color 0.3s ease;
@@ -8892,9 +8907,9 @@
                 }
                 listEl.innerHTML = students.map(s => {
                     const riskColor = s.riskScore >= 10 ? 'var(--danger)' : s.riskScore >= 5 ? 'var(--warning)' : 'var(--text-3)';
-                    const devicesHtml = s.deviceList.map(d => `<span style="display:inline-block;background:var(--bg-2);border:1px solid var(--border);border-radius:20px;padding:2px 10px;font-size:10.5px;margin:2px;">${escapeHtml(d)}</span>`).join('');
+                    const devicesHtml = s.deviceList.map(d => `<span style="display:inline-block;background:var(--bg-2);border:1px solid var(--border);border-radius: var(--radius-lg);padding:2px 10px;font-size:10.5px;margin:2px;">${escapeHtml(d)}</span>`).join('');
                     return `
-                        <div style="background:var(--bg-glass);border:1px solid var(--border);border-right:3px solid ${riskColor};border-radius:10px;padding:12px;">
+                        <div style="background:var(--bg-glass);border:1px solid var(--border);border-right:3px solid ${riskColor};border-radius: var(--radius-sm);padding:12px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                                 <b style="font-size:13px;">${escapeHtml(s.username)}</b>
                                 <span style="font-size:11px;font-weight:700;color:${riskColor};">درجة شك: ${s.riskScore}</span>
@@ -8961,7 +8976,7 @@
             listEl.innerHTML = '';
             messages.slice().reverse().forEach(m => {
                 const item = document.createElement('div');
-                item.style.cssText = 'padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-glass);';
+                item.style.cssText = 'padding:10px;border:1px solid var(--border);border-radius: var(--radius-sm);background:var(--bg-glass);';
                 const badge = m.senderVerified ? ` ${verifiedBadgeIconHtml(12)}` : '';
                 const senderLabel = m.anonymous
                     ? '<span style="color:var(--text-3);"><i class="fas fa-user-secret"></i> طالب مجهول</span>'
@@ -9029,7 +9044,7 @@
                         }
                     }
                     return `
-                        <div style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-glass);font-size:11.5px;">
+                        <div style="padding:8px 10px;border:1px solid var(--border);border-radius: var(--radius-xs);background:var(--bg-glass);font-size:11.5px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
                                 <span style="font-weight:700;">${meta.icon} ${meta.label}</span>
                                 <span style="color:var(--text-3);">${date}</span>
@@ -9131,7 +9146,7 @@
                         const name = RATING_MODEL_NAMES[s.model] || s.model;
                         const rateColor = s.approvalRate === null ? 'var(--text-3)' : (s.approvalRate >= 70 ? 'var(--success)' : s.approvalRate >= 40 ? 'var(--warning)' : 'var(--danger)');
                         return `
-                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg-2);border-radius:10px;padding:9px 12px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg-2);border-radius: var(--radius-sm);padding:9px 12px;">
                                 <div style="font-size:12.5px;font-weight:700;">${escapeHtml(name)}</div>
                                 <div style="display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--text-2);">
                                     <span><i class="fas fa-thumbs-up" style="color:var(--success);"></i> ${s.up}</span>
@@ -9146,7 +9161,7 @@
                     negativeEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش تقييمات سلبية 👍</div>';
                 } else {
                     negativeEl.innerHTML = data.recentNegative.map(r => `
-                        <div style="padding:9px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-glass);">
+                        <div style="padding:9px 12px;border:1px solid var(--border);border-radius: var(--radius-sm);background:var(--bg-glass);">
                             <div style="font-size:11px;color:var(--text-3);margin-bottom:4px;">
                                 ${escapeHtml(RATING_MODEL_NAMES[r.model] || r.model)} · ${escapeHtml(r.studentCode)} · ${new Date(r.createdAt).toLocaleDateString('ar-EG')}
                             </div>
@@ -9287,7 +9302,7 @@
             const roleLabel = a.type === 'admin' ? 'أدمن' : 'طالب';
             const roleColor = a.type === 'admin' ? 'var(--accent-3)' : 'var(--accent)';
             return `
-                <div style="display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:12px;transition:background 0.2s;" onmouseover="this.style.background='var(--bg-2)'" onmouseout="this.style.background='transparent'">
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius: var(--radius-md);transition: background var(--transition-base);" onmouseover="this.style.background='var(--bg-2)'" onmouseout="this.style.background='transparent'">
                     ${renderVerifiedAvatar(a.fullName, a.avatarUrl, true, 44)}
                     <div style="flex:1;min-width:0;">
                         <div style="display:flex;align-items:center;gap:4px;">
@@ -9295,7 +9310,7 @@
                         </div>
                         <div style="font-size:10.5px;color:var(--text-3);margin-top:1px;display:flex;align-items:center;gap:4px;">@${escapeHtml(a.username)}${verifiedBadgeIconHtml(11)}</div>
                     </div>
-                    <div style="font-size:10px;font-weight:700;color:${roleColor};background:color-mix(in srgb, ${roleColor} 14%, transparent);padding:4px 9px;border-radius:20px;flex-shrink:0;">${roleLabel}</div>
+                    <div style="font-size:10px;font-weight:700;color:${roleColor};background:color-mix(in srgb, ${roleColor} 14%, transparent);padding:4px 9px;border-radius: var(--radius-lg);flex-shrink:0;">${roleLabel}</div>
                 </div>`;
         }
 
@@ -9492,19 +9507,19 @@
                 </div>
 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
-                    <div style="background:var(--bg-2);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="background:var(--bg-2);border-radius: var(--radius-sm);padding:10px;text-align:center;">
                         <div style="font-size:20px;font-weight:800;color:${attendanceColor};">${attendancePct === null ? '—' : attendancePct + '%'}</div>
                         <div style="font-size:10.5px;color:var(--text-3);margin-top:2px;">نسبة الحضور (آخر ${attendanceTotal} يوم)</div>
                     </div>
-                    <div style="background:var(--bg-2);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="background:var(--bg-2);border-radius: var(--radius-sm);padding:10px;text-align:center;">
                         <div style="font-size:20px;font-weight:800;color:${avgPct === null ? 'var(--text-3)' : avgPct >= 60 ? 'var(--success)' : 'var(--danger)'};">${avgPct === null ? '—' : avgPct + '%'}</div>
                         <div style="font-size:10.5px;color:var(--text-3);margin-top:2px;">متوسط الامتحانات (آخر ${examResults.length})</div>
                     </div>
-                    <div style="background:var(--bg-2);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="background:var(--bg-2);border-radius: var(--radius-sm);padding:10px;text-align:center;">
                         <div style="font-size:20px;font-weight:800;">${pendingHomework.length}</div>
                         <div style="font-size:10.5px;color:var(--text-3);margin-top:2px;">واجبات مستحقة</div>
                     </div>
-                    <div style="background:var(--bg-2);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="background:var(--bg-2);border-radius: var(--radius-sm);padding:10px;text-align:center;">
                         <div style="font-size:20px;font-weight:800;color:${violations.length ? 'var(--danger)' : 'var(--success)'};">${violations.length}</div>
                         <div style="font-size:10.5px;color:var(--text-3);margin-top:2px;">مخالفات مسجّلة</div>
                     </div>
@@ -9518,7 +9533,7 @@
                 const statusColors = { present: 'var(--success)', absent: 'var(--danger)', late: 'var(--warning)' };
                 html += `<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px;">` +
                     attendance.slice(0, 8).map(a => `
-                        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-2);border-radius:8px;padding:7px 10px;font-size:11.5px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-2);border-radius: var(--radius-xs);padding:7px 10px;font-size:11.5px;">
                             <span>${escapeHtml(a.date)}</span>
                             <span style="color:${statusColors[a.status] || 'var(--text-3)'};font-weight:700;">${statusLabels[a.status] || a.status}</span>
                         </div>`).join('') +
@@ -9531,7 +9546,7 @@
             } else {
                 html += `<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px;">` +
                     examResults.slice(0, 8).map(r => `
-                        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-2);border-radius:8px;padding:7px 10px;font-size:11.5px;gap:8px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-2);border-radius: var(--radius-xs);padding:7px 10px;font-size:11.5px;gap:8px;">
                             <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(r.examName || r.examCode)}</span>
                             <span style="font-weight:700;flex-shrink:0;">${r.score}${r.totalQuestions ? ' / ' + r.totalQuestions : ''}</span>
                         </div>`).join('') +
@@ -9542,7 +9557,7 @@
                 html += `<div class="tool-title"><i class="fas fa-triangle-exclamation"></i> المخالفات</div>
                     <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px;">` +
                     violations.slice(0, 8).map(v => `
-                        <div style="background:var(--bg-2);border-radius:8px;padding:7px 10px;font-size:11.5px;">
+                        <div style="background:var(--bg-2);border-radius: var(--radius-xs);padding:7px 10px;font-size:11.5px;">
                             <div style="font-weight:700;">${escapeHtml(v.type || 'مخالفة')}</div>
                             <div style="color:var(--text-3);margin-top:2px;">${escapeHtml(v.reason || '')} ${v.date ? '· ' + escapeHtml(v.date) : ''}</div>
                         </div>`).join('') +
@@ -9553,7 +9568,7 @@
                 html += `<div class="tool-title"><i class="fas fa-list-check"></i> واجبات لسه ماسلمتهاش</div>
                     <div style="display:flex;flex-direction:column;gap:5px;">` +
                     pendingHomework.slice(0, 8).map(h => `
-                        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-2);border-radius:8px;padding:7px 10px;font-size:11.5px;gap:8px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-2);border-radius: var(--radius-xs);padding:7px 10px;font-size:11.5px;gap:8px;">
                             <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(h.title)}</span>
                             <span style="color:var(--warning);flex-shrink:0;">حتى ${escapeHtml(h.deadline)}</span>
                         </div>`).join('') +
@@ -9583,7 +9598,7 @@
                     registerPreviewFile(f._id, f.url, f.name);
                     const item = document.createElement('div');
                     item.id = `reviewItem_${f._id}`;
-                    item.style.cssText = 'padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-glass);';
+                    item.style.cssText = 'padding:10px;border:1px solid var(--border);border-radius: var(--radius-sm);background:var(--bg-glass);';
                     item.innerHTML = `
                         <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${escapeHtml(f.topic)}</div>
                         <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;">
@@ -9593,7 +9608,7 @@
                             <button onclick="openFilePreview('${f._id}')" style="font-size:11.5px;color:var(--accent);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0;"><i class="fas fa-eye"></i> معاينة الملف</button>
                             <button onclick="checkSummarySimilarity('${f._id}')" style="font-size:11.5px;color:var(--accent);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0;"><i class="fas fa-clone"></i> فحص التشابه</button>
                         </div>
-                        <div id="simResult_${f._id}" style="display:none;font-size:11px;background:var(--bg-2);border-radius:8px;padding:8px 10px;margin-bottom:6px;line-height:1.8;"></div>
+                        <div id="simResult_${f._id}" style="display:none;font-size:11px;background:var(--bg-2);border-radius: var(--radius-xs);padding:8px 10px;margin-bottom:6px;line-height:1.8;"></div>
                         <div style="display:flex;gap:6px;">
                             <button class="btn-calc" style="flex:1;background:var(--success);" onclick="reviewSharedSummary('${f._id}', 'approve')"><i class="fas fa-check"></i> قبول</button>
                             <button class="btn-calc" style="flex:1;background:var(--danger);" onclick="reviewSharedSummary('${f._id}', 'reject')"><i class="fas fa-times"></i> رفض</button>
@@ -9752,7 +9767,7 @@
                         document.getElementById('myRewardsMessage').textContent = rw.message || '👑 أنت بطل الأسبوع!';
                         const rewardsListEl = document.getElementById('myRewardsList');
                         rewardsListEl.innerHTML = (rw.rewards || []).map(r =>
-                            `<span title="${escapeHtml(r.desc)}" style="font-size:11px;background:var(--bg-glass);border:1px solid var(--border);border-radius:20px;padding:4px 10px;">${r.icon} ${escapeHtml(r.name)}</span>`
+                            `<span title="${escapeHtml(r.desc)}" style="font-size:11px;background:var(--bg-glass);border:1px solid var(--border);border-radius: var(--radius-lg);padding:4px 10px;">${r.icon} ${escapeHtml(r.name)}</span>`
                         ).join('');
                         rewardsBox.style.display = 'block';
                     }
@@ -9769,7 +9784,7 @@
                     const isOnline = onlineUsernames.has(s.username);
                     const championBadge = i === 0 ? ' <span title="المتصدر الحالي" style="filter:drop-shadow(0 0 3px gold);">👑</span>' : '';
                     const row = document.createElement('div');
-                    row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:${i === 0 ? 'linear-gradient(135deg, rgba(255,215,0,0.14), var(--bg-glass))' : (isMe ? 'var(--accent-glow)' : 'var(--bg-glass)')};border:1px solid ${i === 0 ? 'rgba(255,215,0,0.5)' : (isMe ? 'var(--border-accent)' : 'var(--border)')};`;
+                    row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius: var(--radius-sm);background:${i === 0 ? 'linear-gradient(135deg, rgba(255,215,0,0.14), var(--bg-glass))' : (isMe ? 'var(--accent-glow)' : 'var(--bg-glass)')};border:1px solid ${i === 0 ? 'rgba(255,215,0,0.5)' : (isMe ? 'var(--border-accent)' : 'var(--border)')};`;
                     row.innerHTML = `
                         <div style="width:26px;text-align:center;font-weight:800;font-size:13px;">${medal}</div>
                         <div style="flex:1;min-width:0;">
@@ -10044,7 +10059,7 @@
                     registerPreviewFile(f._id, f.url, f.name);
                     const row = document.createElement('div');
                     row.id = `libItem_${f._id}`;
-                    row.style.cssText = 'padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;';
+                    row.style.cssText = 'padding:12px;border:1px solid var(--border);border-radius: var(--radius-sm);margin-bottom:10px;';
                     row.innerHTML = buildLibraryRowHtml(f, { showStatus: false });
                     listEl.appendChild(row);
                 });
@@ -10084,7 +10099,7 @@
                     registerPreviewFile(f._id, f.url, f.name);
                     const row = document.createElement('div');
                     row.id = `libItem_${f._id}`;
-                    row.style.cssText = 'padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;';
+                    row.style.cssText = 'padding:12px;border:1px solid var(--border);border-radius: var(--radius-sm);margin-bottom:10px;';
                     row.innerHTML = buildLibraryRowHtml(f, { showStatus: true, hideAdminDelete: true });
                     listEl.appendChild(row);
                 });
@@ -10147,7 +10162,7 @@
                     <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;">سؤال ${sqCurrentIndex + 1} من ${sqCurrentQuestions.length}</div>
                     <div style="font-size:14px;font-weight:700;margin-bottom:12px;line-height:1.7;">${escapeHtml(q.q)}</div>
                     <div id="sqOptions" style="display:flex;flex-direction:column;gap:8px;"></div>
-                    <div id="sqExplain" style="display:none;margin-top:10px;font-size:12px;color:var(--text-2);background:var(--bg-2);border-radius:8px;padding:8px 10px;line-height:1.7;"></div>
+                    <div id="sqExplain" style="display:none;margin-top:10px;font-size:12px;color:var(--text-2);background:var(--bg-2);border-radius: var(--radius-xs);padding:8px 10px;line-height:1.7;"></div>
                     <button class="btn-calc" id="sqNextBtn" style="margin-top:14px;display:none;" onclick="sqNext()">${sqCurrentIndex === sqCurrentQuestions.length - 1 ? 'إنهاء' : 'التالي'}</button>
                 </div>`;
             const optsEl = document.getElementById('sqOptions');
@@ -10205,7 +10220,7 @@
                 }
                 if (data.keyTerms?.length) {
                     html += '<div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--text-2);">مصطلحات مهمة:</div><div style="display:flex;flex-wrap:wrap;gap:6px;">' +
-                        data.keyTerms.map(t => `<span style="background:var(--bg-2);border-radius:20px;padding:4px 10px;font-size:11.5px;">${escapeHtml(t)}</span>`).join('') + '</div>';
+                        data.keyTerms.map(t => `<span style="background:var(--bg-2);border-radius: var(--radius-lg);padding:4px 10px;font-size:11.5px;">${escapeHtml(t)}</span>`).join('') + '</div>';
                 }
                 html += '</div>';
                 body.innerHTML = html || '<div style="text-align:center;padding:30px 10px;color:var(--text-3);font-size:12.5px;">مفيش تلخيص متاح</div>';
@@ -10888,7 +10903,7 @@
                     const isPending = (c.status || 'accepted') === 'pending';
                     const iAmRequester = isPending && c.requestedBy === schoolUser?.username;
                     const row = document.createElement('div');
-                    row.style.cssText = 'padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;';
+                    row.style.cssText = 'padding:10px 12px;border:1px solid var(--border);border-radius: var(--radius-sm);cursor:pointer;display:flex;justify-content:space-between;align-items:center;';
                     // لو أنا اللي بدأت الطلب: بنوريه "مستني الموافقة". لو أنا المُستقبِل
                     // وطلب جديد مستني ردي: بنوريه بلون تنبيه عشان يلاحظه ويفتح الغرفة يقبل/يرفض.
                     const subtitle = isPending
@@ -11167,7 +11182,7 @@
                 img.src = imgSrc;
                 img.alt = m.image.name || 'صورة';
                 img.loading = 'lazy';
-                img.style.cssText = 'max-width:100%;max-height:320px;border-radius:10px;display:block;cursor:zoom-in;object-fit:cover;';
+                img.style.cssText = 'max-width:100%;max-height:320px;border-radius: var(--radius-sm);display:block;cursor:zoom-in;object-fit:cover;';
                 img.addEventListener('click', () => openImageLightbox(imgSrc));
                 bubble.appendChild(img);
             }
@@ -11214,7 +11229,7 @@
             Object.values(reactionsMap).forEach(emoji => { counts[emoji] = (counts[emoji] || 0) + 1; });
             Object.entries(counts).forEach(([emoji, count]) => {
                 const chip = document.createElement('span');
-                chip.style.cssText = 'background:rgba(0,0,0,0.15);border-radius:10px;padding:1px 6px;font-size:11px;';
+                chip.style.cssText = 'background:rgba(0,0,0,0.15);border-radius: var(--radius-sm);padding:1px 6px;font-size:11px;';
                 chip.textContent = count > 1 ? `${emoji} ${count}` : emoji;
                 container.appendChild(chip);
             });
@@ -11248,7 +11263,7 @@
             const boxRect = scrollBox ? scrollBox.getBoundingClientRect() : { top: 0 };
             const showBelow = (bubbleRect.top - boxRect.top) < 46;
             const vertical = showBelow ? 'top:calc(100% + 6px);' : 'top:-40px;';
-            picker.style.cssText = `position:absolute;${vertical}${bubble.dataset.isMe === '1' ? 'left:0;' : 'right:0;'}background:var(--bg-glass-heavy);border:1px solid var(--border);border-radius:20px;padding:6px 8px;display:flex;gap:6px;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.3);animation:floatIn .15s ease;`;
+            picker.style.cssText = `position:absolute;${vertical}${bubble.dataset.isMe === '1' ? 'left:0;' : 'right:0;'}background:var(--bg-glass-heavy);border:1px solid var(--border);border-radius: var(--radius-lg);padding:6px 8px;display:flex;gap:6px;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.3);animation:floatIn .15s ease;`;
             QUICK_REACTIONS.forEach(emoji => {
                 const btn = document.createElement('span');
                 btn.textContent = emoji;
@@ -11505,7 +11520,7 @@
             const chip = document.getElementById('groupChatPendingImageChip');
             chip.style.display = 'flex';
             chip.innerHTML = `
-                <img src="${previewDataUrl}" alt="معاينة الملف المرفق" style="width:44px;height:44px;border-radius:8px;object-fit:cover;">
+                <img src="${previewDataUrl}" alt="معاينة الملف المرفق" style="width:44px;height:44px;border-radius: var(--radius-xs);object-fit:cover;">
                 <span style="font-size:11.5px;color:var(--text-2);flex:1;">جاهزة للإرسال</span>
                 <button onclick="reopenGroupImageEditor()" aria-label="تعديل الصورة" style="background:none;border:none;color:var(--text-3);font-size:14px;cursor:pointer;padding:6px;"><i class="fas fa-crop-simple"></i></button>
                 <button onclick="removeGroupPendingImage()" aria-label="إلغاء الصورة" style="background:none;border:none;color:var(--text-3);font-size:15px;cursor:pointer;padding:6px;"><i class="fas fa-times"></i></button>`;
@@ -12111,7 +12126,7 @@
                 }
                 if (avatarBox) {
                     avatarBox.innerHTML = p.avatarUrl
-                        ? `<img src="${escapeHtml(p.avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`
+                        ? `<img src="${escapeHtml(p.avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius: var(--radius-sm);">`
                         : '<i class="fas fa-user-graduate"></i>';
                 }
             } else {
@@ -12171,7 +12186,7 @@
                 return;
             }
             container.innerHTML = announcementsCache.slice(0, 30).map((n, i) => `
-                <div style="background:var(--bg-glass);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">
+                <div style="background:var(--bg-glass);border:1px solid var(--border);border-radius: var(--radius-md);padding:12px 14px;">
                     <p style="font-size:13px;line-height:1.7;margin-bottom:8px;white-space:pre-wrap;">${escapeHtml(n.text || '')}</p>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <span style="font-size:10.5px;color:var(--text-3);">${escapeHtml(n.date || '')}</span>
@@ -12363,7 +12378,7 @@
             `;
             const dots = document.getElementById('premiumGuideDots');
             dots.innerHTML = PREMIUM_GUIDE_STEPS.map((_, i) =>
-                `<span style="width:6px;height:6px;border-radius:50%;background:${i === premiumGuideIndex ? 'var(--accent)' : 'var(--border)'};transition:background .2s;"></span>`
+                `<span style="width:6px;height:6px;border-radius:50%;background:${i === premiumGuideIndex ? 'var(--accent)' : 'var(--border)'};transition: background var(--transition-base);"></span>`
             ).join('');
             document.getElementById('premiumGuidePrevBtn').style.visibility = premiumGuideIndex === 0 ? 'hidden' : 'visible';
             document.getElementById('premiumGuideNextBtn').textContent = premiumGuideIndex === PREMIUM_GUIDE_STEPS.length - 1 ? 'تمام، فهمت!' : 'التالي';
@@ -13374,7 +13389,7 @@ ${r.pathSummary}
                     return;
                 }
                 grid.innerHTML = data.images.map(img => `
-                    <div style="cursor:pointer;border-radius:8px;overflow:hidden;background:var(--bg-2);" title="${escapeHtml(img.prompt || '')}" onclick='openLibraryImageView(${JSON.stringify(img).replace(/'/g, "&apos;")})'>
+                    <div style="cursor:pointer;border-radius: var(--radius-xs);overflow:hidden;background:var(--bg-2);" title="${escapeHtml(img.prompt || '')}" onclick='openLibraryImageView(${JSON.stringify(img).replace(/'/g, "&apos;")})'>
                         <img src="${img.imageUrl}" alt="${escapeAttr(img.prompt || 'صورة مولّدة بالذكاء الاصطناعي')}" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
                     </div>
                 `).join('');
@@ -13479,7 +13494,7 @@ ${r.pathSummary}
                 loadingEl.style.display = 'none';
                 if (!data.images || !data.images.length) { emptyEl.style.display = 'block'; return; }
                 grid.innerHTML = data.images.map(img => `
-                    <div style="cursor:pointer;border-radius:8px;overflow:hidden;" onclick="selectVideoSourceImage('${img.imageUrl.replace(/'/g, "\\'")}')">
+                    <div style="cursor:pointer;border-radius: var(--radius-xs);overflow:hidden;" onclick="selectVideoSourceImage('${img.imageUrl.replace(/'/g, "\\'")}')">
                         <img src="${img.imageUrl}" alt="صورة من مكتبتي لاستخدامها في الفيديو" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
                     </div>
                 `).join('');
@@ -13543,7 +13558,7 @@ ${r.pathSummary}
                 loadingEl.style.display = 'none';
                 if (!data.videos || !data.videos.length) { emptyEl.style.display = 'block'; return; }
                 grid.innerHTML = data.videos.map(vid => `
-                    <div style="cursor:pointer;border-radius:8px;overflow:hidden;background:var(--bg-2);" title="${escapeHtml(vid.prompt || '')}" onclick='openLibraryVideoView(${JSON.stringify(vid).replace(/'/g, "&apos;")})'>
+                    <div style="cursor:pointer;border-radius: var(--radius-xs);overflow:hidden;background:var(--bg-2);" title="${escapeHtml(vid.prompt || '')}" onclick='openLibraryVideoView(${JSON.stringify(vid).replace(/'/g, "&apos;")})'>
                         <video src="${vid.videoUrl}" muted style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;pointer-events:none;"></video>
                     </div>
                 `).join('');
@@ -15073,7 +15088,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             printable.innerHTML = `<h2 style="margin-bottom:16px;">${chat.title}</h2>`;
             chat.messages.forEach(msg => {
                 const block = document.createElement('div');
-                block.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:10px;background:' + (msg.role === 'user' ? '#eef2ff' : '#f8fafc') + ';border:1px solid #e2e8f0;';
+                block.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius: var(--radius-sm);background:' + (msg.role === 'user' ? '#eef2ff' : '#f8fafc') + ';border:1px solid #e2e8f0;';
                 block.innerHTML = `<strong>${msg.role === 'user' ? 'أنت' : 'Chat X'}:</strong><div>${DOMPurify.sanitize(marked.parse(msg.content))}</div>`;
                 printable.appendChild(block);
             });
