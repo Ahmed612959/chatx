@@ -10390,7 +10390,12 @@
                 tvAllVideos = await res.json();
                 filterTutorialVideos(document.getElementById('tvSearchInput').value);
             } catch (e) {
-                document.getElementById('tvGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--danger);font-size:12px;">تعذر تحميل فيديوهات الشرح</div>';
+                document.getElementById('tvGrid').innerHTML = `
+                    <div style="grid-column:1/-1;text-align:center;padding:24px 10px;color:var(--danger);font-size:12px;">
+                        تعذر تحميل فيديوهات الشرح — تأكد من الاتصال بالنت
+                        <br>
+                        <button class="btn-calc" style="margin-top:12px;width:auto;padding:7px 18px;" onclick="loadTutorialVideos()"><i class="fas fa-rotate-right"></i> إعادة المحاولة</button>
+                    </div>`;
             }
         }
 
@@ -16504,6 +16509,13 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                 e.target.classList.remove('active');
             }
         };
+        // ====================== تنبيه عام لقطع/رجوع النت ======================
+        // منفصل عن إعادة المحاولة التلقائية بتاعة الشات فوق — ده بيغطي باقي أجزاء
+        // التطبيق (المكتبة، فيديوهات الشرح، إلخ) اللي مفيهاش retry تلقائي، عشان
+        // الطالب يفهم إن سبب فشل أي طلب هو النت مش عطل في الموقع.
+        window.addEventListener('offline', () => showToast('قطع الاتصال بالنت — تأكد من الشبكة وحاول تاني', 'error', { title: 'مفيش إنترنت', icon: 'fa-wifi' }));
+        window.addEventListener('online', () => showToast('رجع الاتصال بالنت ✅', 'success', { title: 'Chat X', icon: 'fa-wifi' }));
+
     </script>
 </body>
     </html>
