@@ -1137,6 +1137,77 @@
         .lib-status-approved { background: rgba(34,197,94,.15); color: var(--success); }
         .lib-status-rejected { background: rgba(239,68,68,.15); color: var(--danger); }
 
+        /* ====================== فيديوهات شرح المنصة (Tutorial Videos) ====================== */
+        #tutorialVideosModal .modal { max-width: 760px; width: 94vw; height: 84vh; max-height: 720px; display: flex; flex-direction: column; padding: 0; }
+        .tv-modal-body { flex: 1; overflow-y: auto; padding: 14px 18px 20px; }
+        .tv-toolbar { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 18px 14px; align-items: center; }
+        .tv-search-wrap { position: relative; flex: 1; min-width: 160px; }
+        .tv-search-wrap i { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); color: var(--text-3); font-size: 12px; pointer-events: none; }
+        .tv-search-wrap input { padding-right: 32px; }
+        .tv-upload-btn { flex: none; width: auto; padding: 0 16px; margin-top: 0; white-space: nowrap; }
+        .tv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+        @media (max-width: 480px) { .tv-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; } }
+        .tv-card {
+            background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+            cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+            display: flex; flex-direction: column; animation: floatIn .35s ease;
+        }
+        .tv-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px -8px rgba(0,0,0,.35); border-color: var(--border-accent); }
+        .tv-thumb { position: relative; width: 100%; aspect-ratio: 16/9; background: var(--grad-bold); background-size: 200% 200%; animation: gradientFlow 8s ease infinite; overflow: hidden; }
+        .tv-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .tv-thumb-play {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,.18); transition: background .18s ease;
+        }
+        .tv-card:hover .tv-thumb-play { background: rgba(0,0,0,.32); }
+        .tv-thumb-play i {
+            width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.92); color: var(--accent);
+            display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 4px 14px rgba(0,0,0,.35);
+        }
+        .tv-duration {
+            position: absolute; bottom: 6px; left: 6px; background: rgba(0,0,0,.72); color: #fff;
+            font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 6px; direction: ltr;
+        }
+        .tv-delete-btn {
+            position: absolute; top: 6px; left: 6px; width: 26px; height: 26px; border-radius: 8px; border: none;
+            background: rgba(239,68,68,.88); color: #fff; display: flex; align-items: center; justify-content: center;
+            font-size: 11px; cursor: pointer; z-index: 2;
+        }
+        .tv-body { padding: 10px 12px 12px; flex: 1; display: flex; flex-direction: column; }
+        .tv-title { font-size: 13px; font-weight: 700; line-height: 1.5; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .tv-meta { font-size: 11px; color: var(--text-3); margin-top: auto; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+        .tv-meta i { font-size: 10px; }
+        .tv-skeleton-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+        .tv-skeleton-thumb { width: 100%; aspect-ratio: 16/9; background: linear-gradient(90deg, var(--border) 25%, var(--bg, #0a0e1a) 37%, var(--border) 63%); background-size: 400px 100%; animation: skeletonShimmer 1.4s ease-in-out infinite; }
+        .tv-skeleton-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+        #videoPlayerModal .modal { max-width: 640px; width: 94vw; padding: 0; overflow: hidden; }
+        #tvPlayerVideo { width: 100%; max-height: 46vh; background: #000; display: block; }
+        .tv-player-info { padding: 16px 18px 18px; }
+        .tv-player-title { font-size: 15.5px; font-weight: 800; margin-bottom: 6px; line-height: 1.5; }
+        .tv-player-meta { font-size: 12px; color: var(--text-3); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .tv-player-desc { font-size: 12.5px; color: var(--text-2); line-height: 1.8; margin-bottom: 14px; white-space: pre-wrap; }
+        .tv-player-actions { display: flex; gap: 8px; }
+
+        /* نقطة "جديد" النابضة على زرار فيديوهات الشرح في الشريط، على نفس فكرة
+           نقطة الحسابات الموثقة — بتختفي لوحدها أول ما حد يفتح القسم. */
+        .tv-new-dot {
+            position: absolute; top: -3px; inset-inline-end: -3px; width: 10px; height: 10px;
+            border-radius: 50%; background: var(--danger); border: 2px solid var(--bg-2);
+            animation: verifiedDotPulse 1.8s ease-in-out infinite;
+        }
+        .tv-count-text { font-size: 11px; color: var(--text-3); flex-shrink: 0; white-space: nowrap; padding: 0 2px; }
+        .tv-sort-chips { display: flex; gap: 6px; padding: 0 18px 12px; flex-wrap: wrap; }
+        .tv-sort-chip {
+            font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+            background: var(--bg-2); color: var(--text-2); cursor: pointer; transition: all .18s ease; flex-shrink: 0;
+        }
+        .tv-sort-chip.active { background: var(--grad-bold); color: #fff; border-color: transparent; }
+        .tv-sort-chip:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+        .tv-thumb img { opacity: 0; transition: opacity .3s ease; }
+        .tv-thumb img.loaded { opacity: 1; }
+        .tv-card { animation-fill-mode: backwards; }
+        .tv-views-chip { display: inline-flex; align-items: center; gap: 3px; }
+
         /* ====================== ثيمات غرفة المذاكرة ====================== */
         /* كل ثيم بيعرّف مجموعة متغيرات CSS محلية (--gc-*) بتتغطى على القيم الافتراضية
            في buildGroupChatBubble وخلفية #groupChatMessages. التغيير فوري لأي فقاعات
@@ -1521,35 +1592,6 @@
         .skeleton-line { height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--border) 25%, var(--bg-2, #2a2d3a) 37%, var(--border) 63%); background-size: 400px 100%; animation: skeletonShimmer 1.4s ease-in-out infinite; }
         .skeleton-line.short { width: 40%; }
         .skeleton-line.long { width: 75%; }
-
-        /* ====================== فيديوهات شرح المنصة (Video Lessons) ====================== */
-        .vl-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:12px 16px; border-bottom:1px solid var(--border); }
-        .vl-search-wrap { position:relative; flex:1; min-width:160px; }
-        .vl-search-wrap i { position:absolute; top:50%; right:12px; transform:translateY(-50%); color:var(--text-3); font-size:12px; pointer-events:none; }
-        .vl-search-wrap input { width:100%; padding-right:32px; }
-        .vl-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap:14px; padding:16px; }
-        @media (max-width: 480px) { .vl-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px; padding:12px; } }
-        .vl-card { background:var(--bg-2); border:1px solid var(--border); border-radius:14px; overflow:hidden; cursor:pointer; display:flex; flex-direction:column; transition:transform .15s ease, box-shadow .15s ease; position:relative; }
-        .vl-card:hover { transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.18); }
-        .vl-thumb { position:relative; aspect-ratio:16/9; background:var(--grad-bold); display:flex; align-items:center; justify-content:center; overflow:hidden; }
-        .vl-thumb video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; pointer-events:none; opacity:.9; }
-        .vl-play-badge { position:relative; z-index:1; width:42px; height:42px; border-radius:50%; background:rgba(0,0,0,.45); backdrop-filter:blur(2px); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; }
-        .vl-views-badge { position:absolute; bottom:6px; left:6px; background:rgba(0,0,0,.55); color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; display:flex; align-items:center; gap:4px; z-index:1; }
-        .vl-delete-btn { position:absolute; top:6px; left:6px; z-index:2; width:26px; height:26px; border-radius:50%; background:var(--danger); color:#fff; border:none; display:flex; align-items:center; justify-content:center; font-size:11px; cursor:pointer; opacity:.92; }
-        .vl-body { padding:10px 12px 12px; display:flex; flex-direction:column; gap:4px; flex:1; }
-        .vl-title { font-size:13px; font-weight:700; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-        .vl-creator { font-size:11px; color:var(--text-3); display:flex; align-items:center; gap:5px; }
-        .vl-desc { font-size:11px; color:var(--text-2); line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-top:2px; }
-        .vl-skel-card { background:var(--bg-2); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
-        .vl-skel-thumb { aspect-ratio:16/9; background:linear-gradient(90deg, var(--border) 25%, var(--bg-2, #2a2d3a) 37%, var(--border) 63%); background-size:400px 100%; animation:skeletonShimmer 1.4s ease-in-out infinite; }
-        .vl-skel-body { padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
-        .vl-empty { text-align:center; padding:40px 16px; color:var(--text-3); }
-        .vl-empty i { font-size:32px; opacity:.5; margin-bottom:10px; display:block; }
-        .vl-player-video { width:100%; max-height:60vh; border-radius:12px; background:#000; display:block; }
-        .vl-player-meta { padding:14px 2px 2px; }
-        .vl-player-title { font-size:15px; font-weight:800; margin-bottom:4px; }
-        .vl-player-creator { font-size:12px; color:var(--text-3); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
-        .vl-player-desc { font-size:12.5px; color:var(--text-2); line-height:1.8; white-space:pre-wrap; }
         .dua-timer { font-size: 11px; color: rgba(255,255,255,.55); }
         .dua-extra { margin-top: 14px; font-size: 11.5px; color: rgba(255,255,255,.65); line-height: 1.8; border-top: 1px dashed rgba(212,175,55,.25); padding-top: 12px; }
         .dua-close { position: absolute; top: 14px; left: 14px; width: 28px; height: 28px; border-radius: 50%; border: none;
@@ -1697,6 +1739,10 @@
                         <i class="fas fa-brain"></i>
                         <span id="mistakesBankBadge" style="display:none;position:absolute;top:-4px;left:-4px;min-width:16px;height:16px;padding:0 3px;border-radius:8px;background:var(--danger);color:#fff;font-size:9.5px;font-weight:800;align-items:center;justify-content:center;border:1.5px solid var(--bg-2);">0</span>
                     </button>
+                    <button class="icon-btn" aria-label="فيديوهات الشرح" title="فيديوهات الشرح" style="position:relative;" onclick="dismissTvNewDot(); openModal('tutorialVideosModal'); loadTutorialVideos();">
+                        <i class="fas fa-video"></i>
+                        <span class="tv-new-dot" id="tvNewDotSidebar" style="display:none;"></span>
+                    </button>
                     <button class="icon-btn" aria-label="سؤال اليوم من زميل" title="سؤال اليوم من زميل" onclick="openSharedQuestionsModal()"><i class="fas fa-users-line"></i></button>
                     <button class="icon-btn" aria-label="الإعلانات" onclick="openAnnouncementsModal()" style="position:relative;">
                         <i class="fas fa-bullhorn"></i>
@@ -1726,7 +1772,10 @@
                     <button class="action-btn" aria-label="القسم الديني" onclick="openReligionSection()"><i class="fas fa-mosque"></i></button>
                     <button class="action-btn" aria-label="مميزات Premium" onclick="openPremiumHub()"><i class="fas fa-crown"></i></button>
                     <button class="action-btn" aria-label="المكتبة المشتركة" onclick="openModal('sharedLibraryModal'); switchLibraryTab('all');"><i class="fas fa-layer-group"></i></button>
-                    <button class="action-btn" aria-label="فيديوهات شرح المنصة" title="فيديوهات شرح المنصة" onclick="openModal('videoLessonsModal'); loadVideoLessons();"><i class="fas fa-video"></i></button>
+                    <button class="action-btn" aria-label="فيديوهات شرح المنصة" title="فيديوهات شرح المنصة" id="tvTopBarBtn" style="position:relative;" onclick="dismissTvNewDot(); openModal('tutorialVideosModal'); loadTutorialVideos();">
+                        <i class="fas fa-video"></i>
+                        <span class="tv-new-dot" id="tvNewDot" style="display:none;"></span>
+                    </button>
                     <button class="action-btn" aria-label="فتح الأدوات" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
                     <button class="action-btn" aria-label="استوديو الفيديو التلقائي" title="حوّل أي ملخص لفيديو بالصوت" onclick="openModal('videoStudioModal')"><i class="fas fa-clapperboard"></i></button>
                 </div>
@@ -1810,11 +1859,6 @@
                             <i class="fas fa-clapperboard"></i>
                             <h4>فيديو من ملخص</h4>
                             <p>شرائح متحركة + صوت</p>
-                        </div>
-                        <div class="quick-card" onclick="openModal('videoLessonsModal'); loadVideoLessons();">
-                            <i class="fas fa-video"></i>
-                            <h4>فيديوهات الشرح</h4>
-                            <p>اتعلم تستخدم المنصة</p>
                         </div>
                     </div>
                 </div>
@@ -2506,6 +2550,13 @@
                 <button class="btn-calc" style="background:var(--bg-2);color:var(--text-2);margin-top:6px;" onclick="closeModal('toolsModal'); openModal('uploadSummaryModal');"><i class="fas fa-cloud-upload-alt"></i> شارك ملخص</button>
             </div>
             <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-video"></i> فيديوهات شرح المنصة</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    فيديوهات شرح لاستخدام Chat X بيرفعها فريق المنصة — اتفرج عليها وقت ما تحب.
+                </p>
+                <button class="btn-calc" onclick="closeModal('toolsModal'); openModal('tutorialVideosModal'); loadTutorialVideos();"><i class="fas fa-play"></i> شوف الفيديوهات</button>
+            </div>
+            <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-wand-magic-sparkles"></i> استوديو الصور الذكي 👑</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
                     حلّل أي صورة برؤية ذكاء اصطناعي حقيقية (مش استخراج نص بس)، أو أنشئ صورة من وصف نصي. ميزة Premium.
@@ -2665,70 +2716,92 @@
         </div>
     </div>
 
-    <!-- فيديوهات شرح المنصة: متاحة لأي زائر يتفرج، والإضافة للأدمن بس -->
-    <div class="modal-overlay" id="videoLessonsModal">
-        <div class="modal" style="display:flex;flex-direction:column;height:82vh;max-height:680px;max-width:900px;">
-            <div class="modal-header">
+    <!-- فيديوهات شرح المنصة: أي مستخدم يتفرج، الأدمن بس يقدر يرفع/يمسح -->
+    <div class="modal-overlay" id="tutorialVideosModal">
+        <div class="modal">
+            <div class="modal-header" style="padding:16px 18px 0;margin-bottom:0;">
                 <div class="modal-title"><i class="fas fa-video"></i> فيديوهات شرح المنصة</div>
-                <button class="close-modal" aria-label="إغلاق فيديوهات الشرح" onclick="closeModal('videoLessonsModal')"><i class="fas fa-times"></i></button>
+                <button class="close-modal" aria-label="إغلاق فيديوهات الشرح" onclick="closeModal('tutorialVideosModal')"><i class="fas fa-times"></i></button>
             </div>
-            <div class="vl-toolbar">
-                <div class="vl-search-wrap">
+            <div class="tv-toolbar" style="padding-top:14px;">
+                <div class="tv-search-wrap">
                     <i class="fas fa-magnifying-glass"></i>
-                    <input type="text" id="videoLessonSearchInput" class="tool-input" placeholder="دوّر بعنوان الفيديو أو اسم صاحبه..." oninput="filterVideoLessons(this.value)">
+                    <input type="text" id="tvSearchInput" class="tool-input" placeholder="دوّر بالعنوان أو اسم اللي عمل الفيديو..." oninput="filterTutorialVideos(this.value)">
                 </div>
-                <button class="btn-calc" id="videoLessonAddBtn" style="display:none;flex:none;width:auto;padding:0 14px;" onclick="closeModal('videoLessonsModal'); openAddVideoLessonModal();"><i class="fas fa-plus"></i> إضافة فيديو</button>
+                <span class="tv-count-text" id="tvCountText"></span>
+                <button id="tvUploadOpenBtn" class="btn-calc tv-upload-btn" style="display:none;" onclick="openModal('uploadTutorialVideoModal')"><i class="fas fa-cloud-upload-alt"></i> ارفع فيديو</button>
             </div>
-            <div id="videoLessonsGrid" class="vl-grid" style="flex:1;overflow-y:auto;"></div>
+            <div class="tv-sort-chips">
+                <button class="tv-sort-chip active" id="tvSortNewest" onclick="setTvSort('newest')"><i class="fas fa-clock"></i> الأحدث</button>
+                <button class="tv-sort-chip" id="tvSortViews" onclick="setTvSort('views')"><i class="fas fa-fire"></i> الأكثر مشاهدة</button>
+            </div>
+            <div class="tv-modal-body">
+                <div id="tvGrid" class="tv-grid"></div>
+                <div id="tvEmptyState" style="display:none;text-align:center;padding:40px 10px;color:var(--text-3);font-size:12.5px;">
+                    <i class="fas fa-clapperboard" style="font-size:26px;margin-bottom:10px;display:block;opacity:.5;"></i>
+                    لسه مفيش فيديوهات شرح مرفوعة
+                </div>
+                <div id="tvNoResults" style="display:none;text-align:center;padding:40px 10px;color:var(--text-3);font-size:12.5px;">
+                    مفيش فيديوهات مطابقة لبحثك
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- رفع فيديو شرح جديد (الأدمن فقط) -->
-    <div class="modal-overlay" id="addVideoLessonModal">
+    <div class="modal-overlay" id="uploadTutorialVideoModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title"><i class="fas fa-cloud-upload-alt"></i> إضافة فيديو شرح</div>
-                <button class="close-modal" aria-label="إغلاق نافذة رفع الفيديو" onclick="closeModal('addVideoLessonModal')"><i class="fas fa-times"></i></button>
+                <div class="modal-title"><i class="fas fa-cloud-upload-alt"></i> ارفع فيديو شرح</div>
+                <button class="close-modal" aria-label="إغلاق نافذة رفع الفيديو" onclick="closeModal('uploadTutorialVideoModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="tool-section">
                 <div class="input-group">
-                    <label>عنوان الفيديو</label>
-                    <input type="text" id="videoLessonTitleInput" class="tool-input" placeholder="مثال: إزاي تستخدم بنك الأسئلة" maxlength="200">
+                    <label>ملف الفيديو</label>
+                    <input type="file" id="tvFileInput" class="tool-input" accept="video/*">
                 </div>
                 <div class="input-group">
-                    <label>اسم الشخص اللي عمل الفيديو</label>
-                    <input type="text" id="videoLessonCreatorInput" class="tool-input" placeholder="مثال: أحمد موسى" maxlength="100">
+                    <label>عنوان الفيديو</label>
+                    <input type="text" id="tvTitleInput" class="tool-input" placeholder="مثال: إزاي تستخدم بنك الأسئلة" maxlength="200">
                 </div>
                 <div class="input-group">
                     <label>الوصف (اختياري)</label>
-                    <textarea id="videoLessonDescInput" class="tool-input" rows="3" maxlength="1000" placeholder="نبذة بسيطة عن محتوى الفيديو..."></textarea>
+                    <textarea id="tvDescInput" class="tool-input" rows="3" maxlength="1000" style="resize:vertical;" placeholder="اشرح باختصار محتوى الفيديو..."></textarea>
                 </div>
                 <div class="input-group">
-                    <label>ملف الفيديو</label>
-                    <input type="file" id="videoLessonFileInput" class="tool-input" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.mkv,.m4v">
+                    <label>اسم الشخص اللي عمل الفيديو</label>
+                    <input type="text" id="tvCreatorInput" class="tool-input" placeholder="مثال: أحمد موسى" maxlength="100">
                 </div>
-                <button class="btn-calc" id="videoLessonUploadBtn" onclick="uploadVideoLesson()"><i class="fas fa-upload"></i> رفع الفيديو</button>
-                <div class="upload-progress-wrap" id="videoLessonProgressWrap">
-                    <div class="upload-progress-bar" id="videoLessonProgressBar"></div>
+                <button class="btn-calc" id="tvUploadBtn" onclick="uploadTutorialVideo()"><i class="fas fa-upload"></i> رفع الفيديو</button>
+                <div class="upload-progress-wrap" id="tvUploadProgressWrap">
+                    <div class="upload-progress-bar" id="tvUploadProgressBar"></div>
                 </div>
-                <div class="upload-progress-text" id="videoLessonProgressText"></div>
-                <div class="calc-result" id="videoLessonUploadStatus"></div>
+                <div class="upload-progress-text" id="tvUploadProgressText"></div>
+                <div class="calc-result" id="tvUploadStatus"></div>
             </div>
         </div>
     </div>
 
-    <!-- تشغيل فيديو شرح -->
-    <div class="modal-overlay" id="videoLessonPlayerModal">
-        <div class="modal" style="max-width:720px;">
-            <div class="modal-header">
-                <div class="modal-title"><i class="fas fa-clapperboard"></i> تشغيل الفيديو</div>
-                <button class="close-modal" aria-label="إغلاق مشغل الفيديو" onclick="closeVideoLessonPlayer()"><i class="fas fa-times"></i></button>
+    <!-- مشغّل فيديو الشرح -->
+    <div class="modal-overlay" id="videoPlayerModal">
+        <div class="modal">
+            <div class="modal-header" style="padding:14px 16px 0;margin-bottom:0;position:relative;">
+                <div style="flex:1;"></div>
+                <button class="close-modal" aria-label="إغلاق المشغّل" onclick="closeTutorialVideoPlayer()" style="position:absolute;top:14px;left:16px;z-index:2;"><i class="fas fa-times"></i></button>
             </div>
-            <video id="videoLessonPlayerEl" class="vl-player-video" controls playsinline></video>
-            <div class="vl-player-meta">
-                <div class="vl-player-title" id="videoLessonPlayerTitle"></div>
-                <div class="vl-player-creator" id="videoLessonPlayerCreator"></div>
-                <div class="vl-player-desc" id="videoLessonPlayerDesc"></div>
+            <video id="tvPlayerVideo" controls playsinline></video>
+            <div class="tv-player-info">
+                <div class="tv-player-title" id="tvPlayerTitle"></div>
+                <div class="tv-player-meta">
+                    <span><i class="fas fa-user-pen"></i> <span id="tvPlayerCreator"></span></span>
+                    <span>·</span>
+                    <span><i class="fas fa-eye"></i> <span id="tvPlayerViews"></span> مشاهدة</span>
+                </div>
+                <div class="tv-player-desc" id="tvPlayerDesc"></div>
+                <div class="tv-player-actions">
+                    <a id="tvPlayerDownload" class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);" target="_blank" rel="noopener"><i class="fas fa-download"></i> تحميل</a>
+                    <button id="tvPlayerDeleteBtn" class="btn-calc" style="flex:none;width:auto;padding:0 16px;background:var(--danger);color:#fff;display:none;" onclick="deleteTutorialVideo(currentTvPlayerId)"><i class="fas fa-trash"></i></button>
+                </div>
             </div>
         </div>
     </div>
@@ -4671,6 +4744,7 @@
             }
             renderStats();
             updateMistakesBankBadge();
+            maybeShowTvNewDot();
             initSpeechRecognition();
             const backendInput = document.getElementById('backendUrlInput');
             if (backendInput) backendInput.value = settings.backendUrl || '';
@@ -8441,9 +8515,6 @@
                     adminSharingSection.style.display = isAdmin ? 'block' : 'none';
                     if (isAdmin) loadAccountSharingReport();
                 }
-                // زرار "إضافة فيديو" في مودال فيديوهات الشرح — للأدمن بس
-                const videoLessonAddBtn = document.getElementById('videoLessonAddBtn');
-                if (videoLessonAddBtn) videoLessonAddBtn.style.display = isAdmin ? 'inline-flex' : 'none';
             } else {
                 if (loggedOutBox && loggedInBox) {
                     loggedOutBox.style.display = 'block';
@@ -8470,8 +8541,6 @@
                 if (liveNowBtnOff) liveNowBtnOff.style.display = 'none';
                 if (groupChatBtnOff) groupChatBtnOff.style.display = 'none';
                 if (pushNotifSectionOff) pushNotifSectionOff.style.display = 'none';
-                const videoLessonAddBtnOff = document.getElementById('videoLessonAddBtn');
-                if (videoLessonAddBtnOff) videoLessonAddBtnOff.style.display = 'none';
             }
         }
 
@@ -10155,28 +10224,69 @@
             }
         }
 
-        // ====================== فيديوهات شرح المنصة (Video Lessons) ======================
-        let videoLessonsCache = [];
-        let currentVideoLessonId = null;
+        // ====================== فيديوهات شرح المنصة (Tutorial Videos) ======================
+        let tvAllVideos = [];
+        let currentTvPlayerId = null;
+        let tvSortMode = 'newest'; // 'newest' | 'views'
+        const TV_NEW_SEEN_KEY = 'tvTutorialFeatureSeen';
 
-        function formatVideoDuration(seconds) {
-            if (!seconds || isNaN(seconds)) return '';
-            const m = Math.floor(seconds / 60);
-            const s = Math.round(seconds % 60);
-            return `${m}:${String(s).padStart(2, '0')}`;
+        // مفيش داعي نتحمّل زحمة الأرقام الطويلة في الكروت — 1200 → 1.2K
+        function formatCompactNumber(n) {
+            const num = Number(n) || 0;
+            if (num < 1000) return String(num);
+            if (num < 1000000) return (num / 1000).toFixed(num % 1000 >= 100 ? 1 : 0) + 'K';
+            return (num / 1000000).toFixed(1) + 'M';
         }
 
-        function formatVideoViews(n) {
-            n = n || 0;
-            if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'ألف';
-            return String(n);
+        // نقطة "جديد" على زرار فيديوهات الشرح (في الشريط وفي السايدبار) — بتظهر لحد
+        // ما حد يفتح القسم أول مرة وبعدين بتختفي للأبد (localStorage) زي نقطة
+        // الحسابات الموثقة بالظبط.
+        function maybeShowTvNewDot() {
+            if (localStorage.getItem(TV_NEW_SEEN_KEY) === '1') return;
+            const dot1 = document.getElementById('tvNewDot');
+            const dot2 = document.getElementById('tvNewDotSidebar');
+            if (dot1) dot1.style.display = 'block';
+            if (dot2) dot2.style.display = 'block';
+        }
+        function dismissTvNewDot() {
+            localStorage.setItem(TV_NEW_SEEN_KEY, '1');
+            const dot1 = document.getElementById('tvNewDot');
+            const dot2 = document.getElementById('tvNewDotSidebar');
+            if (dot1) dot1.style.display = 'none';
+            if (dot2) dot2.style.display = 'none';
         }
 
-        function videoLessonSkeletonHtml() {
-            return Array.from({ length: 8 }).map(() => `
-                <div class="vl-skel-card">
-                    <div class="vl-skel-thumb"></div>
-                    <div class="vl-skel-body">
+        // mm:ss (أو h:mm:ss لو الفيديو أطول من ساعة)
+        function formatVideoDuration(totalSeconds) {
+            const s = Math.max(0, Math.round(Number(totalSeconds) || 0));
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = s % 60;
+            const pad = (n) => String(n).padStart(2, '0');
+            return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
+        }
+
+        // "من ساعتين" / "من 3 أيام" ... تاريخ نسبي بسيط بالعربي
+        function formatRelativeArabic(dateStr) {
+            const diffMs = Date.now() - new Date(dateStr).getTime();
+            const mins = Math.floor(diffMs / 60000);
+            if (mins < 1) return 'دلوقتي';
+            if (mins < 60) return `من ${mins} دقيقة`;
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return `من ${hours} ساعة`;
+            const days = Math.floor(hours / 24);
+            if (days < 30) return `من ${days} يوم`;
+            const months = Math.floor(days / 30);
+            if (months < 12) return `من ${months} شهر`;
+            return `من ${Math.floor(months / 12)} سنة`;
+        }
+
+        function renderTvSkeletons() {
+            const grid = document.getElementById('tvGrid');
+            grid.innerHTML = Array.from({ length: 6 }).map(() => `
+                <div class="tv-skeleton-card">
+                    <div class="tv-skeleton-thumb"></div>
+                    <div class="tv-skeleton-body">
                         <div class="skeleton-line long"></div>
                         <div class="skeleton-line short"></div>
                     </div>
@@ -10184,169 +10294,283 @@
             `).join('');
         }
 
-        function videoLessonCardHtml(v) {
+        function buildTvCardHtml(v, index) {
             const isAdmin = schoolUser?.type === 'admin';
-            const desc = v.description ? `<div class="vl-desc">${escapeHtml(v.description)}</div>` : '';
+            const thumb = v.thumbnailUrl
+                ? `<img src="${v.thumbnailUrl}" alt="${escapeAttr(v.title)}" loading="lazy" onload="this.classList.add('loaded')">`
+                : '';
             return `
-                <div class="vl-card" onclick="openVideoLessonPlayer('${v._id}')">
-                    <div class="vl-thumb">
-                        ${isAdmin ? `<button class="vl-delete-btn" title="حذف الفيديو" aria-label="حذف الفيديو" onclick="event.stopPropagation(); deleteVideoLesson('${v._id}')"><i class="fas fa-trash"></i></button>` : ''}
-                        <video src="${v.url}#t=0.5" preload="metadata" muted></video>
-                        <div class="vl-play-badge"><i class="fas fa-play"></i></div>
-                        <div class="vl-views-badge"><i class="fas fa-eye"></i> ${formatVideoViews(v.views)}${v.duration ? ' · ' + formatVideoDuration(v.duration) : ''}</div>
-                    </div>
-                    <div class="vl-body">
-                        <div class="vl-title">${escapeHtml(v.title)}</div>
-                        <div class="vl-creator"><i class="fas fa-user-pen"></i> ${escapeHtml(v.creatorName)}</div>
-                        ${desc}
+                <div class="tv-thumb">
+                    ${thumb}
+                    <div class="tv-thumb-play"><i class="fas fa-play"></i></div>
+                    ${v.duration ? `<div class="tv-duration">${formatVideoDuration(v.duration)}</div>` : ''}
+                    ${isAdmin ? `<button class="tv-delete-btn" title="حذف الفيديو" onclick="event.stopPropagation(); deleteTutorialVideo('${v._id}')"><i class="fas fa-trash"></i></button>` : ''}
+                </div>
+                <div class="tv-body">
+                    <div class="tv-title">${escapeHtml(v.title)}</div>
+                    <div class="tv-meta">
+                        <span><i class="fas fa-user-pen"></i> ${escapeHtml(v.creatorName || '')}</span>
+                        <span>·</span>
+                        <span class="tv-views-chip"><i class="fas fa-eye"></i> ${formatCompactNumber(v.views || 0)}</span>
+                        <span>·</span>
+                        <span>${formatRelativeArabic(v.createdAt)}</span>
                     </div>
                 </div>
             `;
         }
 
-        function renderVideoLessonsGrid(list) {
-            const grid = document.getElementById('videoLessonsGrid');
-            if (!list.length) {
-                grid.innerHTML = `<div class="vl-empty" style="grid-column:1/-1;"><i class="fas fa-video-slash"></i>مفيش فيديوهات شرح لسه${schoolUser?.type === 'admin' ? ' — دوس "إضافة فيديو" عشان تضيف أول واحد' : ''}</div>`;
-                return;
-            }
-            grid.innerHTML = list.map(videoLessonCardHtml).join('');
+        function sortTvVideos(videos) {
+            const list = [...videos];
+            if (tvSortMode === 'views') list.sort((a, b) => (b.views || 0) - (a.views || 0));
+            else list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            return list;
         }
 
-        async function loadVideoLessons() {
-            const grid = document.getElementById('videoLessonsGrid');
-            const addBtn = document.getElementById('videoLessonAddBtn');
-            if (addBtn) addBtn.style.display = schoolUser?.type === 'admin' ? 'inline-flex' : 'none';
-            const searchInput = document.getElementById('videoLessonSearchInput');
-            if (searchInput) searchInput.value = '';
-            grid.innerHTML = videoLessonSkeletonHtml();
-            try {
-                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/video-lessons`);
-                if (!res.ok) throw new Error('failed');
-                videoLessonsCache = await res.json();
-                renderVideoLessonsGrid(videoLessonsCache);
-            } catch (e) {
-                grid.innerHTML = `<div class="vl-empty" style="grid-column:1/-1;"><i class="fas fa-triangle-exclamation"></i>تعذر تحميل الفيديوهات، حاول تاني</div>`;
-            }
-        }
+        function renderTvGrid(videos) {
+            const grid = document.getElementById('tvGrid');
+            const emptyState = document.getElementById('tvEmptyState');
+            const noResults = document.getElementById('tvNoResults');
+            grid.innerHTML = '';
+            emptyState.style.display = 'none';
+            noResults.style.display = 'none';
 
-        function filterVideoLessons(query) {
-            query = (query || '').trim().toLowerCase();
-            if (!query) { renderVideoLessonsGrid(videoLessonsCache); return; }
-            const filtered = videoLessonsCache.filter(v =>
-                (v.title || '').toLowerCase().includes(query) ||
-                (v.creatorName || '').toLowerCase().includes(query) ||
-                (v.description || '').toLowerCase().includes(query)
-            );
-            renderVideoLessonsGrid(filtered);
-        }
+            document.getElementById('tvCountText').textContent = tvAllVideos.length ? `${tvAllVideos.length} فيديو` : '';
 
-        function openVideoLessonPlayer(id) {
-            const v = videoLessonsCache.find(x => x._id === id);
-            if (!v) return;
-            currentVideoLessonId = id;
-            const videoEl = document.getElementById('videoLessonPlayerEl');
-            videoEl.src = v.url;
-            document.getElementById('videoLessonPlayerTitle').textContent = v.title;
-            document.getElementById('videoLessonPlayerCreator').innerHTML = `<i class="fas fa-user-pen"></i> ${escapeHtml(v.creatorName)}`;
-            document.getElementById('videoLessonPlayerDesc').textContent = v.description || '';
-            closeModal('videoLessonsModal');
-            openModal('videoLessonPlayerModal');
-            videoEl.play().catch(() => {});
-            // تسجيل مشاهدة — إحصائية بسيطة، مش لازم نستنى ردها ولا توقف تشغيل الفيديو لو فشلت
-            fetch(`${FIXED_SCHOOL_API_URL}/api/video-lessons/${id}/view`, { method: 'POST' }).catch(() => {});
-        }
+            if (!tvAllVideos.length) { emptyState.style.display = 'block'; return; }
+            if (!videos.length) { noResults.style.display = 'block'; return; }
 
-        function closeVideoLessonPlayer() {
-            const videoEl = document.getElementById('videoLessonPlayerEl');
-            videoEl.pause();
-            videoEl.removeAttribute('src');
-            videoEl.load();
-            closeModal('videoLessonPlayerModal');
-            openModal('videoLessonsModal');
-        }
-
-        function openAddVideoLessonModal() {
-            if (schoolUser?.type !== 'admin') { showToast('إضافة الفيديوهات متاحة للأدمن فقط', 'error'); return; }
-            document.getElementById('videoLessonTitleInput').value = '';
-            document.getElementById('videoLessonCreatorInput').value = '';
-            document.getElementById('videoLessonDescInput').value = '';
-            document.getElementById('videoLessonFileInput').value = '';
-            const statusEl = document.getElementById('videoLessonUploadStatus');
-            statusEl.innerHTML = ''; statusEl.classList.remove('show');
-            openModal('addVideoLessonModal');
-        }
-
-        // بيقرا مدة الفيديو محليًا من الملف نفسه قبل الرفع (مفيدة تتعرض بعدين على الكارت)
-        function readVideoDuration(file) {
-            return new Promise((resolve) => {
-                try {
-                    const url = URL.createObjectURL(file);
-                    const tempVideo = document.createElement('video');
-                    tempVideo.preload = 'metadata';
-                    tempVideo.onloadedmetadata = () => {
-                        URL.revokeObjectURL(url);
-                        resolve(isFinite(tempVideo.duration) ? Math.round(tempVideo.duration) : null);
-                    };
-                    tempVideo.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
-                    tempVideo.src = url;
-                } catch (e) { resolve(null); }
+            const sorted = sortTvVideos(videos);
+            sorted.forEach((v, i) => {
+                const card = document.createElement('div');
+                card.className = 'tv-card';
+                card.style.animationDelay = `${Math.min(i, 10) * 35}ms`;
+                card.innerHTML = buildTvCardHtml(v, i);
+                card.onclick = () => openTutorialVideoPlayer(v._id);
+                grid.appendChild(card);
             });
         }
 
-        async function uploadVideoLesson() {
-            const fileInput = document.getElementById('videoLessonFileInput');
-            const title = document.getElementById('videoLessonTitleInput').value.trim();
-            const creatorName = document.getElementById('videoLessonCreatorInput').value.trim();
-            const description = document.getElementById('videoLessonDescInput').value.trim();
-            const statusEl = document.getElementById('videoLessonUploadStatus');
-            const btn = document.getElementById('videoLessonUploadBtn');
-            const wrap = document.getElementById('videoLessonProgressWrap');
-            const bar = document.getElementById('videoLessonProgressBar');
-            const progText = document.getElementById('videoLessonProgressText');
+        function setTvSort(mode) {
+            tvSortMode = mode;
+            document.getElementById('tvSortNewest').classList.toggle('active', mode === 'newest');
+            document.getElementById('tvSortViews').classList.toggle('active', mode === 'views');
+            filterTutorialVideos(document.getElementById('tvSearchInput').value);
+        }
+
+        function filterTutorialVideos(query) {
+            const q = (query || '').trim().toLowerCase();
+            if (!q) { renderTvGrid(tvAllVideos); return; }
+            const filtered = tvAllVideos.filter(v =>
+                (v.title || '').toLowerCase().includes(q) ||
+                (v.creatorName || '').toLowerCase().includes(q) ||
+                (v.description || '').toLowerCase().includes(q)
+            );
+            renderTvGrid(filtered);
+        }
+
+        async function loadTutorialVideos() {
+            dismissTvNewDot();
+            document.getElementById('tvUploadOpenBtn').style.display = schoolUser?.type === 'admin' ? '' : 'none';
+            if (!schoolToken) {
+                document.getElementById('tvGrid').innerHTML = '';
+                document.getElementById('tvCountText').textContent = '';
+                document.getElementById('tvEmptyState').style.display = 'none';
+                document.getElementById('tvNoResults').innerHTML = 'لازم تسجّل دخول School X الأول عشان تتفرج على الفيديوهات';
+                document.getElementById('tvNoResults').style.display = 'block';
+                return;
+            }
+            renderTvSkeletons();
+            document.getElementById('tvEmptyState').style.display = 'none';
+            document.getElementById('tvNoResults').style.display = 'none';
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/tutorial-videos`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                tvAllVideos = await res.json();
+                filterTutorialVideos(document.getElementById('tvSearchInput').value);
+            } catch (e) {
+                document.getElementById('tvGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--danger);font-size:12px;">تعذر تحميل فيديوهات الشرح</div>';
+            }
+        }
+
+        function tvPlayerEscHandler(e) { if (e.key === 'Escape') closeTutorialVideoPlayer(); }
+
+        function openTutorialVideoPlayer(id) {
+            const v = tvAllVideos.find(x => x._id === id);
+            if (!v) return;
+            currentTvPlayerId = id;
+            document.getElementById('tvPlayerVideo').src = v.url;
+            document.getElementById('tvPlayerTitle').textContent = v.title;
+            document.getElementById('tvPlayerCreator').textContent = v.creatorName || '';
+            document.getElementById('tvPlayerViews').textContent = formatCompactNumber((v.views || 0) + 1);
+            const descEl = document.getElementById('tvPlayerDesc');
+            descEl.textContent = v.description || '';
+            descEl.style.display = v.description ? 'block' : 'none';
+            document.getElementById('tvPlayerDownload').href = v.url;
+            document.getElementById('tvPlayerDownload').download = `${v.title || 'video'}.mp4`;
+            document.getElementById('tvPlayerDeleteBtn').style.display = schoolUser?.type === 'admin' ? '' : 'none';
+            openModal('videoPlayerModal');
+            document.addEventListener('keydown', tvPlayerEscHandler);
+
+            // تحديث عدد المشاهدات (best effort — منستناش النتيجة عشان مانأخرش فتح المشغّل)
+            fetch(`${FIXED_SCHOOL_API_URL}/api/tutorial-videos/${id}/view`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${schoolToken}` }
+            }).then(() => { v.views = (v.views || 0) + 1; }).catch(() => {});
+        }
+
+        function closeTutorialVideoPlayer() {
+            const player = document.getElementById('tvPlayerVideo');
+            player.pause();
+            player.removeAttribute('src');
+            player.load();
+            closeModal('videoPlayerModal');
+            document.removeEventListener('keydown', tvPlayerEscHandler);
+        }
+
+        async function deleteTutorialVideo(id) {
+            if (!schoolToken) return;
+            if (!confirm('متأكد إنك عايز تمسح الفيديو ده نهائيًا؟')) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/tutorial-videos/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) {
+                    let msg = 'تعذر حذف الفيديو';
+                    try { const errData = await res.json(); if (errData?.error) msg = errData.error; } catch (_) {}
+                    throw new Error(msg);
+                }
+                tvAllVideos = tvAllVideos.filter(v => v._id !== id);
+                if (currentTvPlayerId === id) closeTutorialVideoPlayer();
+                filterTutorialVideos(document.getElementById('tvSearchInput').value);
+                showToast('تم حذف الفيديو', 'success');
+            } catch (e) {
+                showToast(e.message || 'تعذر حذف الفيديو', 'error');
+            }
+        }
+
+        // بتاخد أول فريم من الفيديو وتحوّله لصورة JPEG (Blob) + مدة الفيديو بالثواني —
+        // كله جوه المتصفح من غير أي مكتبة خارجية (video + canvas بس). لو فشلت لأي
+        // سبب (متصفح قديم مثلًا)، بترجع thumbnailBlob: null والفيديو لسه بيترفع عادي
+        // (هيظهر بخلفية متدرّجة بدل الصورة المصغّرة في الكارت).
+        function generateVideoThumbnail(file) {
+            return new Promise((resolve) => {
+                try {
+                    const videoEl = document.createElement('video');
+                    videoEl.muted = true;
+                    videoEl.playsInline = true;
+                    videoEl.preload = 'metadata';
+                    videoEl.src = URL.createObjectURL(file);
+
+                    const cleanup = () => URL.revokeObjectURL(videoEl.src);
+                    const fail = () => { cleanup(); resolve({ thumbnailBlob: null, duration: 0 }); };
+
+                    videoEl.onloadedmetadata = () => {
+                        // ثانية واحدة جوه الفيديو (مش الفريم الأول اللي غالبًا بيكون أسود) —
+                        // أو نص المدة لو الفيديو أقصر من ثانيتين
+                        videoEl.currentTime = Math.min(1, (videoEl.duration || 2) / 2);
+                    };
+                    videoEl.onseeked = () => {
+                        try {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = videoEl.videoWidth || 320;
+                            canvas.height = videoEl.videoHeight || 180;
+                            canvas.getContext('2d').drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                            canvas.toBlob((blob) => {
+                                cleanup();
+                                resolve({ thumbnailBlob: blob, duration: videoEl.duration || 0 });
+                            }, 'image/jpeg', 0.82);
+                        } catch (e) { fail(); }
+                    };
+                    videoEl.onerror = fail;
+                    setTimeout(fail, 8000); // مهلة أمان لو الفيديو تقيل أو فيه مشكلة
+                } catch (e) {
+                    resolve({ thumbnailBlob: null, duration: 0 });
+                }
+            });
+        }
+
+        async function uploadTutorialVideo() {
+            const fileInput = document.getElementById('tvFileInput');
+            const title = document.getElementById('tvTitleInput').value.trim();
+            const description = document.getElementById('tvDescInput').value.trim();
+            const creatorName = document.getElementById('tvCreatorInput').value.trim();
+            const statusEl = document.getElementById('tvUploadStatus');
+            const btn = document.getElementById('tvUploadBtn');
+            const wrap = document.getElementById('tvUploadProgressWrap');
+            const bar = document.getElementById('tvUploadProgressBar');
+            const progText = document.getElementById('tvUploadProgressText');
+
             const showStatus = (html) => { statusEl.innerHTML = html; statusEl.classList.add('show'); };
 
-            if (!schoolToken || schoolUser?.type !== 'admin') { showStatus('<span style="color:var(--danger);">لازم تكون مسجل دخول كأدمن</span>'); return; }
+            // حماية إضافية: حتى لو حد وصل للفورم ده بأي طريقة، السيرفر برضه هيرفض
+            // أي حد مش أدمن (isAdmin middleware)، لكن نتأكد من هنا كمان قبل ما نتعب
+            // في رفع فيديو هيترفض في الآخر.
+            if (schoolUser?.type !== 'admin') { showStatus('<span style="color:var(--danger);">رفع فيديوهات الشرح متاح للأدمن بس</span>'); return; }
+            if (!schoolToken) { showStatus('<span style="color:var(--danger);">لازم تسجّل دخول School X الأول</span>'); return; }
             const file = fileInput.files[0];
             if (!file) { showStatus('<span style="color:var(--danger);">اختار ملف الفيديو الأول</span>'); return; }
             if (!title) { showStatus('<span style="color:var(--danger);">اكتب عنوان الفيديو</span>'); return; }
             if (!creatorName) { showStatus('<span style="color:var(--danger);">اكتب اسم اللي عمل الفيديو</span>'); return; }
-            if (file.size > 500 * 1024 * 1024) { showStatus('<span style="color:var(--danger);">حجم الفيديو أكبر من الحد المسموح (500MB)</span>'); return; }
+            if (file.size > 500 * 1024 * 1024) { showStatus('<span style="color:var(--danger);">حجم الفيديو كبير جدًا (الحد الأقصى 500 ميجا)</span>'); return; }
 
             btn.disabled = true;
-            statusEl.innerHTML = ''; statusEl.classList.remove('show');
+            statusEl.innerHTML = '';
+            statusEl.classList.remove('show');
             wrap.style.display = 'block';
             bar.style.width = '0%';
-            progText.textContent = 'جارٍ التحضير...';
+            progText.textContent = 'جارٍ تجهيز الصورة المصغّرة...';
             try {
-                const duration = await readVideoDuration(file);
+                // 0. جهّز ثمبنيل (أول فريم) ومدة الفيديو جوه المتصفح — best effort
+                const { thumbnailBlob, duration } = await generateVideoThumbnail(file);
 
-                const urlRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/video-lessons/upload-url`, {
+                // 1. رابط رفع موقّع للفيديو نفسه
+                progText.textContent = 'جارٍ التحضير...';
+                const urlRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/tutorial-videos/upload-url`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
-                    body: JSON.stringify({ fileName: file.name })
+                    body: JSON.stringify({ fileName: file.name, fileType: file.type || 'video/mp4' })
                 });
-                if (!urlRes.ok) {
-                    let msg = 'تعذر تجهيز رابط الرفع';
-                    try { const errData = await urlRes.json(); if (errData?.error) msg = errData.error; } catch (_) {}
-                    throw new Error(msg);
-                }
+                if (!urlRes.ok) throw new Error('تعذر تجهيز رابط الرفع');
                 const { path, uploadUrl, publicUrl, contentType } = await urlRes.json();
 
+                // 2. ارفع الفيديو مباشرة على R2 مع تتبع نسبة التقدم
                 await uploadFileWithProgress(uploadUrl, file, (pct) => {
                     bar.style.width = pct + '%';
-                    progText.textContent = `جارٍ الرفع... ${pct}%`;
+                    progText.textContent = `جارٍ رفع الفيديو... ${pct}%`;
                 }, contentType);
 
-                progText.textContent = 'جارٍ حفظ البيانات...';
+                // 3. لو نجح توليد الثمبنيل، ارفعه هو كمان على R2 (اختياري تمامًا)
+                let thumbnailUrl = '', thumbnailPublicId = '';
+                if (thumbnailBlob) {
+                    try {
+                        progText.textContent = 'جارٍ رفع الصورة المصغّرة...';
+                        const thumbUrlRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/tutorial-videos/upload-url`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                            body: JSON.stringify({ fileName: `${Date.now()}-thumb.jpg`, fileType: 'image/jpeg', kind: 'thumbnail' })
+                        });
+                        if (thumbUrlRes.ok) {
+                            const thumbData = await thumbUrlRes.json();
+                            await uploadFileWithProgress(thumbData.uploadUrl, thumbnailBlob, null, thumbData.contentType);
+                            thumbnailUrl = thumbData.publicUrl;
+                            thumbnailPublicId = thumbData.path;
+                        }
+                    } catch (e) { /* الثمبنيل مش أساسي — تجاهل أي فشل هنا */ }
+                }
 
-                const saveRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/video-lessons`, {
+                // 4. سجّل بيانات الفيديو في الداتابيز
+                progText.textContent = 'جارٍ حفظ البيانات...';
+                const saveRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/tutorial-videos/save`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
                     body: JSON.stringify({
                         title, description, creatorName,
                         url: publicUrl, publicId: path,
-                        size: file.size, duration
+                        size: file.size, mimeType: file.type || 'video/mp4', duration,
+                        thumbnailUrl, thumbnailPublicId
                     })
                 });
                 if (!saveRes.ok) {
@@ -10354,16 +10578,24 @@
                     try { const errData = await saveRes.json(); if (errData?.error) msg = errData.error; } catch (_) {}
                     throw new Error(msg);
                 }
+                const { video } = await saveRes.json();
 
                 bar.style.width = '100%';
                 progText.textContent = 'تم الرفع بنجاح ✅';
                 showStatus('<span style="color:var(--success);">تم رفع الفيديو بنجاح ✅</span>');
+                fileInput.value = '';
+                document.getElementById('tvTitleInput').value = '';
+                document.getElementById('tvDescInput').value = '';
+                document.getElementById('tvCreatorInput').value = '';
                 showToast('تم رفع الفيديو بنجاح', 'success');
+
+                tvAllVideos.unshift(video);
+                filterTutorialVideos(document.getElementById('tvSearchInput').value);
+
                 setTimeout(() => {
                     wrap.style.display = 'none'; progText.textContent = ''; bar.style.width = '0%';
-                    closeModal('addVideoLessonModal');
-                    openModal('videoLessonsModal');
-                    loadVideoLessons();
+                    statusEl.classList.remove('show');
+                    closeModal('uploadTutorialVideoModal');
                 }, 1200);
             } catch (e) {
                 showStatus(`<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر رفع الفيديو، حاول تاني')}</span>`);
@@ -10371,22 +10603,6 @@
                 progText.textContent = '';
             } finally {
                 btn.disabled = false;
-            }
-        }
-
-        async function deleteVideoLesson(id) {
-            if (!confirm('متأكد إنك عايز تحذف الفيديو ده؟')) return;
-            try {
-                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/video-lessons/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${schoolToken}` }
-                });
-                if (!res.ok) throw new Error('failed');
-                videoLessonsCache = videoLessonsCache.filter(v => v._id !== id);
-                renderVideoLessonsGrid(videoLessonsCache);
-                showToast('تم حذف الفيديو', 'success');
-            } catch (e) {
-                showToast('تعذر حذف الفيديو، حاول تاني', 'error');
             }
         }
 
@@ -16284,6 +16500,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             if (e.target.classList.contains('modal-overlay')) {
                 if (e.target.id === 'drugScanModal') stopDrugScanner();
                 if (e.target.id === 'liveNowModal') { clearInterval(liveNowRefreshTimer); liveNowRefreshTimer = null; }
+                if (e.target.id === 'videoPlayerModal') { document.getElementById('tvPlayerVideo').pause(); document.removeEventListener('keydown', tvPlayerEscHandler); }
                 e.target.classList.remove('active');
             }
         };
