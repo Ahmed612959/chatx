@@ -56,7 +56,7 @@
         :root {
             --bg: #0a0e1a; --bg-2: #131827; --bg-glass: rgba(19, 24, 39, 0.75); --bg-glass-heavy: rgba(10, 14, 26, 0.95);
             --accent: #6366f1; --accent-2: #8b5cf6; --accent-3: #ec4899; --accent-glow: rgba(99, 102, 241, 0.35);
-            --text-1: #f1f5f9; --text-2: #94a3b8; --text-3: #64748b;
+            --text-1: #f1f5f9; --text-2: #94a3b8; --text-3: #7c8aa3;
             --border: rgba(255, 255, 255, 0.08); --border-accent: rgba(99, 102, 241, 0.4);
             --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
             --radius: 16px; --radius-sm: 10px;
@@ -66,7 +66,7 @@
         body.light {
             --bg: #f8fafc; --bg-2: #ffffff; --bg-glass: rgba(255, 255, 255, 0.8); --bg-glass-heavy: rgba(255, 255, 255, 0.95);
             --accent: #4f46e5; --accent-2: #7c3aed; --accent-3: #db2777; --accent-glow: rgba(79, 70, 229, 0.2);
-            --text-1: #0f172a; --text-2: #475569; --text-3: #94a3b8;
+            --text-1: #0f172a; --text-2: #475569; --text-3: #5f6b80;
             --border: rgba(0, 0, 0, 0.08); --border-accent: rgba(79, 70, 229, 0.3);
         }
 
@@ -99,6 +99,24 @@
         ::view-transition-new(root) { z-index: 2; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        /* بدل ما نمنع outline خالص (اللي كان بيمنع أي مؤشر تركيز لمستخدمي الكيبورد
+           تمامًا)، بنوريه بس لما التنقل يكون فعلاً بالكيبورد (:focus-visible) —
+           كده مستخدم الماوس/التاتش مايشوفش حلقة حوالين كل حاجة يدوس عليها،
+           لكن مستخدم الكيبورد (أو قارئ الشاشة) يعرف هو واقف فين بالظبط. */
+        :focus-visible {
+            outline: 2px solid var(--accent) !important;
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+        /* رابط "تخطي إلى المحتوى" — مختفي بصريًا لحد ما مستخدم الكيبورد يدوس Tab
+           أول حاجة في الصفحة، فيظهر ويسمحله يتخطى القائمة الجانبية وشريط الأدوات
+           ويوصل لمحتوى الشات على طول من غير ما يمرّ بكل الأزرار واحد واحد. */
+        .skip-to-content-link {
+            position: fixed; top: -60px; right: 12px; z-index: 10000;
+            background: var(--accent); color: #fff; padding: 10px 18px; border-radius: 0 0 10px 10px;
+            font-size: 13px; font-weight: 700; text-decoration: none; transition: top 0.2s ease;
+        }
+        .skip-to-content-link:focus { top: 0; }
         html, body { height: 100%; overflow: hidden; }
         body {
             font-family: var(--font); background: var(--bg); color: var(--text-1);
@@ -1600,6 +1618,7 @@
     </style>
 </head>
 <body>
+    <a href="#mainContent" class="skip-to-content-link">تخطي إلى المحتوى الرئيسي</a>
     <div id="chatxSplash" aria-hidden="true">
       <div class="chatx-splash-inner">
         <div class="chatx-splash-logo-wrap">
@@ -1753,7 +1772,7 @@
             </div>
         </aside>
 
-        <main class="main-area">
+        <main class="main-area" id="mainContent" tabindex="-1">
             <div class="top-bar">
                 <div class="bot-identity">
                     <div class="bot-text">
@@ -2413,7 +2432,7 @@
             <div id="groupChatInputRow" style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;align-items:center;">
                 <button class="action-btn" style="width:38px;height:38px;flex-shrink:0;" aria-label="إرفاق صورة" onclick="document.getElementById('groupChatImageInput').click()"><i class="fas fa-image"></i></button>
                 <input type="text" id="groupChatInput" class="tool-input" placeholder="اكتب رسالتك..." style="flex:1;" oninput="notifyTypingInGroupChat();updateGroupChatSendButton();" onkeydown="if(event.key==='Enter'){event.preventDefault();sendGroupChatMessage();}">
-                <button class="btn-calc" id="groupChatSendBtn" style="width:auto;padding:0 16px;flex-shrink:0;display:none;" onclick="sendGroupChatMessage()"><i class="fas fa-paper-plane"></i></button>
+                <button class="btn-calc" id="groupChatSendBtn" aria-label="إرسال الرسالة" title="إرسال" style="width:auto;padding:0 16px;flex-shrink:0;display:none;" onclick="sendGroupChatMessage()"><i class="fas fa-paper-plane"></i></button>
                 <button class="btn-calc" id="groupChatMicBtn" style="width:auto;padding:0 16px;flex-shrink:0;" aria-label="تسجيل رسالة صوتية" onclick="startGroupVoiceRecording()"><i class="fas fa-microphone"></i></button>
             </div>
 
@@ -2466,7 +2485,7 @@
     <!-- عارض صور بملء الشاشة — بديل window.open(dataURL) اللي المتصفحات الحديثة بترفضه
          (بيرجع صفحة سودة/فاضية لأي data: URL كـ navigation مباشر). العرض هنا داخلي 100%. -->
     <div id="imageLightbox" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);align-items:center;justify-content:center;cursor:zoom-out;" onclick="closeImageLightbox()">
-        <img id="imageLightboxImg" style="max-width:92vw;max-height:92vh;border-radius:8px;object-fit:contain;cursor:default;" onclick="event.stopPropagation()">
+        <img id="imageLightboxImg" alt="معاينة الصورة" style="max-width:92vw;max-height:92vh;border-radius:8px;object-fit:contain;cursor:default;" onclick="event.stopPropagation()">
         <button onclick="closeImageLightbox()" aria-label="إغلاق" style="position:absolute;top:16px;left:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:18px;cursor:pointer;">✕</button>
     </div>
 
@@ -2800,7 +2819,7 @@
                 <div class="tv-player-desc" id="tvPlayerDesc"></div>
                 <div class="tv-player-actions">
                     <a id="tvPlayerDownload" class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);" target="_blank" rel="noopener"><i class="fas fa-download"></i> تحميل</a>
-                    <button id="tvPlayerDeleteBtn" class="btn-calc" style="flex:none;width:auto;padding:0 16px;background:var(--danger);color:#fff;display:none;" onclick="deleteTutorialVideo(currentTvPlayerId)"><i class="fas fa-trash"></i></button>
+                    <button id="tvPlayerDeleteBtn" class="btn-calc" aria-label="حذف الفيديو" title="حذف الفيديو" style="flex:none;width:auto;padding:0 16px;background:var(--danger);color:#fff;display:none;" onclick="deleteTutorialVideo(currentTvPlayerId)"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
         </div>
@@ -2857,7 +2876,7 @@
             <div id="isPaneAnalyze" style="overflow-y:auto;flex:1;">
                 <input type="file" id="isAnalyzeFileInput" accept="image/*" style="display:none;" onchange="handleImageStudioFileSelect(this.files[0])">
                 <div id="isAnalyzePreviewWrap" style="display:none;text-align:center;margin-bottom:12px;">
-                    <img id="isAnalyzePreviewImg" style="max-width:100%;max-height:220px;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);">
+                    <img id="isAnalyzePreviewImg" alt="الصورة المرفوعة للتحليل" style="max-width:100%;max-height:220px;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);">
                 </div>
                 <button class="btn-calc" style="background:var(--bg-2);color:var(--text-2);margin-bottom:10px;" onclick="document.getElementById('isAnalyzeFileInput').click()">
                     <i class="fas fa-camera"></i> اختر صورة أو صوّرها
@@ -2931,7 +2950,7 @@
                 </div>
                 <button class="btn-calc" id="isGenerateBtn" onclick="runImageStudioGenerate()"><i class="fas fa-paintbrush"></i> أنشئ الصورة</button>
                 <div id="isGenerateResultWrap" style="display:none;text-align:center;margin-top:14px;">
-                    <img id="isGenerateResultImg" style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);" onerror="handleImageStudioGenerateError()">
+                    <img id="isGenerateResultImg" alt="الصورة اللي تم توليدها بالذكاء الاصطناعي" style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);" onerror="handleImageStudioGenerateError()">
                     <div style="margin-top:8px;display:flex;gap:8px;">
                         <a id="isGenerateDownloadLink" download="ai-image.jpg" class="btn-calc" style="display:inline-flex;background:var(--bg-2);color:var(--text-2);flex:1;padding:8px 12px;"><i class="fas fa-download"></i> تحميل</a>
                         <button type="button" class="btn-calc" id="isRegenerateBtn" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:8px 12px;" onclick="runImageStudioGenerate()"><i class="fas fa-arrows-rotate"></i> جرّب تاني</button>
@@ -2961,7 +2980,7 @@
                 <div class="input-group">
                     <label>صورة تبدأ منها الفيديو (اختياري)</label>
                     <div id="isVideoImagePreviewWrap" style="display:none;margin-bottom:8px;position:relative;width:100px;">
-                        <img id="isVideoImagePreview" style="width:100px;height:100px;object-fit:cover;border-radius:8px;display:block;">
+                        <img id="isVideoImagePreview" alt="الصورة المختارة لتوليد الفيديو" style="width:100px;height:100px;object-fit:cover;border-radius:8px;display:block;">
                         <button type="button" onclick="clearVideoSourceImage()" style="position:absolute;top:-6px;left:-6px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;line-height:1;">✕</button>
                     </div>
                     <button type="button" class="btn-calc" style="background:var(--bg-2);color:var(--text-2);font-size:12px;" onclick="openVideoImagePicker()"><i class="fas fa-image"></i> اختر صورة من مكتبتي (اختياري)</button>
@@ -3052,7 +3071,7 @@
                 <button class="close-modal" aria-label="إغلاق" onclick="closeModal('libraryImageViewModal')"><i class="fas fa-times"></i></button>
             </div>
             <div style="text-align:center;">
-                <img id="libraryImageViewImg" style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);">
+                <img id="libraryImageViewImg" alt="معاينة الصورة" style="max-width:100%;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.2);">
                 <div id="libraryImageViewPrompt" style="margin-top:10px;font-size:12px;color:var(--text-3);text-align:right;line-height:1.7;"></div>
                 <div style="display:flex;gap:8px;margin-top:12px;">
                     <a id="libraryImageViewDownload" download="ai-image.jpg" class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);"><i class="fas fa-download"></i> تحميل</a>
@@ -3197,7 +3216,7 @@
         </div>
     </div>
 
-    <div class="toast-container" id="toastContainer"></div>
+    <div class="toast-container" id="toastContainer" role="status" aria-live="polite" aria-atomic="true"></div>
     <div id="duaOverlayContainer"></div>
 
     <!-- Premium Hub -->
@@ -4845,7 +4864,7 @@
             container.innerHTML = `
                 <div class="dua-overlay" id="duaOverlayEl">
                     <div class="dua-card" style="background:linear-gradient(160deg, #3a2b0d 0%, #4b3a11 45%, #5c4a1a 100%); border-color: rgba(244,197,66,.4);">
-                        <button class="dua-close" onclick="closeDuaReminder()"><i class="fas fa-times"></i></button>
+                        <button class="dua-close" aria-label="إغلاق التذكير" onclick="closeDuaReminder()"><i class="fas fa-times"></i></button>
                         <div class="dua-icon" style="color:#f4c542;text-shadow:0 0 20px rgba(244,197,66,.5);"><i class="fas fa-triangle-exclamation"></i></div>
                         <div class="dua-title">واجب قربّ ميعاده ⏳</div>
                         <div class="dua-sub">متنساش تسلّمه قبل ما يفوتك</div>
@@ -4900,7 +4919,7 @@
             container.innerHTML = `
                 <div class="dua-overlay" id="duaOverlayEl">
                     <div class="dua-card">
-                        <button class="dua-close" onclick="closeDuaReminder()"><i class="fas fa-times"></i></button>
+                        <button class="dua-close" aria-label="إغلاق التذكير" onclick="closeDuaReminder()"><i class="fas fa-times"></i></button>
                         <div class="dua-icon"><i class="fas fa-moon"></i></div>
                         <div class="dua-title">لحظة مع الله 🌙</div>
                         <div class="dua-sub">خد لك دقيقة بسيطة وانت بتذاكر</div>
@@ -5084,7 +5103,7 @@
             container.innerHTML = `
                 <div class="dua-overlay" id="duaOverlayEl">
                     <div class="dua-card" style="background:linear-gradient(160deg, #0d2e3a 0%, #113a4b 45%, #1a4c5c 100%); border-color: rgba(66,180,244,.4);">
-                        <button class="dua-close" onclick="closeDuaReminder()"><i class="fas fa-times"></i></button>
+                        <button class="dua-close" aria-label="إغلاق التذكير" onclick="closeDuaReminder()"><i class="fas fa-times"></i></button>
                         <div class="dua-icon" style="color:#42b4f4;text-shadow:0 0 20px rgba(66,180,244,.5);"><i class="fas fa-clock"></i></div>
                         <div class="dua-title">وقت المذاكرة! ⏰</div>
                         <div class="dua-sub">${escapeHtml(block.subject)}</div>
@@ -8348,14 +8367,47 @@
             document.getElementById('themeIcon').className = theme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
         }
 
+        // آخر عنصر كان عليه فوكس قبل ما نفتح أي مودال — عشان نرجّعله التركيز تاني
+        // بمجرد ما يتقفل (أهم حاجة لمستخدمي الكيبورد وقارئ الشاشة عشان "يفضلوا
+        // واقفين" في نفس المكان اللي كانوا فيه، بدل ما التركيز يضيع من الصفحة).
+        let lastFocusedBeforeModal = null;
+
         function openModal(id) {
-            document.getElementById(id).classList.add('active');
+            const el = document.getElementById(id);
+            if (!el) return;
+            lastFocusedBeforeModal = document.activeElement;
+            el.classList.add('active');
             if (window.innerWidth < 768) closeSidebar();
+            // role="dialog" + aria-modal بيخلوا قارئ الشاشة يفهم إن ده نافذة منبثقة
+            // مستقلة عن باقي الصفحة (على صندوق المودال نفسه مش الخلفية)، ونقل
+            // التركيز جواه بيمنع مستخدم الكيبورد إنه "يعلق" على عنصر تحت المودال
+            // وهو مش شايفه على الشاشة.
+            const modalBox = el.querySelector('.modal') || el;
+            modalBox.setAttribute('role', 'dialog');
+            modalBox.setAttribute('aria-modal', 'true');
+            if (!modalBox.hasAttribute('tabindex')) modalBox.setAttribute('tabindex', '-1');
+            requestAnimationFrame(() => { try { modalBox.focus({ preventScroll: true }); } catch (e) {} });
         }
 
         function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('active');
+            // رجّع التركيز للزرار اللي فتح المودال أصلاً — لو لسه موجود وقابل للتركيز
+            if (lastFocusedBeforeModal && document.body.contains(lastFocusedBeforeModal) && typeof lastFocusedBeforeModal.focus === 'function') {
+                try { lastFocusedBeforeModal.focus({ preventScroll: true }); } catch (e) {}
+            }
+            lastFocusedBeforeModal = null;
         }
+
+        // Escape بيقفل أي مودال فاتح دلوقتي — تعميم لكل النوافذ المبنية على
+        // modal-overlay اللي مكنش عندها طريقة تقفيل بالكيبورد قبل كده.
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            const openModals = document.querySelectorAll('.modal-overlay.active');
+            if (!openModals.length) return;
+            closeModal(openModals[openModals.length - 1].id);
+        });
 
         // ====================== نسخ احتياطي: تصدير/استيراد كل بيانات الطالب ======================
         // بنصدّر المحادثات والإحصائيات والإعدادات كملف JSON ينزل على جهاز الطالب.
@@ -8990,7 +9042,7 @@
             const initial = (name || '?').trim().charAt(0) || '?';
             const badgeSize = Math.max(16, Math.round(size * 0.4));
             const inner = avatarUrl
-                ? `<img src="${escapeHtml(avatarUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+                ? `<img src="${escapeHtml(avatarUrl)}" alt="الصورة الشخصية" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
                 : `<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:${Math.round(size * 0.4)}px;">${escapeHtml(initial)}</div>`;
             const badge = isVerified ? `
                 <div style="position:absolute;bottom:-1px;inset-inline-end:-1px;width:${badgeSize}px;height:${badgeSize}px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.35));">
@@ -9825,7 +9877,7 @@
                 <div style="display:flex;gap:6px;margin-bottom:6px;">
                     <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:6px 10px;font-size:12px;" onclick="openFilePreview('${f._id}')"><i class="fas fa-eye"></i> معاينة</button>
                     <button class="btn-calc" style="flex:1;padding:6px 10px;font-size:12px;" id="dlBtn_${f._id}" onclick="downloadSharedSummary('${f._id}', '${escapeAttr(f.name)}')"><i class="fas fa-download"></i> تحميل</button>
-                    ${schoolUser?.type === 'admin' && !opts.hideAdminDelete ? `<button class="btn-calc" style="flex:none;width:auto;padding:6px 10px;font-size:12px;background:var(--danger);color:#fff;" onclick="deleteLibraryFile('${f._id}')"><i class="fas fa-trash"></i></button>` : ''}
+                    ${schoolUser?.type === 'admin' && !opts.hideAdminDelete ? `<button class="btn-calc" aria-label="حذف الملف" title="حذف الملف" style="flex:none;width:auto;padding:6px 10px;font-size:12px;background:var(--danger);color:#fff;" onclick="deleteLibraryFile('${f._id}')"><i class="fas fa-trash"></i></button>` : ''}
                 </div>
                 <div style="display:flex;gap:6px;">
                     <button class="btn-calc" style="flex:1;background:var(--bg-2);color:var(--text-2);padding:6px 10px;font-size:12px;" onclick="openSummaryQuiz('${f._id}', '${escapeAttr(f.topic)}')"><i class="fas fa-list-check"></i> اختبرني</button>
@@ -11272,7 +11324,7 @@
             const chip = document.getElementById('groupChatPendingImageChip');
             chip.style.display = 'flex';
             chip.innerHTML = `
-                <img src="${previewDataUrl}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;">
+                <img src="${previewDataUrl}" alt="معاينة الملف المرفق" style="width:44px;height:44px;border-radius:8px;object-fit:cover;">
                 <span style="font-size:11.5px;color:var(--text-2);flex:1;">جاهزة للإرسال</span>
                 <button onclick="reopenGroupImageEditor()" aria-label="تعديل الصورة" style="background:none;border:none;color:var(--text-3);font-size:14px;cursor:pointer;padding:6px;"><i class="fas fa-crop-simple"></i></button>
                 <button onclick="removeGroupPendingImage()" aria-label="إلغاء الصورة" style="background:none;border:none;color:var(--text-3);font-size:15px;cursor:pointer;padding:6px;"><i class="fas fa-times"></i></button>`;
@@ -11712,7 +11764,7 @@
                     دوس على أيقونة المشاركة <i class="fas fa-arrow-up-from-bracket"></i> تحت في سفاري، واختار
                     <b>"إضافة إلى الشاشة الرئيسية"</b>.
                 </div>
-                <button onclick="dismissIOSInstallBanner()" style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:16px;cursor:pointer;padding:6px;flex-shrink:0;">
+                <button onclick="dismissIOSInstallBanner()" aria-label="إغلاق تنبيه التثبيت" style="background:none;border:none;color:var(--text-2,#94a3b8);font-size:16px;cursor:pointer;padding:6px;flex-shrink:0;">
                     <i class="fas fa-times"></i>
                 </button>`;
             document.body.appendChild(el);
@@ -13141,7 +13193,7 @@ ${r.pathSummary}
                 }
                 grid.innerHTML = data.images.map(img => `
                     <div style="cursor:pointer;border-radius:8px;overflow:hidden;background:var(--bg-2);" title="${escapeHtml(img.prompt || '')}" onclick='openLibraryImageView(${JSON.stringify(img).replace(/'/g, "&apos;")})'>
-                        <img src="${img.imageUrl}" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
+                        <img src="${img.imageUrl}" alt="${escapeAttr(img.prompt || 'صورة مولّدة بالذكاء الاصطناعي')}" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
                     </div>
                 `).join('');
             } catch (e) {
@@ -13246,7 +13298,7 @@ ${r.pathSummary}
                 if (!data.images || !data.images.length) { emptyEl.style.display = 'block'; return; }
                 grid.innerHTML = data.images.map(img => `
                     <div style="cursor:pointer;border-radius:8px;overflow:hidden;" onclick="selectVideoSourceImage('${img.imageUrl.replace(/'/g, "\\'")}')">
-                        <img src="${img.imageUrl}" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
+                        <img src="${img.imageUrl}" alt="صورة من مكتبتي لاستخدامها في الفيديو" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
                     </div>
                 `).join('');
             } catch (e) {
@@ -13584,7 +13636,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             el.innerHTML = mockExamChapters.map(c => `
                 <div class="mock-exam-chapter-chip">
                     <span>${escapeHtml(c.subjectName)} — ${escapeHtml(c.chapterName)}</span>
-                    <button onclick="removeMockExamChapter('${c.cacheKey.replace(/'/g, "\\'")}')"><i class="fas fa-times"></i></button>
+                    <button aria-label="إزالة الفصل" title="إزالة" onclick="removeMockExamChapter('${c.cacheKey.replace(/'/g, "\\'")}')"><i class="fas fa-times"></i></button>
                 </div>
             `).join('');
         }
