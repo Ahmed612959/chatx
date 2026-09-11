@@ -685,8 +685,34 @@
         .deep-think-bar.active .deep-think-bar-icon { background: var(--grad-bold); color: #fff; }
         .deep-think-bar.active .deep-think-switch { background: var(--accent); }
         .deep-think-bar.active .deep-think-switch-knob { transform: translateX(-17px); }
+        /* نفس السويتش لكن مستخدم لوحده برّه .deep-think-bar (لوحة تحكم الأدمن) */
+        .deep-think-switch.active { background: var(--accent); }
+        .deep-think-switch.active .deep-think-switch-knob { transform: translateX(-17px); }
         .deep-think-bar.active .deep-think-bar-icon i.fa-brain { animation: deepThinkBtnPulse 1.6s ease-in-out infinite; }
         @keyframes deepThinkBtnPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(1.18); } }
+
+        /* اختيار السرعة (⚡ سريع / 🧠 عميق) — بيظهر بس لما الميزة مفعّلة، وبيبان
+           تحت زرار التفعيل نفسه من غير ما ياخد مساحة إضافية لما يكون مقفول. */
+        .deep-think-speed-row {
+            display: flex; gap: 6px; width: 100%; box-sizing: border-box; margin: -2px 0 8px;
+            max-height: 0; opacity: 0; overflow: hidden; transition: all 0.25s ease;
+        }
+        .deep-think-speed-row.show { max-height: 60px; opacity: 1; }
+        .deep-think-speed-chip {
+            flex: 1; font-size: 11.5px; font-weight: 700; padding: 7px 8px; border-radius: 10px;
+            border: 1px solid var(--border); background: var(--bg-2); color: var(--text-2);
+            cursor: pointer; transition: all .18s ease; text-align: center;
+        }
+        .deep-think-speed-chip.active { background: var(--grad-bold); color: #fff; border-color: transparent; }
+        .deep-think-speed-chip:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+        /* حالة "متوقف من الإدارة" أو "وصلت للحد اليومي" — الزرار بيتعطّل بصريًا
+           ووظيفيًا (pointer-events: none) بدل ما يختفي فجأة، عشان الطالب يفهم
+           السبب من الرسالة الصغيرة بدل ما يفتكر إن الميزة اختفت بالغلط. */
+        .deep-think-bar.disabled-by-admin { opacity: .55; cursor: not-allowed; pointer-events: none; }
+        .deep-think-bar-limit-badge {
+            font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 8px;
+            background: var(--bg-glass); color: var(--text-3); flex-shrink: 0; direction: ltr;
+        }
 
         .deep-think-indicator {
             display: flex; gap: 10px; max-width: 90%; margin-bottom: 0; flex-shrink: 0;
@@ -1908,8 +1934,13 @@
                         <strong>Deep Thinking</strong>
                         <small>تفكير عميق ودقيق قبل ما يجاوب</small>
                     </span>
+                    <span class="deep-think-bar-limit-badge" id="deepThinkLimitBadge" style="display:none;"></span>
                     <span class="deep-think-switch"><span class="deep-think-switch-knob"></span></span>
                 </button>
+                <div class="deep-think-speed-row" id="deepThinkSpeedRow">
+                    <button type="button" class="deep-think-speed-chip" id="deepThinkSpeedQuick" onclick="setDeepThinkSpeed('quick')"><i class="fas fa-bolt"></i> سريع</button>
+                    <button type="button" class="deep-think-speed-chip active" id="deepThinkSpeedDeep" onclick="setDeepThinkSpeed('deep')"><i class="fas fa-brain"></i> عميق</button>
+                </div>
                 <div class="input-wrapper">
                     <button class="attach-btn" aria-label="إرفاق ملف أو مهارة" onclick="openAttachMenu()">
                         <i class="fas fa-paperclip"></i>
@@ -2574,6 +2605,22 @@
                     فيديوهات شرح لاستخدام Chat X بيرفعها فريق المنصة — اتفرج عليها وقت ما تحب.
                 </p>
                 <button class="btn-calc" onclick="closeModal('toolsModal'); openModal('tutorialVideosModal'); loadTutorialVideos();"><i class="fas fa-play"></i> شوف الفيديوهات</button>
+            </div>
+            <div class="tool-section" id="deepThinkAdminSection" style="display:none;">
+                <div class="tool-title"><i class="fas fa-brain"></i> التحكم في Deep Thinking (أدمن)</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    تحكّم في تفعيل ميزة التفكير العميق للطلاب كلهم، وحدّد سقف استخدام يومي لكل طالب (0 = بلا حد). الأدمن مش بيتأثر بالسقف.
+                </p>
+                <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px;">
+                    <span style="font-size:12.5px;font-weight:700;">تفعيل الميزة للطلاب</span>
+                    <span class="deep-think-switch" id="dtaEnabledSwitch" onclick="toggleDtaEnabled()" style="cursor:pointer;"><span class="deep-think-switch-knob"></span></span>
+                </div>
+                <div class="input-group">
+                    <label>الحد اليومي لكل طالب (0 = بلا حد)</label>
+                    <input type="number" id="dtaDailyLimitInput" class="tool-input" min="0" step="1" placeholder="مثال: 30">
+                </div>
+                <button class="btn-calc" onclick="saveDeepThinkAdminConfig()"><i class="fas fa-save"></i> حفظ الإعدادات</button>
+                <div class="calc-result" id="dtaSaveStatus"></div>
             </div>
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-wand-magic-sparkles"></i> استوديو الصور الذكي 👑</div>
@@ -4370,7 +4417,8 @@
         // أول مرة يفتح فيها الطالب الموقع (مفيش إعدادات متخزنة قبل كده)، بنحترم تفضيل نظام
         // تشغيله (فاتح/غامق) بدل ما نفرض الوضع الغامق عليه دايمًا كافتراضي ثابت.
         const systemPrefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-        let settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: systemPrefersLight ? 'light' : 'dark', backendUrl: '', model: 'auto', schoolApiUrl: FIXED_SCHOOL_API_URL, deepThink: false };
+        let settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: systemPrefersLight ? 'light' : 'dark', backendUrl: '', model: 'auto', schoolApiUrl: FIXED_SCHOOL_API_URL, deepThink: false, deepThinkSpeed: 'deep' };
+        if (!settings.deepThinkSpeed) settings.deepThinkSpeed = 'deep'; // توافق مع إعدادات محفوظة قبل إضافة اختيار السرعة
         settings.schoolApiUrl = FIXED_SCHOOL_API_URL; // بنفرضه دايمًا حتى لو كان متخزن قديم مختلف
         // بيانات ربط School X (مشروع منفصل تماماً بدومين ومتغيرات بيئة مختلفة)
         let schoolToken = localStorage.getItem('sx_school_token') || null;
@@ -4466,6 +4514,11 @@
 3. تأكد من دقة أي معلومة أو رقم أو خطوة قبل ما تعتمد عليها في الإجابة.
 4. حدد أفضل ترتيب وأسلوب لعرض الإجابة النهائية (نقاط، خطوات، جدول، شرح متصل).
 اكتب التحليل ده مباشرة كنقاط أو جمل قصيرة متتالية بالعربي المصري، من غير أي مقدمة زي "حاضر" أو "تمام هفكر"، ومن غير ما تكتب الإجابة النهائية الكاملة هنا خالص — تحليل وتفكير بس، مختصر ومركّز (من 5 لـ 10 أسطر بحد أقصى).`;
+        // نسخة "سريعة" من نفس الفكرة — لمّا الطالب يختار ⚡ سريع بدل 🧠 عميق: نفس
+        // مبدأ المراجعة الداخلية قبل الإجابة، لكن في 2-3 أسطر بس وبدون تفصيل
+        // الاحتمالات المتعددة، عشان يبقى أسرع وأرخص من غير ما نلغي فايدة الميزة
+        // خالص.
+        const DEEP_THINK_REASONING_SYSTEM_PROMPT_QUICK = `إنت دلوقتي في وضع "تفكير سريع" (نسخة أخف من Deep Thinking) قبل ما تجاوب على سؤال الطالب. اكتب مراجعة داخلية مختصرة جدًا (سطرين لـ 3 بالكتير): إيه المطلوب بالظبط، وإيه أهم حاجة لازم تتأكد منها قبل ما تجاوب. من غير مقدمات، ومن غير ما تكتب الإجابة النهائية هنا خالص.`;
         const DEEP_THINK_FINAL_ANSWER_INSTRUCTION = `
 
 وضع "التفكير العميق" (Deep Thinking) مفعّل من الطالب لسؤاله ده: قبل ما تكتب إجابتك، تأكد داخليًا إنك فاهم السؤال بكل جوانبه، مراجع دقة أي معلومة أو رقم هتذكره، وغطّيت أهم الاحتمالات المهمة. جاوب بعمق وتركيز وتنظيم أكتر من العادي، من غير حشو أو إطالة زيادة عن اللزوم.`;
@@ -5195,11 +5248,42 @@
 
         // بيقلّب حالة "Deep Thinking" (تفكير عميق) — بيتحفظ في الإعدادات ويفضل شغال
         // في كل المحادثات لحد ما الطالب يقفله بنفسه.
+        // حالة الميزة الحالية للطالب — بتتحمّل من السيرفر (تفعيل/تعطيل إداري +
+        // الحد اليومي المتبقي) وبتتحدّث بعد كل استخدام فعلي.
+        let deepThinkFeatureStatus = { enabled: true, used: 0, remaining: null, limit: 0 };
+
+        async function loadDeepThinkStatus() {
+            if (!schoolToken) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/deep-think/status`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) return;
+                deepThinkFeatureStatus = await res.json();
+            } catch (e) { /* لو فشل الجلب، نسيب الميزة شغالة افتراضيًا (فيها فحص تاني وقت الاستخدام الفعلي) */ }
+            applyDeepThinkBtnState();
+        }
+
         function toggleDeepThink() {
+            if (!deepThinkFeatureStatus.enabled) {
+                showToast('التفكير العميق متوقف مؤقتًا من الإدارة', 'error');
+                return;
+            }
+            if (!settings.deepThink && deepThinkFeatureStatus.remaining === 0) {
+                showToast('وصلت للحد اليومي لاستخدام التفكير العميق — جرب تاني بكرة', 'error');
+                return;
+            }
             settings.deepThink = !settings.deepThink;
             saveData();
             applyDeepThinkBtnState();
             showToast(settings.deepThink ? 'اتفعّل التفكير العميق 🧠 — هيفكر أعمق قبل كل رد' : 'اتقفل التفكير العميق', 'success');
+        }
+
+        function setDeepThinkSpeed(speed) {
+            settings.deepThinkSpeed = speed === 'quick' ? 'quick' : 'deep';
+            saveData();
+            document.getElementById('deepThinkSpeedQuick').classList.toggle('active', settings.deepThinkSpeed === 'quick');
+            document.getElementById('deepThinkSpeedDeep').classList.toggle('active', settings.deepThinkSpeed === 'deep');
         }
 
         function applyDeepThinkBtnState() {
@@ -5207,6 +5291,21 @@
             if (!btn) return;
             btn.classList.toggle('active', !!settings.deepThink);
             btn.setAttribute('aria-pressed', settings.deepThink ? 'true' : 'false');
+            document.getElementById('deepThinkSpeedRow').classList.toggle('show', !!settings.deepThink);
+            document.getElementById('deepThinkSpeedQuick').classList.toggle('active', settings.deepThinkSpeed === 'quick');
+            document.getElementById('deepThinkSpeedDeep').classList.toggle('active', settings.deepThinkSpeed !== 'quick');
+
+            // حالة "متوقف من الإدارة" أو بادچ "متبقّي كام" — عشان الطالب يفهم
+            // السبب لو الزرار مش شغال أو قرّب يخلص استخدامه.
+            const badge = document.getElementById('deepThinkLimitBadge');
+            btn.classList.toggle('disabled-by-admin', !deepThinkFeatureStatus.enabled);
+            if (!deepThinkFeatureStatus.enabled) {
+                badge.style.display = ''; badge.textContent = 'متوقف مؤقتًا';
+            } else if (deepThinkFeatureStatus.limit > 0) {
+                badge.style.display = ''; badge.textContent = `${deepThinkFeatureStatus.remaining} متبقّي اليوم`;
+            } else {
+                badge.style.display = 'none';
+            }
         }
 
         function toggleDuaReminders(enabled) {
@@ -5765,10 +5864,15 @@
                     parts.push({ inline_data: { mime_type: lastUserMsg.image.mimeType, data: lastUserMsg.image.base64 } });
                 }
                 const history = messages.slice(0, -1);
+                // السرعة المختارة (⚡ سريع / 🧠 عميق) بتحدد البرومبت وحد أقصى تقريبي
+                // لطول رد التفكير نفسه — نسخة "سريع" برومبتها أقصر أصلًا، وبنحط
+                // maxOutputTokens أقل ليها كمان عشان تنتهي فعليًا أسرع مش بس تتكتب أقصر.
+                const isQuickMode = settings.deepThinkSpeed === 'quick';
                 const requestBody = {
                     contents: history.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })).concat([{ role: 'user', parts }]),
-                    systemInstruction: { parts: [{ text: DEEP_THINK_REASONING_SYSTEM_PROMPT }] }
+                    systemInstruction: { parts: [{ text: isQuickMode ? DEEP_THINK_REASONING_SYSTEM_PROMPT_QUICK : DEEP_THINK_REASONING_SYSTEM_PROMPT }] }
                 };
+                if (isQuickMode) requestBody.generationConfig = { maxOutputTokens: 220 };
 
                 const response = await fetchWithRetry(`${settings.backendUrl}/api/gemini`, {
                     method: 'POST',
@@ -5872,6 +5976,29 @@
             // ده لأي سبب مش AbortError، بنتجاهله ونكمل عادي من غير ما نوقف رد الطالب.
             let deepThinkResult = null;
             if (settings.deepThink && model !== 'local') {
+                // لازم ناخد إذن من السيرفر الأول (الميزة مفعّلة إداريًا + لسه متبقّي
+                // للطالب استخدام من حده اليومي) قبل ما نستهلك وقت/تكلفة نداء فعلي.
+                // لو اتمنع، منوقفش رسالة الطالب خالص — بس بنكمّل من غير تفكير عميق.
+                let deepThinkAllowed = true;
+                if (schoolToken) {
+                    try {
+                        const permRes = await fetch(`${FIXED_SCHOOL_API_URL}/api/deep-think/use`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${schoolToken}` }
+                        });
+                        const permData = await permRes.json().catch(() => ({}));
+                        if (!permRes.ok) {
+                            deepThinkAllowed = false;
+                            deepThinkFeatureStatus = { ...deepThinkFeatureStatus, ...permData, enabled: permData.enabled !== undefined ? permData.enabled : deepThinkFeatureStatus.enabled };
+                            applyDeepThinkBtnState();
+                            showToast(permData.error || 'التفكير العميق مش متاح دلوقتي — هنجاوبك عادي', 'error');
+                        } else if (permData.limit > 0) {
+                            deepThinkFeatureStatus = { ...deepThinkFeatureStatus, ...permData };
+                            applyDeepThinkBtnState();
+                        }
+                    } catch (e) { /* السيرفر مش متاح دلوقتي — منمنعش الميزة بسبب مشكلة شبكة عابرة */ }
+                }
+                if (deepThinkAllowed) {
                 try {
                     deepThinkResult = await runDeepThinkingPass(chat, abortController.signal);
                     if (deepThinkResult) deepThinkReasoningContext = deepThinkResult.reasoningText;
@@ -5888,6 +6015,7 @@
                     deepThinkResult = null;
                 }
                 document.getElementById('typingIndicator').classList.add('active');
+                }
             }
 
             // إعادة محاولة تلقائية لو النت اتقطع أثناء التوليد: بنلف منطق النداء كله
@@ -8387,6 +8515,7 @@
             modalBox.setAttribute('aria-modal', 'true');
             if (!modalBox.hasAttribute('tabindex')) modalBox.setAttribute('tabindex', '-1');
             requestAnimationFrame(() => { try { modalBox.focus({ preventScroll: true }); } catch (e) {} });
+            if (id === 'toolsModal' && schoolUser?.type === 'admin') loadDeepThinkAdminConfig();
         }
 
         function closeModal(id) {
@@ -10549,6 +10678,58 @@
             });
         }
 
+        // ====================== التحكم الإداري في Deep Thinking ======================
+        let dtaLocalEnabled = true; // حالة الزرار محليًا قبل الحفظ (عشان يستجيب فورًا وهو بيدوس)
+
+        function toggleDtaEnabled() {
+            dtaLocalEnabled = !dtaLocalEnabled;
+            document.getElementById('dtaEnabledSwitch').classList.toggle('active', dtaLocalEnabled);
+        }
+
+        async function loadDeepThinkAdminConfig() {
+            const section = document.getElementById('deepThinkAdminSection');
+            if (!section) return;
+            if (schoolUser?.type !== 'admin') { section.style.display = 'none'; return; }
+            section.style.display = '';
+            if (!schoolToken) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/deep-think/admin-config`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) return;
+                const cfg = await res.json();
+                dtaLocalEnabled = !!cfg.enabled;
+                document.getElementById('dtaEnabledSwitch').classList.toggle('active', dtaLocalEnabled);
+                document.getElementById('dtaDailyLimitInput').value = cfg.dailyLimitPerStudent;
+            } catch (e) { /* لو فشل الجلب، الأدمن لسه يقدر يحفظ إعدادات جديدة عادي */ }
+        }
+
+        async function saveDeepThinkAdminConfig() {
+            const statusEl = document.getElementById('dtaSaveStatus');
+            const limitVal = document.getElementById('dtaDailyLimitInput').value;
+            const limit = limitVal === '' ? undefined : Number(limitVal);
+            if (limit !== undefined && (!Number.isFinite(limit) || limit < 0)) {
+                statusEl.innerHTML = '<span style="color:var(--danger);">الحد اليومي لازم يكون رقم صحيح 0 أو أكبر</span>';
+                statusEl.classList.add('show');
+                return;
+            }
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/deep-think/admin-config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ enabled: dtaLocalEnabled, dailyLimitPerStudent: limit })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'تعذر الحفظ');
+                statusEl.innerHTML = '<span style="color:var(--success);">تم حفظ الإعدادات ✅</span>';
+                statusEl.classList.add('show');
+                showToast('تم تحديث إعدادات Deep Thinking', 'success');
+            } catch (e) {
+                statusEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر الحفظ')}</span>`;
+                statusEl.classList.add('show');
+            }
+        }
+
         async function uploadTutorialVideo() {
             const fileInput = document.getElementById('tvFileInput');
             const title = document.getElementById('tvTitleInput').value.trim();
@@ -11908,6 +12089,7 @@
                     checkUpcomingHomeworkAlert(data.pendingHomework || []);
                     handlePremiumFeaturesUpdate(data.profile?.premiumFeatures || []);
                 }
+                loadDeepThinkStatus();
             } catch (e) { /* السيرفر مش متاح دلوقتي، هنستخدم آخر نسخة متخزنة */ }
         }
 
