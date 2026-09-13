@@ -2805,7 +2805,7 @@
         <div class="modal">
             <div class="modal-header">
                 <div class="modal-title"><i class="fas fa-key"></i> استرجاع كلمة السر</div>
-                <button class="close-modal" aria-label="إغلاق نافذة استرجاع كلمة السر" onclick="closeModal('passwordResetModal')"><i class="fas fa-times"></i></button>
+                <button class="close-modal" aria-label="إغلاق نافذة استرجاع كلمة السر" onclick="stopResetTelegramLinkPoll(); closeModal('passwordResetModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="tool-section" id="prStep1">
                 <p style="font-size:11.5px;color:var(--text-2);margin-bottom:12px;line-height:1.8;">
@@ -2824,6 +2824,21 @@
                 <button class="btn-calc" id="prOtpVerifyBtn" onclick="verifyPasswordResetOtp()"><i class="fas fa-check"></i> تأكيد الكود</button>
                 <button type="button" onclick="verifyPasswordResetIdentity(true)" style="display:block;margin:10px auto 0;background:none;border:none;color:var(--accent);font-size:11.5px;font-weight:700;cursor:pointer;">إعادة إرسال الكود</button>
                 <div class="calc-result" id="prStepOtpStatus"></div>
+            </div>
+            <div class="tool-section" id="prStepLinkTelegram" style="display:none;">
+                <div style="text-align:center;padding:6px 0 14px;">
+                    <i class="fas fa-circle-check" style="font-size:28px;color:var(--success);margin-bottom:8px;display:block;"></i>
+                    <p style="font-size:13px;font-weight:700;">اتأكدنا من هويتك ✅</p>
+                </div>
+                <p style="font-size:11.5px;color:var(--text-2);margin-bottom:14px;line-height:1.8;">
+                    <i class="fab fa-telegram" style="color:#29a9eb;"></i> اربط حساب Telegram دلوقتي (اختياري) عشان المرة الجاية تقدر تسترجع كلمة السر بكود على طول من غير ما تفتكر رقم الهاتف.
+                </p>
+                <button class="btn-calc" id="prLinkTelegramBtn" onclick="startTelegramLinkFromReset()"><i class="fab fa-telegram"></i> اربط الآن عبر Telegram</button>
+                <div id="prLinkTelegramWaiting" style="display:none;text-align:center;margin:12px 0;">
+                    <i class="fas fa-spinner fa-spin" style="color:var(--accent);"></i>
+                    <p style="font-size:11px;color:var(--text-2);margin-top:6px;">مستنيين تأكيد الربط...</p>
+                </div>
+                <button type="button" onclick="skipTelegramLinkGoToStep2()" style="display:block;margin:14px auto 0;background:none;border:none;color:var(--text-3);font-size:11.5px;font-weight:700;cursor:pointer;">تخطي، غيّر كلمة السر بس</button>
             </div>
             <div class="tool-section" id="prStep2" style="display:none;">
                 <p style="font-size:11.5px;color:var(--success);margin-bottom:12px;line-height:1.8;">
@@ -8635,6 +8650,7 @@
             if (!openModals.length) return;
             const topId = openModals[openModals.length - 1].id;
             if (topId === 'telegramLinkModal') stopTelegramLinkPoll();
+            if (topId === 'passwordResetModal') stopResetTelegramLinkPoll();
             closeModal(topId);
         });
 
@@ -8874,6 +8890,7 @@
         function openPasswordResetModal() {
             document.getElementById('prStep1').style.display = '';
             document.getElementById('prStepOtp').style.display = 'none';
+            document.getElementById('prStepLinkTelegram').style.display = 'none';
             document.getElementById('prStep2').style.display = 'none';
             document.getElementById('prUsernameInput').value = document.getElementById('schoolUsernameInput').value || '';
             document.getElementById('prPhoneInput').value = '';
@@ -8886,6 +8903,9 @@
             document.getElementById('prStepOtpStatus').classList.remove('show');
             document.getElementById('prStep2Status').innerHTML = '';
             document.getElementById('prStep2Status').classList.remove('show');
+            document.getElementById('prLinkTelegramBtn').style.display = '';
+            document.getElementById('prLinkTelegramWaiting').style.display = 'none';
+            stopResetTelegramLinkPoll();
             passwordResetToken = null;
             openModal('passwordResetModal');
         }
@@ -8913,7 +8933,7 @@
                     return;
                 }
                 if (data.requiresOtp) {
-                    // الحساب مربوط بـ Telegram — كود اتبعت هناك، نفتح خطوة إدخاله
+                    // الحساب مربوط بـ Telegram بالفعل — كود اتبعت هناك، نفتح خطوة إدخاله
                     document.getElementById('prStep1').style.display = 'none';
                     document.getElementById('prStepOtp').style.display = '';
                     document.getElementById('prStepOtpStatus').innerHTML = '';
@@ -8921,16 +8941,65 @@
                     if (isResend) showStatus('<span style="color:var(--success);">اتبعت كود جديد ✅</span>');
                     return;
                 }
-                // مش مربوط بتيليجرام: رقم الهاتف اتطابق وجالنا التوكن على طول
+                // رقم الهاتف اتطابق — عندنا التوكن دلوقتي. لو الحساب لسه مش مربوط
+                // بتيليجرام (السيرفر بعتلنا رابط ربط)، نعرض عليه يربطه دلوقتي قبل
+                // ما يكمل، بدل ما نروح على طول لخطوة كلمة السر الجديدة.
                 passwordResetToken = data.resetToken;
                 document.getElementById('prStep1').style.display = 'none';
                 document.getElementById('prStepOtp').style.display = 'none';
-                document.getElementById('prStep2').style.display = '';
+                if (data.telegramLinkUrl) {
+                    pendingResetTelegramLinkUrl = data.telegramLinkUrl;
+                    document.getElementById('prStepLinkTelegram').style.display = '';
+                } else {
+                    document.getElementById('prStep2').style.display = '';
+                }
             } catch (e) {
                 showStatus('<span style="color:var(--danger);">تعذر الاتصال بالسيرفر</span>');
             } finally {
                 btn.disabled = false;
             }
+        }
+
+        // ====================== ربط Telegram أثناء استرجاع كلمة السر (بدون تسجيل دخول) ======================
+        let pendingResetTelegramLinkUrl = null;
+        let resetTelegramLinkPollTimer = null;
+
+        function stopResetTelegramLinkPoll() {
+            if (resetTelegramLinkPollTimer) { clearInterval(resetTelegramLinkPollTimer); resetTelegramLinkPollTimer = null; }
+        }
+
+        function goToPasswordResetStep2() {
+            stopResetTelegramLinkPoll();
+            document.getElementById('prStepLinkTelegram').style.display = 'none';
+            document.getElementById('prStep2').style.display = '';
+        }
+
+        function skipTelegramLinkGoToStep2() {
+            goToPasswordResetStep2();
+        }
+
+        function startTelegramLinkFromReset() {
+            if (!pendingResetTelegramLinkUrl) return;
+            window.open(pendingResetTelegramLinkUrl, '_blank');
+            document.getElementById('prLinkTelegramBtn').style.display = 'none';
+            document.getElementById('prLinkTelegramWaiting').style.display = 'block';
+            stopResetTelegramLinkPoll();
+            resetTelegramLinkPollTimer = setInterval(async () => {
+                try {
+                    const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/telegram/link/status-by-reset-token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ resetToken: passwordResetToken })
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (data.linked) {
+                        stopResetTelegramLinkPoll();
+                        showToast('تم ربط حسابك بـ Telegram بنجاح ✅', 'success', { icon: 'fa-telegram' });
+                        setTimeout(goToPasswordResetStep2, 900);
+                    }
+                } catch (e) { /* هنجرب تاني في الدورة الجاية */ }
+            }, 3000);
         }
 
         async function verifyPasswordResetOtp() {
@@ -17112,6 +17181,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                 if (e.target.id === 'liveNowModal') { clearInterval(liveNowRefreshTimer); liveNowRefreshTimer = null; }
                 if (e.target.id === 'videoPlayerModal') { document.getElementById('tvPlayerVideo').pause(); document.removeEventListener('keydown', tvPlayerEscHandler); }
                 if (e.target.id === 'telegramLinkModal') { stopTelegramLinkPoll(); }
+                if (e.target.id === 'passwordResetModal') { stopResetTelegramLinkPoll(); }
                 e.target.classList.remove('active');
             }
         };
