@@ -110,6 +110,14 @@ marked.setOptions({ breaks: true, gfm: true });
                     regenBtn.addEventListener('click', () => regenerateMessage(msg.id));
                     actionsDiv.appendChild(regenBtn);
                 }
+
+                const shareImgBtn = document.createElement('button');
+                shareImgBtn.className = 'msg-action-btn';
+                shareImgBtn.title = 'تصدير كصورة';
+                shareImgBtn.setAttribute('aria-label', 'تصدير الرد كصورة لمشاركته');
+                shareImgBtn.innerHTML = '<i class="fas fa-image"></i>';
+                shareImgBtn.addEventListener('click', () => exportMessageAsImage(msg.id, shareImgBtn));
+                actionsDiv.appendChild(shareImgBtn);
             }
 
             if (msg.role === 'user') {
@@ -1092,6 +1100,7 @@ marked.setOptions({ breaks: true, gfm: true });
             renderStats();
             updateMistakesBankBadge();
             maybeShowTvNewDot();
+            initSelectionSaveWatcher();
             initSpeechRecognition();
             const backendInput = document.getElementById('backendUrlInput');
             if (backendInput) backendInput.value = settings.backendUrl || '';
@@ -3688,11 +3697,39 @@ marked.setOptions({ breaks: true, gfm: true });
             prefetchTtsAudio(botMsg);
         }
 
+        // "اليوم" / "أمس" / تاريخ كامل — بيتنادى لبناء نص فاصل التاريخ بين مجموعات الرسايل
+        function formatDateDividerLabel(timestamp) {
+            const d = new Date(timestamp);
+            const now = new Date();
+            const startOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+            const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
+            if (diffDays === 0) return 'اليوم';
+            if (diffDays === 1) return 'أمس';
+            return d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: diffDays > 300 ? 'numeric' : undefined });
+        }
+
+        // بتحط فاصل تاريخ ("اليوم"/"أمس"/...) قبل أول رسالة من يوم جديد — بتقارن
+        // بتاريخ آخر عنصر رسالة فعلي موجود في الـ DOM حاليًا (مش آخر عنصر أيًا كان،
+        // عشان مانكررش الفاصل لو كان هو نفسه آخر حاجة).
+        function maybeInsertDateDivider(container, msg) {
+            const messages = container.querySelectorAll('.message[data-timestamp]');
+            const lastMsgEl = messages[messages.length - 1];
+            const lastTimestamp = lastMsgEl ? Number(lastMsgEl.dataset.timestamp) : null;
+            const sameDay = lastTimestamp && new Date(lastTimestamp).toDateString() === new Date(msg.timestamp).toDateString();
+            if (sameDay) return;
+            const divider = document.createElement('div');
+            divider.className = 'chat-date-divider';
+            divider.textContent = formatDateDividerLabel(msg.timestamp);
+            container.insertBefore(divider, document.getElementById('typingIndicator'));
+        }
+
         function appendMessageToDOM(msg, scroll = true) {
             const container = document.getElementById('chatContainer');
+            maybeInsertDateDivider(container, msg);
             const div = document.createElement('div');
             div.className = `message ${msg.role}`;
             div.id = msg.id || `msg-${Date.now()}`;
+            div.dataset.timestamp = msg.timestamp || Date.now();
             
             const contentHTML = DOMPurify.sanitize(marked.parse(msg.content));
             const time = new Date(msg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
@@ -3730,6 +3767,27 @@ marked.setOptions({ breaks: true, gfm: true });
             bubble.appendChild(textWrap);
             enhanceCodeBlocks(bubble);
 
+            // ردود طويلة جدًا (زي شرح مفصّل لموضوع كامل) بتتقفل بارتفاع محدود مع
+            // زرار "عرض المزيد" بدل ما الطالب يسكرول جوه سكرول أصلًا. بنستخدم طول
+            // النص كمقياس سريع بدل قياس الارتفاع الفعلي (اللي بيحتاج reflow مكلف
+            // مع كل رسالة في محادثة طويلة).
+            if (msg.content && msg.content.length > 1400) {
+                bubble.classList.add('collapsible-msg');
+                if (msg.expanded) bubble.classList.add('expanded');
+                const expandBtn = document.createElement('button');
+                expandBtn.type = 'button';
+                expandBtn.className = 'msg-expand-btn';
+                expandBtn.textContent = msg.expanded ? 'عرض أقل' : 'عرض المزيد';
+                expandBtn.addEventListener('click', () => {
+                    const isExpanded = bubble.classList.toggle('expanded');
+                    msg.expanded = isExpanded;
+                    expandBtn.textContent = isExpanded ? 'عرض أقل' : 'عرض المزيد';
+                    if (!isExpanded) bubble.scrollIntoView({ block: 'nearest' });
+                    saveData();
+                });
+                bubble.appendChild(expandBtn);
+            }
+
             const meta = document.createElement('div');
             meta.className = 'msg-meta';
             const timeSpan = document.createElement('span');
@@ -3738,7 +3796,8 @@ marked.setOptions({ breaks: true, gfm: true });
 
             if (msg.role === 'bot') {
                 const sourceSpan = document.createElement('span');
-                sourceSpan.style.cssText = 'margin-right:6px;opacity:0.6';
+                sourceSpan.className = 'msg-source-badge';
+                sourceSpan.title = 'مصدر الرد';
                 sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'claude-opus' ? '✨' : msg.source === 'mistral' ? '🌬️' : msg.source === 'sambanova' ? '🚀' : msg.source === 'qwen' ? '🐉' : msg.source === 'onehop' ? '🐋' : msg.source === 'zimage' ? '🖼️' : '💻';
                 meta.appendChild(sourceSpan);
             }
@@ -3762,7 +3821,15 @@ marked.setOptions({ breaks: true, gfm: true });
             div.appendChild(contentDiv);
             
             container.insertBefore(div, document.getElementById('typingIndicator'));
-            if (scroll) scrollToBottom();
+            if (scroll) {
+                const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+                // لو الطالب لسه قاعد في آخر الصفحة (أو قريب منها)، ننزله عادي زي
+                // ما كان بيحصل دايمًا. لو هو "ماسك" سكرول لفوق يقرا حاجة قديمة،
+                // منجبروش ينزل فجأة — بدل كده نوريله زرار "اقفز لآخر رسالة" مع
+                // عداد الرسايل الجديدة اللي فاتته.
+                if (distanceFromBottom < 150) scrollToBottom();
+                else maybeShowJumpToLatestAfterNewMessage();
+            }
             syncRegenerateButtons(chatForLastCheck);
         }
 
@@ -4692,7 +4759,13 @@ marked.setOptions({ breaks: true, gfm: true });
         // بنستخدم scrollTo({behavior:'auto'}) صراحةً بدل تعيين scrollTop مباشرة، عشان الكود
         // يفضل يشتغل صح حتى لو حد ضاف smooth-scroll تاني في مكان تاني من الصفحة مستقبلاً.
         let scrollScheduled = false;
-        function scrollToBottom() {
+        function scrollToBottom(smooth) {
+            if (smooth) {
+                const container = document.getElementById('chatContainer');
+                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+                hideJumpToLatestBtn();
+                return;
+            }
             if (scrollScheduled) return;
             scrollScheduled = true;
             requestAnimationFrame(() => {
@@ -4701,6 +4774,258 @@ marked.setOptions({ breaks: true, gfm: true });
                 scrollScheduled = false;
             });
         }
+
+        // ====================== زرار "اقفز لآخر رسالة" ======================
+        let jumpToLatestUnreadCount = 0;
+
+        function hideJumpToLatestBtn() {
+            jumpToLatestUnreadCount = 0;
+            const btn = document.getElementById('jumpToLatestBtn');
+            const badge = document.getElementById('jumpToLatestBadge');
+            if (btn) btn.classList.remove('show');
+            if (badge) badge.style.display = 'none';
+        }
+
+        // بتتنادى بعد كل رسالة بتتضاف للـ DOM — لو الطالب بعيد عن آخر الصفحة
+        // فعلًا (ماسك سكرول لفوق يقرا حاجة قديمة)، منجبروش نزل تلقائي، وبدل كده
+        // نوريله الزرار ومعاه عداد الرسايل الجديدة اللي فاتته.
+        function maybeShowJumpToLatestAfterNewMessage() {
+            const container = document.getElementById('chatContainer');
+            if (!container) return;
+            const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+            if (distanceFromBottom < 120) { hideJumpToLatestBtn(); return; }
+            jumpToLatestUnreadCount++;
+            const btn = document.getElementById('jumpToLatestBtn');
+            const badge = document.getElementById('jumpToLatestBadge');
+            if (btn) btn.classList.add('show');
+            if (badge) { badge.textContent = jumpToLatestUnreadCount; badge.style.display = 'flex'; }
+        }
+
+        (function initJumpToLatestScrollWatcher() {
+            const container = document.getElementById('chatContainer');
+            if (!container) return;
+            let ticking = false;
+            container.addEventListener('scroll', () => {
+                if (ticking) return;
+                ticking = true;
+                requestAnimationFrame(() => {
+                    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+                    if (distanceFromBottom < 120) hideJumpToLatestBtn();
+                    ticking = false;
+                });
+            });
+        })();
+
+        // ====================== تصدير رسالة واحدة كصورة (للمشاركة مع جروب المذاكرة) ======================
+        // بيستخدم html2canvas المدمج فعليًا جوه html2pdf.bundle.min.js (نفس السكريبت
+        // المستخدم لتصدير الـ PDF) — مفيش سكريبت إضافي بيتحمّل. بنستنسخ عنصر
+        // الرسالة (من غير أزرار الأكشنز نفسها) ونرندره في الخفاء، عشان الصورة
+        // النهائية تبان "نضيفة" من غير أيقونات نسخ/تقييم/حذف.
+        async function exportMessageAsImage(msgId, btnEl) {
+            if (typeof html2canvas !== 'function') {
+                showToast('ميزة تصدير الصور مش متاحة دلوقتي', 'error');
+                return;
+            }
+            const original = document.getElementById(msgId);
+            if (!original) return;
+            const icon = btnEl.innerHTML;
+            btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btnEl.disabled = true;
+            try {
+                const clone = original.cloneNode(true);
+                clone.querySelector('.msg-actions')?.remove();
+                clone.style.maxWidth = '480px';
+                clone.style.background = getComputedStyle(document.body).getPropertyValue('--bg');
+                clone.style.padding = '16px';
+                clone.style.borderRadius = '14px';
+                clone.style.position = 'fixed';
+                clone.style.top = '-9999px';
+                clone.style.left = '0';
+                document.body.appendChild(clone);
+
+                const canvas = await html2canvas(clone, {
+                    backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#0a0e1a',
+                    scale: 2, useCORS: true
+                });
+                document.body.removeChild(clone);
+
+                canvas.toBlob(async (blob) => {
+                    if (!blob) { showToast('تعذر إنشاء الصورة', 'error'); return; }
+                    const file = new File([blob], 'chatx-message.png', { type: 'image/png' });
+                    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try { await navigator.share({ files: [file], title: 'رد من Chat X' }); return; } catch (e) { /* المستخدم لغى المشاركة — نكمل للتحميل العادي */ }
+                    }
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `chatx-message-${Date.now()}.png`;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                    showToast('اتنزّلت الصورة ✅', 'success');
+                }, 'image/png');
+            } catch (e) {
+                console.error('exportMessageAsImage error', e);
+                showToast('تعذر تصدير الصورة', 'error');
+            } finally {
+                btnEl.innerHTML = icon;
+                btnEl.disabled = false;
+            }
+        }
+
+
+        const MY_NOTES_KEY = 'sx_my_notes';
+        let pendingSelectionText = '';
+
+        function getMyNotes() {
+            try { return JSON.parse(localStorage.getItem(MY_NOTES_KEY)) || []; } catch (e) { return []; }
+        }
+        function setMyNotes(notes) {
+            localStorage.setItem(MY_NOTES_KEY, JSON.stringify(notes));
+        }
+
+        function hideSelectionSavePopup() {
+            document.getElementById('selectionSavePopup').classList.remove('show');
+            pendingSelectionText = '';
+        }
+
+        function initSelectionSaveWatcher() {
+            const showPopupForSelection = () => {
+                const sel = window.getSelection();
+                const text = sel && sel.toString().trim();
+                if (!text || text.length < 3) { hideSelectionSavePopup(); return; }
+                // لازم التحديد يكون جوه نص رد فعلي (مش جوه حقل كتابة أو مودال تاني)
+                const anchorNode = sel.anchorNode;
+                const bubbleText = anchorNode && (anchorNode.nodeType === 1 ? anchorNode.closest('.msg-text') : anchorNode.parentElement?.closest('.msg-text'));
+                if (!bubbleText) { hideSelectionSavePopup(); return; }
+                pendingSelectionText = text;
+                const range = sel.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                const popup = document.getElementById('selectionSavePopup');
+                popup.style.left = `${rect.left + rect.width / 2}px`;
+                popup.style.top = `${Math.max(50, rect.top)}px`;
+                popup.classList.add('show');
+            };
+            document.addEventListener('mouseup', showPopupForSelection);
+            document.addEventListener('touchend', () => setTimeout(showPopupForSelection, 50));
+            document.addEventListener('mousedown', (e) => { if (!e.target.closest('.selection-save-popup')) hideSelectionSavePopup(); });
+            document.addEventListener('scroll', hideSelectionSavePopup, true);
+        }
+
+        function saveSelectionToNotes() {
+            if (!pendingSelectionText) return;
+            const chat = chats.find(c => c.id === currentChatId);
+            const notes = getMyNotes();
+            notes.unshift({
+                id: 'note_' + Date.now(),
+                text: pendingSelectionText,
+                chatTitle: chat?.title || 'محادثة',
+                timestamp: Date.now()
+            });
+            setMyNotes(notes.slice(0, 200)); // سقف معقول عشان مايتراكمش لانهائي في localStorage
+            hideSelectionSavePopup();
+            window.getSelection().removeAllRanges();
+            showToast('اتحفظت في ملاحظاتي 📌', 'success');
+        }
+
+        function deleteNote(id) {
+            setMyNotes(getMyNotes().filter(n => n.id !== id));
+            renderMyNotesList();
+        }
+
+        function renderMyNotesList() {
+            const notes = getMyNotes();
+            const list = document.getElementById('myNotesList');
+            if (!notes.length) {
+                list.innerHTML = `<div style="text-align:center;padding:30px 10px;color:var(--text-3);font-size:12.5px;">
+                    <i class="fas fa-bookmark" style="font-size:24px;margin-bottom:10px;display:block;opacity:.5;"></i>
+                    لسه معندكش ملاحظات محفوظة — حدد أي جزء من رد الشات واحفظه هنا
+                </div>`;
+                return;
+            }
+            list.innerHTML = notes.map(n => `
+                <div class="note-card">
+                    <div class="note-card-text">${escapeHtml(n.text)}</div>
+                    <div class="note-card-meta">
+                        <span>${escapeHtml(n.chatTitle)} · ${formatRelativeArabic(n.timestamp)}</span>
+                        <button class="note-card-delete" onclick="deleteNote('${n.id}')" aria-label="حذف الملاحظة"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openMyNotesModal() {
+            renderMyNotesList();
+            openModal('myNotesModal');
+        }
+
+        // ====================== Command Palette (Ctrl+K) ======================
+        const COMMAND_PALETTE_ACTIONS = [
+            { label: 'محادثة جديدة', icon: 'fa-plus', hint: 'Ctrl+Shift+O', run: () => createNewChat() },
+            { label: 'فعّل/أوقف التفكير العميق', icon: 'fa-brain', run: () => toggleDeepThink() },
+            { label: 'فتح المكتبة المشتركة', icon: 'fa-book-open', run: () => { openModal('sharedLibraryModal'); switchLibraryTab('all'); } },
+            { label: 'فيديوهات شرح المنصة', icon: 'fa-video', run: () => { openModal('tutorialVideosModal'); loadTutorialVideos(); } },
+            { label: 'ملاحظاتي', icon: 'fa-bookmark', run: () => openMyNotesModal() },
+            { label: 'الأدوات والحاسبات', icon: 'fa-calculator', run: () => openModal('toolsModal') },
+            { label: 'بنك أخطائي', icon: 'fa-brain', run: () => openMistakesBankModal() },
+            { label: 'مكالمة صوتية', icon: 'fa-phone-volume', run: () => openVoiceCallScreen() },
+            { label: 'فحص دواء', icon: 'fa-pills', run: () => openDrugScanner() },
+            { label: 'ابحث في المحادثة الحالية', icon: 'fa-magnifying-glass', run: () => toggleChatSearchBar(true) },
+            { label: 'سجل تسجيل الدخول', icon: 'fa-clock-rotate-left', run: () => openLoginHistoryModal() },
+            { label: 'ربط حساب Telegram', icon: 'fa-telegram', run: () => openTelegramLinkModal() },
+        ];
+        let cmdPaletteActiveIndex = 0;
+        let cmdPaletteFiltered = COMMAND_PALETTE_ACTIONS;
+
+        function renderCommandPaletteList() {
+            const list = document.getElementById('commandPaletteList');
+            if (!cmdPaletteFiltered.length) {
+                list.innerHTML = '<div class="cmd-empty">مفيش أوامر مطابقة</div>';
+                return;
+            }
+            list.innerHTML = cmdPaletteFiltered.map((action, i) => `
+                <div class="cmd-item${i === cmdPaletteActiveIndex ? ' active' : ''}" data-index="${i}" onclick="runCommandPaletteAction(${i})">
+                    <i class="fas ${action.icon}"></i>
+                    <span>${escapeHtml(action.label)}</span>
+                    ${action.hint ? `<span class="cmd-hint">${escapeHtml(action.hint)}</span>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function filterCommandPalette(query) {
+            const q = (query || '').trim().toLowerCase();
+            cmdPaletteFiltered = !q ? COMMAND_PALETTE_ACTIONS : COMMAND_PALETTE_ACTIONS.filter(a => a.label.toLowerCase().includes(q));
+            cmdPaletteActiveIndex = 0;
+            renderCommandPaletteList();
+        }
+
+        function runCommandPaletteAction(index) {
+            const action = cmdPaletteFiltered[index];
+            if (!action) return;
+            closeModal('commandPaletteModal');
+            setTimeout(() => action.run(), 50); // بعد ما المودال يتقفل تمامًا، عشان لو الأمر نفسه هيفتح مودال تاني
+        }
+
+        function handleCommandPaletteKeydown(e) {
+            if (e.key === 'ArrowDown') { e.preventDefault(); cmdPaletteActiveIndex = Math.min(cmdPaletteActiveIndex + 1, cmdPaletteFiltered.length - 1); renderCommandPaletteList(); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); cmdPaletteActiveIndex = Math.max(cmdPaletteActiveIndex - 1, 0); renderCommandPaletteList(); }
+            else if (e.key === 'Enter') { e.preventDefault(); runCommandPaletteAction(cmdPaletteActiveIndex); }
+        }
+
+        function openCommandPalette() {
+            document.getElementById('commandPaletteInput').value = '';
+            cmdPaletteFiltered = COMMAND_PALETTE_ACTIONS;
+            cmdPaletteActiveIndex = 0;
+            renderCommandPaletteList();
+            openModal('commandPaletteModal');
+            setTimeout(() => document.getElementById('commandPaletteInput').focus(), 60);
+        }
+
+        // Ctrl+K / Cmd+K من أي مكان في التطبيق يفتح لوحة الأوامر
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                openCommandPalette();
+            }
+        });
 
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => showToast('تم النسخ', 'success'))
@@ -11945,6 +12270,64 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 
             startCallWatchdog();
             runCallVadLoop();
+            startCallWaveform();
+        }
+
+        // ====================== موجة صوتية حية حوالين دائرة المكالمة ======================
+        // بتقرأ من نفس callAnalyser المستخدم أصلًا لكشف الكلام (VAD) — مفيش أي
+        // getUserMedia أو AudioContext تاني بيتفتح، بس قراءة تانية (غير مدمّرة)
+        // لنفس بيانات التردد، فمفيش أي تعارض مع منطق التسجيل والإرسال.
+        let callWaveformRafId = null;
+
+        function drawCallWaveform() {
+            if (!callActive || !callAnalyser) { callWaveformRafId = null; return; }
+            callWaveformRafId = requestAnimationFrame(drawCallWaveform);
+            const canvas = document.getElementById('callWaveformCanvas');
+            if (!canvas) return;
+            canvas.classList.add('active');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height, cx = w / 2, cy = h / 2;
+            const baseRadius = w * 0.34;
+
+            const freqData = new Uint8Array(callAnalyser.frequencyBinCount);
+            callAnalyser.getByteFrequencyData(freqData);
+
+            const barCount = 40;
+            const isLight = document.getElementById('voiceCallOverlay')?.classList.contains('call-light');
+            ctx.clearRect(0, 0, w, h);
+            ctx.strokeStyle = isLight ? 'rgba(99,102,241,.55)' : 'rgba(139,92,246,.65)';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+
+            for (let i = 0; i < barCount; i++) {
+                const dataIndex = Math.floor((i / barCount) * (freqData.length * 0.5)); // أعلى ترددات مش مفيدة بصريًا للصوت البشري
+                const amp = freqData[dataIndex] / 255; // 0 → 1
+                const barLen = 4 + amp * 26;
+                const angle = (i / barCount) * Math.PI * 2 - Math.PI / 2;
+                const x1 = cx + Math.cos(angle) * baseRadius;
+                const y1 = cy + Math.sin(angle) * baseRadius;
+                const x2 = cx + Math.cos(angle) * (baseRadius + barLen);
+                const y2 = cy + Math.sin(angle) * (baseRadius + barLen);
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+        }
+
+        function startCallWaveform() {
+            if (callWaveformRafId) return;
+            drawCallWaveform();
+        }
+
+        function stopCallWaveform() {
+            if (callWaveformRafId) { cancelAnimationFrame(callWaveformRafId); callWaveformRafId = null; }
+            const canvas = document.getElementById('callWaveformCanvas');
+            if (canvas) {
+                canvas.classList.remove('active');
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
         }
 
         // بيفتح المايك مرة واحدة بس لطول المكالمة، وبيجهّز محلّل صوت (Analyser) عشان
@@ -11969,6 +12352,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 
         function stopCallMic() {
             if (callVadRafId) { cancelAnimationFrame(callVadRafId); callVadRafId = null; }
+            stopCallWaveform();
             if (callMediaRecorder && callMediaRecorder.state !== 'inactive') { try { callMediaRecorder.stop(); } catch (e) {} }
             callMediaRecorder = null;
             callIsRecordingSpeech = false;

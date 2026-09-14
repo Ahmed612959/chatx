@@ -414,6 +414,83 @@
         .chat-container::-webkit-scrollbar { width: 4px; }
         .chat-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-sm); }
 
+        /* زرار "اقفز لآخر رسالة" — بيظهر بس لما الطالب يبقى ماسك سكرول لفوق في
+           محادثة طويلة (شوف maybeToggleJumpToLatestBtn في الجافاسكريبت). */
+        .jump-to-latest-btn {
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%) translateY(20px);
+            width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border);
+            background: var(--bg-2); color: var(--text-2); cursor: pointer; z-index: 5;
+            display: flex; align-items: center; justify-content: center; font-size: 14px;
+            box-shadow: 0 4px 14px rgba(0,0,0,.25); opacity: 0; pointer-events: none;
+            transition: opacity var(--transition-base), transform var(--transition-base);
+        }
+        .jump-to-latest-btn.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+        .jump-to-latest-btn:hover { color: var(--accent); border-color: var(--accent); }
+        .jump-to-latest-btn:active { transform: translateX(-50%) scale(0.9); }
+        .jump-to-latest-badge {
+            position: absolute; top: -4px; left: -4px; min-width: 16px; height: 16px; padding: 0 3px;
+            border-radius: 8px; background: var(--danger); color: #fff; font-size: 9.5px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--bg-2);
+        }
+
+        /* فواصل تاريخ بين مجموعات الرسايل ("اليوم" / "أمس" / تاريخ) — شوف
+           maybeInsertDateDivider في الجافاسكريبت. */
+        .chat-date-divider {
+            display: flex; align-items: center; gap: 10px; margin: 4px 0; color: var(--text-3);
+            font-size: 11px; font-weight: 700; align-self: center;
+        }
+        .chat-date-divider::before, .chat-date-divider::after { content: ''; height: 1px; background: var(--border); width: 40px; }
+
+        /* رسالة طويلة قابلة للطي — تظهر مقصوصة بارتفاع محدود مع زرار "عرض المزيد" */
+        .msg-bubble.collapsible-msg .msg-text { max-height: 260px; overflow: hidden; position: relative; }
+        .msg-bubble.collapsible-msg.expanded .msg-text { max-height: none; }
+        .msg-bubble.collapsible-msg .msg-text::after {
+            content: ''; position: absolute; bottom: 0; right: 0; left: 0; height: 50px;
+            background: linear-gradient(to bottom, transparent, var(--bg-glass));
+            pointer-events: none;
+        }
+        .message.user .msg-bubble.collapsible-msg .msg-text::after { background: linear-gradient(to bottom, transparent, var(--accent-2)); }
+        .msg-bubble.collapsible-msg.expanded .msg-text::after { display: none; }
+        .msg-expand-btn {
+            display: block; margin: 8px auto 0; background: none; border: none; color: inherit;
+            font-size: 11.5px; font-weight: 700; cursor: pointer; opacity: .85; padding: 4px 10px;
+            border-radius: var(--radius-full); background: rgba(0,0,0,.15);
+        }
+        .msg-expand-btn:hover { opacity: 1; }
+
+        /* بابل صغير بيظهر لما الطالب يحدد نص جوه رد الشات — زرار واحد "احفظ في
+           ملاحظاتي" بيتابع مكان التحديد (شوف initSelectionSaveWatcher في الجافاسكريبت) */
+        .selection-save-popup {
+            position: fixed; z-index: 9999; display: none; transform: translate(-50%, -110%);
+        }
+        .selection-save-popup.show { display: block; }
+        .selection-save-popup button {
+            background: var(--bg-2); border: 1px solid var(--accent); color: var(--accent);
+            font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: var(--radius-full);
+            box-shadow: 0 4px 14px rgba(0,0,0,.3); cursor: pointer; display: flex; align-items: center; gap: 6px;
+            white-space: nowrap;
+        }
+        .selection-save-popup button:active { transform: scale(0.94); }
+
+        .note-card {
+            background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 12px; position: relative;
+        }
+        .note-card-text { font-size: 12.5px; line-height: 1.8; color: var(--text-1); margin-bottom: 8px; white-space: pre-wrap; }
+        .note-card-meta { display: flex; align-items: center; justify-content: space-between; font-size: 10.5px; color: var(--text-3); }
+        .note-card-delete { background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 12px; padding: 4px; }
+        .note-card-delete:hover { color: var(--danger); }
+
+        /* ====================== Command Palette ====================== */
+        .cmd-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm);
+            cursor: pointer; font-size: 13px; color: var(--text-1); transition: background var(--transition-fast);
+        }
+        .cmd-item:hover, .cmd-item.active { background: var(--bg-2); }
+        .cmd-item i { width: 18px; text-align: center; color: var(--accent); flex-shrink: 0; }
+        .cmd-item span.cmd-hint { margin-right: auto; font-size: 10px; color: var(--text-3); }
+        .cmd-empty { text-align: center; padding: 24px 10px; color: var(--text-3); font-size: 12px; }
+
         .welcome-screen {
             flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
             text-align: center; padding: 20px; animation: fadeIn 0.5s ease;
@@ -454,9 +531,20 @@
         .msg-avatar {
             width: 34px; height: 34px; border-radius: var(--radius-sm); flex-shrink: 0; display: flex;
             align-items: center; justify-content: center; font-size: 14px; margin-top: 2px;
+            position: relative; transition: box-shadow var(--transition-base);
         }
         .message.bot .msg-avatar { background: var(--grad-bold); color: white; }
         .message.user .msg-avatar { background: var(--bg-2); border: 1px solid var(--border); color: var(--text-2); }
+        /* حلقة نابضة حوالين أفاتار الشات وقت ما بيفكر/بيكتب فعليًا — إحساس
+           بصري إن في حاجة شغالة دلوقتي، مش بس نقط ثابتة تحت. */
+        .msg-avatar.thinking-pulse::after {
+            content: ''; position: absolute; inset: -4px; border-radius: inherit;
+            border: 2px solid var(--accent); opacity: 0; animation: avatarPulseRing 1.6s ease-out infinite;
+        }
+        @keyframes avatarPulseRing {
+            0% { opacity: .7; transform: scale(0.9); }
+            100% { opacity: 0; transform: scale(1.35); }
+        }
         
         .msg-content { flex: 1; min-width: 0; max-width: 100%; }
         .msg-bubble {
@@ -466,10 +554,18 @@
         .msg-bubble img, .msg-bubble video { max-width: 100%; height: auto; }
         .message.bot .msg-bubble {
             background: var(--bg-glass); border: 1px solid var(--border); border-top-right-radius: 4px;
+            box-shadow: 0 3px 14px -8px rgba(0,0,0,.4);
         }
         .message.user .msg-bubble {
             background: var(--grad-bold); background-size: 200% 200%; color: white; border-top-left-radius: 4px;
             animation: gradientFlow 8s ease infinite; box-shadow: 0 4px 16px -6px var(--accent-glow);
+        }
+        /* شارة مصدر الرد (إيموجي الموديل) بقت badge حقيقي مكان النص الرمادي
+           الخافت القديم — أوضح وأنضف بصريًا من غير ما تاخد مساحة زيادة. */
+        .msg-source-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 16px; height: 16px; border-radius: 50%; background: var(--bg-2);
+            border: 1px solid var(--border); font-size: 9px; margin-right: 5px; flex-shrink: 0;
         }
 
         /* Image attached/sent by the user, shown inline in the chat */
@@ -503,8 +599,9 @@
         .code-copy-btn:hover { color: var(--accent); opacity: 1; }
         .code-copy-btn.copied { color: #22c55e; border-color: #22c55e; }
         .code-lang-tag {
-            position: absolute; top: 9px; left: 40px; font-size: 10px; color: var(--text-3);
-            text-transform: uppercase; letter-spacing: 0.5px;
+            position: absolute; top: 7px; left: 38px; font-size: 9.5px; color: var(--text-3);
+            text-transform: uppercase; letter-spacing: 0.5px; background: var(--bg-2);
+            border: 1px solid var(--border); border-radius: var(--radius-xs); padding: 2px 8px; font-weight: 700;
         }
         .table-wrap {
             max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
@@ -591,6 +688,13 @@
            "كليني هادي" مفعّل، بتتبدّل بموجة نبض قلب (ECG) بدل منها — العنصر
            المميز (signature) بتاع الثيم ده بس، مش شكل عام للتطبيق كله. */
         .typing-indicator { display: none; gap: 10px; max-width: 80%; margin-bottom: 16px; }
+        /* حلقة نابضة على أفاتار مؤشر الكتابة نفسه (مش محتاجة أي تعديل JS —
+           بترتبط بنفس كلاس .active اللي بيتفعّل أصلًا وقت ما الشات بيرد) */
+        .typing-indicator.active .msg-avatar { position: relative; }
+        .typing-indicator.active .msg-avatar::after {
+            content: ''; position: absolute; inset: -4px; border-radius: inherit;
+            border: 2px solid var(--accent); opacity: 0; animation: avatarPulseRing 1.6s ease-out infinite;
+        }
         .typing-indicator.active { display: flex; }
         .typing-dots {
             display: flex; align-items: center; gap: 4px; padding: 14px 18px; background: var(--bg-glass);
@@ -1054,6 +1158,11 @@
         @keyframes callPulse { 0%,100% { box-shadow: 0 0 40px 6px rgba(139,92,246,.45);} 50% { box-shadow: 0 0 65px 20px rgba(139,92,246,.75);} }
         @keyframes callTalk { from { transform: scale(1); } to { transform: scale(1.07); } }
         .call-ring { position:absolute; inset:0; border-radius:50%; border:2px solid rgba(139,92,246,.35); animation: callRing 2.2s ease-out infinite; pointer-events:none; }
+        /* موجة صوتية حقيقية بترسم من مايك الطالب لحظة بلحظة (مش أنيميشن ثابت) —
+           بتلف حوالين الدائرة، وبتختفي تلقائيًا وقت ما يكون دور المساعد يتكلم
+           (شوف drawCallWaveform في الجافاسكريبت). */
+        .call-waveform { position: absolute; inset: -18px; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
+        .call-waveform.active { opacity: 1; }
         .call-ring:nth-child(3){ animation-delay: .75s; }
         @keyframes callRing { 0% { transform: scale(.76); opacity:.9;} 100% { transform: scale(1.5); opacity:0;} }
         .call-transcript-wrap { width:100%; max-width:340px; flex:1; min-height:0; display:flex; flex-direction:column; justify-content:flex-end; margin-top: 18px; overflow:hidden; }
