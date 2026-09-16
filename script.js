@@ -2601,6 +2601,8 @@
         }
 
         function createBotMessageShell(botMsg) {
+            const container = document.getElementById('chatContainer');
+            ensureDateDivider(container, botMsg.timestamp);
             const msgDiv = document.createElement('div');
             msgDiv.className = 'message bot';
             msgDiv.id = botMsg.id;
@@ -3716,8 +3718,39 @@
             prefetchTtsAudio(botMsg);
         }
 
+        // فاصل التاريخ فوق الرسايل (اليوم / أمس / اسم اليوم / التاريخ الكامل) — بيتحط
+        // تلقائي أول ما تاريخ الرسالة يختلف عن آخر فاصل موجود في الشات.
+        function formatChatDateLabel(timestamp) {
+            const d = new Date(timestamp);
+            const now = new Date();
+            const startOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
+            if (diffDays === 0) return 'اليوم';
+            if (diffDays === 1) return 'أمس';
+            if (diffDays > 1 && diffDays < 7) return d.toLocaleDateString('ar-EG', { weekday: 'long' });
+            const opts = { day: 'numeric', month: 'long' };
+            if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+            return d.toLocaleDateString('ar-EG', opts);
+        }
+
+        function ensureDateDivider(container, timestamp) {
+            const typingIndicator = document.getElementById('typingIndicator');
+            const dateKey = new Date(timestamp).toDateString();
+            const dividers = container.querySelectorAll('.chat-date-divider');
+            const lastDivider = dividers[dividers.length - 1];
+            if (lastDivider && lastDivider.dataset.dateKey === dateKey) return;
+            const divider = document.createElement('div');
+            divider.className = 'chat-date-divider';
+            divider.dataset.dateKey = dateKey;
+            const label = document.createElement('span');
+            label.textContent = formatChatDateLabel(timestamp);
+            divider.appendChild(label);
+            container.insertBefore(divider, typingIndicator);
+        }
+
         function appendMessageToDOM(msg, scroll = true) {
             const container = document.getElementById('chatContainer');
+            ensureDateDivider(container, msg.timestamp);
             const div = document.createElement('div');
             div.className = `message ${msg.role}`;
             div.id = msg.id || `msg-${Date.now()}`;
@@ -4734,6 +4767,38 @@
                 scrollScheduled = false;
             });
         }
+
+        // إخفاء تلقائي لشريط أدوات الهيدر (تحت اسم Chat X) أول ما الطالب يعمل
+        // اسكرول لفوق جوه المحادثة، عشان يدي مساحة أكبر لشات الطالب. الشريط
+        // بيرجع يظهر لما الطالب يعمل اسكرول لتحت تاني.
+        let taLastScrollTop = 0;
+        let taScrollTicking = false;
+        function initTopActionsAutoHide() {
+            const container = document.getElementById('chatContainer');
+            const topActions = document.getElementById('topActionsBar');
+            if (!container || !topActions) return;
+            taLastScrollTop = container.scrollTop;
+            container.addEventListener('scroll', () => {
+                if (taScrollTicking) return;
+                taScrollTicking = true;
+                requestAnimationFrame(() => {
+                    const current = container.scrollTop;
+                    const delta = current - taLastScrollTop;
+                    if (Math.abs(delta) > 6) {
+                        if (delta < 0) {
+                            // بيعمل اسكرول لفوق -> نخبي الأدوات
+                            topActions.classList.add('top-actions-hidden');
+                        } else {
+                            // بيعمل اسكرول لتحت -> نرجع نظهر الأدوات
+                            topActions.classList.remove('top-actions-hidden');
+                        }
+                        taLastScrollTop = current;
+                    }
+                    taScrollTicking = false;
+                });
+            }, { passive: true });
+        }
+        document.addEventListener('DOMContentLoaded', initTopActionsAutoHide);
 
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => showToast('تم النسخ', 'success'))
