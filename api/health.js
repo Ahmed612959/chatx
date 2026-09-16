@@ -45,12 +45,12 @@ const PROVIDERS = [
     })
   },
   {
-    name: 'mistral',
-    envKey: 'MISTRAL_API_KEY',
-    ping: (key) => fetch('https://api.mistral.ai/v1/chat/completions', {
+    name: 'cometapiChat',
+    envKey: 'COMETAPI_CHAT_API_KEY',
+    ping: (key) => fetch('https://api.cometapi.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'mistral-small-latest', messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 })
+      body: JSON.stringify({ model: 'gpt-oss-20b-free', messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 })
     })
   },
   {
@@ -104,7 +104,7 @@ export default async function handler(request) {
         geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
         openrouterConfigured: Boolean(process.env.OPENROUTER_API_KEY),
         cerebrasConfigured: Boolean(process.env.CEREBRAS_API_KEY),
-        mistralConfigured: Boolean(process.env.MISTRAL_API_KEY),
+        cometapiChatConfigured: Boolean(process.env.COMETAPI_CHAT_API_KEY),
         sambanovaConfigured: Boolean(process.env.SAMBANOVA_API_KEY),
         qwenConfigured: Boolean(process.env.QWEN_API_KEY),
         deepseekConfigured: Boolean(process.env.DEEPSEEK_API_KEY),

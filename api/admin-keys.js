@@ -17,12 +17,12 @@ import { listManagedKeys, addManagedKey, deleteManagedKey, revealManagedKey, kvC
 // في تعليق أعلى api/tts-polly.js.
 const MANAGED_KEYS = [
   { env: 'COMETAPI_API_KEY', label: 'CometAPI (صوت Kling TTS للمكالمة)' },
+  { env: 'COMETAPI_CHAT_API_KEY', label: 'CometAPI (GPT-OSS للشات النصي)' },
   { env: 'GROQ_API_KEY', label: 'Groq (رد سريع + Whisper للتعرف على الصوت)' },
   { env: 'GEMINI_API_KEY', label: 'Gemini' },
   { env: 'DEEPSEEK_API_KEY', label: 'DeepSeek' },
   { env: 'QWEN_API_KEY', label: 'Qwen' },
   { env: 'OPENROUTER_API_KEY', label: 'OpenRouter' },
-  { env: 'MISTRAL_API_KEY', label: 'Mistral' },
   { env: 'SAMBANOVA_API_KEY', label: 'SambaNova' },
   { env: 'CEREBRAS_API_KEY', label: 'Cerebras' },
   { env: 'PREMIUM_MODEL_API_KEY', label: 'Claude Opus (Premium)' },
