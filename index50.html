@@ -3378,7 +3378,12 @@
                 try {
                     const res = await fetch(url, { ...options, signal: attemptController.signal });
                     if (res.ok || res.status < 500) return res; // نجح، أو فشل بشكل ثابت (4xx) — مفيش داعي نكرر
-                    lastErr = new Error(`Server error ${res.status}`);
+                    // بنحاول نقرا جسم الرد (فيه تفاصيل الخطأ الحقيقي من المزوّد،
+                    // زي رسالة CometAPI أو أي مزوّد تاني) عشان تبان في الـ console
+                    // بدل ما تفضل مجرد "Server error 503" من غير أي تفاصيل.
+                    let errDetail = '';
+                    try { errDetail = (await res.clone().text()).slice(0, 300); } catch (e) {}
+                    lastErr = new Error(`Server error ${res.status}${errDetail ? ' — ' + errDetail : ''}`);
                 } catch (err) {
                     if (outerSignal && outerSignal.aborted) { const abortErr = new Error('Aborted'); abortErr.name = 'AbortError'; throw abortErr; } // المستخدم ألغى بنفسه
                     lastErr = (err.name === 'AbortError') ? new Error('Provider timeout') : err; // مهلتنا إحنا، مش إلغاء المستخدم — نكمل للمحاولة/المزود التالي

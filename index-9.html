@@ -4863,7 +4863,12 @@
                         return res;
                     }
                     if (outerSignal) outerSignal.removeEventListener('abort', onOuterAbort);
-                    lastErr = new Error(`Server error ${res.status}`);
+                    // بنحاول نقرا جسم الرد (فيه تفاصيل الخطأ الحقيقي من المزوّد،
+                    // زي رسالة CometAPI أو أي مزوّد تاني) عشان تبان في الـ console
+                    // بدل ما تفضل مجرد "Server error 503" من غير أي تفاصيل.
+                    let errDetail = '';
+                    try { errDetail = (await res.clone().text()).slice(0, 300); } catch (e) {}
+                    lastErr = new Error(`Server error ${res.status}${errDetail ? ' — ' + errDetail : ''}`);
                 } catch (err) {
                     clearTimeout(timeoutId);
                     if (outerSignal) outerSignal.removeEventListener('abort', onOuterAbort);
