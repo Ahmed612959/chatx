@@ -167,6 +167,19 @@
         .apikey-add-row input { flex: 1 1 auto; margin-bottom: 0; }
         .apikey-add-row button { flex: 0 0 auto; white-space: nowrap; padding-left: 14px; padding-right: 14px; }
     }
+    /* بطاقة "إضافة مزوّد جديد" — نفس شكل apikey-row بس بحدود متقطعة عشان
+       تتفرّق بصريًا عن مزوّدين الكود الجاهزين (Qwen، Grok...). */
+    .apikey-row.add-provider-row { border-style: dashed; border-color: var(--accent); }
+    .apikey-row.add-provider-row .apikey-title { color: var(--accent); }
+    .apikey-row.add-provider-row input { margin-bottom: 8px; }
+    .apikey-remove-provider {
+        background: transparent; border: 1px solid rgba(239,68,68,.4); color: var(--danger);
+        border-radius: 8px; font-size: 10.5px; padding: 4px 9px; cursor: pointer; flex-shrink: 0;
+    }
+    .apikey-custom-badge {
+        font-size: 9.5px; padding: 2px 7px; border-radius: 20px; background: rgba(99,102,241,.15); color: var(--accent);
+    }
+    .apikey-custom-badge.not-wired { background: rgba(239,68,68,.15); color: var(--danger); }
     #editSheet {
         background: var(--bg-2); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
         max-height: 88vh; overflow-y: auto; padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
@@ -293,6 +306,22 @@
                     <div class="code">Qwen، Grok، وأي مزوّد تاني — بيتحفظوا في الداتابيز، من غير ما تحتاج Redeploy</div>
                 </div>
                 <button class="close-sheet" onclick="closeApiKeysSheet()"><i class="fas fa-times"></i></button>
+            </div>
+            <!-- إضافة أي مزوّد/موديل ذكاء اصطناعي مش موجود في القايمة تحت — بيتحفظ
+                 بنفس طريقة باقي المفاتيح، وهيظهر تلقائيًا كصف عادي بعد الإضافة.
+                 رابط الـ API واسم الموديل مطلوبين عشان الموديل يشتغل فعليًا في
+                 السلسلة الاحتياطية للشات (لازم يكون متوافق مع OpenAI Chat
+                 Completions API زي أغلب المزوّدين المجانيين). لو سبتهم فاضيين،
+                 المفتاح هيتحفظ بس مش هيتستخدم في أي حاجة لحد ما تضيفهم. -->
+            <div class="apikey-row add-provider-row">
+                <div class="apikey-title"><span><i class="fas fa-plus-circle"></i> إضافة موديل/مزوّد جديد</span></div>
+                <div class="apikey-meta">لازم يكون المزوّد متوافق مع OpenAI Chat Completions API (زي Groq وOpenRouter وأغلب المزوّدين المجانيين) عشان يشتغل فعليًا في سلسلة الشات الاحتياطية.</div>
+                <input type="text" id="newProviderKey" placeholder="اسم المزوّد (بالإنجليزي، من غير مسافات)... مثلاً: openai" autocomplete="off">
+                <input type="text" id="newProviderLabel" placeholder="اسم مختصر يظهر في القايمة (اختياري)..." autocomplete="off">
+                <input type="text" id="newProviderBaseUrl" placeholder="رابط الـ API الكامل... مثلاً: https://api.example.com/v1/chat/completions" autocomplete="off">
+                <input type="text" id="newProviderModel" placeholder="اسم الموديل بالظبط... مثلاً: gpt-4o-mini" autocomplete="off">
+                <input type="text" id="newProviderKeyValue" placeholder="الصق مفتاح API هنا..." autocomplete="off">
+                <button class="btn" onclick="addCustomProvider()"><i class="fas fa-plus"></i> إضافة المزوّد</button>
             </div>
             <div id="apiKeysList"></div>
         </div>
@@ -492,10 +521,20 @@
     // كل مزوّد ممكن يكون ليه أكتر من مفتاح — لو مفتاح فشل، النظام بيتحول
     // للمفتاح اللي بعده لنفس المزوّد تلقائيًا.
     const KNOWN_PROVIDERS = [
-        { key: 'qwen', label: 'Qwen', hint: 'مفتاح DashScope الرسمي — من dashscope.console.aliyun.com' },
+        { key: 'qwen', label: 'Qwen (تحليل صور)', hint: 'مفتاح DashScope الرسمي — من dashscope.console.aliyun.com' },
         { key: 'grok', label: 'Grok (عن طريق CometAPI)', hint: 'مفتاح CometAPI — من api.cometapi.com — بيدعم تعديل صور' },
         { key: 'flux', label: 'Flux 2 Max (عن طريق CometAPI)', hint: 'مفتاح CometAPI — من api.cometapi.com — بيدعم تعديل صور وتحديد أبعاد الصورة' },
-        { key: 'grok-video', label: 'Grok Video (عن طريق CometAPI)', hint: 'مفتاح CometAPI — من api.cometapi.com — لإنشاء فيديو (10 ثواني، 480p) من نص أو صورة — مكلّف نسبيًا' }
+        { key: 'grok-video', label: 'Grok Video (عن طريق CometAPI)', hint: 'مفتاح CometAPI — من api.cometapi.com — لإنشاء فيديو (10 ثواني، 480p) من نص أو صورة — مكلّف نسبيًا' },
+        // موديلات النص "العادية" (الشات الرئيسي، تحسين وصف الصورة...) — كل واحد
+        // فيهم بقى بيدار من هنا زي الصور بالظبط (أكتر من مفتاح + تبديل تلقائي).
+        { key: 'gemini', label: 'Gemini', hint: 'مفتاح Google AI Studio — aistudio.google.com/apikey' },
+        { key: 'deepseek', label: 'DeepSeek', hint: 'مفتاح DeepSeek — platform.deepseek.com' },
+        { key: 'groq', label: 'Groq', hint: 'مفتاح Groq — console.groq.com' },
+        { key: 'cometapi-chat', label: 'GPT-OSS (عن طريق CometAPI)', hint: 'مفتاح CometAPI مخصّص للنص — منفصل عمدًا عن مفتاح Grok/Flux فوق' },
+        { key: 'sambanova', label: 'SambaNova', hint: 'مفتاح SambaNova Cloud — cloud.sambanova.ai' },
+        { key: 'qwen-chat', label: 'Qwen (شات نصي)', hint: 'ممكن يكون نفس مفتاح Qwen فوق (DashScope) أو مفتاح منفصل' },
+        { key: 'openrouter', label: 'OpenRouter', hint: 'مفتاح OpenRouter — openrouter.ai/keys' },
+        { key: 'onehop', label: 'OneHop', hint: 'مفتاح مجاني احتياطي إضافي عن طريق OpenRouter' }
     ];
 
     let revealedKeys = {}; // { "provider:keyId": "المفتاح الكامل" } — مؤقت في الذاكرة بس
@@ -520,7 +559,27 @@
         try {
             const saved = await apiFetch('/api/admin/api-keys');
             const savedMap = new Map(saved.map(s => [s.provider, s]));
-            listEl.innerHTML = KNOWN_PROVIDERS.map(p => {
+
+            // أي مزوّد اتضاف من الأدمن نفسه (من فورم "إضافة موديل/مزوّد جديد" تحت)
+            // ومش من مزوّدين الكود الجاهزين — بيتعرض برضه بنفس الشكل، مع علامة
+            // "مخصّص" وزرار حذف كامل للمزوّد (بعكس مزوّدين الكود اللي مينفعش تتمسح
+            // خالص، لأن الكود بيعتمد عليها بالاسم).
+            const knownKeysSet = new Set(KNOWN_PROVIDERS.map(p => p.key));
+            const customProviders = saved
+                .filter(s => !knownKeysSet.has(s.provider))
+                .map(s => ({
+                    key: s.provider,
+                    label: s.provider,
+                    hint: (s.baseUrl && s.model)
+                        ? `مزوّد مخصّص — شغال فعليًا عبر: ${s.baseUrl} (موديل: ${s.model})`
+                        : 'مزوّد مخصّص — بس مفيش رابط API أو اسم موديل محفوظ ليه، فالمفتاح متخزّن بس مش بيتستخدم. امسحه وضيفه تاني من الفورم فوق مع الرابط والموديل عشان يشتغل.',
+                    custom: true,
+                    wired: !!(s.baseUrl && s.model)
+                }));
+
+            const allProviders = [...KNOWN_PROVIDERS, ...customProviders];
+
+            listEl.innerHTML = allProviders.map(p => {
                 const existing = savedMap.get(p.key);
                 const keys = existing?.keys || [];
                 const keysHtml = keys.length ? keys.map(k => {
@@ -541,10 +600,13 @@
                 return `
                     <div class="apikey-row">
                         <div class="apikey-title">
-                            <span>${p.label}</span>
-                            <span style="font-size:10.5px;color:var(--text-3);">${keys.length} مفتاح</span>
+                            <span>${escapeHtmlLocal(p.label)} ${p.custom ? `<span class="apikey-custom-badge${p.wired ? '' : ' not-wired'}">${p.wired ? 'مخصّص — شغال' : 'مخصّص — مش شغال'}</span>` : ''}</span>
+                            <span style="display:flex;align-items:center;gap:6px;">
+                                <span style="font-size:10.5px;color:var(--text-3);">${keys.length} مفتاح</span>
+                                ${p.custom ? `<button class="apikey-remove-provider" title="حذف المزوّد بالكامل" onclick="deleteProviderAll('${p.key}')"><i class="fas fa-trash"></i> حذف المزوّد</button>` : ''}
+                            </span>
                         </div>
-                        <div class="apikey-meta">${p.hint}</div>
+                        <div class="apikey-meta">${escapeHtmlLocal(p.hint)}</div>
                         ${keysHtml}
                         <div class="apikey-add-row">
                             <input type="text" id="apikeyInput_${p.key}" placeholder="الصق مفتاح جديد هنا..." autocomplete="off">
@@ -552,9 +614,68 @@
                         </div>
                     </div>
                 `;
-            }).join('');
+            }).join('') || '<div style="font-size:11px;color:var(--text-3);text-align:center;padding:10px;">مفيش مزوّدين لسه — ضيف واحد من الفورم فوق</div>';
         } catch (e) {
             listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">${e.message}</div>`;
+        }
+    }
+
+    // إضافة مزوّد جديد بالكامل (اسم + مفتاح أول + رابط API + اسم موديل) من
+    // الفورم اللي فوق القايمة — بيستخدم نفس /api/admin/api-keys الموجود، بعد ما
+    // بقى بيقبل baseUrl/model كمان عشان المزوّد يشتغل فعليًا في سلسلة الشات
+    // الاحتياطية (مش يتخزن بس من غير استخدام).
+    async function addCustomProvider() {
+        const keyInput = document.getElementById('newProviderKey');
+        const labelInput = document.getElementById('newProviderLabel');
+        const baseUrlInput = document.getElementById('newProviderBaseUrl');
+        const modelInput = document.getElementById('newProviderModel');
+        const valueInput = document.getElementById('newProviderKeyValue');
+        const providerRaw = keyInput.value.trim();
+        const label = labelInput.value.trim();
+        const baseUrl = baseUrlInput.value.trim();
+        const model = modelInput.value.trim();
+        const apiKey = valueInput.value.trim();
+
+        if (!providerRaw) { showToast('اكتب اسم المزوّد الأول', 'error'); return; }
+        const provider = providerRaw.toLowerCase().replace(/\s+/g, '-');
+        if (!/^[a-z0-9._-]+$/.test(provider)) {
+            showToast('اسم المزوّد لازم يكون بالإنجليزي بس (حروف/أرقام/- فقط)', 'error');
+            return;
+        }
+        if (KNOWN_PROVIDERS.some(p => p.key === provider)) {
+            showToast('المزوّد ده موجود بالفعل في القايمة تحت — ضيف المفتاح من هناك', 'error');
+            return;
+        }
+        if (!apiKey) { showToast('الصق المفتاح الأول', 'error'); return; }
+        if ((baseUrl && !model) || (!baseUrl && model)) {
+            showToast('رابط الـ API واسم الموديل لازم الاتنين مع بعض عشان المزوّد يشتغل فعليًا', 'error');
+            return;
+        }
+        if (baseUrl && !/^https:\/\//i.test(baseUrl)) {
+            showToast('رابط الـ API لازم يبدأ بـ https://', 'error');
+            return;
+        }
+
+        try {
+            await apiFetch('/api/admin/api-keys', { method: 'POST', body: JSON.stringify({ provider, apiKey, label, baseUrl, model }) });
+            keyInput.value = ''; labelInput.value = ''; baseUrlInput.value = ''; modelInput.value = ''; valueInput.value = '';
+            showToast(baseUrl ? `اتضاف مزوّد "${provider}" وهيشتغل فورًا` : `اتضاف مزوّد "${provider}" — دلوقتي هو مجرد مفتاح متخزّن (مفيش رابط/موديل)`, 'success');
+            await loadApiKeys();
+        } catch (e) {
+            showToast(e.message || 'تعذر إضافة المزوّد', 'error');
+        }
+    }
+
+    // حذف مزوّد مخصّص بالكامل (كل مفاتيحه مرة واحدة) — متاح بس للمزوّدين
+    // المخصّصين (مش مزوّدين الكود الجاهزين زي qwen/grok اللي الكود بيعتمد عليهم بالاسم).
+    async function deleteProviderAll(provider) {
+        if (!confirm(`متأكد إنك عايز تمسح مزوّد "${provider}" بكل مفاتيحه؟`)) return;
+        try {
+            await apiFetch(`/api/admin/api-keys/${provider}`, { method: 'DELETE' });
+            showToast('اتمسح المزوّد بالكامل', 'success');
+            await loadApiKeys();
+        } catch (e) {
+            showToast(e.message || 'تعذر حذف المزوّد', 'error');
         }
     }
 
