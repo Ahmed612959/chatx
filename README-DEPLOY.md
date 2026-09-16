@@ -14,7 +14,7 @@
    - `GEMINI_API_KEY` = مفتاحك من Gemini
    - `OPENROUTER_API_KEY` = مفتاحك من OpenRouter (اختياري)
    - `CEREBRAS_API_KEY` = مفتاحك من Cerebras (اختياري)
-   - `MISTRAL_API_KEY` = مفتاحك من Mistral (اختياري) — من [https://console.mistral.ai](https://console.mistral.ai)
+   - `COMETAPI_CHAT_API_KEY` = مفتاحك من CometAPI (اختياري، ومنفصل عمدًا عن مفتاح صوت Kling TTS) — من [https://www.cometapi.com/console/token](https://www.cometapi.com/console/token) — بيشغّل موديل النص gpt-oss-20b-free بدل Mistral اللي اتشال. ممكن تضيف أكتر من مفتاح من صفحة admin-apikeys.html بدل ما تحطه هنا
    - `QWEN_API_KEY` = مفتاحك من Qwen / DashScope (اختياري) — من [https://dashscope.console.aliyun.com](https://dashscope.console.aliyun.com)
    - `DASHSCOPE_API_KEY` = نفس نوع مفتاح DashScope/Model Studio (اختياري — لتحليل الصور عن طريق موديل Qwen-VL؛ لو `QWEN_API_KEY` موجود أصلاً هيستخدمه تلقائي كبديل)
    - `DEEPSEEK_API_KEY` = مفتاحك من DeepSeek (اختياري) — من [https://platform.deepseek.com](https://platform.deepseek.com)

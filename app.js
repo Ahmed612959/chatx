@@ -3687,7 +3687,7 @@ marked.setOptions({ breaks: true, gfm: true });
             const sourceSpan = msgDiv.querySelector('.msg-source-icon');
             const actionsDiv = msgDiv.querySelector('.msg-actions');
             timeSpan.textContent = new Date(botMsg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
-            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'claude-opus' ? '✨' : botMsg.source === 'mistral' ? '🌬️' : botMsg.source === 'sambanova' ? '🚀' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'onehop' ? '🐋' : botMsg.source === 'zimage' ? '🖼️' : '💻';
+            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'claude-opus' ? '✨' : botMsg.source === 'mistral' ? '🤖' : botMsg.source === 'sambanova' ? '🚀' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'onehop' ? '🐋' : botMsg.source === 'zimage' ? '🖼️' : '💻';
             // This message was just pushed as the newest one, so it's always eligible for regenerate.
             buildMsgActionButtons(botMsg, actionsDiv, true);
             syncRegenerateButtons(chats.find(c => c.id === currentChatId));
@@ -3798,7 +3798,7 @@ marked.setOptions({ breaks: true, gfm: true });
                 const sourceSpan = document.createElement('span');
                 sourceSpan.className = 'msg-source-badge';
                 sourceSpan.title = 'مصدر الرد';
-                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'claude-opus' ? '✨' : msg.source === 'mistral' ? '🌬️' : msg.source === 'sambanova' ? '🚀' : msg.source === 'qwen' ? '🐉' : msg.source === 'onehop' ? '🐋' : msg.source === 'zimage' ? '🖼️' : '💻';
+                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'claude-opus' ? '✨' : msg.source === 'mistral' ? '🤖' : msg.source === 'sambanova' ? '🚀' : msg.source === 'qwen' ? '🐉' : msg.source === 'onehop' ? '🐋' : msg.source === 'zimage' ? '🖼️' : '💻';
                 meta.appendChild(sourceSpan);
             }
 
@@ -4178,7 +4178,7 @@ marked.setOptions({ breaks: true, gfm: true });
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model: "mistral-small-latest",
+                    model: "gpt-oss-20b-free",
                     messages: [{role: "system", content: getSystemPrompt()}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
                     stream: true
                 }),
@@ -4189,7 +4189,7 @@ marked.setOptions({ breaks: true, gfm: true });
                 let detail = '';
                 try { detail = (await response.text()).slice(0, 200); } catch (e) {}
                 console.error('Mistral API error', response.status, detail);
-                throw new Error(`Mistral API Error (${response.status}): ${detail || 'no detail'}`);
+                throw new Error(`GPT-OSS API Error (${response.status}): ${detail || 'no detail'}`);
             }
 
             const reader = response.body.getReader();
@@ -6034,7 +6034,7 @@ marked.setOptions({ breaks: true, gfm: true });
         // الرضا)، وتحته آخر 15 تقييم سلبي كأمثلة حقيقية سريعة من غير ما يفتح كل رسالة لوحدها.
         const RATING_MODEL_NAMES = {
             groq: 'Groq', gemini: 'Gemini', 'german-teacher': 'معلم الألماني', openrouter: 'OpenRouter',
-            cerebras: 'Cerebras', 'claude-opus': 'Claude', mistral: 'Mistral', sambanova: 'SambaNova',
+            cerebras: 'Cerebras', 'claude-opus': 'Claude', mistral: 'GPT-OSS', sambanova: 'SambaNova',
             qwen: 'Qwen', onehop: 'DeepSeek/OpenRouter', zimage: 'تحليل الصور', local: 'محلي', unknown: 'غير معروف'
         };
         async function loadAdminRatingsSummary() {

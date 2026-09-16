@@ -114,7 +114,7 @@ const DASHSCOPE_API_KEY = process.env.DASHSCOPE_API_KEY || '';
 // احتياطي (fallback) لفيتشرز نصية زي "تحسين وصف الصورة" — Cerebras وOneHop
 // (النسخة القديمة، claude-opus) مستبعدين عمدًا لأنهم مخصصين لميزة premium_ai.
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
-const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY || '';
+const COMETAPI_KEY = process.env.COMETAPI_KEY || '';
 const SAMBANOVA_API_KEY = process.env.SAMBANOVA_API_KEY || '';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 // ONEHOP_API_KEY في مشروع chatx بقى فعليًا مفتاح OpenRouter (بنفس الاسم القديم
@@ -5781,7 +5781,7 @@ const TEXT_AI_FAILOVER_CHAIN = [
     { key: 'gemini', label: 'Gemini', enabled: () => !!GEMINI_API_KEY, run: (sys, user, max) => callGeminiJSON(sys, user, max) },
     { key: 'deepseek', label: 'DeepSeek', enabled: () => !!DEEPSEEK_API_KEY, run: (sys, user, max) => callDeepSeekJSON(sys, user, max) },
     { key: 'groq', label: 'Groq', enabled: () => !!GROQ_API_KEY, run: (sys, user, max) => callOpenAICompatJSON('https://api.groq.com/openai/v1/chat/completions', GROQ_API_KEY, 'openai/gpt-oss-20b', sys, user, max) },
-    { key: 'mistral', label: 'Mistral', enabled: () => !!MISTRAL_API_KEY, run: (sys, user, max) => callOpenAICompatJSON('https://api.mistral.ai/v1/chat/completions', MISTRAL_API_KEY, 'mistral-small-latest', sys, user, max) },
+    { key: 'mistral', label: 'GPT-OSS (CometAPI)', enabled: () => !!COMETAPI_KEY, run: (sys, user, max) => callOpenAICompatJSON('https://api.cometapi.com/v1/chat/completions', COMETAPI_KEY, 'gpt-oss-20b-free', sys, user, max) },
     { key: 'sambanova', label: 'SambaNova', enabled: () => !!SAMBANOVA_API_KEY, run: (sys, user, max) => callOpenAICompatJSON('https://api.sambanova.ai/v1/chat/completions', SAMBANOVA_API_KEY, 'Meta-Llama-3.3-70B-Instruct', sys, user, max) },
     { key: 'qwen-chat', label: 'Qwen', enabled: () => !!QWEN_CHAT_API_KEY, run: (sys, user, max) => callOpenAICompatJSON('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', QWEN_CHAT_API_KEY, 'qwen-plus', sys, user, max) },
     { key: 'openrouter', label: 'OpenRouter', enabled: () => !!OPENROUTER_API_KEY, run: (sys, user, max) => callOpenAICompatJSON('https://openrouter.ai/api/v1/chat/completions', OPENROUTER_API_KEY, 'openrouter/free', sys, user, max, { 'HTTP-Referer': 'https://school-x.vercel.app', 'X-Title': 'School X' }) },
@@ -10752,7 +10752,7 @@ const API_PRICING = {
   'cerebras':            { label: 'GPT-OSS-120B عبر Cerebras (premium_ai)', inputPerM: 0.35, outputPerM: 0.75, avgOutputTokens: 500 },
   'claude-opus':         { label: 'gpt-5.6-sol عبر OneHop (premium_ai)', inputPerM: null, outputPerM: null, avgOutputTokens: 500 },
   'groq':                { label: 'gpt-oss-20b عبر Groq', inputPerM: null, outputPerM: null, avgOutputTokens: 500 },
-  'mistral':             { label: 'mistral-small-latest', inputPerM: null, outputPerM: null, avgOutputTokens: 500 },
+  'mistral':             { label: 'gpt-oss-20b-free عبر CometAPI', inputPerM: 0, outputPerM: 0, avgOutputTokens: 500 },
   'sambanova':           { label: 'Llama-3.3-70B عبر SambaNova', inputPerM: null, outputPerM: null, avgOutputTokens: 500 },
   'qwen':                { label: 'qwen-plus', inputPerM: null, outputPerM: null, avgOutputTokens: 500 },
   'onehop':              { label: 'موديل مجاني عبر OneHop (:free)', inputPerM: 0, outputPerM: 0, avgOutputTokens: 500 },

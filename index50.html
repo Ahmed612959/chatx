@@ -1012,7 +1012,7 @@
                         <option value="german-teacher">🇩🇪 معلم الألماني</option>
                         <option value="openrouter">🔀 OpenRouter</option>
                         <option value="cerebras" id="cerebrasModelOption">🧠 Cerebras</option>
-                        <option value="mistral">🌬️ Mistral</option>
+                        <option value="mistral">🤖 GPT-OSS</option>
                         <option value="sambanova">🚀 SambaNova</option>
                         <option value="qwen">🐉 Qwen</option>
                         <option value="zimage">🖼️ تحليل الصور</option>
@@ -3147,7 +3147,7 @@
             const sourceSpan = msgDiv.querySelector('.msg-source-icon');
             const actionsDiv = msgDiv.querySelector('.msg-actions');
             timeSpan.textContent = new Date(botMsg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
-            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'mistral' ? '🌬️' : botMsg.source === 'sambanova' ? '🚀' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'zimage' ? '🖼️' : '💻';
+            sourceSpan.textContent = botMsg.source === 'groq' ? '⚡' : botMsg.source === 'gemini' ? '🌟' : botMsg.source === 'openrouter' ? '🔀' : botMsg.source === 'cerebras' ? '🧠' : botMsg.source === 'mistral' ? '🤖' : botMsg.source === 'sambanova' ? '🚀' : botMsg.source === 'qwen' ? '🐉' : botMsg.source === 'zimage' ? '🖼️' : '💻';
             // This message was just pushed as the newest one, so it's always eligible for regenerate.
             buildMsgActionButtons(botMsg, actionsDiv, true);
             syncRegenerateButtons(chats.find(c => c.id === currentChatId));
@@ -3195,7 +3195,7 @@
             if (msg.role === 'bot') {
                 const sourceSpan = document.createElement('span');
                 sourceSpan.style.cssText = 'margin-right:6px;opacity:0.6';
-                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'mistral' ? '🌬️' : msg.source === 'sambanova' ? '🚀' : msg.source === 'qwen' ? '🐉' : msg.source === 'zimage' ? '🖼️' : '💻';
+                sourceSpan.textContent = msg.source === 'groq' ? '⚡' : msg.source === 'gemini' ? '🌟' : msg.source === 'openrouter' ? '🔀' : msg.source === 'cerebras' ? '🧠' : msg.source === 'mistral' ? '🤖' : msg.source === 'sambanova' ? '🚀' : msg.source === 'qwen' ? '🐉' : msg.source === 'zimage' ? '🖼️' : '💻';
                 meta.appendChild(sourceSpan);
             }
 
@@ -3612,7 +3612,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model: "mistral-small-latest",
+                    model: "gpt-oss-20b-free",
                     messages: [{role: "system", content: getSystemPrompt()}, ...messages.map(m => ({role: m.role === 'user' ? 'user' : 'assistant', content: m.content}))],
                     stream: true
                 }),
@@ -3623,7 +3623,7 @@
                 let detail = '';
                 try { detail = (await response.text()).slice(0, 200); } catch (e) {}
                 console.error('Mistral API error', response.status, detail);
-                throw new Error(`Mistral API Error (${response.status}): ${detail || 'no detail'}`);
+                throw new Error(`GPT-OSS API Error (${response.status}): ${detail || 'no detail'}`);
             }
 
             document.getElementById('typingIndicator').classList.remove('active');
