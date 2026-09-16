@@ -13,7 +13,7 @@ import { attemptWithFailover } from './_keystore.js';
 // ====================================================================================
 
 const COMETAPI_URL = 'https://api.cometapi.com/v1/chat/completions';
-const COMET_MODEL = 'gpt-oss-20b-free';
+const COMET_MODEL = 'gpt-5-nano-2025-08-07';
 
 export default async function handler(request) {
   try {
