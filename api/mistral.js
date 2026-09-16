@@ -64,6 +64,12 @@ export default async function handler(request) {
     await reportApiUsage('mistral', body.length);
 
     if (!upstream.ok || !upstream.body) {
+      // نسجّل تفاصيل الخطأ في Vercel Function Logs كمان (مش بس في رد المتصفح)
+      // عشان تقدر تشوفه حتى لو الطالب مبعتلكش سكرين شوت للـ console.
+      try {
+        const errText = await upstream.clone().text();
+        console.error(`⚠️ CometAPI رجّع status ${upstream.status}:`, errText.slice(0, 500));
+      } catch (e) {}
       return new Response(upstream.body, {
         status: upstream.status,
         headers: { 'Content-Type': upstream.headers.get('content-type') || 'application/json' }
