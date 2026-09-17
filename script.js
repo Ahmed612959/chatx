@@ -4768,23 +4768,27 @@
             });
         }
 
-        // إخفاء تلقائي لمربع أدوات الهيدر (تحت اسم Chat X) أول ما الطالب يعمل
-        // اسكرول لفوق جوه المحادثة، عشان يدي مساحة أكبر لشات الطالب. المربع
-        // بيرجع يظهر لما الطالب يعمل اسكرول لتحت تاني.
+        // إظهار/إخفاء مربع أدوات الهيدر (تحت اسم Chat X) حسب موضع السكرول:
+        // بيبان بس وإحنا في أول المحادثة بالظبط، وبيختفي أول ما نبعد عن
+        // القمة بمسافة محسوسة، عشان يدي أكبر مساحة ممكنة لشات الطالب على
+        // أي جهاز (موبايل أساسًا). بيرجع يظهر بس لو رجعنا لفوق تاني.
         //
         // ملاحظات أداء مهمة عشان الحركة تبقى سلسة ومتعلقش:
         // 1) بنقيس ارتفاع مربع الأدوات مرة واحدة بس (مش في كل حدث سكرول) ونثبته
         //    في متغير CSS، عشان نتجنب قراءة الـ layout بشكل متكرر أثناء السكرول
         //    (ده اسمه "layout thrashing" وهو سبب رئيسي لتعليق الأنيميشن).
-        // 2) بنحط "cooldown" بسيط بين كل تبديل والتاني عشان سكرول الموبايل
-        //    السريع (اللي بيبعت عشرات الأحداث في الثانية) ميقلبش الحالة
-        //    (إظهار/إخفاء) كذا مرة في نفس الوقت.
-        // 3) بنمسك حدث الاسكرول على مستوى document بـ capture:true عشان نلقط
-        //    الاسكرول أيًا كان العنصر اللي بيسكرول فعليًا جواه.
+        // 2) الاستماع للسكرول بيتم على #chatContainer نفسه (مش document)، وده
+        //    أدق من مسك أي سكرول عام: بيشتغل صح على كل الأجهزة (موبايل/تابلت/
+        //    كمبيوتر) ومبيتأثرش بسكرول جوه عناصر تانية زي بلوكات الكود، لأن
+        //    حدث scroll مبيعملش bubble أصلاً لعناصر الأب.
+        // 3) بنستخدم حدّين مختلفين للإظهار والإخفاء (hysteresis) عشان الحالة
+        //    متترجرجش وهي قريبة من القمة، وبنلف كل قراءة/تغيير جوه
+        //    requestAnimationFrame عشان السكرول السريع على الموبايل ميعملش
+        //    عشرات التبديلات في الثانية.
         function initTopActionsAutoHide() {
             const wrap = document.getElementById('topActionsWrap');
-            const chatArea = document.getElementById('mainContent');
-            if (!wrap || !chatArea) return;
+            const chatContainer = document.getElementById('chatContainer');
+            if (!wrap || !chatContainer) return;
 
             function measureHeight() {
                 const wasHidden = wrap.classList.contains('top-actions-hidden');
@@ -4797,39 +4801,34 @@
             window.addEventListener('resize', measureHeight, { passive: true });
             window.addEventListener('orientationchange', measureHeight, { passive: true });
 
-            const taLastScrollMap = new WeakMap();
+            const SHOW_AT = 4;   // اظهر لما نبقى قريبين جدًا من قمة المحادثة
+            const HIDE_AT = 48;  // اخفي بعد ما نبعد عن القمة بمسافة محسوسة
             let isHiddenState = false;
-            let lastToggleTime = 0;
             let rafPending = false;
 
-            document.addEventListener('scroll', (e) => {
-                const target = e.target;
-                const el = (target === document) ? (document.scrollingElement || document.documentElement) : target;
-                if (!el || el.nodeType !== 1) return;
-                // نتجاهل أي اسكرول برا منطقة الشات (زي المودالز التانية)
-                if (el !== chatArea && !chatArea.contains(el)) return;
+            function applyState(scrollTop) {
+                if (!isHiddenState && scrollTop > HIDE_AT) {
+                    wrap.classList.add('top-actions-hidden');
+                    isHiddenState = true;
+                } else if (isHiddenState && scrollTop <= SHOW_AT) {
+                    wrap.classList.remove('top-actions-hidden');
+                    isHiddenState = false;
+                }
+            }
 
-                const current = el.scrollTop;
-                const last = taLastScrollMap.has(el) ? taLastScrollMap.get(el) : current;
-                taLastScrollMap.set(el, current);
-                const delta = current - last;
-                if (Math.abs(delta) < 12) return;
+            // الحالة الابتدائية: لو المحادثة اتفتحت وهي متمررة لتحت (زي أي
+            // شات بيبدأ من آخر رسالة)، مربع الأدوات يتقفل من غير ما ننتظر
+            // أول اسكرول من الطالب.
+            applyState(chatContainer.scrollTop);
 
-                const now = Date.now();
-                if (now - lastToggleTime < 320) return;
-
-                const wantHidden = delta > 0; // اسكرول لفوق -> نخبي
-                if (wantHidden === isHiddenState) return;
-
+            chatContainer.addEventListener('scroll', () => {
                 if (rafPending) return;
                 rafPending = true;
                 requestAnimationFrame(() => {
-                    wrap.classList.toggle('top-actions-hidden', wantHidden);
-                    isHiddenState = wantHidden;
-                    lastToggleTime = Date.now();
+                    applyState(chatContainer.scrollTop);
                     rafPending = false;
                 });
-            }, { capture: true, passive: true });
+            }, { passive: true });
         }
         document.addEventListener('DOMContentLoaded', initTopActionsAutoHide);
 
