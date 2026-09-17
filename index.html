@@ -41,62 +41,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
     <link rel="stylesheet" href="styles.css">
     <style>
-        /* شكل مربعين منفصلين ودائريين في التوب بار: مربع اسم Chat X فوق، ومربع
-           الأدوات تحته. الاستايل هنا بيتحط على "wrapper" جديد لف حوالين العناصر
-           الأصلية بس، من غير ما يلمس كلاسات أو مقاسات الأيقونات الأصلية خالص. */
-        .top-bar {
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-        }
-        .tb-box {
-            background: var(--bg-2, rgba(120,120,140,.07));
-            border: 1px solid var(--border, rgba(120,120,140,.18));
-            border-radius: 20px;
-            box-sizing: border-box;
-        }
-        .tb-identity-box {
-            padding: 2px 16px;
-        }
-
-        /* تقليل الـ padding العام لشريط التوب بار نفسه (كان 12px فوق وتحت) —
-           ده تقليل بسيط وآمن بيرجّع كام بكسل لصندوق المحادثة نفسه من غير ما
-           يأثر على شكل أو حجم الأيقونات جوه المربعين. */
-        .top-bar {
-            padding-top: max(8px, env(safe-area-inset-top));
-            padding-bottom: 8px;
-        }
-
-        /* إخفاء مربع الأدوات (تحت اسم Chat X) لما الطالب يعمل اسكرول لفوق في
-           المحادثة، عشان يدي مساحة أكبر للشات، وبيرجع يظهر لما يسكرول لتحت.
-           بنستخدم قيمة ارتفاع محسوبة بالبكسل بالظبط (متخزنة في --tb-tools-h)
-           بدل grid-template-rows، لأن الأخيرة بطيئة/متقطعة في متصفحات
-           الموبايل، بينما تحريك height لقيمة px محددة بدقة أخف وأسلس بكتير. */
-        .tb-tools-collapsible {
-            height: var(--tb-tools-h, auto);
-            overflow: hidden;
-            padding: 4px 14px;
-            border-width: 1px;
-            margin-top: 10px;
-            opacity: 1;
-            transition: height .28s ease, opacity .22s ease,
-                        padding .28s ease, border-width .28s ease, margin-top .28s ease;
-            will-change: height, opacity;
-        }
-        .tb-tools-collapsible.top-actions-hidden {
-            height: 0;
-            opacity: 0;
-            padding-top: 0;
-            padding-bottom: 0;
-            border-width: 0;
-            margin-top: 0;
-            pointer-events: none;
-        }
-        .tb-tools-inner {
-            overflow: hidden;
-            min-height: 0;
-        }
-
         /* فاصل التاريخ بين رسايل الأيام المختلفة في الشات (اليوم / أمس / اسم اليوم / التاريخ) */
         .chat-date-divider {
             display: flex;
@@ -189,30 +133,6 @@
             .message .msg-bubble {
                 max-width: 92% !important;
             }
-        }
-
-        /* إصلاح: .top-bar فيه gap:10px من styles.css أصلاً بين مربع اسم Chat X
-           ومربع الأدوات (flex-direction:column)، بالإضافة لـ margin-top:10px
-           موجودة كمان على .tb-tools-collapsible نفسها. الاتنين كانوا بيتجمعوا
-           فوق بعض، وأخطر من كده: الـ gap بتاع الفليكس ده مبيتصفرش لما مربع
-           الأدوات يتقفل بالاسكرول (height:0)، فبيفضل فاضي بلون خلفية التوب بار
-           (شبه أبيض) طالع فوق الشات — وده بالظبط الفراغ الأبيض اللي بيظهر بعد
-           الاسكرول. تصفير الـ gap هنا وترك margin-top وحدها هي اللي بتتحكم في
-           المسافة بيحل المشكلة نهائيًا في الحالتين (مفتوح ومقفول). */
-        .top-bar {
-            gap: 0;
-        }
-
-        /* إصلاح: صندوق #smartSuggestions فاضي دايمًا (مفيش كود بيحط جواه شيبس
-           فعليًا حاليًا، بس بيستخدم كـ "علامة مكان" لعناصر تانية بتتحط جنبه) لكن
-           استايله الأصلي بيدّيله padding-bottom:10px + margin-bottom:2px حتى
-           وهو فاضي، فبيظهر كشريط أبيض فاضي ثابت فوق مربع Deep Thinking في كل
-           وقت. :empty بتخفيه تلقائيًا لما يكون فاضي فعلاً، وترجّعه يظهر عادي
-           تاني أي وقت يتحط جواه محتوى فعلي. */
-        .smart-suggestions:empty {
-            display: none;
-            padding: 0;
-            margin: 0;
         }
     </style>
 </head>

@@ -241,11 +241,52 @@
         .main-area { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; background: var(--bg); }
         
         .top-bar {
-            padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex;
-            flex-direction: column; align-items: center; justify-content: center; position: relative;
-            gap: 10px; background: var(--bg-glass-heavy); backdrop-filter: blur(12px);
-            flex-shrink: 0; padding-top: max(12px, env(safe-area-inset-top));
+            padding: 8px 16px; border-bottom: 1px solid var(--border); display: flex;
+            flex-direction: column; align-items: stretch; justify-content: center; position: relative;
+            gap: 0; background: var(--bg-glass-heavy); backdrop-filter: blur(12px);
+            flex-shrink: 0; padding-top: max(8px, env(safe-area-inset-top));
         }
+        /* شكل مربعين منفصلين ودائريين جوه التوب بار: مربع اسم Chat X فوق،
+           ومربع الأدوات تحته (كلاهما flex children بفضل align-items:stretch
+           فوق، فبياخدوا عرض التوب بار كامل). */
+        .tb-box {
+            background: var(--bg-2); border: 1px solid var(--border);
+            border-radius: 20px; box-sizing: border-box;
+        }
+        .tb-identity-box { padding: 2px 16px; }
+
+        /* إخفاء مربع الأدوات لما الطالب يعمل اسكرول لفوق في المحادثة (يدي
+           مساحة أكبر للشات)، وبيرجع يظهر لما يسكرول لتحت. بنستخدم ارتفاع
+           محسوب بالبكسل بالظبط (متخزن في --tb-tools-h عن طريق الجافاسكريبت)
+           بدل grid-template-rows، لأن الأخيرة بطيئة/متقطعة في متصفحات
+           الموبايل، بينما تحريك height لقيمة px محددة أخف وأسلس بكتير.
+           ملحوظة مهمة: .top-bar فوق مضبوط على gap:0 عشان margin-top هنا هي
+           المتحكم الوحيد في المسافة بين المربعين — لو رجّعنا gap على
+           .top-bar تاني، هيفضل فراغ ثابت مش بيتصفرش حتى لما المربع ده يتقفل
+           بالكامل (height:0)، وده اللي كان بيظهر كشريط أبيض فوق الشات بعد
+           الاسكرول. */
+        .tb-tools-collapsible {
+            height: var(--tb-tools-h, auto);
+            overflow: hidden;
+            padding: 4px 14px;
+            border-width: 1px;
+            margin-top: 10px;
+            opacity: 1;
+            transition: height .28s ease, opacity .22s ease,
+                        padding .28s ease, border-width .28s ease, margin-top .28s ease;
+            will-change: height, opacity;
+        }
+        .tb-tools-collapsible.top-actions-hidden {
+            height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-width: 0;
+            margin-top: 0;
+            pointer-events: none;
+        }
+        .tb-tools-inner { overflow: hidden; min-height: 0; }
+
         .menu-btn {
             width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--bg-2); border: 1px solid var(--border);
             color: var(--text-2); cursor: pointer; display: none; align-items: center; justify-content: center;
@@ -740,6 +781,17 @@
         .smart-suggestions { 
             display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 2px; 
             scrollbar-width: none;
+        }
+        /* الصندوق ده بيفضل موجود فاضي في الـ DOM حتى وهو مش بيستخدم فعليًا
+           (بيتحط جنبه عناصر تانية زي attachment-chip بدل ما يتحط جواه)، وكان
+           بيدّي padding-bottom + margin-bottom ثابتين حتى وهو فاضي، فبيظهر
+           كشريط أبيض فاضي ثابت فوق مربع Deep Thinking دايمًا. :empty بتخفيه
+           تلقائيًا لما يكون فاضي فعلاً، وترجّعه يظهر عادي تاني أي وقت يتحط
+           جواه محتوى فعلي. */
+        .smart-suggestions:empty {
+            display: none;
+            padding: 0;
+            margin: 0;
         }
         .smart-suggestions::-webkit-scrollbar { display: none; }
         .sug-chip {
