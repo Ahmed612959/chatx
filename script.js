@@ -85,7 +85,7 @@
             copyBtn.title = 'نسخ';
             copyBtn.setAttribute('aria-label', 'نسخ الرسالة');
             copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-            copyBtn.addEventListener('click', () => copyToClipboard(msg.content));
+            copyBtn.addEventListener('click', () => copyToClipboard(splitAttachmentFromContent(msg.content).text || msg.content));
             actionsDiv.appendChild(copyBtn);
 
             if (msg.role === 'bot') {
@@ -1927,7 +1927,7 @@
 
             const textarea = document.createElement('textarea');
             textarea.className = 'msg-edit-textarea';
-            textarea.value = msg.content;
+            textarea.value = splitAttachmentFromContent(msg.content).text;
             textWrap.appendChild(textarea);
 
             const editActions = document.createElement('div');
@@ -1973,7 +1973,10 @@
 
             stopSpeaking();
 
-            chat.messages[idx].content = newText;
+            // لو الرسالة الأصلية كانت فيها كتلة مرفق مستخرج (PDF/صورة)، نرجّعها تاني بعد النص
+            // الجديد بدل ما تتفقد تمامًا — الموديل محتاج يفضل شايف محتوى الملف حتى بعد التعديل.
+            const { attachmentBlock } = splitAttachmentFromContent(chat.messages[idx].content);
+            chat.messages[idx].content = attachmentBlock ? `${newText}\n\n${attachmentBlock}` : newText;
             const removed = chat.messages.splice(idx + 1);
             removed.forEach(m => {
                 const el = document.getElementById(m.id);
@@ -3755,7 +3758,9 @@
             div.className = `message ${msg.role}`;
             div.id = msg.id || `msg-${Date.now()}`;
             
-            const contentHTML = DOMPurify.sanitize(marked.parse(msg.content));
+            const contentHTML = (msg.role === 'user')
+                ? DOMPurify.sanitize(marked.parse(splitAttachmentFromContent(msg.content).text))
+                : DOMPurify.sanitize(marked.parse(msg.content));
             const time = new Date(msg.timestamp).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
 
             const avatar = document.createElement('div');
@@ -3789,6 +3794,10 @@
             textWrap.className = 'msg-text';
             textWrap.innerHTML = contentHTML;
             bubble.appendChild(textWrap);
+            if (msg.role === 'user') {
+                const { attachmentKind, attachmentName } = splitAttachmentFromContent(msg.content);
+                if (attachmentName) bubble.appendChild(buildAttachmentChipEl(attachmentKind, attachmentName));
+            }
             enhanceCodeBlocks(bubble);
 
             const meta = document.createElement('div');
@@ -10744,12 +10753,17 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         let attachmentToken = 0;
 
         async function extractPdfText(file, onStatus) {
+            // لو مكتبة pdf.js نفسها ملحقتش تتحمل (مشكلة شبكة/حجب لـ cdnjs مثلًا)، كنا قبل
+            // كده بنكمل عادي ونوصل لخطأ عام غامض. دلوقتي بنوقف فورًا برسالة واضحة تتفرق في
+            // الـ toast اللي بيتعرض للطالب عن أي فشل تاني (زي عدم وجود نص أصلاً في الملف).
+            if (!window.pdfjsLib) throw new Error('pdfjs-not-loaded');
+
             const buffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-            // Large/"ضخمة" PDFs: read up to 80 pages and up to ~25k characters — enough for
-            // most textbooks/chapters — instead of bailing out early on big files.
-            const TEXT_CHAR_CAP = 25000;
-            const maxPages = Math.min(pdf.numPages, 80);
+            // Large/"ضخمة" PDFs: read up to 200 pages and up to ~90k characters — يغطي
+            // فصول/محاضرات طويلة جدًا (مش بس فصل واحد) بدل ما يتقطع بدري على ملفات كبيرة.
+            const TEXT_CHAR_CAP = 90000;
+            const maxPages = Math.min(pdf.numPages, 200);
             let text = '';
             for (let i = 1; i <= maxPages; i++) {
                 if (onStatus && maxPages > 8 && (i % 5 === 0 || i === maxPages)) {
@@ -10764,19 +10778,19 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
 
             // A real text layer came back — most PDFs (Word exports, typed docs, etc).
             if (text.replace(/\s/g, '').length >= 30) {
-                const truncated = text.length > TEXT_CHAR_CAP;
+                const truncated = text.length > TEXT_CHAR_CAP || pdf.numPages > maxPages;
                 const out = text.slice(0, TEXT_CHAR_CAP);
-                return truncated ? `${out}\n\n[...تم اقتطاع باقي النص لأن الملف طويل جدًا...]` : out;
+                return truncated ? `${out}\n\n[...تم اقتطاع باقي النص لأن الملف طويل جدًا (إجمالي ${pdf.numPages} صفحة)...]` : out;
             }
 
             // Almost nothing extracted — this is a scanned/image-based PDF with no text
             // layer, which is exactly the case that used to fail outright. Instead of
             // giving up, render each page to a canvas and run OCR on the image, the same
             // way we already do for uploaded photos.
-            if (!window.Tesseract) throw new Error('empty');
+            if (!window.Tesseract) throw new Error('tesseract-not-loaded');
 
-            const OCR_CHAR_CAP = 25000;
-            const ocrPages = Math.min(pdf.numPages, 15); // OCR is slow client-side — cap pages
+            const OCR_CHAR_CAP = 40000;
+            const ocrPages = Math.min(pdf.numPages, 25); // OCR is slow client-side — cap pages
             let ocrText = '';
             for (let i = 1; i <= ocrPages; i++) {
                 const page = await pdf.getPage(i);
@@ -10800,7 +10814,7 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                         }
                     });
                     ocrText += (data.text || '') + '\n';
-                } catch (e) {}
+                } catch (e) { console.warn('PDF OCR page failed:', i, e); }
                 if (ocrText.length > OCR_CHAR_CAP) break;
             }
             ocrText = ocrText.trim();
@@ -10822,6 +10836,34 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             const label = kind === 'pdf' ? 'ملف PDF' : kind === 'image' ? 'صورة' : 'ملف';
             const body = cleaned || '(لم يتم العثور على نص قابل للقراءة في الملف)';
             return `${icon} **مرفق (${label}): ${name}**\n> تم استخراج النص التالي تلقائيًا وتنسيقه:\n\n---\n${body}\n---`;
+        }
+
+        // بتفصل نص رسالة الطالب اللي هو كتبه فعليًا عن كتلة "النص المستخرج" اللي formatAttachmentForMessage
+        // بتضيفها تلقائيًا آخر الرسالة. الموديل لسه بياخد الـ content بالكامل زي ما هو (كل نداءات
+        // الـ API بتستخدم msg.content مباشرة زي ما كانت من الأول)، لكن أي مكان بيعرض الرسالة للطالب
+        // (الفقاعة، وضع التعديل، النسخ، تصدير PDF) بيعدي عليها الأول عشان يشيل الكتلة دي ويستبدلها
+        // بشريحة صغيرة (chip) بدل ما يطلع النص المستخرج كامل قدام عينيه. لو الرسالة كانت مرفق بس من
+        // غير أي نص مكتوب، النص الظاهر بيبقى فاضي والشريحة بس هي اللي بتبان.
+        const ATTACHMENT_BLOCK_RE = /\n*((?:📄|🖼️|📎) \*\*مرفق \(([^)]*)\): ([\s\S]*?)\*\*\n> تم استخراج النص التالي تلقائيًا وتنسيقه:\n\n---\n[\s\S]*\n---)\s*$/;
+        function splitAttachmentFromContent(content) {
+            const raw = content || '';
+            const m = raw.match(ATTACHMENT_BLOCK_RE);
+            if (!m) return { text: raw, attachmentBlock: null, attachmentKind: null, attachmentName: null };
+            return {
+                text: raw.slice(0, m.index).trim(),
+                attachmentBlock: m[1],
+                attachmentKind: m[2],
+                attachmentName: m[3]
+            };
+        }
+        // بيبني عنصر الشريحة الصغيرة اللي بتحل محل النص المستخرج جوه فقاعة رسالة الطالب.
+        function buildAttachmentChipEl(kind, name) {
+            const iconClass = kind === 'ملف PDF' ? 'fa-file-pdf' : kind === 'صورة' ? 'fa-image' : 'fa-paperclip';
+            const el = document.createElement('div');
+            el.className = 'msg-attachment-chip';
+            el.innerHTML = `<i class="fas ${iconClass}"></i><span></span>`;
+            el.querySelector('span').textContent = `${kind || 'مرفق'}: ${name || ''}`;
+            return el;
         }
 
         // بيصغّر الصورة وبيضغطها قبل الرفع (أبعاد أقصاها 1600px، جودة JPEG 82%) —
@@ -11748,11 +11790,19 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                     pendingAttachment = { name: file.name, textContent: text };
                     showAttachmentChip();
                     showToast(`تم تحليل الملف: ${file.name}`, 'success');
-                }).catch(() => {
+                }).catch((err) => {
                     if (myToken !== attachmentToken) return;
                     pendingAttachment = { name: file.name };
                     showAttachmentChip();
-                    showToast('تعذر استخراج أي نص من هذا الملف حتى بعد محاولة الـ OCR', 'error');
+                    console.error('PDF extraction failed:', err);
+                    const msg = (err && err.message) || '';
+                    if (msg === 'pdfjs-not-loaded') {
+                        showToast('تعذر تحميل مكتبة قراءة PDF — تأكد من الاتصال بالإنترنت وأعد تحميل الصفحة', 'error');
+                    } else if (msg === 'tesseract-not-loaded') {
+                        showToast('الملف صورة ممسوحة ضوئيًا ومكتبة قراءة النص من الصور لسه بتتحمل — جرب تاني بعد شوية', 'error');
+                    } else {
+                        showToast('تعذر استخراج أي نص من هذا الملف حتى بعد محاولة الـ OCR', 'error');
+                    }
                 });
             } else if (isImage) {
                 pendingAttachment = { name: file.name, processing: true, status: 'جارٍ تجهيز الصورة...' };
@@ -11787,16 +11837,19 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                                 pendingAttachment.processing = false;
                                 pendingAttachment.status = ocrText ? 'تم استخراج النص من الصورة ✓' : 'لم يتم العثور على نص في الصورة';
                                 showAttachmentChip();
-                            }).catch(() => {
+                            }).catch((err) => {
                                 if (myToken !== attachmentToken || !pendingAttachment) return;
+                                console.error('Image OCR failed:', err);
                                 pendingAttachment.processing = false;
                                 pendingAttachment.status = null;
                                 showAttachmentChip();
+                                showToast('تعذر تحليل النص داخل الصورة — الصورة اتبعتت من غير النص المستخرج', 'error');
                             });
                         } else {
                             pendingAttachment.processing = false;
                             pendingAttachment.status = null;
                             showAttachmentChip();
+                            showToast('مكتبة تحليل النص من الصور لسه بتتحمل — جرب ترفع الصورة تاني بعد شوية', 'error');
                         }
                     };
                     reader.onerror = () => showToast('تعذرت قراءة الملف', 'error');
@@ -11851,7 +11904,8 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             chat.messages.forEach(msg => {
                 const block = document.createElement('div');
                 block.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius: var(--radius-sm);background:' + (msg.role === 'user' ? '#eef2ff' : '#f8fafc') + ';border:1px solid #e2e8f0;';
-                block.innerHTML = `<strong>${msg.role === 'user' ? 'أنت' : 'Chat X'}:</strong><div>${DOMPurify.sanitize(marked.parse(msg.content))}</div>`;
+                const displayText = msg.role === 'user' ? (splitAttachmentFromContent(msg.content).text || msg.content) : msg.content;
+                block.innerHTML = `<strong>${msg.role === 'user' ? 'أنت' : 'Chat X'}:</strong><div>${DOMPurify.sanitize(marked.parse(displayText))}</div>`;
                 printable.appendChild(block);
             });
 

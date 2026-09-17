@@ -1116,6 +1116,17 @@
         .attachment-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .attachment-chip button { background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 12px; flex-shrink: 0; }
 
+        /* شريحة صغيرة بتظهر جوه فقاعة رسالة الطالب بدل ما نطلعله النص الكامل المستخرج
+           من الـ PDF/الصورة قدام عينيه — النص ده لسه بيتبعت للموديل عادي، بس مش
+           محتاج الطالب يشوفه كل مرة في شكل نص طويل جوه الفقاعة. */
+        .msg-attachment-chip {
+            display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px;
+            margin-top: 8px; background: var(--bg); border: 1px solid var(--border);
+            border-radius: var(--radius-md); font-size: 11px; color: var(--text-2); max-width: 100%;
+        }
+        .msg-attachment-chip i { color: var(--accent); flex-shrink: 0; }
+        .msg-attachment-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
         /* Modals */
         .modal-overlay {
             display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6);
