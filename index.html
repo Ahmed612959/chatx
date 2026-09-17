@@ -41,45 +41,51 @@
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
     <link rel="stylesheet" href="styles.css">
     <style>
-        /* شكل مربعين منفصلين ودائريين في التوب بار: مربع اسم Chat X فوق،
-           ومربع الأدوات تحته، وبينهم فاصل واضح. */
+        /* شكل مربعين منفصلين ودائريين في التوب بار: مربع اسم Chat X فوق، ومربع
+           الأدوات تحته. الاستايل هنا بيتحط على "wrapper" جديد لف حوالين العناصر
+           الأصلية بس، من غير ما يلمس كلاسات أو مقاسات الأيقونات الأصلية خالص. */
         .top-bar {
             display: flex;
             flex-direction: column;
             align-items: stretch;
             gap: 10px;
         }
-        .bot-identity {
+        .tb-box {
             background: var(--bg-2, rgba(120,120,140,.07));
             border: 1px solid var(--border, rgba(120,120,140,.18));
             border-radius: 20px;
-            padding: 10px 18px;
             box-sizing: border-box;
         }
-        /* إخفاء شريط أدوات التوب بار (تحت اسم Chat X) لما الطالب يعمل اسكرول لفوق في المحادثة،
-           عشان تدي مساحة أكبر للشات. بيرجع يظهر تاني لما يرجع يسكرول لتحت أو يوصل لآخر المحادثة. */
-        .top-actions {
-            background: var(--bg-2, rgba(120,120,140,.07));
-            border: 1px solid var(--border, rgba(120,120,140,.18));
-            border-radius: 20px;
-            padding: 8px 14px;
-            box-sizing: border-box;
-            transition: max-height .28s ease, opacity .22s ease, margin .28s ease, padding .28s ease, border-width .28s ease, transform .28s ease;
-            max-height: 200px;
-            opacity: 1;
-            overflow: hidden;
-            transform: translateY(0);
-        }
-        .top-actions.top-actions-hidden {
-            max-height: 0;
-            opacity: 0;
-            margin: 0 !important;
-            padding: 0 !important;
-            border-width: 0 !important;
-            transform: translateY(-6px);
-            pointer-events: none;
+        .tb-identity-box {
+            padding: 4px 16px;
         }
 
+        /* إخفاء مربع الأدوات (تحت اسم Chat X) لما الطالب يعمل اسكرول لفوق في
+           المحادثة، عشان يدي مساحة أكبر للشات، وبيرجع يظهر لما يسكرول لتحت.
+           بنستخدم أنيميشن grid-template-rows بدل max-height عشان يبقى سلس
+           تمامًا (max-height كانت بتعمل تعليق/لخبطة في السرعة). */
+        .tb-tools-collapsible {
+            display: grid;
+            grid-template-rows: 1fr;
+            transition: grid-template-rows .32s ease, opacity .28s ease, border-width .32s ease, margin .32s ease;
+            opacity: 1;
+            padding: 4px 14px;
+        }
+        .tb-tools-collapsible.top-actions-hidden {
+            grid-template-rows: 0fr;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-width: 0 !important;
+            margin: 0 !important;
+            pointer-events: none;
+        }
+        .tb-tools-inner {
+            overflow: hidden;
+            min-height: 0;
+        }
+    </style>
+</head>
         /* فاصل التاريخ بين رسايل الأيام المختلفة في الشات (اليوم / أمس / اسم اليوم / التاريخ) */
         .chat-date-divider {
             display: flex;
@@ -209,11 +215,15 @@
 
         <main class="main-area" id="mainContent" tabindex="-1">
             <div class="top-bar">
-                <div class="bot-identity">
-                    <div class="bot-text">
-                        <div class="bot-name-badge"><h2>Chat X</h2></div>
+                <div class="tb-box tb-identity-box">
+                    <div class="bot-identity">
+                        <div class="bot-text">
+                            <div class="bot-name-badge"><h2>Chat X</h2></div>
+                        </div>
                     </div>
                 </div>
+                <div class="tb-box tb-tools-collapsible" id="topActionsWrap">
+                <div class="tb-tools-inner">
                 <div class="top-actions" id="topActionsBar">
                     <button class="menu-btn" aria-label="فتح القائمة الجانبية" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                     <button class="action-btn verified-top-btn" id="verifiedAccountsTopBtn" aria-label="الحسابات الموثقة" title="الحسابات الموثقة" onclick="handleVerifiedTopBtnClick()">
@@ -232,6 +242,8 @@
                     </button>
                     <button class="action-btn" aria-label="فتح الأدوات" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
                     <button class="action-btn" aria-label="استوديو الفيديو التلقائي" title="حوّل أي ملخص لفيديو بالصوت" onclick="openModal('videoStudioModal')"><i class="fas fa-clapperboard"></i></button>
+                </div>
+                </div>
                 </div>
             </div>
 
