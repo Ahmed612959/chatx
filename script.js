@@ -4771,32 +4771,36 @@
         // إخفاء تلقائي لشريط أدوات الهيدر (تحت اسم Chat X) أول ما الطالب يعمل
         // اسكرول لفوق جوه المحادثة، عشان يدي مساحة أكبر لشات الطالب. الشريط
         // بيرجع يظهر لما الطالب يعمل اسكرول لتحت تاني.
-        let taLastScrollTop = 0;
-        let taScrollTicking = false;
+        // بنمسك حدث الاسكرول على مستوى document بـ capture:true عشان نلقط
+        // الاسكرول أيًا كان العنصر اللي بيسكرول فعليًا جواه (#chatContainer أو
+        // #mainContent أو الصفحة نفسها)، عشان الميزة تشتغل مهما كانت تفاصيل الـ CSS.
+        const taLastScrollMap = new WeakMap();
         function initTopActionsAutoHide() {
-            const container = document.getElementById('chatContainer');
             const topActions = document.getElementById('topActionsBar');
-            if (!container || !topActions) return;
-            taLastScrollTop = container.scrollTop;
-            container.addEventListener('scroll', () => {
-                if (taScrollTicking) return;
-                taScrollTicking = true;
-                requestAnimationFrame(() => {
-                    const current = container.scrollTop;
-                    const delta = current - taLastScrollTop;
-                    if (Math.abs(delta) > 6) {
-                        if (delta < 0) {
-                            // بيعمل اسكرول لفوق -> نخبي الأدوات
-                            topActions.classList.add('top-actions-hidden');
-                        } else {
-                            // بيعمل اسكرول لتحت -> نرجع نظهر الأدوات
-                            topActions.classList.remove('top-actions-hidden');
-                        }
-                        taLastScrollTop = current;
+            const chatArea = document.getElementById('mainContent');
+            if (!topActions || !chatArea) return;
+            document.addEventListener('scroll', (e) => {
+                const target = e.target;
+                const el = (target === document) ? (document.scrollingElement || document.documentElement) : target;
+                if (!el || el.nodeType !== 1) return;
+                // نتجاهل أي اسكرول برا منطقة الشات (زي المودالز التانية)
+                if (el !== chatArea && !chatArea.contains(el)) return;
+                const current = el.scrollTop;
+                const last = taLastScrollMap.has(el) ? taLastScrollMap.get(el) : current;
+                const delta = current - last;
+                if (Math.abs(delta) > 6) {
+                    if (delta < 0) {
+                        // بيعمل اسكرول لفوق -> نخبي الأدوات
+                        topActions.classList.add('top-actions-hidden');
+                    } else {
+                        // بيعمل اسكرول لتحت -> نرجع نظهر الأدوات
+                        topActions.classList.remove('top-actions-hidden');
                     }
-                    taScrollTicking = false;
-                });
-            }, { passive: true });
+                    taLastScrollMap.set(el, current);
+                } else if (!taLastScrollMap.has(el)) {
+                    taLastScrollMap.set(el, current);
+                }
+            }, { capture: true, passive: true });
         }
         document.addEventListener('DOMContentLoaded', initTopActionsAutoHide);
 
