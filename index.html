@@ -48,7 +48,6 @@
             display: flex;
             flex-direction: column;
             align-items: stretch;
-            gap: 10px;
         }
         .tb-box {
             background: var(--bg-2, rgba(120,120,140,.07));
@@ -62,22 +61,26 @@
 
         /* إخفاء مربع الأدوات (تحت اسم Chat X) لما الطالب يعمل اسكرول لفوق في
            المحادثة، عشان يدي مساحة أكبر للشات، وبيرجع يظهر لما يسكرول لتحت.
-           بنستخدم أنيميشن grid-template-rows بدل max-height عشان يبقى سلس
-           تمامًا (max-height كانت بتعمل تعليق/لخبطة في السرعة). */
+           كل الخصائص (الارتفاع، البادينج، البوردر، المسافة اللي فوقه) بتتحرك
+           مع بعض بنفس التوقيت عشان الحركة تبقى سلسة من غير أي قفشة أو اهتزاز،
+           وكمان المسافة البيضا فوقه بتتصفّر فعليًا فمفيش مكان فاضي باقي. */
         .tb-tools-collapsible {
             display: grid;
             grid-template-rows: 1fr;
-            transition: grid-template-rows .32s ease, opacity .28s ease, border-width .32s ease, margin .32s ease;
-            opacity: 1;
             padding: 4px 14px;
+            border-width: 1px;
+            margin-top: 10px;
+            opacity: 1;
+            transition: grid-template-rows .3s ease, opacity .25s ease,
+                        padding .3s ease, border-width .3s ease, margin-top .3s ease;
         }
         .tb-tools-collapsible.top-actions-hidden {
             grid-template-rows: 0fr;
             opacity: 0;
             padding-top: 0;
             padding-bottom: 0;
-            border-width: 0 !important;
-            margin: 0 !important;
+            border-width: 0;
+            margin-top: 0;
             pointer-events: none;
         }
         .tb-tools-inner {
@@ -112,6 +115,41 @@
             border-radius: 999px;
             letter-spacing: .2px;
             white-space: nowrap;
+        }
+
+        /* ضبط مساحة الشات عشان تملا شاشة أي جهاز (موبايل/تابلت/كمبيوتر) بالظبط
+           من غير ما تفيض أو تتقص، وتتعامل صح مع شريط أدوات المتصفح المتغيّر في
+           الموبايل (بنستخدم dvh بدل vh العادي)، ومع منطقة النوتش/الحواف
+           المستديرة في الآيفون (safe-area). */
+        html, body {
+            height: 100%;
+        }
+        .app-container {
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+        .main-area {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        .chat-container {
+            flex: 1 1 auto;
+            min-height: 0;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .input-area {
+            flex-shrink: 0;
+            box-sizing: border-box;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
     </style>
 </head>
