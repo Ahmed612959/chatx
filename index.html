@@ -61,21 +61,22 @@
 
         /* إخفاء مربع الأدوات (تحت اسم Chat X) لما الطالب يعمل اسكرول لفوق في
            المحادثة، عشان يدي مساحة أكبر للشات، وبيرجع يظهر لما يسكرول لتحت.
-           كل الخصائص (الارتفاع، البادينج، البوردر، المسافة اللي فوقه) بتتحرك
-           مع بعض بنفس التوقيت عشان الحركة تبقى سلسة من غير أي قفشة أو اهتزاز،
-           وكمان المسافة البيضا فوقه بتتصفّر فعليًا فمفيش مكان فاضي باقي. */
+           بنستخدم قيمة ارتفاع محسوبة بالبكسل بالظبط (متخزنة في --tb-tools-h)
+           بدل grid-template-rows، لأن الأخيرة بطيئة/متقطعة في متصفحات
+           الموبايل، بينما تحريك height لقيمة px محددة بدقة أخف وأسلس بكتير. */
         .tb-tools-collapsible {
-            display: grid;
-            grid-template-rows: 1fr;
+            height: var(--tb-tools-h, auto);
+            overflow: hidden;
             padding: 4px 14px;
             border-width: 1px;
             margin-top: 10px;
             opacity: 1;
-            transition: grid-template-rows .3s ease, opacity .25s ease,
-                        padding .3s ease, border-width .3s ease, margin-top .3s ease;
+            transition: height .28s ease, opacity .22s ease,
+                        padding .28s ease, border-width .28s ease, margin-top .28s ease;
+            will-change: height, opacity;
         }
         .tb-tools-collapsible.top-actions-hidden {
-            grid-template-rows: 0fr;
+            height: 0;
             opacity: 0;
             padding-top: 0;
             padding-bottom: 0;
@@ -150,6 +151,36 @@
             flex-shrink: 0;
             box-sizing: border-box;
             padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        /* لوحة "Deep Thinking" كانت بتاخد مساحة كبيرة جدًا من صفحة المحادثة
+           وهي بتتكتب لحظة بلحظة لأنها كانت بتكبر من غير حد أقصى للارتفاع.
+           دلوقتي بقى ليها ارتفاع أقصى ثابت ومعقول وبتعمل سكرول جوه نفسها،
+           فبتفضل مضغوطة وما بتاخدش مساحة المحادثة التانية. */
+        .deep-think-panel {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .deep-think-live-text {
+            max-height: 180px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+        }
+        @media (max-width: 480px) {
+            .deep-think-live-text {
+                max-height: 130px;
+            }
+        }
+
+        /* مربع رد البوت (msg-bubble) كان ضيق على شاشات الموبايل. بنوسّعه
+           ليستغل معظم عرض الشاشة زي أي موقع شات عادي، مع الحفاظ على شكله
+           على الشاشات الكبيرة زي ما هو. */
+        @media (max-width: 640px) {
+            .message .msg-content,
+            .message .msg-bubble {
+                max-width: 92% !important;
+            }
         }
     </style>
 </head>

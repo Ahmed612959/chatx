@@ -4771,35 +4771,64 @@
         // إخفاء تلقائي لمربع أدوات الهيدر (تحت اسم Chat X) أول ما الطالب يعمل
         // اسكرول لفوق جوه المحادثة، عشان يدي مساحة أكبر لشات الطالب. المربع
         // بيرجع يظهر لما الطالب يعمل اسكرول لتحت تاني.
-        // بنمسك حدث الاسكرول على مستوى document بـ capture:true عشان نلقط
-        // الاسكرول أيًا كان العنصر اللي بيسكرول فعليًا جواه (#chatContainer أو
-        // #mainContent أو الصفحة نفسها)، عشان الميزة تشتغل مهما كانت تفاصيل الـ CSS.
-        const taLastScrollMap = new WeakMap();
+        //
+        // ملاحظات أداء مهمة عشان الحركة تبقى سلسة ومتعلقش:
+        // 1) بنقيس ارتفاع مربع الأدوات مرة واحدة بس (مش في كل حدث سكرول) ونثبته
+        //    في متغير CSS، عشان نتجنب قراءة الـ layout بشكل متكرر أثناء السكرول
+        //    (ده اسمه "layout thrashing" وهو سبب رئيسي لتعليق الأنيميشن).
+        // 2) بنحط "cooldown" بسيط بين كل تبديل والتاني عشان سكرول الموبايل
+        //    السريع (اللي بيبعت عشرات الأحداث في الثانية) ميقلبش الحالة
+        //    (إظهار/إخفاء) كذا مرة في نفس الوقت.
+        // 3) بنمسك حدث الاسكرول على مستوى document بـ capture:true عشان نلقط
+        //    الاسكرول أيًا كان العنصر اللي بيسكرول فعليًا جواه.
         function initTopActionsAutoHide() {
-            const topActionsWrap = document.getElementById('topActionsWrap');
+            const wrap = document.getElementById('topActionsWrap');
             const chatArea = document.getElementById('mainContent');
-            if (!topActionsWrap || !chatArea) return;
+            if (!wrap || !chatArea) return;
+
+            function measureHeight() {
+                const wasHidden = wrap.classList.contains('top-actions-hidden');
+                if (wasHidden) wrap.classList.remove('top-actions-hidden');
+                const h = wrap.scrollHeight;
+                if (h > 0) wrap.style.setProperty('--tb-tools-h', h + 'px');
+                if (wasHidden) wrap.classList.add('top-actions-hidden');
+            }
+            measureHeight();
+            window.addEventListener('resize', measureHeight, { passive: true });
+            window.addEventListener('orientationchange', measureHeight, { passive: true });
+
+            const taLastScrollMap = new WeakMap();
+            let isHiddenState = false;
+            let lastToggleTime = 0;
+            let rafPending = false;
+
             document.addEventListener('scroll', (e) => {
                 const target = e.target;
                 const el = (target === document) ? (document.scrollingElement || document.documentElement) : target;
                 if (!el || el.nodeType !== 1) return;
                 // نتجاهل أي اسكرول برا منطقة الشات (زي المودالز التانية)
                 if (el !== chatArea && !chatArea.contains(el)) return;
+
                 const current = el.scrollTop;
                 const last = taLastScrollMap.has(el) ? taLastScrollMap.get(el) : current;
+                taLastScrollMap.set(el, current);
                 const delta = current - last;
-                if (Math.abs(delta) > 6) {
-                    if (delta > 0) {
-                        // اسكرول لفوق -> نخبي الأدوات
-                        topActionsWrap.classList.add('top-actions-hidden');
-                    } else {
-                        // اسكرول لتحت -> نرجع نظهر الأدوات
-                        topActionsWrap.classList.remove('top-actions-hidden');
-                    }
-                    taLastScrollMap.set(el, current);
-                } else if (!taLastScrollMap.has(el)) {
-                    taLastScrollMap.set(el, current);
-                }
+                if (Math.abs(delta) < 12) return;
+
+                const now = Date.now();
+                if (now - lastToggleTime < 320) return;
+
+                const wantHidden = delta > 0; // اسكرول لفوق -> نخبي
+                if (wantHidden === isHiddenState) return;
+
+                if (rafPending) return;
+                rafPending = true;
+                requestAnimationFrame(() => {
+                    wrap.classList.toggle('top-actions-hidden', wantHidden);
+                    isHiddenState = wantHidden;
+                    lastToggleTime = Date.now();
+                    rafPending = false;
+                });
             }, { capture: true, passive: true });
         }
         document.addEventListener('DOMContentLoaded', initTopActionsAutoHide);
