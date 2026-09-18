@@ -1733,6 +1733,81 @@
         }
         .sim-mute-btn.muted { color: var(--danger); }
 
+        /* ====================== طبقة "دولينجو" التحفيزية (شجرة تقدّم + ماسكوت + ترحيب
+           قصصي) ====================== إضافة مستقلة بالكامل: كل الكلاسات هنا بادئة
+           بـ duo- ومفيهاش أي تعديل على أي كلاس أو عنصر موجود قبل كده في الملف ده —
+           لو الكتلة دي اتشالت بالكامل، مفيش أي تأثير على أي شكل أو سلوك تاني في التطبيق. */
+        :root {
+            --duo-green: #58cc02;
+            --duo-green-soft: #d7ffb8;
+            --duo-blue: #1cb0f6;
+            --duo-ink: #000437;
+            --duo-paper: #ffffff;
+            --duo-charcoal: #4b4b4b;
+            --duo-gray: #777777;
+            --duo-faded: #afafaf;
+            --font-duo-display: 'Righteous', 'Cairo', var(--font);
+            --font-duo-body: 'Cairo', var(--font);
+        }
+
+        /* ---------- بطاقة الماسكوت جوه شاشة الترحيب الفاضية بس ---------- */
+        .duo-mascot-card {
+            display: flex; align-items: center; gap: 12px; background: var(--duo-paper);
+            border: 2px solid var(--duo-ink); border-radius: 16px; padding: 12px 14px;
+            margin: 0 auto 18px; max-width: 360px; box-shadow: 0 4px 0 rgba(0,4,55,.15);
+            text-align: right; cursor: pointer;
+        }
+        .duo-mascot-avatar-sm {
+            width: 46px; height: 46px; border-radius: 50%; background: var(--duo-green-soft);
+            display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;
+            animation: duoMascotBob 2.6s ease-in-out infinite;
+        }
+        @keyframes duoMascotBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        .duo-mascot-msg { font-family: var(--font-duo-body); font-weight: 700; font-size: 12px; color: var(--duo-charcoal); line-height: 1.7; flex: 1; }
+        .duo-mascot-msg b { color: var(--duo-ink); font-size: 12.5px; }
+
+        /* ---------- شجرة التقدّم ---------- */
+        .duo-modal-white { background: var(--duo-paper) !important; border: none !important; color: var(--duo-charcoal); }
+        .duo-modal-white .modal-title { color: var(--duo-ink); }
+        .duo-modal-white .close-modal { background: #f2f2f2; border-color: var(--duo-faded); color: var(--duo-gray); }
+        .duo-tree-path { display: flex; flex-direction: column; align-items: center; padding: 6px 0 10px; }
+        .duo-tree-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .duo-tree-node {
+            width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 22px; border: 3px solid var(--duo-faded); background: #f2f2f2; color: var(--duo-faded);
+            cursor: pointer; position: relative; flex-shrink: 0; box-shadow: 0 4px 0 #d8d8d8; transition: transform .12s ease;
+        }
+        .duo-tree-node:active { transform: translateY(2px); box-shadow: 0 2px 0 #d8d8d8; }
+        .duo-tree-node.duo-done { background: var(--duo-green); border-color: #46a302; color: #fff; box-shadow: 0 4px 0 #46a302; }
+        .duo-tree-node.duo-current { background: #fff; border-color: var(--duo-green); color: var(--duo-green); box-shadow: 0 4px 0 var(--duo-green-soft); animation: duoPulseNode 1.4s ease-in-out infinite; }
+        .duo-tree-node.duo-locked { cursor: not-allowed; opacity: .85; }
+        @keyframes duoPulseNode { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+        .duo-tree-check {
+            position: absolute; bottom: -3px; left: -3px; width: 20px; height: 20px; border-radius: 50%;
+            background: var(--duo-blue); border: 2px solid #fff; color: #fff; font-size: 9.5px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .duo-tree-label { font-family: var(--font-duo-body); font-weight: 700; font-size: 10.5px; color: var(--duo-charcoal); text-align: center; max-width: 96px; }
+        .duo-tree-connector { width: 4px; height: 22px; background: var(--duo-faded); border-radius: 2px; margin: 2px 0; }
+        .duo-tree-connector.duo-done { background: var(--duo-green); }
+        .duo-tree-empty { text-align: center; color: var(--duo-gray); font-family: var(--font-duo-body); font-size: 12px; padding: 22px 10px; }
+
+        /* ---------- الترحيب القصصي (Onboarding) ---------- */
+        .duo-onb-icon { font-size: 52px; margin-bottom: 12px; }
+        .duo-onb-title { font-family: var(--font-duo-display); font-size: 21px; color: var(--duo-green); margin-bottom: 10px; line-height: 1.3; }
+        .duo-onb-body { font-family: var(--font-duo-body); font-weight: 500; font-size: 13px; color: var(--duo-gray); line-height: 1.85; margin-bottom: 18px; }
+        .duo-onb-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 16px; }
+        .duo-onb-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--duo-faded); transition: all .2s ease; }
+        .duo-onb-dot.duo-active { background: var(--duo-green); width: 20px; border-radius: 4px; }
+        .duo-onb-btn-primary {
+            width: 100%; background: var(--duo-green); color: #fff; border: none; border-radius: 12px; padding: 13px;
+            font-family: var(--font-duo-body); font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 4px 0 #46a302;
+        }
+        .duo-onb-btn-primary:active { transform: translateY(2px); box-shadow: 0 2px 0 #46a302; }
+        .duo-onb-btn-ghost {
+            width: 100%; background: transparent; color: var(--duo-gray); border: none; font-family: var(--font-duo-body);
+            font-weight: 700; font-size: 12px; cursor: pointer; padding: 8px; margin-top: 4px;
+        }
         .mock-exam-chapter-list { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
         .mock-exam-chapter-chip {
             display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -1852,91 +1927,3 @@
         .chatx-splash-ring, .chatx-splash-logo, .chatx-splash-dots span { animation: none !important; }
         .chatx-splash-title .chatx-letter { animation: chatxLetterIn .3s ease forwards !important; opacity: 1; transform: none; }
       }
-
-/* ===================== المناوبة الحية (Live Shift Mode) ===================== */
-.live-shift-badge {
-    position: fixed;
-    bottom: 84px;
-    inset-inline-end: 16px;
-    z-index: 9500;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: linear-gradient(120deg, var(--danger), #b91c1c);
-    color: #fff;
-    font-size: 11.5px;
-    font-weight: 800;
-    padding: 9px 14px;
-    border-radius: var(--radius-full);
-    box-shadow: 0 8px 22px rgba(239, 68, 68, 0.45);
-    cursor: pointer;
-    user-select: none;
-    animation: lsBadgeIn .35s ease;
-    max-width: calc(100vw - 32px);
-    white-space: nowrap;
-}
-@keyframes lsBadgeIn { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.ls-badge-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; flex-shrink: 0; animation: lsDotPulse 1.1s ease-in-out infinite; }
-@keyframes lsDotPulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.7); } }
-
-.ls-alert-modal { border: 2px solid var(--danger); box-shadow: 0 0 0 6px rgba(239,68,68,.15), 0 20px 60px rgba(0,0,0,.5); overflow: hidden; }
-.ls-alert-header { background: linear-gradient(120deg, var(--danger), #b91c1c); color: #fff; }
-.ls-alert-header .modal-title { color: #fff; animation: lsHeaderFlash 1s ease-in-out infinite; }
-@keyframes lsHeaderFlash { 0%,100% { opacity: 1; } 50% { opacity: .75; } }
-
-.ls-timer-bar { width: 100%; height: 6px; background: rgba(239,68,68,.15); }
-.ls-timer-fill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--danger), var(--warning)); }
-.ls-timer-seconds {
-    position: absolute;
-    top: 14px;
-    inset-inline-start: 16px;
-    background: rgba(0,0,0,.35);
-    color: #fff;
-    font-weight: 900;
-    font-size: 12px;
-    padding: 3px 9px;
-    border-radius: var(--radius-full);
-}
-
-.ls-alert-body { padding: 16px; }
-.ls-alert-title { font-size: 15px; font-weight: 900; margin-bottom: 6px; color: var(--text-1); }
-.ls-alert-vitals {
-    display: inline-block;
-    font-family: monospace;
-    font-size: 11.5px;
-    font-weight: 700;
-    color: var(--danger);
-    background: rgba(239,68,68,.1);
-    border: 1px solid rgba(239,68,68,.3);
-    border-radius: var(--radius-xs);
-    padding: 4px 10px;
-    margin-bottom: 10px;
-}
-.ls-alert-situation { font-size: 13px; line-height: 1.8; color: var(--text-2); margin-bottom: 14px; }
-.ls-options { display: flex; flex-direction: column; gap: 8px; }
-.ls-option-btn {
-    text-align: right;
-    background: var(--bg-2);
-    color: var(--text-1);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 11px 14px;
-    font-size: 12.5px;
-    font-weight: 700;
-    font-family: var(--font);
-    cursor: pointer;
-    transition: var(--transition-fast);
-}
-.ls-option-btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-glow); }
-.ls-option-btn:disabled { opacity: .6; cursor: default; }
-
-.ls-feedback { margin-top: 12px; padding: 12px 14px; border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 700; line-height: 1.8; }
-.ls-feedback-correct { background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.35); color: var(--success); }
-.ls-feedback-wrong { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.35); color: var(--danger); }
-
-.ls-report-score { text-align: center; font-size: 42px; font-weight: 900; background: var(--grad-bold); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 4px; }
-.ls-report-msg { text-align: center; font-size: 12.5px; color: var(--text-2); margin-bottom: 16px; line-height: 1.8; }
-.ls-report-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
-.ls-report-stat { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 6px; text-align: center; }
-.ls-report-stat span { display: block; font-size: 19px; font-weight: 900; color: var(--accent); }
-.ls-report-stat small { font-size: 10px; color: var(--text-2); font-weight: 700; }

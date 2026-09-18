@@ -1470,322 +1470,6 @@
 
         setInterval(checkStudyScheduleReminders, 60000);
 
-        // ===================== المناوبة الحية (Live Shift Mode) =====================
-        // فكرة الميزة: بدل ما الطالب هو اللي بيفتح محاكاة لما يحب يذاكر، الوردية
-        // بتبعتله "مريض" فجأة في وقت عشوائي وهو مش متوقع — زي شيفت حقيقي — وعنده
-        // ثواني معدودة ياخد فيها أول قرار. نفس نظام تذكير جدول المذاكرة بالظبط
-        // (setInterval كل دقيقة يقارن بتوقيت مخزّن)، عشان يشتغل بنفس الموثوقية
-        // ونفس الحدود: طول ما الموقع/التطبيق مفتوح، مش لو قافله تمامًا.
-        const LIVE_SHIFT_SCENARIOS = [
-            { id: 'hypoglycemia', title: 'غرفة 2 — مريض سكري تعرق وارتجاف فجأة', vitals: 'HR 110 | BP 118/76 | السكر 48 mg/dl',
-              situation: 'مريض سكري واعي بس بدأ يتعرق ويرتجف وكلامه بقى غير مفهوم شوية. عملتله تحليل سكر سريع وطلع 48.',
-              options: ['تديله جلوكوز فورًا (فمي لو واعي، IV لو مش واعي)', 'تسيبه يرتاح وتراجعه بعد نص ساعة', 'تديله جرعة إنسولين إضافية عشان السكر متلقيش عالي بعدين'],
-              correct: 0, explanation: 'ده Hypoglycemia — التصرف الفوري بجلوكوز ضروري، والتأجيل أو الإنسولين هيدهور الحالة.' },
-            { id: 'anaphylaxis', title: 'غرفة 5 — بعد حقنة المضاد الحيوي', vitals: 'HR 132 | BP 84/50 | SpO2 89% | طفح واحمرار',
-              situation: 'المريضة اتحقنت مضاد حيوي من 5 دقايق، دلوقتي بتلهث وطالع عليها طفح جلدي منتشر وصوتها بقى مبحوح.',
-              options: ['تدي أدرينالين IM فورًا وتنادي فريق الطوارئ', 'تدي أنتي هيستامين وتستنى نص ساعة تشوف رد الفعل', 'توقف الحقنة بس وتسجل الملاحظة في الملف'],
-              correct: 0, explanation: 'دي علامات Anaphylaxis — الأدرينالين العضلي الفوري خط العلاج الأول، والتأخير خطر على الحياة.' },
-            { id: 'chest_pain', title: 'غرفة 7 — ألم صدر مفاجئ', vitals: 'HR 98 | BP 150/95 | SpO2 94%',
-              situation: 'مريض عنده 58 سنة قالك فجأة إن في ألم ضاغط في نص الصدر بيمتد للدراع الشمال ومعاه عرق بارد.',
-              options: ['تعمل ECG فورًا وتبلغ الطبيب مع أكسچين وأسبرين حسب البروتوكول', 'تدّيله مسكن وتقوله يرتاح نص ساعة', 'تسجل الشكوى في الملف وتكمل جولتك'],
-              correct: 0, explanation: 'ألم الصدر النمطي ده يستوجب ECG فوري وتبليغ الطبيب — أي تأخير ممكن يكلف عضلة القلب.' },
-            { id: 'opioid_od', title: 'غرفة 3 — تنفس بطيء بعد المسكن', vitals: 'RR 6 | SpO2 85% | حدقة العين ضيقة جدًا',
-              situation: 'المريض واخد مورفين لمسكن الألم من ساعة، دلوقتي تنفسه بطيء جدًا وبقى صعب تصحّيه.',
-              options: ['تدي نالوكسون (Naloxone) فورًا وتراقب التنفس والأكسجين', 'تسيبه ينام لأن المسكن طبيعي يخليه يرتاح', 'تزود له جرعة تانية من المسكن'],
-              correct: 0, explanation: 'ده Respiratory depression من الأفيونات — نالوكسون فورًا هو الترياق، والتأخير يهدد التنفس.' },
-            { id: 'seizure', title: 'غرفة 9 — تشنج مفاجئ', vitals: 'HR 122 | SpO2 90%',
-              situation: 'مريضة بدأت تترعش رعشة قوية في كل جسمها وعينيها لفوق وسقطت جزئيًا من على السرير.',
-              options: ['تحميها من الإصابة، تلفها على جنبها، متحطش حاجة في بؤها، وتراقب مدة النوبة', 'تمسك إيديها ورجليها بقوة عشان توقف الرعشة', 'تحط ملعقة في بؤها عشان متعضش لسانها'],
-              correct: 0, explanation: 'الحماية من الإصابة والوضعية الجانبية هي الأساس؛ تقييد الحركة أو حط حاجة في الفم ممنوع وبيسبب إصابات أكتر.' },
-            { id: 'hyperkalemia', title: 'المونيتور — موجة ECG غريبة', vitals: 'K+ 6.8 mEq/L | T wave مدببة',
-              situation: 'نتيجة معملية رجعتلك بوتاسيوم مرتفع جدًا، والمونيتور بيوريك موجات T مدببة وغريبة.',
-              options: ['تبلغ الطبيب فورًا وتجهز لعلاج طارئ وتوقف أي مصدر بوتاسيوم إضافي', 'تسجل النتيجة وتراجعها في الجولة الجاية بعد كام ساعة', 'تدي المريض أكل غني بالبوتاسيوم عشان يعوض الفاقد'],
-              correct: 0, explanation: 'الهايبركاليميا بالدرجادي ممكن تسبب سكتة قلبية — تدخل فوري وإبلاغ الطبيب ضروري، مش تأجيل.' },
-            { id: 'pph', title: 'بعد الولادة — نزيف غير طبيعي', vitals: 'HR 128 | BP 88/54 | نزيف مهبلي غزير',
-              situation: 'سيدة ولدت من نص ساعة، ولاحظتي إن النزيف زاد فجأة وبطنها طرية والرحم مش قابض كويس.',
-              options: ['تعملي تدليك للرحم فورًا وتنادي على الطبيب وتجهزي سوائل IV', 'تسجلي الملاحظة وتراجعيها في الجولة الجاية', 'تدّيها مسكن للألم وتسيبيها ترتاح'],
-              correct: 0, explanation: 'ده احتمال Postpartum Hemorrhage من ارتخاء الرحم — تدليك الرحم الفوري وإبلاغ الطبيب أساسيين لوقف النزيف.' },
-            { id: 'dka', title: 'غرفة 6 — مريض سكري نوع 1 تعبان', vitals: 'السكر 420 | تنفس عميق سريع | ريحة أسيتون',
-              situation: 'مريض سكري نوع 1 جاي تعبان جدًا، عطشان، بيتنفس بعمق وسرعة، وريحة نفسه غريبة زي الفاكهة.',
-              options: ['تبلغ فورًا — الصورة توحي بـ DKA ومحتاج سوائل وإنسولين IV تحت متابعة دقيقة', 'تدّيله أكل حلو عشان يرفع طاقته', 'تسيبه ينام وتشوفه في الجولة الجاية'],
-              correct: 0, explanation: 'دي علامات كلاسيكية للـ Diabetic Ketoacidosis — حالة طارئة تستوجب تدخل فوري مش انتظار.' },
-            { id: 'iv_infiltration', title: 'غرفة 4 — تورم حوالين الكانيولا', vitals: 'مكان الوريد متورم وبارد ومؤلم',
-              situation: 'لاحظتي إن الذراع اللي فيها المحلول IV بقت متورمة وباردة والمريض بيشتكي من ألم مكان الكانيولا.',
-              options: ['توقفي المحلول فورًا، تشيلي الكانيولا، وتقيّمي الذراع وتبلغي حسب البروتوكول', 'تزودي سرعة التنقيط عشان يخلص بسرعة', 'تتجاهلي الموضوع لأن التورم البسيط طبيعي'],
-              correct: 0, explanation: 'دي علامات Infiltration — الاستمرار في التنقيط ممكن يسبب أذى للنسيج، لازم وقف فوري وتقييم.' },
-            { id: 'peds_fever', title: 'طفل عنده 3 سنين بحرارة عالية', vitals: 'Temp 39.8°C | HR 150 | خمول واضح',
-              situation: 'أم جايالك بطفلها عنده حرارة عالية جدًا وبقى خامل ومش بيستجيب زي العادي وعينيه غايرة شوية.',
-              options: ['تقيّمي علامات الجفاف والوعي فورًا وتبلغي الطبيب — دي red flags تستاهل تقييم عاجل', 'تدّي خافض حرارة وتسيبي الأم تستنى في الانتظار العادي', 'تقوليلها الموضوع عادي وكل الأطفال بترفع حرارة'],
-              correct: 0, explanation: 'خمول الطفل مع حرارة عالية جدًا علامة إنذار تستوجب تقييم عاجل مش انتظار عادي.' },
-            { id: 'wrong_patient', title: 'قبل إعطاء الدواء', vitals: '—',
-              situation: 'زميلتك حطّتلك دوا جاهز على العربية وقالتلك "ده بتاع أبو سرير 6" وهي مستعجلة رايحة لمريض تاني.',
-              options: ['ترفضي تدّيه غير بعد ما تتأكدي بنفسك من اسم المريض ورقم الملف والدواء', 'تدّيه على كلامها عشان هي شافت الاسم فعلاً', 'تسألي المريض نفسه وتكتفي بالرد اللفظي'],
-              correct: 0, explanation: 'قاعدة الأمان الذهبية: التأكد الشخصي من الهوية بمعرّفين قبل أي دواء، مهما كان مصدر المعلومة موثوق.' },
-            { id: 'pressure_ulcer', title: 'مريض طريح الفراش', vitals: '—',
-              situation: 'لاحظتي احمرار ثابت (مبيروحش بالضغط) على العصعص لمريض قاعد في نفس الوضعية من ساعات طويلة.',
-              options: ['تغيّري وضعيته فورًا وتبلّغي وتبدئي بروتوكول الوقاية من قرح الفراش', 'تحطي كريم مرطب وتسيبيه في نفس الوضعية', 'تسجلي الملاحظة وتراجعيها بعد يومين'],
-              correct: 0, explanation: 'الاحمرار الثابت علامة مبكرة لقرحة فراش — تغيير الوضعية الفوري والتبليغ يمنعوا تدهورها.' },
-            { id: 'med_error_catch', title: 'قبل إعطاء دواء جديد', vitals: '—',
-              situation: 'الطبيب كتب جرعة دواء ليها أعراض جانبية خطيرة لو اتضاعفت، وحاسة إن الرقم في الروشتة أعلى من الجرعة المعتادة بكتير.',
-              options: ['توقفي الإعطاء وتتأكدي مع الطبيب أو الصيدلية قبل أي حاجة', 'تدّي الجرعة زي ما هي لأن الطبيب هو المسؤول', 'تقلّلي الجرعة بنفسك على مسؤوليتك'],
-              correct: 0, explanation: 'التمريض خط الدفاع الأخير قبل الدواء — أي شك في الجرعة لازم يتراجع مع الطبيب/الصيدلية، ومينفعش تعديل ذاتي.' }
-        ];
-
-        const LIVE_SHIFT_DIFFICULTY = {
-            calm:  { label: 'هادية', minGap: 45, maxGap: 90, countdown: 60 },
-            busy:  { label: 'مزدحمة', minGap: 20, maxGap: 40, countdown: 45 },
-            chaos: { label: 'ليلة جنونية', minGap: 8, maxGap: 18, countdown: 30 }
-        };
-
-        let liveShiftCountdownTimer = null;
-        let liveShiftBadgeInterval = null;
-
-        function getLiveShiftState() {
-            try { return JSON.parse(localStorage.getItem('sx_live_shift')) || null; } catch (e) { return null; }
-        }
-        function saveLiveShiftState(state) {
-            if (state) localStorage.setItem('sx_live_shift', JSON.stringify(state));
-            else localStorage.removeItem('sx_live_shift');
-        }
-        function getLiveShiftHistory() {
-            try { return JSON.parse(localStorage.getItem('sx_live_shift_history')) || []; } catch (e) { return []; }
-        }
-        function pickNextShiftDelayMs(difficulty) {
-            const d = LIVE_SHIFT_DIFFICULTY[difficulty] || LIVE_SHIFT_DIFFICULTY.busy;
-            const minMs = d.minGap * 60000, maxMs = d.maxGap * 60000;
-            return minMs + Math.random() * (maxMs - minMs);
-        }
-
-        function startLiveShift() {
-            const hours = parseFloat(document.getElementById('shiftDurationSelect')?.value || '4');
-            const difficulty = document.getElementById('shiftDifficultySelect')?.value || 'busy';
-            const statusEl = document.getElementById('shiftStartStatus');
-
-            const existing = getLiveShiftState();
-            if (existing && existing.active) {
-                if (statusEl) statusEl.innerHTML = '<span style="color:var(--warning)">فيه وردية شغالة بالفعل — أنهيها الأول من الشارة تحت في الشاشة.</span>';
-                return;
-            }
-
-            if (window.Notification && Notification.permission === 'default') {
-                Notification.requestPermission().then(() => {
-                    const note = document.getElementById('shiftReminderPermNote');
-                    if (note) note.style.display = Notification.permission !== 'granted' ? 'block' : 'none';
-                }).catch(() => {});
-            }
-
-            const now = Date.now();
-            const state = {
-                active: true,
-                startedAt: now,
-                endsAt: now + hours * 3600000,
-                difficulty,
-                casesAnswered: [],
-                usedScenarioIds: [],
-                nextAlertAt: now + pickNextShiftDelayMs(difficulty)
-            };
-            saveLiveShiftState(state);
-            if (statusEl) statusEl.innerHTML = '';
-            closeModal('toolsModal');
-            showToast('بدأت الوردية 🚑 هتوصلك حالات فجأة لحد ما تخلص المدة', 'success');
-            renderLiveShiftBadge();
-            checkLiveShiftTick();
-        }
-
-        function cancelLiveShift() {
-            const state = getLiveShiftState();
-            if (!state || !state.active) return;
-            if (!confirm('تنهي الوردية دلوقتي؟ التقرير هيتحسب على الحالات اللي جاتلك لحد دلوقتي.')) return;
-            endLiveShift();
-        }
-
-        // بيدوّر كل دقيقة (طول ما الصفحة/التطبيق مفتوح) على أي وردية شغالة، وبيبعت
-        // حالة جديدة لو وصل معادها — نفس نظام checkStudyScheduleReminders بالظبط.
-        function checkLiveShiftTick() {
-            const state = getLiveShiftState();
-            if (!state || !state.active) return;
-            const now = Date.now();
-            if (now >= state.endsAt) { endLiveShift(); return; }
-            if (!state.currentScenarioId && now >= state.nextAlertAt) triggerShiftAlert();
-            renderLiveShiftBadge();
-        }
-        setInterval(checkLiveShiftTick, 60000);
-
-        function triggerShiftAlert() {
-            const state = getLiveShiftState();
-            if (!state || !state.active) return;
-            if (Date.now() >= state.endsAt) { endLiveShift(); return; }
-
-            const pool = LIVE_SHIFT_SCENARIOS.filter(s => !state.usedScenarioIds.includes(s.id));
-            const bank = pool.length ? pool : LIVE_SHIFT_SCENARIOS;
-            const scenario = bank[Math.floor(Math.random() * bank.length)];
-
-            state.currentScenarioId = scenario.id;
-            state.currentCaseStartedAt = Date.now();
-            state.usedScenarioIds.push(scenario.id);
-            saveLiveShiftState(state);
-
-            try {
-                if (window.Notification && Notification.permission === 'granted') {
-                    const n = new Notification('🚨 حالة جديدة — ' + scenario.title, {
-                        body: scenario.situation.slice(0, 90) + '…',
-                        icon: '/icons/icon-192.png',
-                        tag: 'live-shift-alert'
-                    });
-                    n.onclick = () => { window.focus(); openLiveShiftAlertModal(scenario); };
-                }
-            } catch (e) { /* لو الإشعار فشل، البانر جوه الصفحة كفاية */ }
-
-            openLiveShiftAlertModal(scenario);
-        }
-
-        function openLiveShiftAlertModal(scenario) {
-            const state = getLiveShiftState();
-            const diff = LIVE_SHIFT_DIFFICULTY[state?.difficulty || 'busy'];
-
-            document.getElementById('lsTitle').textContent = scenario.title;
-            document.getElementById('lsVitals').textContent = scenario.vitals || '';
-            document.getElementById('lsSituation').textContent = scenario.situation;
-
-            const optWrap = document.getElementById('lsOptions');
-            optWrap.innerHTML = '';
-            scenario.options.forEach((opt, i) => {
-                const btn = document.createElement('button');
-                btn.className = 'ls-option-btn';
-                btn.textContent = opt;
-                btn.onclick = () => answerLiveShiftAlert(i, scenario);
-                optWrap.appendChild(btn);
-            });
-
-            const fb = document.getElementById('lsFeedback');
-            fb.style.display = 'none';
-            fb.textContent = '';
-
-            let secondsLeft = diff.countdown;
-            const fill = document.getElementById('lsTimerFill');
-            const secText = document.getElementById('lsTimerSeconds');
-            fill.style.transition = 'none';
-            fill.style.width = '100%';
-            requestAnimationFrame(() => {
-                fill.style.transition = `width ${secondsLeft}s linear`;
-                fill.style.width = '0%';
-            });
-            secText.textContent = secondsLeft + 'ث';
-            if (liveShiftCountdownTimer) clearInterval(liveShiftCountdownTimer);
-            liveShiftCountdownTimer = setInterval(() => {
-                secondsLeft--;
-                secText.textContent = Math.max(secondsLeft, 0) + 'ث';
-                if (secondsLeft <= 0) {
-                    clearInterval(liveShiftCountdownTimer);
-                    liveShiftCountdownTimer = null;
-                    answerLiveShiftAlert(-1, scenario);
-                }
-            }, 1000);
-
-            openModal('liveShiftAlertModal');
-        }
-
-        function answerLiveShiftAlert(choiceIndex, scenario) {
-            if (liveShiftCountdownTimer) { clearInterval(liveShiftCountdownTimer); liveShiftCountdownTimer = null; }
-            const state = getLiveShiftState();
-            if (!state) return;
-            const responseMs = Date.now() - (state.currentCaseStartedAt || Date.now());
-            const correct = choiceIndex === scenario.correct;
-
-            state.casesAnswered.push({ id: scenario.id, correct, responseMs, timedOut: choiceIndex === -1 });
-            state.nextAlertAt = Date.now() + pickNextShiftDelayMs(state.difficulty);
-            delete state.currentScenarioId;
-            delete state.currentCaseStartedAt;
-            saveLiveShiftState(state);
-
-            const fb = document.getElementById('lsFeedback');
-            fb.style.display = 'block';
-            fb.className = 'ls-feedback ' + (correct ? 'ls-feedback-correct' : 'ls-feedback-wrong');
-            fb.textContent = (choiceIndex === -1 ? '⏱ خلصت الثواني — ' : (correct ? '✅ صح — ' : '❌ للأسف — ')) + scenario.explanation;
-            document.querySelectorAll('.ls-option-btn').forEach(b => b.disabled = true);
-
-            setTimeout(() => {
-                closeModal('liveShiftAlertModal');
-                if (Date.now() >= state.endsAt) endLiveShift();
-                renderLiveShiftBadge();
-            }, 3200);
-        }
-
-        function endLiveShift() {
-            const state = getLiveShiftState();
-            if (liveShiftCountdownTimer) { clearInterval(liveShiftCountdownTimer); liveShiftCountdownTimer = null; }
-            if (!state) return;
-
-            const total = state.casesAnswered.length;
-            const correct = state.casesAnswered.filter(c => c.correct).length;
-            const avgResponseSec = total ? Math.round(state.casesAnswered.reduce((a, c) => a + c.responseMs, 0) / total / 1000) : 0;
-            const score = total ? Math.round((correct / total) * 100) : 0;
-
-            const history = getLiveShiftHistory();
-            const bestPrevScore = history.reduce((max, h) => Math.max(max, h.score || 0), 0);
-            history.unshift({
-                date: new Date().toISOString(),
-                durationHours: Math.round((state.endsAt - state.startedAt) / 3600000),
-                difficulty: state.difficulty,
-                totalCases: total, correctCases: correct, avgResponseSec, score
-            });
-            localStorage.setItem('sx_live_shift_history', JSON.stringify(history.slice(0, 50)));
-
-            saveLiveShiftState(null);
-            renderLiveShiftBadge();
-            showLiveShiftReport({ total, correct, avgResponseSec, score, bestPrevScore });
-        }
-
-        function showLiveShiftReport({ total, correct, avgResponseSec, score, bestPrevScore }) {
-            document.getElementById('lsReportScore').textContent = score + '%';
-            document.getElementById('lsReportCases').textContent = total;
-            document.getElementById('lsReportCorrect').textContent = correct;
-            document.getElementById('lsReportAvgTime').textContent = avgResponseSec + 'ث';
-
-            const msgEl = document.getElementById('lsReportMsg');
-            if (!total) msgEl.textContent = 'خلصت الوردية من غير حالات — جرب مدة أطول أو مستوى زحمة أعلى المرة الجاية.';
-            else if (score > bestPrevScore && bestPrevScore > 0) msgEl.textContent = 'رقم قياسي جديد ليك! 🎉 أحسن من كل ورديّاتك اللي فاتت.';
-            else if (score >= 90) msgEl.textContent = 'أداء ممتاز 🔥 جاهز فعلاً للشغل تحت ضغط.';
-            else if (score >= 60) msgEl.textContent = 'كويس، بس فيه حالات محتاجة مراجعة — اسأل المساعد عنها.';
-            else msgEl.textContent = 'الوردية دي كانت صعبة — راجع الحالات دي مع المساعد قبل الوردية الجاية.';
-
-            openModal('liveShiftReportModal');
-        }
-
-        function renderLiveShiftBadge() {
-            const state = getLiveShiftState();
-            let badge = document.getElementById('liveShiftBadge');
-            if (!state || !state.active) { if (badge) badge.remove(); return; }
-            if (!badge) {
-                badge = document.createElement('div');
-                badge.id = 'liveShiftBadge';
-                badge.className = 'live-shift-badge';
-                badge.title = 'دوس تنهي الوردية';
-                badge.onclick = cancelLiveShift;
-                document.body.appendChild(badge);
-            }
-            const diffLabel = LIVE_SHIFT_DIFFICULTY[state.difficulty]?.label || '';
-            const remainingMin = Math.max(0, Math.round((state.endsAt - Date.now()) / 60000));
-            badge.innerHTML = `<span class="ls-badge-dot"></span> وردية حية · ${diffLabel} · باقي ${remainingMin} د`;
-        }
-
-        // استئناف أي وردية شغالة لما الطالب يفتح الصفحة من جديد — ولو فاتت حالة كانت
-        // مفتوحة وقت ما قفل الصفحة، بتتحسب "فوّتها" بدل ما تفضل عالقة للأبد.
-        window.addEventListener('load', () => {
-            const state = getLiveShiftState();
-            if (!state || !state.active) return;
-            if (Date.now() >= state.endsAt) { endLiveShift(); return; }
-            if (state.currentScenarioId) {
-                state.casesAnswered.push({ id: state.currentScenarioId, correct: false, responseMs: 0, timedOut: true, missedOnReload: true });
-                delete state.currentScenarioId; delete state.currentCaseStartedAt;
-                saveLiveShiftState(state);
-            }
-            renderLiveShiftBadge();
-            checkLiveShiftTick();
-            if (liveShiftBadgeInterval) clearInterval(liveShiftBadgeInterval);
-            liveShiftBadgeInterval = setInterval(renderLiveShiftBadge, 30000);
-        });
-
         // كل 10 دقايق من فتح الصفحة (طول ما هي ظاهرة قدام المستخدم) — وبس لو الطالب مفعّل
         // الميزة دي من الإعدادات (بعض الطلبة بيحسوا إنها بتقاطعهم وهما في نص حل مسألة).
         setInterval(() => {
@@ -14131,4 +13815,169 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         // الطالب يفهم إن سبب فشل أي طلب هو النت مش عطل في الموقع.
         window.addEventListener('offline', () => showToast('قطع الاتصال بالنت — تأكد من الشبكة وحاول تاني', 'error', { title: 'مفيش إنترنت', icon: 'fa-wifi' }));
         window.addEventListener('online', () => showToast('رجع الاتصال بالنت ✅', 'success', { title: 'Chat X', icon: 'fa-wifi' }));
+
+        // ====================== طبقة "دولينجو" التحفيزية (شجرة تقدّم + ماسكوت + ترحيب
+        // قصصي) ====================== كتلة معزولة بالكامل جوه IIFE واحدة: كل حالتها في
+        // مفاتيح localStorage منفصلة (sx_duo_tree_v1, sx_duo_onboarding_seen)، وبتستخدم
+        // بس دوال قراءة/تنقل آمنة وموجودة أصلاً (BANK_CATALOG, populateBankSubjects,
+        // populateBankChapters, openModal/closeModal, showToast) من غير ما تعدّل ولا سطر
+        // فيهم. لو الكتلة دي اتشالت بالكامل من الملف، مفيش أي تأثير على أي ميزة تانية.
+        (function initDuoMotivationLayer() {
+
+            // ---------- رسالة الماسكوت في شاشة الترحيب الفاضية ----------
+            const DUO_MASCOT_TIPS = [
+                'دوس هنا تشوف "خريطة تقدّمك" 🗺️',
+                'خطوة صغيرة النهاردة، فرق كبير في الامتحان 💪',
+                'مفيش سؤال غبي — اسأل أي حاجة براحتك 🩺',
+                'استراحة 5 دقايق مش كسل، هي شحن 🔋',
+                'كل مادة تخلّصها في الشجرة بتفتحلك اللي بعدها ✅'
+            ];
+            function renderDuoMascot() {
+                const msgEl = document.getElementById('duoMascotMsg');
+                if (!msgEl) return;
+                const hour = new Date().getHours();
+                let greeting = 'أهلاً بيك 👋';
+                if (hour >= 5 && hour < 12) greeting = 'صباح الخير ☀️';
+                else if (hour >= 12 && hour < 17) greeting = 'يومك سعيد 🌤️';
+                else if (hour >= 17 && hour < 22) greeting = 'مساء الخير 🌙';
+                else greeting = 'لسه صاحي؟ خد بالك من نفسك 🌙';
+                const tip = DUO_MASCOT_TIPS[Math.floor(Math.random() * DUO_MASCOT_TIPS.length)];
+                msgEl.innerHTML = `<b>${greeting}</b><br>${tip}`;
+            }
+
+            // ---------- شجرة التقدّم ----------
+            const DUO_TREE_KEY = 'sx_duo_tree_v1';
+            function getDuoTreeState() {
+                try { return JSON.parse(localStorage.getItem(DUO_TREE_KEY) || '{}'); } catch (e) { return {}; }
+            }
+            function setDuoTreeState(state) {
+                try { localStorage.setItem(DUO_TREE_KEY, JSON.stringify(state)); } catch (e) {}
+            }
+            window.openProgressTree = function openProgressTree() {
+                openModal('progressTreeModal');
+                renderDuoTree();
+            };
+            function renderDuoTree() {
+                const wrap = document.getElementById('duoTreePath');
+                if (!wrap) return;
+                if (typeof BANK_CATALOG === 'undefined' || !BANK_CATALOG.length) {
+                    wrap.innerHTML = '<div class="duo-tree-empty">لسه مفيش مواد متاحة في الشجرة</div>';
+                    return;
+                }
+                const state = getDuoTreeState();
+                wrap.innerHTML = '';
+                BANK_CATALOG.forEach((subj, i) => {
+                    const done = Boolean(state[i]);
+                    const prevDone = i === 0 || Boolean(state[i - 1]);
+                    const locked = !prevDone && !done;
+                    const isCurrent = !done && prevDone;
+
+                    if (i > 0) {
+                        const connector = document.createElement('div');
+                        connector.className = 'duo-tree-connector' + (Boolean(state[i - 1]) ? ' duo-done' : '');
+                        wrap.appendChild(connector);
+                    }
+
+                    const item = document.createElement('div');
+                    item.className = 'duo-tree-item';
+                    const offset = [0, -30, 30, -18, 18][i % 5];
+                    item.style.transform = `translateX(${offset}px)`;
+
+                    const node = document.createElement('div');
+                    node.className = 'duo-tree-node' + (done ? ' duo-done' : isCurrent ? ' duo-current' : ' duo-locked');
+                    node.innerHTML = done ? '<i class="fas fa-check"></i>' : (locked ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-book-medical"></i>');
+                    node.setAttribute('role', 'button');
+                    node.setAttribute('aria-label', subj.subject);
+                    node.onclick = () => {
+                        if (locked) { showToast('خلّص المادة اللي قبلها الأول 🔒', 'error'); return; }
+                        goToBankSubject(i);
+                    };
+
+                    if (!locked) {
+                        const check = document.createElement('div');
+                        check.className = 'duo-tree-check';
+                        check.innerHTML = done ? '<i class="fas fa-rotate-left"></i>' : '<i class="fas fa-check"></i>';
+                        check.title = done ? 'إلغاء التحديد كمكتملة' : 'علّم كمكتملة';
+                        check.onclick = (e) => {
+                            e.stopPropagation();
+                            const st = getDuoTreeState();
+                            st[i] = !st[i];
+                            setDuoTreeState(st);
+                            renderDuoTree();
+                            if (st[i]) showToast('تمام! خطوة كمان في شجرتك 🌳', 'success');
+                        };
+                        node.appendChild(check);
+                    }
+
+                    const label = document.createElement('div');
+                    label.className = 'duo-tree-label';
+                    label.textContent = subj.subject;
+
+                    item.appendChild(node);
+                    item.appendChild(label);
+                    wrap.appendChild(item);
+                });
+            }
+            function goToBankSubject(index) {
+                closeModal('progressTreeModal');
+                openModal('toolsModal');
+                try {
+                    if (typeof populateBankSubjects === 'function') populateBankSubjects();
+                    const sel = document.getElementById('bankSubjectSelect');
+                    if (sel) {
+                        sel.value = String(index);
+                        if (typeof populateBankChapters === 'function') populateBankChapters();
+                        sel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                } catch (e) { /* أي مشكلة هنا مبتأثرش على فتح المودال نفسه */ }
+            }
+
+            // ---------- الترحيب القصصي (Onboarding) ----------
+            const DUO_ONB_SEEN_KEY = 'sx_duo_onboarding_seen';
+            const DUO_ONB_STEPS = [
+                { icon: '🩺', title: 'أهلاً بيك في Chat X', body: 'مش مجرد شات ذكاء اصطناعي — ده رفيق مذاكرة فيه بنك أسئلة، محاكيات سريرية حية، وسكانر أدوية، مصمم خصيصًا لطلبة التمريض.' },
+                { icon: '🗺️', title: 'شجرة تقدّمك الخاصة', body: 'كل مادة بتخلّصها بتفتحلك اللي بعدها. تقدر تشوف مكانك فين بالظبط أي وقت من كارت "خريطة التقدم" في الشاشة الرئيسية.' },
+                { icon: '🚨', title: 'اتدرّب زي الواقع بالظبط', body: 'محاكاة "غرفة الطوارئ" بتحطّك تحت ضغط وقت حقيقي بصوت مونيتور فعلي — علشان أول مرة تواجه موقف زي ده تكون جوه المستشفى مش أول مرة تسمع عنه.' }
+            ];
+            let duoOnbStep = 0;
+            function renderDuoOnbStep() {
+                const s = DUO_ONB_STEPS[duoOnbStep];
+                const iconEl = document.getElementById('duoOnbIcon');
+                const titleEl = document.getElementById('duoOnbTitle');
+                const bodyEl = document.getElementById('duoOnbBody');
+                const dotsEl = document.getElementById('duoOnbDots');
+                const btnEl = document.getElementById('duoOnbNextBtn');
+                if (!iconEl) return;
+                iconEl.textContent = s.icon;
+                titleEl.textContent = s.title;
+                bodyEl.textContent = s.body;
+                dotsEl.innerHTML = DUO_ONB_STEPS.map((_, i) => `<span class="duo-onb-dot ${i === duoOnbStep ? 'duo-active' : ''}"></span>`).join('');
+                btnEl.textContent = duoOnbStep === DUO_ONB_STEPS.length - 1 ? 'يلا نبدأ 🚀' : 'التالي';
+            }
+            window.duoOnbNext = function duoOnbNext() {
+                if (duoOnbStep < DUO_ONB_STEPS.length - 1) { duoOnbStep++; renderDuoOnbStep(); }
+                else window.duoOnbClose();
+            };
+            window.duoOnbSkip = function duoOnbSkip() { window.duoOnbClose(); };
+            window.duoOnbClose = function duoOnbClose() {
+                closeModal('onboardingStoryModal');
+                try { localStorage.setItem(DUO_ONB_SEEN_KEY, '1'); } catch (e) {}
+            };
+            window.openOnboardingStory = function openOnboardingStory() {
+                duoOnbStep = 0;
+                renderDuoOnbStep();
+                openModal('onboardingStoryModal');
+            };
+
+            // ---------- تشغيل تلقائي آمن بعد تحميل الصفحة بالكامل — setTimeout عشان
+            // نضمن إن باقي كود التطبيق (خصوصًا openModal/closeModal) اتحمّل واشتغل الأول ----------
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    try { renderDuoMascot(); } catch (e) {}
+                    try {
+                        if (!localStorage.getItem(DUO_ONB_SEEN_KEY)) window.openOnboardingStory();
+                    } catch (e) {}
+                }, 700);
+            });
+        })();
 

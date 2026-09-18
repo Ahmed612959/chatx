@@ -286,7 +286,16 @@
                     <div class="welcome-logo"><i class="fas fa-graduation-cap"></i></div>
                     <h1 class="welcome-title">أهلاً بك في Chat X</h1>
                     <p class="welcome-sub">مساعدك الأكاديمي الذكي. اسأل عن الملخصات، خطط الدراسة، أو استخدم الحاسبات العلمية.</p>
+                    <div class="duo-mascot-card" onclick="openProgressTree()" role="button" aria-label="افتح خريطة التقدم">
+                        <div class="duo-mascot-avatar-sm">🩺</div>
+                        <div class="duo-mascot-msg" id="duoMascotMsg">أهلاً بيك 👋<br>دوس هنا تشوف "خريطة تقدّمك" 🗺️</div>
+                    </div>
                     <div class="quick-grid">
+                        <div class="quick-card" onclick="openProgressTree()">
+                            <i class="fas fa-route"></i>
+                            <h4>خريطة التقدم</h4>
+                            <p>شجرة موادك</p>
+                        </div>
                         <div class="quick-card" onclick="sendQuick('اكتب لي خطة دراسة منظمة')">
                             <i class="fas fa-clipboard-list"></i>
                             <h4>خطة دراسة</h4>
@@ -1063,76 +1072,6 @@
                     حلّل أي صورة برؤية ذكاء اصطناعي حقيقية (مش استخراج نص بس)، أو أنشئ صورة من وصف نصي. ميزة Premium.
                 </p>
                 <button class="btn-calc" onclick="closeModal('toolsModal'); openImageStudio();"><i class="fas fa-image"></i> افتح استوديو الصور</button>
-            </div>
-            <div class="tool-section">
-                <div class="tool-title"><i class="fas fa-truck-medical"></i> المناوبة الحية 🚨</div>
-                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
-                    شغّل "وردية" حقيقية على مدار يومك — هتوصلك حالات طوارئ فجأة وانت مش متوقع، وعندك ثواني معدودة تقرر أول إجراء، بالظبط زي شيفت حقيقي في المستشفى. في الآخر هتاخد تقرير أداء كامل.
-                </p>
-                <div class="input-group">
-                    <label>مدة الوردية</label>
-                    <select id="shiftDurationSelect" class="tool-input">
-                        <option value="2">2 ساعات</option>
-                        <option value="4" selected>4 ساعات</option>
-                        <option value="6">6 ساعات</option>
-                        <option value="8">8 ساعات</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>مستوى الزحمة</label>
-                    <select id="shiftDifficultySelect" class="tool-input">
-                        <option value="calm">هادية (حالة كل ساعة تقريبًا)</option>
-                        <option value="busy" selected>مزدحمة (حالة كل نص ساعة تقريبًا)</option>
-                        <option value="chaos">ليلة جنونية (حالة كل ربع ساعة تقريبًا)</option>
-                    </select>
-                </div>
-                <p id="shiftReminderPermNote" style="display:none;font-size:11px;color:var(--warning);margin:2px 0 10px;line-height:1.7;">
-                    <i class="fas fa-triangle-exclamation"></i> لازم توافق على إذن الإشعارات عشان الحالات توصلك حتى لو مفتحتش الشات في نفس اللحظة.
-                </p>
-                <p style="font-size:11px;color:var(--text-3);margin-bottom:12px;line-height:1.7;">
-                    الوردية شغالة طول ما الموقع/التطبيق مفتوح عندك (تاب أو PWA) — مش لو قافله تمامًا، زي تذكير جدول المذاكرة بالظبط.
-                </p>
-                <button class="btn-calc" onclick="startLiveShift()"><i class="fas fa-bell-on"></i> ابدأ الوردية دلوقتي</button>
-                <div class="calc-result" id="shiftStartStatus"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- المناوبة الحية: مودال الحالة الطارئة اللي بتظهر فجأة وقت ما تيجي، ومودال
-         التقرير اللي بيظهر في آخر الوردية. راجع startLiveShift/triggerShiftAlert/
-         answerLiveShiftAlert/endLiveShift في script.js. -->
-    <div class="modal-overlay" id="liveShiftAlertModal">
-        <div class="modal ls-alert-modal">
-            <div class="modal-header ls-alert-header">
-                <div class="modal-title"><i class="fas fa-triangle-exclamation"></i> حالة طارئة</div>
-            </div>
-            <div class="ls-timer-bar"><div class="ls-timer-fill" id="lsTimerFill"></div></div>
-            <div class="ls-timer-seconds" id="lsTimerSeconds">--ث</div>
-            <div class="ls-alert-body">
-                <div class="ls-alert-title" id="lsTitle"></div>
-                <div class="ls-alert-vitals" id="lsVitals"></div>
-                <div class="ls-alert-situation" id="lsSituation"></div>
-                <div class="ls-options" id="lsOptions"></div>
-                <div class="ls-feedback" id="lsFeedback" style="display:none;"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="liveShiftReportModal">
-        <div class="modal">
-            <div class="modal-header">
-                <div class="modal-title"><i class="fas fa-clipboard-check"></i> تقرير الوردية</div>
-                <button class="close-modal" aria-label="إغلاق التقرير" onclick="closeModal('liveShiftReportModal')"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="tool-section">
-                <div class="ls-report-score" id="lsReportScore">--%</div>
-                <div class="ls-report-msg" id="lsReportMsg"></div>
-                <div class="ls-report-grid">
-                    <div class="ls-report-stat"><span id="lsReportCases">0</span><small>حالة وصلتك</small></div>
-                    <div class="ls-report-stat"><span id="lsReportCorrect">0</span><small>قرار صح</small></div>
-                    <div class="ls-report-stat"><span id="lsReportAvgTime">0ث</span><small>متوسط زمن الرد</small></div>
-                </div>
-                <button class="btn-calc" onclick="closeModal('liveShiftReportModal')">تمام</button>
             </div>
         </div>
     </div>
@@ -2321,6 +2260,32 @@
                     <button class="btn-calc btn-secondary" onclick="exitVideoSim(); openVideoSimList();">رجوع لقائمة الحالات</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- خريطة التقدم — شجرة مواد بستايل دولينجو، إضافة مستقلة لا تؤثر على أي مودال تاني -->
+    <div class="modal-overlay" id="progressTreeModal">
+        <div class="modal duo-modal-white" style="max-width:380px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-route"></i> خريطة التقدم</div>
+                <button class="close-modal" aria-label="إغلاق" onclick="closeModal('progressTreeModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="duoTreePath" class="duo-tree-path"></div>
+        </div>
+    </div>
+
+    <!-- ترحيب قصصي أول استخدام — بيفتح مرة واحدة بس (localStorage) ومتاح لإعادة العرض يدويًا -->
+    <div class="modal-overlay" id="onboardingStoryModal">
+        <div class="modal duo-modal-white" style="max-width:360px;text-align:center;">
+            <div class="modal-header" style="justify-content:flex-end;">
+                <button class="close-modal" aria-label="تخطي" onclick="duoOnbSkip()"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="duoOnbIcon" class="duo-onb-icon">🩺</div>
+            <div id="duoOnbTitle" class="duo-onb-title">أهلاً بيك</div>
+            <div id="duoOnbBody" class="duo-onb-body">...</div>
+            <div id="duoOnbDots" class="duo-onb-dots"></div>
+            <button id="duoOnbNextBtn" class="duo-onb-btn-primary" onclick="duoOnbNext()">التالي</button>
+            <button class="duo-onb-btn-ghost" onclick="duoOnbSkip()">تخطي</button>
         </div>
     </div>
 
