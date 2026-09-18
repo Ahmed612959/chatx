@@ -545,6 +545,13 @@
 
         .message { display: flex; gap: 10px; max-width: 90%; animation: floatIn 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
         @media (min-width: 768px) { .message { max-width: 80%; gap: 12px; } }
+        /* فقاعة رسائل الشات كانت ضيقة على الموبايل رغم إن .msg-bubble نفسها max-width:100% —
+           السبب إن .message (الصف اللي شايل الأفاتار + الفقاعة مع بعض) هو اللي كان محدد العرض
+           الكلي بـ 90%، فأي تعديل على .msg-bubble وحدها ماكانش هيأثر. بنوسّع .message نفسها
+           هنا عشان الفقاعة (وأي جدول جواها) تاخد مساحة أكبر من الشاشة الضيقة. */
+        @media (max-width: 640px) {
+            .message { max-width: 97%; }
+        }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message.user { flex-direction: row-reverse; margin-left: auto; }
         

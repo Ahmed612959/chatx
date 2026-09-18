@@ -2648,7 +2648,13 @@
             }
             streamState.botMsg.content = textSoFar;
             const bubbleDiv = streamState.msgDiv.querySelector('.msg-bubble');
-            if (bubbleDiv) bubbleDiv.innerHTML = DOMPurify.sanitize(marked.parse(textSoFar));
+            if (bubbleDiv) {
+                bubbleDiv.innerHTML = DOMPurify.sanitize(marked.parse(textSoFar));
+                // الجدول بيتبني من جديد بالكامل كل مرة (innerHTML بيتستبدل بالكامل)، فلازم
+                // نغلفه بعنصر قابل للتمرير الأفقي (.table-wrap) في كل تحديث أثناء البث نفسه —
+                // مش بس لما الرد يخلص — عشان الجدول ميطلعش برة حدود الفقاعة وهو لسه بيتكتب.
+                wrapTables(bubbleDiv);
+            }
             scrollToBottom();
         }
 
