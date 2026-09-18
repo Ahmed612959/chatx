@@ -4783,7 +4783,46 @@
             });
         }
 
-        // إظهار/إخفاء مربع أدوات الهيدر (تحت اسم Chat X) حسب موضع السكرول:
+        // تتبع أكثر أدوات شريط الهيدر استخدامًا، وترتيبها تلقائيًا (الأكثر استخدامًا
+        // أول حاجة في الصف) في كل مرة الصفحة بتتحمل فيها. زرار القائمة الجانبية
+        // (☰) بيفضل ثابت في مكانه دايمًا لأنه تحكم أساسي مش "أداة" بالمعنى ده.
+        // الترتيب الجديد بيتطبق مرة واحدة بس عند التحميل (مش لحظة الضغط) عشان
+        // الأيقونات ميقفزوش من تحت إيد الطالب وهو بيدوس عليها.
+        const TOOL_USAGE_KEY = 'chatx_tool_usage_v1';
+        function trackToolUsage(toolId) {
+            if (!toolId) return;
+            let usage = {};
+            try { usage = JSON.parse(localStorage.getItem(TOOL_USAGE_KEY) || '{}'); } catch (e) {}
+            usage[toolId] = (usage[toolId] || 0) + 1;
+            try { localStorage.setItem(TOOL_USAGE_KEY, JSON.stringify(usage)); } catch (e) {}
+        }
+        function reorderTopActionsByUsage() {
+            const bar = document.getElementById('topActionsBar');
+            if (!bar) return;
+            let usage = {};
+            try { usage = JSON.parse(localStorage.getItem(TOOL_USAGE_KEY) || '{}'); } catch (e) {}
+
+            const items = Array.from(bar.querySelectorAll('[data-tool-id]'));
+            // Array.prototype.sort مضمون إنه stable في كل المتصفحات الحديثة، يعني
+            // الأدوات اللي عندها نفس عدد الاستخدام (أو صفر) هتحافظ على ترتيبها
+            // الأصلي بدل ما تتقلب عشوائيًا.
+            items.sort((a, b) => (usage[b.dataset.toolId] || 0) - (usage[a.dataset.toolId] || 0));
+            items.forEach(el => bar.appendChild(el));
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            reorderTopActionsByUsage();
+            const bar = document.getElementById('topActionsBar');
+            if (bar) {
+                // delegation واحد على الصف كله بدل ما نلمس onclick كل زرار على حدة —
+                // بيسجل الاستخدام من غير ما يأثر على وظيفة الزرار الأصلية خالص.
+                bar.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-tool-id]');
+                    if (btn) trackToolUsage(btn.dataset.toolId);
+                });
+            }
+        });
+
+        // إظهار/إخفاء مربع الأدوات (تحت اسم Chat X) حسب موضع السكرول:
         // بيبان بس وإحنا في أول المحادثة بالظبط، وبيختفي أول ما نبعد عن
         // القمة بمسافة محسوسة، عشان يدي أكبر مساحة ممكنة لشات الطالب على
         // أي جهاز (موبايل أساسًا). بيرجع يظهر بس لو رجعنا لفوق تاني.

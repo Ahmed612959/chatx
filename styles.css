@@ -278,6 +278,7 @@
            بالكامل (height:0)، وده اللي كان بيظهر كشريط أبيض فوق الشات بعد
            الاسكرول. */
         .tb-tools-collapsible {
+            position: relative;
             height: var(--tb-tools-h, auto);
             overflow: hidden;
             padding: 4px 14px;
@@ -293,6 +294,29 @@
                         border-width .38s cubic-bezier(.4,0,.2,1),
                         margin-top .38s cubic-bezier(.4,0,.2,1);
             will-change: height, opacity, transform;
+        }
+        /* تدرج شفافية خفيف عند طرفي الصف بيلمّح إن فيه أيقونات تانية لو
+           عملت سكرول، بدل ما الصف يتقطع فجأة على آخر أيقونة ظاهرة. الطبقة
+           دي فوق صف الأيقونات (z-index) بس ثابتة (مش بتتسكرول معاه)، ولونها
+           نفس خلفية المربع (var(--bg-2)) عشان تندمج مع حواف المربع الدائرية. */
+        .tb-tools-collapsible::before,
+        .tb-tools-collapsible::after {
+            content: '';
+            position: absolute;
+            top: 1px; bottom: 1px;
+            width: 22px;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .tb-tools-collapsible::before {
+            right: 1px;
+            background: linear-gradient(to left, var(--bg-2), transparent);
+            border-radius: 0 19px 19px 0;
+        }
+        .tb-tools-collapsible::after {
+            left: 1px;
+            background: linear-gradient(to right, var(--bg-2), transparent);
+            border-radius: 19px 0 0 19px;
         }
         .tb-tools-collapsible.top-actions-hidden {
             height: 0;
