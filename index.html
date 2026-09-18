@@ -1064,6 +1064,76 @@
                 </p>
                 <button class="btn-calc" onclick="closeModal('toolsModal'); openImageStudio();"><i class="fas fa-image"></i> افتح استوديو الصور</button>
             </div>
+            <div class="tool-section">
+                <div class="tool-title"><i class="fas fa-truck-medical"></i> المناوبة الحية 🚨</div>
+                <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
+                    شغّل "وردية" حقيقية على مدار يومك — هتوصلك حالات طوارئ فجأة وانت مش متوقع، وعندك ثواني معدودة تقرر أول إجراء، بالظبط زي شيفت حقيقي في المستشفى. في الآخر هتاخد تقرير أداء كامل.
+                </p>
+                <div class="input-group">
+                    <label>مدة الوردية</label>
+                    <select id="shiftDurationSelect" class="tool-input">
+                        <option value="2">2 ساعات</option>
+                        <option value="4" selected>4 ساعات</option>
+                        <option value="6">6 ساعات</option>
+                        <option value="8">8 ساعات</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>مستوى الزحمة</label>
+                    <select id="shiftDifficultySelect" class="tool-input">
+                        <option value="calm">هادية (حالة كل ساعة تقريبًا)</option>
+                        <option value="busy" selected>مزدحمة (حالة كل نص ساعة تقريبًا)</option>
+                        <option value="chaos">ليلة جنونية (حالة كل ربع ساعة تقريبًا)</option>
+                    </select>
+                </div>
+                <p id="shiftReminderPermNote" style="display:none;font-size:11px;color:var(--warning);margin:2px 0 10px;line-height:1.7;">
+                    <i class="fas fa-triangle-exclamation"></i> لازم توافق على إذن الإشعارات عشان الحالات توصلك حتى لو مفتحتش الشات في نفس اللحظة.
+                </p>
+                <p style="font-size:11px;color:var(--text-3);margin-bottom:12px;line-height:1.7;">
+                    الوردية شغالة طول ما الموقع/التطبيق مفتوح عندك (تاب أو PWA) — مش لو قافله تمامًا، زي تذكير جدول المذاكرة بالظبط.
+                </p>
+                <button class="btn-calc" onclick="startLiveShift()"><i class="fas fa-bell-on"></i> ابدأ الوردية دلوقتي</button>
+                <div class="calc-result" id="shiftStartStatus"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- المناوبة الحية: مودال الحالة الطارئة اللي بتظهر فجأة وقت ما تيجي، ومودال
+         التقرير اللي بيظهر في آخر الوردية. راجع startLiveShift/triggerShiftAlert/
+         answerLiveShiftAlert/endLiveShift في script.js. -->
+    <div class="modal-overlay" id="liveShiftAlertModal">
+        <div class="modal ls-alert-modal">
+            <div class="modal-header ls-alert-header">
+                <div class="modal-title"><i class="fas fa-triangle-exclamation"></i> حالة طارئة</div>
+            </div>
+            <div class="ls-timer-bar"><div class="ls-timer-fill" id="lsTimerFill"></div></div>
+            <div class="ls-timer-seconds" id="lsTimerSeconds">--ث</div>
+            <div class="ls-alert-body">
+                <div class="ls-alert-title" id="lsTitle"></div>
+                <div class="ls-alert-vitals" id="lsVitals"></div>
+                <div class="ls-alert-situation" id="lsSituation"></div>
+                <div class="ls-options" id="lsOptions"></div>
+                <div class="ls-feedback" id="lsFeedback" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="liveShiftReportModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-clipboard-check"></i> تقرير الوردية</div>
+                <button class="close-modal" aria-label="إغلاق التقرير" onclick="closeModal('liveShiftReportModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tool-section">
+                <div class="ls-report-score" id="lsReportScore">--%</div>
+                <div class="ls-report-msg" id="lsReportMsg"></div>
+                <div class="ls-report-grid">
+                    <div class="ls-report-stat"><span id="lsReportCases">0</span><small>حالة وصلتك</small></div>
+                    <div class="ls-report-stat"><span id="lsReportCorrect">0</span><small>قرار صح</small></div>
+                    <div class="ls-report-stat"><span id="lsReportAvgTime">0ث</span><small>متوسط زمن الرد</small></div>
+                </div>
+                <button class="btn-calc" onclick="closeModal('liveShiftReportModal')">تمام</button>
+            </div>
         </div>
     </div>
 
