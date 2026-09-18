@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data:; connect-src 'self' https://schoolx-eta.vercel.app; base-uri 'self'; object-src 'none'; form-action 'self';">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>إلغاء تفعيل Premium | لوحة الأدمن</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+    :root{
+        --bg:#0a0e1a; --bg-2:#131827; --card:#161c2e; --border:rgba(255,255,255,.08);
+        --text-1:#f1f5f9; --text-2:#94a3b8; --text-3:#7c8aa3;
+        --accent:#6366f1; --accent-2:#8b5cf6;
+        --success:#10b981; --warning:#f59e0b; --danger:#ef4444;
+        --gold:#d4af37; --gold-2:#f0c869;
+        --radius:14px; --radius-sm:10px;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;background:var(--bg);color:var(--text-1);font-family:'Cairo',sans-serif;min-height:100vh;}
+    .wrap{max-width:920px;margin:0 auto;padding:18px 16px 60px;}
+    header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px;flex-wrap:wrap;}
+    header.top h1{font-size:19px;margin:0;display:flex;align-items:center;gap:9px;}
+    header.top h1 i{color:var(--gold);}
+    .top-actions{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-2);}
+    .btn{border:none;border-radius:var(--radius-sm);padding:9px 14px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s ease;}
+    .btn-accent{background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff;}
+    .btn-danger{background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.35);}
+    .btn-danger:hover{background:rgba(239,68,68,.22);}
+    .btn-ghost{background:transparent;color:var(--text-2);border:1px solid var(--border);}
+    .btn-ghost:hover{color:var(--text-1);border-color:var(--text-3);}
+    .btn:disabled{opacity:.5;cursor:not-allowed;}
+    .btn-sm{padding:6px 10px;font-size:11.5px;}
+
+    /* ============ شاشة الدخول ============ */
+    #authGate{max-width:380px;margin:12vh auto 0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:26px 22px;text-align:center;}
+    #authGate i.fa-crown{font-size:34px;color:var(--gold);margin-bottom:10px;}
+    #authGate h2{margin:0 0 4px;font-size:17px;}
+    #authGate p{color:var(--text-2);font-size:12.5px;margin:0 0 18px;}
+    #authGate input{width:100%;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-1);padding:11px 12px;font-family:inherit;font-size:14px;margin-bottom:10px;}
+    #authGate input:focus{outline:none;border-color:var(--accent);}
+    #authGate .btn{width:100%;justify-content:center;padding:11px;font-size:14px;margin-top:4px;}
+    #authError{color:var(--danger);font-size:12.5px;margin-top:10px;min-height:14px;}
+
+    /* ============ أدوات البحث ============ */
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+    .toolbar input[type="text"]{flex:1;min-width:180px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-1);padding:10px 14px;font-family:inherit;font-size:13.5px;}
+    .toolbar input[type="text"]:focus{outline:none;border-color:var(--accent);}
+    .toolbar label.chk{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-2);cursor:pointer;white-space:nowrap;}
+
+    #statusLine{font-size:12.5px;color:var(--text-3);margin-bottom:12px;min-height:16px;}
+
+    /* ============ كروت الطلاب ============ */
+    .student-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+    .student-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+    .student-name{font-size:15px;font-weight:700;}
+    .student-meta{font-size:11.5px;color:var(--text-3);margin-top:2px;}
+    .feature-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+    .feature-chip{display:flex;align-items:center;gap:8px;background:linear-gradient(120deg,rgba(212,175,55,.14),rgba(240,200,105,.06));border:1px solid rgba(212,175,55,.3);border-radius:999px;padding:6px 8px 6px 14px;font-size:12px;}
+    .feature-chip .ft-title{color:var(--text-1);}
+    .feature-chip button{border:none;background:rgba(239,68,68,.16);color:var(--danger);width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .feature-chip button:hover{background:var(--danger);color:#fff;}
+    .no-features{font-size:12.5px;color:var(--text-3);font-style:italic;}
+    .empty-state,.loading-state{text-align:center;padding:60px 20px;color:var(--text-3);font-size:13.5px;}
+    .empty-state i,.loading-state i{font-size:26px;display:block;margin-bottom:10px;opacity:.6;}
+
+    /* ============ توست ============ */
+    #toastBox{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999;display:flex;flex-direction:column;gap:8px;width:min(92vw,420px);}
+    .toast{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;display:flex;align-items:flex-start;gap:9px;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:toastIn .2s ease;}
+    .toast.success{border-color:rgba(16,185,129,.4);}
+    .toast.error{border-color:rgba(239,68,68,.4);}
+    .toast i{margin-top:2px;}
+    .toast.success i{color:var(--success);}
+    .toast.error i{color:var(--danger);}
+    @keyframes toastIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+    #appRoot{display:none;}
+</style>
+</head>
+<body>
+
+<div id="authGate">
+    <i class="fas fa-crown"></i>
+    <h2>لوحة إلغاء Premium</h2>
+    <p>الصفحة دي مخصصة لأدمنز School X بس</p>
+    <input type="text" id="loginUsername" placeholder="اسم المستخدم" autocomplete="username">
+    <input type="password" id="loginPassword" placeholder="كلمة السر" autocomplete="current-password">
+    <button class="btn btn-accent" id="loginBtn" onclick="doLogin()"><i class="fas fa-right-to-bracket"></i> دخول</button>
+    <div id="authError"></div>
+</div>
+
+<div class="wrap" id="appRoot">
+    <header class="top">
+        <h1><i class="fas fa-crown"></i> إلغاء تفعيل مميزات Premium</h1>
+        <div class="top-actions">
+            <span id="adminNameBadge"></span>
+            <button class="btn btn-ghost btn-sm" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i> خروج</button>
+        </div>
+    </header>
+
+    <div class="toolbar">
+        <input type="text" id="searchInput" placeholder="دور باسم الطالب / رقم الجلوس / اليوزر..." oninput="renderStudents()">
+        <label class="chk"><input type="checkbox" id="onlyPremiumChk" checked onchange="renderStudents()"> اعرض المشتركين في Premium بس</label>
+        <button class="btn btn-ghost btn-sm" onclick="loadStudents()"><i class="fas fa-rotate-right"></i> تحديث</button>
+    </div>
+
+    <div id="statusLine"></div>
+    <div id="studentsContainer"><div class="loading-state"><i class="fas fa-spinner fa-spin"></i> جاري تحميل الطلاب...</div></div>
+</div>
+
+<div id="toastBox"></div>
+
+<script>
+const FIXED_SCHOOL_API_URL = 'https://schoolx-eta.vercel.app';
+
+// نفس مفاتيح وعناوين المميزات المستخدمة في Chat X (script.js) — لازم تفضل
+// متطابقة معاها عشان الشارة اللي بتظهر هنا تبقى مفهومة لنفس الأدمن.
+const PREMIUM_LABELS = {
+    premium_ai: { icon: '🧠', title: 'الذكاء الاصطناعي المتقدم' },
+    premium_mock_exams: { icon: '📝', title: 'امتحانات المحاكاة الشاملة' },
+    premium_prompts: { icon: '⚡', title: 'مكتبة البرومبتس الذكية' },
+    premium_theme: { icon: '👑', title: 'تصميم Chat X الذهبي' },
+    premium_drug_library: { icon: '💊', title: 'مكتبة الأدوية الشخصية' },
+    premium_clinical_sim: { icon: '🩺', title: 'محاكي المواقف الإكلينيكية' },
+    premium_lecture_audio: { icon: '🎙️', title: 'ملخص صوتي للمحاضرات' },
+    premium_skills: { icon: '🧩', title: 'مهارات مخصصة' },
+    premium_academic_profile: { icon: '📊', title: 'البروفايل الأكاديمي الموحّد' },
+    premium_german_pro: { icon: '🇩🇪', title: 'German Pro' },
+    premium_english_pro: { icon: '🇬🇧', title: 'English Pro' },
+    premium_image_studio: { icon: '🖼️', title: 'استوديو الصور الذكي' },
+    premium_video_sim: { icon: '🎬', title: 'محاكاة الفيديو التفاعلية' },
+    premium_voice: { icon: '🔊', title: 'الصوت (Premium)' }
+};
+
+let authToken = localStorage.getItem('sx_school_token') || null;
+let authUser = JSON.parse(localStorage.getItem('sx_school_user') || 'null');
+let allStudents = [];
+
+function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function showToast(message, type) {
+    const box = document.getElementById('toastBox');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<i class="fas ${type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i><span>${escapeHtml(message)}</span>`;
+    box.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = '.25s'; setTimeout(() => el.remove(), 260); }, 5000);
+}
+
+// ====================== الدخول (أدمن بس) ======================
+async function doLogin() {
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('authError');
+    const btn = document.getElementById('loginBtn');
+    errEl.textContent = '';
+    if (!username || !password) { errEl.textContent = 'من فضلك اكتب اسم المستخدم وكلمة السر'; return; }
+    btn.disabled = true;
+    try {
+        const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error || 'بيانات الدخول غير صحيحة'; return; }
+        if (data.user?.type !== 'admin') {
+            errEl.textContent = 'الصفحة دي مخصصة لحسابات الأدمن فقط';
+            // مفيش أي داعي نخزن توكن حساب مش أدمن أصلًا هنا.
+            return;
+        }
+        authToken = data.token;
+        authUser = data.user;
+        localStorage.setItem('sx_school_token', authToken);
+        localStorage.setItem('sx_school_user', JSON.stringify(authUser));
+        enterApp();
+    } catch (e) {
+        errEl.textContent = 'تعذر الاتصال بالسيرفر، حاول تاني';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+function doLogout() {
+    if (!confirm('تسجيل الخروج من لوحة الأدمن؟')) return;
+    if (authToken) fetch(`${FIXED_SCHOOL_API_URL}/api/logout`, { method: 'POST', headers: { Authorization: `Bearer ${authToken}` } }).catch(() => {});
+    authToken = null; authUser = null;
+    localStorage.removeItem('sx_school_token');
+    localStorage.removeItem('sx_school_user');
+    document.getElementById('appRoot').style.display = 'none';
+    document.getElementById('authGate').style.display = 'block';
+}
+
+function enterApp() {
+    document.getElementById('authGate').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+    document.getElementById('adminNameBadge').textContent = `مسجّل دخول: ${authUser.fullName || authUser.username}`;
+    loadStudents();
+}
+
+// ====================== تحميل الطلاب ======================
+async function loadStudents() {
+    const container = document.getElementById('studentsContainer');
+    const status = document.getElementById('statusLine');
+    container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i> جاري تحميل الطلاب...</div>';
+    status.textContent = '';
+    try {
+        const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/admin/students`, {
+            headers: { Authorization: `Bearer ${authToken}` }
+        });
+        if (res.status === 401 || res.status === 403) {
+            showToast('انتهت صلاحية الجلسة، سجّل دخول تاني', 'error');
+            doLogout();
+            return;
+        }
+        const data = await res.json();
+        if (!res.ok) { container.innerHTML = `<div class="empty-state"><i class="fas fa-triangle-exclamation"></i>${escapeHtml(data.error || 'تعذر تحميل الطلاب')}</div>`; return; }
+        allStudents = Array.isArray(data) ? data : [];
+        renderStudents();
+    } catch (e) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-triangle-exclamation"></i>تعذر الاتصال بالسيرفر</div>';
+    }
+}
+
+function renderStudents() {
+    const container = document.getElementById('studentsContainer');
+    const status = document.getElementById('statusLine');
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    const onlyPremium = document.getElementById('onlyPremiumChk').checked;
+
+    let list = allStudents.filter(s => {
+        if (onlyPremium && !(s.premiumFeatures || []).length) return false;
+        if (!q) return true;
+        return [s.fullName, s.studentCode, s.username].some(v => String(v || '').toLowerCase().includes(q));
+    });
+
+    const totalPremium = allStudents.filter(s => (s.premiumFeatures || []).length).length;
+    status.textContent = `${totalPremium} طالب عنده Premium مفعّل من إجمالي ${allStudents.length} · بيتعرض ${list.length}`;
+
+    if (!list.length) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-user-slash"></i>مفيش طلاب مطابقين</div>';
+        return;
+    }
+
+    container.innerHTML = list.map(s => {
+        const features = s.premiumFeatures || [];
+        const chips = features.length
+            ? features.map(key => {
+                const meta = PREMIUM_LABELS[key] || { icon: '⭐', title: key };
+                return `<div class="feature-chip">
+                    <span>${meta.icon}</span>
+                    <span class="ft-title">${escapeHtml(meta.title)}</span>
+                    <button title="إلغاء الميزة دي بس" onclick="revokeOne('${s.studentCode}','${key}')"><i class="fas fa-xmark"></i></button>
+                </div>`;
+              }).join('')
+            : '<span class="no-features">مفيش مميزات Premium مفعّلة</span>';
+
+        return `<div class="student-card" data-code="${escapeHtml(s.studentCode)}">
+            <div class="student-top">
+                <div>
+                    <div class="student-name">${escapeHtml(s.fullName || s.username)}</div>
+                    <div class="student-meta">رقم الجلوس: ${escapeHtml(s.studentCode)} · اليوزر: ${escapeHtml(s.username)}</div>
+                </div>
+                ${features.length ? `<button class="btn btn-danger btn-sm" onclick="revokeAll('${s.studentCode}')"><i class="fas fa-ban"></i> إلغاء الكل</button>` : ''}
+            </div>
+            <div class="feature-list">${chips}</div>
+        </div>`;
+    }).join('');
+}
+
+// ====================== إلغاء التفعيل ======================
+async function updatePremium(studentCode, newFeatures, confirmMsg) {
+    if (!confirm(confirmMsg)) return;
+    try {
+        const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/admin/students/${encodeURIComponent(studentCode)}/premium`, {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ premiumFeatures: newFeatures })
+        });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.error || 'تعذر تنفيذ العملية', 'error'); return; }
+
+        // نحدّث النسخة المحلية من غير ما نعمل تحميل كامل تاني
+        const idx = allStudents.findIndex(s => s.studentCode === studentCode);
+        if (idx !== -1) allStudents[idx].premiumFeatures = data.student.premiumFeatures;
+        renderStudents();
+
+        if (data.forcedLogout) {
+            showToast('تم الإلغاء — الطالب هيتسجّل خروجه تلقائيًا (خلال دقيقتين تقريبًا) وهيتطلب منه تسجيل الدخول وربط جهازه من جديد.', 'success');
+        } else {
+            showToast('تم الحفظ', 'success');
+        }
+    } catch (e) {
+        showToast('تعذر الاتصال بالسيرفر', 'error');
+    }
+}
+
+function revokeOne(studentCode, key) {
+    const student = allStudents.find(s => s.studentCode === studentCode);
+    if (!student) return;
+    const meta = PREMIUM_LABELS[key] || { title: key };
+    const remaining = (student.premiumFeatures || []).filter(f => f !== key);
+    updatePremium(studentCode, remaining, `إلغاء ميزة "${meta.title}" عن الطالب ده؟ هيتسجّل خروجه تلقائيًا ويحتاج يربط جهازه تاني.`);
+}
+
+function revokeAll(studentCode) {
+    const student = allStudents.find(s => s.studentCode === studentCode);
+    if (!student) return;
+    updatePremium(studentCode, [], `إلغاء كل مميزات Premium عن الطالب ده؟ هيتسجّل خروجه تلقائيًا ويحتاج يربط جهازه تاني.`);
+}
+
+// ====================== نقطة البداية ======================
+(function init() {
+    if (authToken && authUser && authUser.type === 'admin') {
+        enterApp();
+    } else {
+        document.getElementById('authGate').style.display = 'block';
+    }
+    document.getElementById('loginPassword')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+})();
+</script>
+</body>
+</html>
