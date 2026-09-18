@@ -11033,7 +11033,86 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             }
         ];
 
-        let currentVideoSim = null;   // { scenario, nodeId, path: [{nodeId, choiceText}, ...] }
+        let currentVideoSim = null;   // { scenario, nodeId, path: [{nodeId, choiceText}, ...], startedAt, timeoutCount }
+
+        // ====================== غرفة الطوارئ — ضغط الوقت (Code Blue) ======================
+        // كل mood ليه سقف ثواني مختلف لاتخاذ القرار — الحالة العادية بتديك وقت تفكير، والحرجة
+        // بتضغط عليك زي الواقع فعلًا. الرقم ده افتراضي بيتحسب من الـ mood فقط، فبيشتغل مع أي
+        // سيناريو (جاهز أو مولّد بالذكاء الاصطناعي) من غير ما نحتاج نضيف بيانات لكل عقدة.
+        const SIM_TIME_LIMITS = { normal: 75, tense: 50, critical: 28 };
+        let simTimerInterval = null;
+        let simTimerDeadline = 0;
+
+        // كتم صوت المونيتور/الإنذار بس (مش صوت السرد) — تفضيل محفوظ محليًا
+        let simAudioMuted = localStorage.getItem('sx_sim_audio_muted') === '1';
+        function toggleSimAudioMute() {
+            simAudioMuted = !simAudioMuted;
+            localStorage.setItem('sx_sim_audio_muted', simAudioMuted ? '1' : '0');
+            const icon = document.getElementById('simMuteIcon');
+            const btn = document.getElementById('simMuteBtn');
+            if (icon) icon.className = simAudioMuted ? 'fas fa-volume-xmark' : 'fas fa-volume-high';
+            if (btn) btn.classList.toggle('muted', simAudioMuted);
+            if (simAudioMuted) stopSimMonitorAudio();
+            else if (currentVideoSim) {
+                const node = currentVideoSim.scenario.nodes[currentVideoSim.nodeId];
+                if (node && !node.ending) startSimMonitorAudio(node.mood, node.vitals.hr);
+            }
+        }
+
+        // ====================== محرك صوت المونيتور الحي (Web Audio API) ======================
+        // مفيش أي ملف صوت خارجي هنا — الأصوات كلها متولّدة برمجيًا لحظيًا (oscillator بسيط)
+        // زي ما بالظبط شاشات المونيتور الحقيقية بتصدر "بيب" منتظم على إيقاع النبض، وصفارة
+        // إنذار متبادلة بين نغمتين وقت ما الحالة تبقى حرجة.
+        let simAudioCtx = null;
+        let simBeepInterval = null;
+        let simAlarmInterval = null;
+        function getSimAudioCtx() {
+            if (!simAudioCtx) {
+                try { simAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+                catch (e) { return null; }
+            }
+            if (simAudioCtx.state === 'suspended') simAudioCtx.resume().catch(() => {});
+            return simAudioCtx;
+        }
+        function playSimTone(freq, durationMs, gainPeak) {
+            if (simAudioMuted) return;
+            const ctx = getSimAudioCtx();
+            if (!ctx) return;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            const now = ctx.currentTime;
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(gainPeak, now + 0.008);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
+            osc.connect(gain).connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + durationMs / 1000 + 0.02);
+        }
+        function stopSimMonitorAudio() {
+            if (simBeepInterval) clearInterval(simBeepInterval);
+            if (simAlarmInterval) clearInterval(simAlarmInterval);
+            simBeepInterval = null;
+            simAlarmInterval = null;
+        }
+        // بيبدأ "بيب" المونيتور على إيقاع النبض الفعلي (hr) اللي جايلنا من بيانات العقدة —
+        // كل ما الـ hr يعلى، البيب يتسارع، بالظبط زي جهاز حقيقي. وقت الحالة الحرجة بيتضاف
+        // صفارة إنذار متذبذبة فوق البيب العادي.
+        function startSimMonitorAudio(mood, hr) {
+            stopSimMonitorAudio();
+            const safeHr = Math.max(35, Math.min(220, Number(hr) || 80));
+            const beatMs = 60000 / safeHr;
+            const beepFreq = mood === 'critical' ? 1150 : (mood === 'tense' ? 1000 : 880);
+            simBeepInterval = setInterval(() => playSimTone(beepFreq, 90, 0.05), beatMs);
+            if (mood === 'critical') {
+                let toggle = false;
+                simAlarmInterval = setInterval(() => {
+                    toggle = !toggle;
+                    playSimTone(toggle ? 1500 : 950, 220, 0.045);
+                }, 260);
+            }
+        }
 
         // ====================== محرك ECG حي (Canvas) — بيرسم موجة قلب متحركة فعليًا
         // (مش أيقونة نابضة ثابتة)، السرعة والانتظام بيتغيّروا حسب mood العقدة الحالية:
@@ -11098,6 +11177,39 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                 simEcgRAF = requestAnimationFrame(draw);
             }
             draw();
+        }
+
+        // نطاقات آمنة تقريبية لتلوين الأرقام (مش تشخيص طبي دقيق، بس كفاية عشان المونيتور
+        // "يعيّط" بصريًا زي جهاز حقيقي لما رقم يخرج عن النطاق الطبيعي).
+        const SIM_VITAL_RANGES = {
+            hr: { warnLow: 60, warnHigh: 100, dangerLow: 50, dangerHigh: 120 },
+            spo2: { warnLow: 94, dangerLow: 90 }
+        };
+        let simVitalsJitterInterval = null;
+        function renderSimVitals(node) {
+            if (simVitalsJitterInterval) clearInterval(simVitalsJitterInterval);
+            const hrEl = document.getElementById('simHr').closest('.sim-vital');
+            const spo2El = document.getElementById('simSpo2').closest('.sim-vital');
+            const baseHr = Number(node.vitals.hr) || 80;
+            const baseSpo2 = Number(node.vitals.spo2) || 97;
+
+            function classify(el, value, r) {
+                el.classList.remove('vital-danger', 'vital-warn');
+                if ((r.dangerHigh && value >= r.dangerHigh) || (r.dangerLow && value <= r.dangerLow)) el.classList.add('vital-danger');
+                else if ((r.warnHigh && value >= r.warnHigh) || (r.warnLow && value <= r.warnLow)) el.classList.add('vital-warn');
+            }
+            function paint() {
+                // رجفة رقمية خفيفة ±1-2 حوالين القيمة الحقيقية — إحساس "جهاز حي" بدل رقم جامد
+                const jHr = Math.round(baseHr + (Math.random() - 0.5) * (node.mood === 'critical' ? 5 : 2));
+                const jSpo2 = Math.max(70, Math.min(100, Math.round(baseSpo2 + (Math.random() - 0.5) * (node.mood === 'critical' ? 2 : 1))));
+                document.getElementById('simHr').textContent = jHr;
+                document.getElementById('simSpo2').textContent = jSpo2;
+                document.getElementById('simBp').textContent = node.vitals.bp;
+                classify(hrEl, jHr, SIM_VITAL_RANGES.hr);
+                classify(spo2El, jSpo2, SIM_VITAL_RANGES.spo2);
+            }
+            paint();
+            simVitalsJitterInterval = setInterval(paint, 1000);
         }
 
         // مؤشر "بيتكلم" الصغير جنب النص — شغال بس وقت ما الصوت فعليًا بيتشغّل
@@ -11184,10 +11296,13 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             const scenario = findScenarioById(scenarioId);
             if (!scenario) return;
             normalizeScenarioClient(scenario);
-            currentVideoSim = { scenario, nodeId: scenario.startNode, path: [] };
+            currentVideoSim = { scenario, nodeId: scenario.startNode, path: [], startedAt: Date.now(), timeoutCount: 0 };
             closeModal('videoSimListModal');
             openModal('videoSimPlayerModal');
             document.getElementById('simEndingWrap').style.display = 'none';
+            const muteIcon = document.getElementById('simMuteIcon');
+            if (muteIcon) muteIcon.className = simAudioMuted ? 'fas fa-volume-xmark' : 'fas fa-volume-high';
+            document.getElementById('simMuteBtn')?.classList.toggle('muted', simAudioMuted);
             renderSimNode();
         }
 
@@ -11391,15 +11506,25 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                     renderSimStage(scenario, node);
                     const monitor = document.getElementById('simMonitor');
                     monitor.className = 'sim-monitor sim-mood-' + node.mood;
-                    document.getElementById('simHr').textContent = node.vitals.hr;
-                    document.getElementById('simSpo2').textContent = node.vitals.spo2;
-                    document.getElementById('simBp').textContent = node.vitals.bp;
+                    renderSimVitals(node);
                     startSimEcg(node.mood);
+                    startSimMonitorAudio(node.mood, node.vitals.hr);
 
                     document.getElementById('simChoicesWrap').style.display = 'none';
                     document.getElementById('simChoicesWrap').innerHTML = '';
                     document.getElementById('simEndingWrap').style.display = 'none';
                     document.getElementById('simSkipBtn').style.display = '';
+                    stopSimTimer();
+
+                    const banner = document.getElementById('codeBlueBanner');
+                    const stage = document.getElementById('simStage');
+                    if (node.mood === 'critical') {
+                        banner.classList.add('active');
+                        stage.classList.remove('sim-shake'); void stage.offsetWidth; stage.classList.add('sim-shake');
+                        setTimeout(() => banner.classList.remove('active'), 1800);
+                    } else {
+                        banner.classList.remove('active');
+                    }
 
                     fadeEls.forEach(el => el.classList.remove('sim-scene-fading'));
                     speakSimNarration(node.narration);
@@ -11464,9 +11589,60 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             const wrap = document.getElementById('simChoicesWrap');
             wrap.innerHTML = node.choices.map((c, i) => `<button class="sim-choice-btn" onclick="pickSimChoice(${i})">${c.text}</button>`).join('');
             wrap.style.display = 'flex';
+            startSimTimer(node.mood);
+        }
+
+        // ====================== عداد القرار (ضغط الوقت) ======================
+        function startSimTimer(mood) {
+            stopSimTimer();
+            const limitSec = SIM_TIME_LIMITS[mood] || SIM_TIME_LIMITS.normal;
+            simTimerDeadline = Date.now() + limitSec * 1000;
+            const bar = document.getElementById('simTimerBar');
+            const fill = document.getElementById('simTimerFill');
+            const textWrap = document.getElementById('simTimerText');
+            const secondsEl = document.getElementById('simTimerSeconds');
+            bar.style.display = 'block';
+            textWrap.style.display = 'flex';
+
+            function tick() {
+                const remainingMs = simTimerDeadline - Date.now();
+                const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
+                const pct = Math.max(0, Math.min(100, (remainingMs / (limitSec * 1000)) * 100));
+                fill.style.width = pct + '%';
+                secondsEl.textContent = remainingSec + ' ث';
+                fill.classList.remove('warn', 'danger');
+                textWrap.classList.remove('danger');
+                if (pct <= 20) { fill.classList.add('danger'); textWrap.classList.add('danger'); }
+                else if (pct <= 45) { fill.classList.add('warn'); }
+                if (remainingMs <= 0) { stopSimTimer(); handleSimTimeout(); }
+            }
+            tick();
+            simTimerInterval = setInterval(tick, 100);
+        }
+        function stopSimTimer() {
+            if (simTimerInterval) clearInterval(simTimerInterval);
+            simTimerInterval = null;
+            const bar = document.getElementById('simTimerBar');
+            const textWrap = document.getElementById('simTimerText');
+            if (bar) bar.style.display = 'none';
+            if (textWrap) textWrap.style.display = 'none';
+        }
+        // لو الوقت خلص من غير ما الطالب يقرر — ده مش خطأ برمجي، ده جزء من الواقع: التأخير
+        // نفسه قرار. بناخد آخر اختيار في القائمة (غالبًا الأقل تدخّلاً/الأخطر حسب أسلوب كتابة
+        // السيناريوهات عندنا) ونكمل بيه، مع توضيح واضح للطالب إن ده حصل بسبب انتهاء الوقت.
+        function handleSimTimeout() {
+            if (!currentVideoSim) return;
+            const node = currentVideoSim.scenario.nodes[currentVideoSim.nodeId];
+            if (!node || node.ending || !Array.isArray(node.choices) || !node.choices.length) return;
+            currentVideoSim.timeoutCount = (currentVideoSim.timeoutCount || 0) + 1;
+            showToast('⏱️ الوقت خلص! التأخير في القرار بقى هو القرار', 'error');
+            const stage = document.getElementById('simStage');
+            if (stage) { stage.classList.remove('sim-shake'); void stage.offsetWidth; stage.classList.add('sim-shake'); }
+            pickSimChoice(node.choices.length - 1);
         }
 
         function pickSimChoice(i) {
+            stopSimTimer();
             const node = currentVideoSim.scenario.nodes[currentVideoSim.nodeId];
             const choice = node.choices?.[i];
             // خط دفاع أخير: لو الاختيار ده بيشاور على عقدة مش موجودة أصلاً في الشجرة
@@ -11489,6 +11665,8 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
         };
 
         function renderSimEnding(node) {
+            stopSimTimer();
+            stopSimMonitorAudio();
             document.getElementById('simChoicesWrap').style.display = 'none';
             const q = SIM_QUALITY_MAP[node.quality] || SIM_QUALITY_MAP.good;
             const badge = document.getElementById('simEndingBadge');
@@ -11496,6 +11674,12 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             badge.style.background = q.color;
             document.getElementById('simEndingText').textContent = node.narration;
             document.getElementById('simEndingWrap').style.display = 'block';
+
+            const elapsedSec = Math.round((Date.now() - (currentVideoSim.startedAt || Date.now())) / 1000);
+            const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+            const ss = String(elapsedSec % 60).padStart(2, '0');
+            document.getElementById('simTimeTotal').textContent = `${mm}:${ss}`;
+            document.getElementById('simTimeoutCount').textContent = currentVideoSim.timeoutCount || 0;
 
             const seen = JSON.parse(localStorage.getItem('sx_video_sim_endings') || '{}');
             const sid = currentVideoSim.scenario.id;
@@ -11514,6 +11698,10 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
             setSimTalking(false);
             stopSimEcg();
+            stopSimTimer();
+            stopSimMonitorAudio();
+            if (simVitalsJitterInterval) { clearInterval(simVitalsJitterInterval); simVitalsJitterInterval = null; }
+            document.getElementById('codeBlueBanner')?.classList.remove('active');
             closeModal('videoSimPlayerModal');
             currentVideoSim = null;
         }

@@ -2193,13 +2193,21 @@
         <div class="modal" style="max-width:420px;">
             <div class="modal-header">
                 <div class="modal-title" id="simTitle"><i class="fas fa-clapperboard"></i> مشهد</div>
-                <button class="close-modal" aria-label="إغلاق" onclick="exitVideoSim()"><i class="fas fa-times"></i></button>
+                <div style="display:flex;align-items:center;">
+                    <button id="simMuteBtn" class="sim-mute-btn" aria-label="كتم صوت المونيتور" onclick="toggleSimAudioMute()"><i id="simMuteIcon" class="fas fa-volume-high"></i></button>
+                    <button class="close-modal" aria-label="إغلاق" onclick="exitVideoSim()"><i class="fas fa-times"></i></button>
+                </div>
             </div>
 
             <div id="simStage" class="sim-stage">
                 <div id="simStageBg" class="sim-stage-bg"></div>
                 <div id="simStageParticles" class="sim-stage-particles"></div>
                 <div id="simStageCharacters" class="sim-stage-characters"></div>
+                <div id="codeBlueBanner" class="code-blue-banner">
+                    <span class="cb-icon">🚨</span>
+                    <span class="cb-title">CODE BLUE</span>
+                    <span class="cb-sub">الحالة بقت حرجة — تدخّل فورًا</span>
+                </div>
             </div>
 
             <div id="simMonitor" class="sim-monitor sim-mood-normal">
@@ -2221,11 +2229,22 @@
                 <button id="simSkipBtn" class="btn-calc btn-secondary" style="margin-top:8px;font-size:11.5px;padding:8px;" onclick="skipSimNarration()"><i class="fas fa-forward"></i> تخطي الصوت</button>
             </div>
 
+            <div id="simTimerText" class="sim-timer-text" style="display:none;">
+                <span><i class="fas fa-stopwatch"></i> قرّر دلوقتي</span>
+                <span id="simTimerSeconds">--</span>
+            </div>
+            <div id="simTimerBar" class="sim-timer-bar" style="display:none;">
+                <div id="simTimerFill" class="sim-timer-fill"></div>
+            </div>
             <div id="simChoicesWrap" class="sim-choices-wrap" style="display:none;"></div>
 
             <div id="simEndingWrap" style="display:none;text-align:center;">
                 <div id="simEndingBadge" class="sim-ending-badge">...</div>
                 <div id="simEndingText" style="font-size:12.5px;color:var(--text-2);line-height:1.8;margin:10px 0 14px;"></div>
+                <div id="simTimeSummary" class="sim-time-summary">
+                    <div><b id="simTimeTotal">--</b>الوقت الكلي</div>
+                    <div><b id="simTimeoutCount">--</b>قرارات فات وقتها</div>
+                </div>
                 <div style="display:flex;flex-direction:column;gap:8px;">
                     <button class="btn-calc" onclick="requestSimAIFeedback()"><i class="fas fa-wand-magic-sparkles"></i> قيّم قراراتي مع الذكاء الاصطناعي</button>
                     <button class="btn-calc btn-secondary" onclick="replayVideoSim()"><i class="fas fa-rotate-left"></i> جرّب نهاية تانية</button>
