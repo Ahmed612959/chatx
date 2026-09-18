@@ -155,7 +155,7 @@ function buildSchemaInstructions({ simplified = false } = {}) {
 async function requestScenarioFromGemini(apiKey, schemaInstructions, userInstruction) {
   let upstream;
   try {
-    upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+    upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
