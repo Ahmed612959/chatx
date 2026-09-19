@@ -361,6 +361,17 @@
                     </div>
                 </div>
 
+                <div class="web-search-indicator" id="webSearchIndicator">
+                    <div class="msg-avatar" style="background: var(--grad-bold); color: white;"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="web-search-panel">
+                        <div class="web-search-panel-head">
+                            <i class="fas fa-globe web-search-globe"></i>
+                            <span id="webSearchStatus">بيدوّر في الويب...</span>
+                        </div>
+                        <div class="web-search-live-sources" id="webSearchLiveSources"></div>
+                    </div>
+                </div>
+
                 <div class="typing-indicator" id="typingIndicator">
                     <div class="msg-avatar" style="background: var(--grad-bold); color: white;"><i class="fas fa-graduation-cap"></i></div>
                     <div class="typing-dots"><span></span><span></span><span></span><svg viewBox="0 0 64 22" xmlns="http://www.w3.org/2000/svg"><path class="ecg-line" d="M0,11 L14,11 L18,4 L22,18 L26,11 L40,11 L44,6 L48,16 L52,11 L64,11"/><circle class="ecg-dot" cx="22" cy="18" r="2"/></svg></div>
@@ -382,6 +393,14 @@
                     <button type="button" class="deep-think-speed-chip" id="deepThinkSpeedQuick" onclick="setDeepThinkSpeed('quick')"><i class="fas fa-bolt"></i> سريع</button>
                     <button type="button" class="deep-think-speed-chip active" id="deepThinkSpeedDeep" onclick="setDeepThinkSpeed('deep')"><i class="fas fa-brain"></i> عميق</button>
                 </div>
+                <button type="button" class="deep-think-bar web-search-bar" id="webSearchBtn" onclick="toggleWebSearch()" aria-pressed="false">
+                    <span class="deep-think-bar-icon"><i class="fas fa-globe"></i></span>
+                    <span class="deep-think-bar-text">
+                        <strong>البحث في الويب</strong>
+                        <small>يدوّر على النت ويلخّصلك مع المصادر</small>
+                    </span>
+                    <span class="deep-think-switch"><span class="deep-think-switch-knob"></span></span>
+                </button>
                 <div class="input-wrapper">
                     <button class="attach-btn" aria-label="إرفاق ملف أو مهارة" onclick="openAttachMenu()">
                         <i class="fas fa-paperclip"></i>

@@ -1927,3 +1927,53 @@
         .chatx-splash-ring, .chatx-splash-logo, .chatx-splash-dots span { animation: none !important; }
         .chatx-splash-title .chatx-letter { animation: chatxLetterIn .3s ease forwards !important; opacity: 1; transform: none; }
       }
+
+
+/* ====================== البحث في الويب (Web Search) ======================
+   زرار التفعيل بيستخدم نفس شكل .deep-think-bar، وده الباقي: مؤشر "بيدوّر..."،
+   شرايح المصادر تحت الرد، وأرقام الاستشهاد [1] [2] جوه النص. */
+.web-search-bar.active .deep-think-bar-icon i.fa-globe { animation: webSearchSpin 6s linear infinite; }
+@keyframes webSearchSpin { to { transform: rotate(360deg); } }
+
+.web-search-indicator {
+    display: flex; gap: 10px; max-width: 90%; margin-bottom: 0; flex-shrink: 0;
+    opacity: 0; max-height: 0; overflow: hidden; pointer-events: none;
+    transition: opacity .5s ease, max-height .5s ease, margin-bottom .5s ease;
+}
+.web-search-indicator.active { opacity: 1; max-height: 400px; margin-bottom: 16px; pointer-events: auto; }
+.web-search-panel {
+    background: var(--bg-glass); border: 1px solid var(--border-accent); border-radius: var(--radius);
+    padding: 12px 14px; max-width: 100%; min-width: 0;
+}
+.web-search-panel-head { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--accent); }
+.web-search-globe { animation: webSearchPulse 1.4s ease-in-out infinite; }
+@keyframes webSearchPulse { 0%, 100% { opacity: .5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.15); } }
+.web-search-live-sources { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.web-search-live-sources:empty { display: none; }
+
+.web-sources { margin: 8px 0 2px; max-width: 100%; }
+.web-sources-title { font-size: 11px; font-weight: 800; color: var(--text-3); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.web-sources-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.web-source-chip {
+    display: inline-flex; align-items: center; gap: 6px; max-width: 100%; box-sizing: border-box;
+    padding: 5px 9px 5px 10px; border-radius: var(--radius-lg); border: 1px solid var(--border);
+    background: var(--bg-2); color: var(--text-2); font-size: 11px; font-weight: 600; text-decoration: none;
+    transition: border-color .18s ease, color .18s ease; -webkit-tap-highlight-color: transparent;
+}
+.web-source-chip:hover { border-color: var(--accent); color: var(--accent); }
+.web-source-num {
+    width: 17px; height: 17px; border-radius: 50%; background: var(--grad-bold); color: #fff;
+    font-size: 9.5px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.web-source-favicon { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+.web-source-host { direction: ltr; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+
+a.web-cite {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px;
+    margin: 0 2px; border-radius: 8px; background: var(--accent-glow); color: var(--accent);
+    font-size: 10px; font-weight: 800; text-decoration: none; vertical-align: super; line-height: 1;
+}
+a.web-cite:hover { background: var(--accent); color: #fff; }
+@media (prefers-reduced-motion: reduce) {
+    .web-search-globe, .web-search-bar.active .deep-think-bar-icon i.fa-globe { animation: none !important; }
+}
