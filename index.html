@@ -125,6 +125,36 @@
             }
         }
 
+        /* ====== كارت تعديل/إنشاء صورة من الشات ====== */
+        .img-edit-card { max-width: 340px; }
+        .img-edit-card .iec-title { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+        .img-edit-card .iec-preview { position: relative; border-radius: 12px; overflow: hidden; max-width: 260px; margin: 6px 0 10px; background: var(--bg-2, rgba(120,120,140,.12)); }
+        .img-edit-card .iec-preview img { width: 100%; display: block; max-height: 260px; object-fit: cover; }
+        .img-edit-card .iec-preview.working img { animation: iecPulse 2.2s ease-in-out infinite; }
+        .img-edit-card .iec-preview.working::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.38) 50%, transparent 70%);
+            background-size: 220% 100%; animation: iecShimmer 1.5s linear infinite;
+        }
+        .img-edit-card .iec-modes { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+        .img-edit-card .iec-chip { border: 1px solid var(--border, rgba(120,120,140,.35)); background: transparent; color: inherit; border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+        .img-edit-card .iec-chip.active { background: var(--grad-bold, #6c5ce7); color: #fff; border-color: transparent; }
+        .img-edit-card .iec-notice { font-size: 12px; line-height: 1.7; padding: 8px 10px; border-radius: 10px; background: var(--bg-2, rgba(120,120,140,.12)); margin-bottom: 10px; }
+        .img-edit-card .iec-notice.warn { border: 1px solid rgba(230,126,34,.5); }
+        .img-edit-card .iec-notice.err { border: 1px solid rgba(231,76,60,.5); color: var(--danger, #e74c3c); }
+        .img-edit-card .iec-models { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+        .img-edit-card .iec-model-btn { text-align: right; border: 1px solid var(--border, rgba(120,120,140,.35)); background: transparent; color: inherit; border-radius: 10px; padding: 9px 12px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .img-edit-card .iec-model-btn:hover { border-color: var(--primary, #6c5ce7); }
+        .img-edit-card .iec-links { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; }
+        .img-edit-card .iec-link { background: none; border: none; color: var(--text-3, #888); text-decoration: underline; cursor: pointer; padding: 0; font-family: inherit; font-size: 12px; }
+        .img-edit-card .iec-status { font-size: 12.5px; display: flex; align-items: center; gap: 8px; }
+        .img-edit-card .iec-bar { height: 4px; border-radius: 4px; background: var(--bg-2, rgba(120,120,140,.2)); overflow: hidden; margin-top: 8px; }
+        .img-edit-card .iec-bar::after { content: ''; display: block; height: 100%; width: 40%; border-radius: 4px; background: var(--grad-bold, #6c5ce7); animation: iecBar 1.3s ease-in-out infinite; }
+        .img-edit-download { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--text-2, inherit); text-decoration: none; padding: 5px 10px; border-radius: 8px; background: var(--bg-2, rgba(120,120,140,.12)); }
+        @keyframes iecShimmer { 0% { background-position: 200% 0; } 100% { background-position: -20% 0; } }
+        @keyframes iecPulse { 0%, 100% { filter: brightness(1) saturate(1); } 50% { filter: brightness(.92) saturate(1.15); } }
+        @keyframes iecBar { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
+
     </style>
 </head>
 <body>

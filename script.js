@@ -124,7 +124,7 @@
                 rateUpBtn.addEventListener('click', () => rateMessage(msg, 'up', rateUpBtn, rateDownBtn));
                 rateDownBtn.addEventListener('click', () => rateMessage(msg, 'down', rateUpBtn, rateDownBtn));
 
-                if (isLastBotMsg) {
+                if (isLastBotMsg && !msg.generatedImage) {
                     const regenBtn = document.createElement('button');
                     regenBtn.className = 'msg-action-btn regen-btn';
                     regenBtn.title = 'إعادة توليد الرد';
@@ -207,7 +207,7 @@
                 const actionsDiv = el.querySelector('.msg-actions');
                 if (!actionsDiv) return;
                 const regenBtn = actionsDiv.querySelector('.regen-btn');
-                const shouldHave = lastBot && m.id === lastBot.id;
+                const shouldHave = lastBot && m.id === lastBot.id && !m.generatedImage;
                 if (shouldHave && !regenBtn) {
                     const btn = document.createElement('button');
                     btn.className = 'msg-action-btn regen-btn';
@@ -2230,12 +2230,14 @@
 
             const input = document.getElementById('messageInput');
             let text = input.value.trim();
+            const rawTypedText = text; // اللي الطالب كتبه فعلًا (قبل ما نضيف نص المرفق) — بنستخدمه لكشف طلب تعديل/إنشاء صورة
             if ((!text && !pendingAttachment) || isGenerating) return;
 
             if (pendingAttachment && pendingAttachment.processing && !pendingAttachment.base64) {
                 showToast('استنى لحظة، لسه بيتم استخراج النص من الملف...', 'error');
                 return;
             }
+            dismissImageEditCard(); // أي كارت تعديل صورة لسه مستني اختيار بيتقفل لما الطالب يبعت رسالة جديدة
 
             if (pendingAttachment) {
                 const kind = (pendingAttachment.mimeType && pendingAttachment.mimeType.startsWith('image/'))
@@ -2276,6 +2278,16 @@
             renderChatList();
             appendMessageToDOM(userMsg, true);
             document.getElementById('welcomeScreen').style.display = 'none';
+
+            // صورة + طلب تعديل/إنشاء صورة مشابهة → نعرض كارت اختيار الموديل بدل تحليل الصورة العادي
+            if (schoolToken && userMsg.image && rawTypedText) {
+                const imageIntent = detectImageEditIntent(rawTypedText);
+                if (imageIntent) {
+                    pendingSkillContext = '';
+                    await offerImageEditInChat(chat, userMsg, rawTypedText, imageIntent);
+                    return;
+                }
+            }
 
             isGenerating = true;
             setSendButtonState(true);
@@ -4078,10 +4090,29 @@
                 img.addEventListener('click', () => openImageLightbox(img.src));
                 bubble.appendChild(img);
             }
+            if (msg.generatedImage && msg.generatedImage.url) {
+                const gimg = document.createElement('img');
+                gimg.className = 'msg-image';
+                gimg.src = msg.generatedImage.url;
+                gimg.alt = 'صورة اتعمِلت بالذكاء الاصطناعي';
+                gimg.loading = 'lazy';
+                gimg.addEventListener('click', () => openImageLightbox(gimg.src));
+                bubble.appendChild(gimg);
+            }
             const textWrap = document.createElement('div');
             textWrap.className = 'msg-text';
             textWrap.innerHTML = contentHTML;
             bubble.appendChild(textWrap);
+            if (msg.generatedImage && msg.generatedImage.url) {
+                const dl = document.createElement('a');
+                dl.className = 'img-edit-download';
+                dl.href = msg.generatedImage.url;
+                dl.target = '_blank';
+                dl.rel = 'noopener';
+                dl.download = 'ai-image.jpg';
+                dl.innerHTML = '<i class="fas fa-download"></i> تحميل الصورة';
+                bubble.appendChild(dl);
+            }
             if (msg.role === 'user') {
                 const { attachmentKind, attachmentName } = splitAttachmentFromContent(msg.content);
                 if (attachmentName) bubble.appendChild(buildAttachmentChipEl(attachmentKind, attachmentName));
@@ -10476,13 +10507,282 @@ ${r.pathSummary}
             }
         }
 
+        // ====================== الشات: تعديل/إنشاء صورة من صورة مرفقة ======================
+        // لو الطالب بعت صورة ومعاها طلب تعديل/إنشاء صورة مشابهة، بدل ما الرسالة تروح لتحليل
+        // الصور العادي، بنعرض عليه كارت يختار منه الموديل (مع تنبيه إن العملية بتتحسب من
+        // فرصه اليومية، أو إنها محاولته التجريبية الوحيدة لو الاستوديو مش مفعّل له)، وبعدها
+        // بيظهر أنيميشن "بيتعدل..." في الشات لحد ما الصورة الجاهزة تظهر وتتحفظ في مكتبته.
+        // ملحوظة: الكشف عن النية بالكلمات المفتاحية — ولو اتكشف غلط، الطالب بيقدر يختار
+        // "حلّل الصورة بس" من نفس الكارت.
+        const CHAT_IMAGE_PROVIDERS = [
+            { key: 'grok', label: 'Grok', icon: '⚡' },
+            { key: 'grok2', label: 'Grok Imagine 2', icon: '✨' },
+            { key: 'flux', label: 'Flux 2 Max', icon: '🎨' }
+        ];
+        const CHAT_IMAGE_STEPS = ['بجهّز الصورة...', 'ببعتها للموديل...', 'الموديل شغّال على التعديل...', 'لسه بيشتغل، ثواني...', 'بيضبط التفاصيل الأخيرة...'];
+        let imageEditState = null; // { chat, userMsg, text, mode, status, el, phase, stepTimer, providerLabel }
+
+        function normalizeArabicForIntent(str) {
+            return String(str || '').toLowerCase()
+                .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+                .replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه');
+        }
+        const IMG_INTENT_EDIT = new Set(['عدل','تعديل','تغيير','بدل','استبدل','تحويل','شيل','ازل','ازاله','امسح','احذف','ضيف','اضف','اضافه','تلوين','ظبط','حسن','تحسين','نضف','كبر','صغر','فلتر','رتش','edit','modify','change','replace','remove','recolor','enhance','retouch','convert','transform','erase','colorize','crop','restyle','redraw']);
+        const IMG_INTENT_CREATE = new Set(['انشي','انشئ','انشيلي','اعمل','اعملي','اعملي','ولد','ولدي','صمم','ارسم','ارسمي','create','generate','make','draw','design']);
+        const IMG_INTENT_WANT = new Set(['عايز','عاوز','عايزه','اريد','محتاج','ابغي','want','need']);
+        const IMG_INTENT_SIMILAR = new Set(['زي','مثل','شبه','مشابه','مشابهه','مماثل','نفس','similar','like','same']);
+        const IMG_INTENT_NOUN = new Set(['صوره','صور','رسم','رسمه','لوجو','شعار','تصميم','بوستر','فلاير','بانر','واحده','واحد','نسخه','image','picture','photo','logo','poster','illustration']);
+
+        function intentTokenVariants(tok) {
+            const out = new Set([tok]);
+            const noAl = tok.replace(/^ال/, '');
+            out.add(noAl);
+            [tok, noAl].forEach(t => { const p = t.replace(/^[وفبلس]/, ''); if (p.length >= 2) out.add(p); });
+            [...out].forEach(t => { const x = t.replace(/(ها|هم|ني|لي|نا|ه|ك|ي)$/, ''); if (x.length >= 2) out.add(x); });
+            return out;
+        }
+
+        // بترجّع 'edit' أو 'similar' لو الرسالة شكلها طلب تعديل/إنشاء صورة، وإلا null.
+        function detectImageEditIntent(rawText) {
+            const norm = normalizeArabicForIntent(rawText);
+            const tokens = norm.split(/[^\u0621-\u064Aa-z0-9]+/).filter(Boolean);
+            if (!tokens.length) return null;
+            const hasIn = (set) => tokens.some(tok => [...intentTokenVariants(tok)].some(v => set.has(v)));
+            // كلمات ملتبسة (بتبقى فعل أمر أو اسم/حرف حسب السياق) بنقبلها بس بشروط أدق
+            const ambiguousEdit = tokens.some((tok, i) => {
+                const base = tok.replace(/^[وف]/, '');
+                if (/^(حول|لون)(ها|ه)$/.test(base)) return true;            // حوّلها / لوّنها
+                if (base === 'غير') { const nx = tokens[i + 1] || ''; return nx.startsWith('ال') || ['لون','شكل','حجم','اتجاه','ستايل','نمط','وضع','ملابس','هدوم','خط','اسم','رقم','نظارة','نظاره'].includes(nx); } // غيّر الخلفية / غيّر لون (مش "غير واضحة")
+                if (/^غير(ها|ه)$/.test(base)) return true;                   // غيّرها
+                return false;
+            });
+            const create = hasIn(IMG_INTENT_CREATE) && (hasIn(IMG_INTENT_SIMILAR) || hasIn(IMG_INTENT_NOUN));
+            const want = hasIn(IMG_INTENT_WANT) && hasIn(IMG_INTENT_SIMILAR) && hasIn(IMG_INTENT_NOUN);
+            if (create || want) return 'similar';
+            if (hasIn(IMG_INTENT_EDIT) || ambiguousEdit) return 'edit';
+            return null;
+        }
+
+        function imageEditProviderLabel(key) {
+            return (CHAT_IMAGE_PROVIDERS.find(p => p.key === key) || {}).label || key;
+        }
+
+        function dismissImageEditCard() {
+            if (!imageEditState) return;
+            if (imageEditState.stepTimer) clearInterval(imageEditState.stepTimer);
+            if (imageEditState.el && imageEditState.el.parentNode) imageEditState.el.remove();
+            imageEditState = null;
+        }
+
+        function createImageEditCardEl() {
+            const container = document.getElementById('chatContainer');
+            const div = document.createElement('div');
+            div.className = 'message bot';
+            div.id = `imgedit-card-${Date.now()}`;
+            div.innerHTML = `
+                <div class="msg-avatar" style="background: var(--grad-bold); color: white;"><i class="fas fa-palette"></i></div>
+                <div class="msg-content"><div class="msg-bubble img-edit-card"></div></div>`;
+            container.insertBefore(div, document.getElementById('typingIndicator'));
+            return div;
+        }
+
+        function imageEditPreviewHTML(working) {
+            const img = imageEditState.userMsg.image;
+            return `<div class="iec-preview${working ? ' working' : ''}"><img alt="الصورة المرفقة" src="data:${escapeAttr(img.mimeType)};base64,${img.base64}"></div>`;
+        }
+
+        function renderImageEditCard() {
+            const st = imageEditState;
+            if (!st || !st.el) return;
+            const bubble = st.el.querySelector('.msg-bubble');
+            const status = st.status || {};
+            const limit = status.limit || 8;
+            let html = '';
+
+            if (st.phase === 'loading') {
+                html = `<div class="iec-status"><span class="btn-spinner"></span> بجهّز الخيارات...</div>`;
+            } else if (st.phase === 'working') {
+                html = `<div class="iec-title">🎨 ${st.mode === 'similar' ? 'بيتم إنشاء صورة مشابهة' : 'بيتم تعديل صورتك'} بواسطة ${escapeHtml(st.providerLabel)}</div>
+                    ${imageEditPreviewHTML(true)}
+                    <div class="iec-status"><span class="btn-spinner"></span> <span id="iecStepText">${CHAT_IMAGE_STEPS[0]}</span></div>
+                    <div class="iec-bar"></div>
+                    <div style="font-size:11px;color:var(--text-3);margin-top:8px;">سيب الصفحة مفتوحة — الصورة هتظهر هنا أول ما تجهز.</div>`;
+            } else {
+                // 'choose' أو 'error'
+                const canRun = status.hasStudio ? (status.unlimited || (status.remaining ?? 1) > 0) : !!status.trialAvailable;
+                let notice = '';
+                if (st.phase === 'error' && st.errorText) {
+                    notice += `<div class="iec-notice err">${escapeHtml(st.errorText)}</div>`;
+                }
+                if (status.hasStudio) {
+                    notice += status.unlimited
+                        ? `<div class="iec-notice">👑 حسابك أدمن — من غير حد يومي.</div>`
+                        : (canRun
+                            ? `<div class="iec-notice warn">⚠️ العملية دي هتتحسب من ضمن <b>${limit} فرص</b> لإنشاء وتعديل الصور ليك النهاردة (متبقّي ${status.remaining ?? '؟'}).</div>`
+                            : `<div class="iec-notice err">خلصت ${limit} فرص إنشاء الصور النهاردة — هتتجدد بكرة.</div>`);
+                } else if (status.trialAvailable) {
+                    notice += `<div class="iec-notice warn">🎁 استوديو الوسائط الذكي <b>مش مفعّل</b> عندك. دي <b>محاولتك التجريبية الوحيدة</b> (مرة واحدة بس) من الشات، وبعدها محتاج تفعيل الاستوديو عشان تكمّل.</div>`;
+                } else if (status.trialAvailable === false) {
+                    notice += `<div class="iec-notice err">استخدمت محاولتك التجريبية قبل كده. لازم يتفعّل لك <b>استوديو الوسائط الذكي</b> عشان تعدّل أو تنشئ صور.</div>`;
+                }
+                const modeChips = `<div class="iec-modes">
+                        <button type="button" class="iec-chip${st.mode === 'edit' ? ' active' : ''}" onclick="setImageEditMode('edit')">✏️ تعديل الصورة دي</button>
+                        <button type="button" class="iec-chip${st.mode === 'similar' ? ' active' : ''}" onclick="setImageEditMode('similar')">🖼️ إنشاء صورة مشابهة</button>
+                    </div>`;
+                const models = canRun ? `<div class="iec-models">${CHAT_IMAGE_PROVIDERS.map(p =>
+                    `<button type="button" class="iec-model-btn" onclick="runChatImageEdit('${p.key}')">${p.icon} ${p.label}</button>`).join('')}</div>` : '';
+                const activationLink = (!status.hasStudio && status.trialAvailable === false)
+                    ? `<button type="button" class="iec-link" onclick="requestPremiumFeatureFromAdmin('premium_image_studio')">اطلب تفعيل الاستوديو</button>` : '';
+                html = `<div class="iec-title">🎨 عايز أعمل إيه في الصورة دي؟</div>
+                    ${imageEditPreviewHTML(false)}
+                    ${modeChips}${notice}${canRun ? '<div style="font-size:12px;margin-bottom:6px;">اختار الموديل:</div>' : ''}${models}
+                    <div class="iec-links">
+                        ${activationLink}
+                        <button type="button" class="iec-link" onclick="continueChatWithoutImageEdit()">حلّل الصورة بس</button>
+                        <button type="button" class="iec-link" onclick="dismissImageEditCard()">إلغاء</button>
+                    </div>`;
+            }
+            bubble.innerHTML = html;
+            scrollToBottom();
+        }
+
+        function setImageEditMode(mode) {
+            if (!imageEditState || imageEditState.phase === 'working') return;
+            imageEditState.mode = mode === 'similar' ? 'similar' : 'edit';
+            renderImageEditCard();
+        }
+
+        // بتتنادى من sendMessage بعد ما رسالة الطالب (بالصورة) اتعرضت.
+        async function offerImageEditInChat(chat, userMsg, typedText, mode) {
+            dismissImageEditCard();
+            imageEditState = { chat, userMsg, text: typedText, mode, status: null, phase: 'loading', el: createImageEditCardEl(), stepTimer: null, providerLabel: '' };
+            renderImageEditCard();
+            const st = imageEditState;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/chat/image-edit/status`, {
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'status failed');
+                st.status = data;
+            } catch (e) {
+                // لو تعذر جلب الحالة، بنسيب الطالب يجرّب والسيرفر هو اللي بيحسم (حد/تجربة)
+                st.status = { hasStudio: hasPremium('premium_image_studio'), trialAvailable: !hasPremium('premium_image_studio'), remaining: null, limit: 8 };
+            }
+            if (imageEditState !== st) return; // اتلغى/اتبدّل أثناء الجلب
+            st.phase = 'choose';
+            renderImageEditCard();
+        }
+
+        // "حلّل الصورة بس": نكمّل مسار الشات العادي (تحليل الصورة) للرسالة نفسها.
+        async function continueChatWithoutImageEdit() {
+            const st = imageEditState;
+            if (!st || st.phase === 'working') return;
+            const chat = st.chat;
+            dismissImageEditCard();
+            if (isGenerating) return;
+            if (!abortController) abortController = new AbortController();
+            isGenerating = true;
+            setSendButtonState(true);
+            document.getElementById('typingIndicator').classList.add('active');
+            scrollToBottom();
+            await runGeneration(chat);
+            pendingQuizContext = '';
+            pendingSkillContext = '';
+        }
+
+        async function runChatImageEdit(providerKey) {
+            const st = imageEditState;
+            if (!st || st.phase === 'working' || isGenerating) return;
+            st.providerLabel = imageEditProviderLabel(providerKey);
+            st.phase = 'working';
+            renderImageEditCard();
+            let stepIdx = 0;
+            st.stepTimer = setInterval(() => {
+                stepIdx = Math.min(stepIdx + 1, CHAT_IMAGE_STEPS.length - 1);
+                const el = document.getElementById('iecStepText');
+                if (el) el.textContent = CHAT_IMAGE_STEPS[stepIdx];
+            }, 4500);
+            isGenerating = true;
+            setSendButtonState(true);
+            abortController = new AbortController();
+            const signal = abortController.signal;
+            const chat = st.chat;
+            try {
+                const img = st.userMsg.image;
+                const resized = await resizeImageSrcToJpeg(`data:${img.mimeType};base64,${img.base64}`);
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/chat/image-edit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({
+                        imageBase64: resized.base64, prompt: st.text, provider: providerKey, mode: st.mode,
+                        width: resized.width, height: resized.height
+                    }),
+                    signal
+                });
+                let data = {};
+                try { data = await res.json(); } catch (_) {}
+                if (!res.ok) {
+                    const err = new Error(res.status === 413 ? 'الصورة كبيرة جدًا — جرّب صورة أصغر' : (data.error || 'فشل تعديل الصورة'));
+                    err.code = data.code;
+                    throw err;
+                }
+
+                // نجاح: نشيل الكارت ونحط الصورة كرد بوت عادي في الشات (بيتحفظ مع المحادثة)
+                const label = imageEditProviderLabel(data.usedProvider || providerKey);
+                let content = st.mode === 'similar'
+                    ? `🎨 تم إنشاء صورة مشابهة بواسطة **${label}**.`
+                    : `🎨 تم تعديل صورتك بواسطة **${label}**.`;
+                if (data.trial) {
+                    content += `\n\n🎁 دي كانت محاولتك التجريبية الوحيدة. لو عايز تكمّل تعدّل وتنشئ صور، اطلب تفعيل استوديو الوسائط الذكي.`;
+                } else if (typeof data.quotaRemaining === 'number') {
+                    content += `\n\n${data.savedToLibrary ? '📥 اتحفظت في مكتبتك • ' : ''}متبقّي لك ${data.quotaRemaining} من ${data.quotaLimit} فرص النهاردة.`;
+                    try { renderImageQuotaBadge({ used: data.quotaLimit - data.quotaRemaining, remaining: data.quotaRemaining, limit: data.quotaLimit }); } catch (_) {}
+                } else if (data.savedToLibrary) {
+                    content += `\n\n📥 اتحفظت في مكتبتك.`;
+                }
+                dismissImageEditCard();
+                const botMsg = { role: 'bot', content, source: 'zimage', timestamp: Date.now(), id: `msg-${Date.now()}-b` };
+                let domMsg = botMsg;
+                if (data.imageUrl) {
+                    botMsg.generatedImage = { url: data.imageUrl, provider: data.usedProvider || providerKey, mode: st.mode };
+                } else if (data.imageBase64) {
+                    // مفيش رابط دائم — بنعرض الصورة دلوقتي بس من غير ما نخزّن البايتس في المحادثة
+                    domMsg = { ...botMsg, content: content + `\n\n⚠️ الصورة ما اتحفظتش — حمّلها دلوقتي.`, generatedImage: { url: `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}` } };
+                }
+                chat.messages.push(botMsg);
+                saveData();
+                if (currentChatId === chat.id) appendMessageToDOM(domMsg, true);
+            } catch (e) {
+                if (imageEditState !== st) return;
+                if (st.stepTimer) { clearInterval(st.stepTimer); st.stepTimer = null; }
+                if (e.name === 'AbortError') {
+                    st.errorText = 'اتلغت العملية. لو الموديل كان بدأ فعلًا ممكن تكون اتحسبت من فرصك.';
+                } else if (e.code === 'trial_used' || e.code === 'quota_empty') {
+                    st.errorText = e.message;
+                    // نحدّث الحالة عشان الكارت يعرض الوضع الصح (من غير أزرار موديلات)
+                    st.status = e.code === 'trial_used'
+                        ? { hasStudio: false, trialAvailable: false, limit: 8 }
+                        : { ...(st.status || {}), hasStudio: true, remaining: 0 };
+                } else {
+                    st.errorText = `${e.message || 'تعذر تعديل الصورة'} — مخصمتش من فرصك.`;
+                }
+                st.phase = 'error';
+                renderImageEditCard();
+            } finally {
+                if (st.stepTimer) { clearInterval(st.stepTimer); st.stepTimer = null; }
+                isGenerating = false;
+                abortController = null;
+                setSendButtonState(false);
+            }
+        }
+
         // ====================== تعديل صورة مرفوعة من جهاز الطالب ======================
         let isUploadEditData = null; // { base64, dataUrl, width, height }
 
-        function loadImageFileToCanvasData(file) {
-            // بنصغّر الصورة (أقصى بُعد 2048) ونحوّلها JPEG عشان حجم الطلب يفضل صغير.
+        // بتصغّر أي صورة (رابط/Data URL) لأقصى بُعد 2048 وتحوّلها JPEG لحد ما حجمها يبقى مناسب.
+        function resizeImageSrcToJpeg(src) {
             return new Promise((resolve, reject) => {
-                const url = URL.createObjectURL(file);
                 const img = new Image();
                 img.onload = () => {
                     try {
@@ -10499,20 +10799,21 @@ ${r.pathSummary}
                             ctx.drawImage(img, 0, 0, cw, ch);
                             const dataUrl = canvas.toDataURL('image/jpeg', quality);
                             const base64 = dataUrl.split(',')[1];
-                            if (base64.length <= 3.6 * 1024 * 1024) {
-                                URL.revokeObjectURL(url);
-                                return resolve({ base64, dataUrl, width: cw, height: ch });
-                            }
+                            if (base64.length <= 3.6 * 1024 * 1024) return resolve({ base64, dataUrl, width: cw, height: ch });
                             maxSide = Math.round(maxSide * 0.75);
                             quality = Math.max(0.6, quality - 0.1);
                         }
-                        URL.revokeObjectURL(url);
                         reject(new Error('الصورة كبيرة جدًا حتى بعد التصغير'));
-                    } catch (e) { URL.revokeObjectURL(url); reject(e); }
+                    } catch (e) { reject(e); }
                 };
-                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('تعذر قراءة الصورة')); };
-                img.src = url;
+                img.onerror = () => reject(new Error('تعذر قراءة الصورة'));
+                img.src = src;
             });
+        }
+
+        function loadImageFileToCanvasData(file) {
+            const url = URL.createObjectURL(file);
+            return resizeImageSrcToJpeg(url).finally(() => URL.revokeObjectURL(url));
         }
 
         async function onUploadEditFileChange(input) {
