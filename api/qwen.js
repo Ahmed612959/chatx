@@ -3,6 +3,9 @@ import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
 import { reportApiUsage } from './_usageTrack.js';
 import { attemptWithFailover } from './_keystore.js';
 
+// النموذج المستخدم عبر OpenRouter
+const MODEL = 'qwen/qwen3.8-27b:free';
+
 export default async function handler(request) {
   try {
     if (request.method !== 'POST') {
@@ -12,14 +15,25 @@ export default async function handler(request) {
     const rl = checkRateLimit(request, { limit: 20, windowMs: 60_000 });
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterSeconds);
 
-    const body = await request.text();
+    const raw = await request.text();
 
-    // DashScope's OpenAI-compatible endpoint. This is the international (Singapore)
-    // endpoint — if your Qwen key was issued from the mainland-China console instead,
-    // swap this for https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+    // نفرض اسم النموذج من السيرفر بغض النظر عمّا يرسله الفرونت إند
+    let body;
+    try {
+      const parsed = JSON.parse(raw);
+      parsed.model = MODEL;
+      body = JSON.stringify(parsed);
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // OpenRouter — واجهة متوافقة مع OpenAI (تدعم stream: true كما هي)
     let upstream;
     try {
-      upstream = await attemptWithFailover('QWEN_API_KEY', (key) => fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      upstream = await attemptWithFailover('OPENROUTER_API_KEY', (key) => fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${key}`,
@@ -29,12 +43,12 @@ export default async function handler(request) {
       }));
     } catch (err) {
       if (err.code === 'NO_API_KEY') {
-        return new Response(JSON.stringify({ error: 'QWEN_API_KEY غير مضبوط في Environment Variables' }), {
+        return new Response(JSON.stringify({ error: 'OPENROUTER_API_KEY غير مضبوط في Environment Variables' }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' }
         });
       }
-      return new Response(JSON.stringify({ error: 'تعذر الوصول لـ Qwen' }), {
+      return new Response(JSON.stringify({ error: 'تعذر الوصول لـ OpenRouter' }), {
         status: 502,
         headers: { 'Content-Type': 'application/json' }
       });
