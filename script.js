@@ -792,6 +792,7 @@
         // الموديل الأصلي (أيًا كان) عشان إجابته النهائية تبقى فعلاً مبنية على تحليل
         // أعمق، مش بس شكل بصري. deepThinkReasoningContext بيتصفّر بعد كل رد.
         let deepThinkReasoningContext = '';
+        let deepThinkLastFailStatus = null; // آخر كود HTTP فشل بيه نداء التفكير (بيتعرض للطالب في رسالة الخطأ)
         let deepThinkTimerInterval = null;
         let deepThinkStatusInterval = null;
         // العبارات اللي بتتبدّل مع بعض تحت الرسالة وهو "بيفكر" — بتدّي إحساس إنه فعلاً
@@ -2170,7 +2171,11 @@
                 // بتقرا ستريم SSE وتعرض التفكير لحظة بلحظة — مشتركة بين Gemini والمزوّد الاحتياطي.
                 // لو الاتصال اتقطع في نص الكلام وكان وصلنا نص مفيد، بنحتفظ بيه بدل ما نرميه.
                 const readReasoningStream = async (response, pickPiece) => {
-                    if (!response.ok || !response.body) throw new Error('deep-think-unavailable');
+                    if (!response.ok || !response.body) {
+                        const statusErr = new Error(`deep-think-unavailable (${response.status})`);
+                        statusErr.status = response.status;
+                        throw statusErr;
+                    }
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder();
                     let buffer = '';
@@ -2201,6 +2206,26 @@
                     return text;
                 };
 
+                // 429 = المزوّد مزدحم/وصلنا حد الطلبات. لو السيرفر قال يستنى ثواني قليلة
+                // (Retry-After) بنستناها ونعيد مرة واحدة قبل ما ننقل للمزوّد الاحتياطي.
+                const deepFetch = async (url, body) => {
+                    const doFetch = () => fetchWithRetry(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body),
+                        signal
+                    }, 1, DEEP_THINK_TIMEOUT_MS);
+                    let response = await doFetch();
+                    if (response.status === 429) {
+                        const retryAfter = Number(response.headers.get('Retry-After')) || 0;
+                        if (retryAfter > 0 && retryAfter <= 6) {
+                            await new Promise(r => setTimeout(r, retryAfter * 1000));
+                            response = await doFetch();
+                        }
+                    }
+                    return response;
+                };
+
                 // بنجرّب أكتر من مزوّد بالترتيب: لو Gemini فشل أو رجّع نص فاضي (بطء، مفتاح،
                 // ضغط...)، بننقل لمزوّد احتياطي بدل ما نلغي التفكير العميق بصمت.
                 const attempts = [
@@ -2214,39 +2239,37 @@
                             systemInstruction: { parts: [{ text: reasoningPrompt }] }
                         };
                         if (isQuickMode) requestBody.generationConfig = { maxOutputTokens: 220 };
-                        const response = await fetchWithRetry(`${settings.backendUrl}/api/gemini`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(requestBody),
-                            signal
-                        }, 1, DEEP_THINK_TIMEOUT_MS);
+                        const response = await deepFetch(`${settings.backendUrl}/api/gemini`, requestBody);
                         return readReasoningStream(response, d => d.candidates?.[0]?.content?.parts?.[0]?.text || '');
                     },
                     async () => {
-                        const response = await fetchWithRetry(`${settings.backendUrl}/api/groq`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                model: 'openai/gpt-oss-20b',
-                                messages: [
-                                    { role: 'system', content: reasoningPrompt },
-                                    ...history.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
-                                    { role: 'user', content: lastUserMsg.content }
-                                ],
-                                stream: true
-                            }),
-                            signal
-                        }, 1, DEEP_THINK_TIMEOUT_MS);
+                        const response = await deepFetch(`${settings.backendUrl}/api/groq`, {
+                            model: 'openai/gpt-oss-20b',
+                            messages: [
+                                { role: 'system', content: reasoningPrompt },
+                                ...history.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
+                                { role: 'user', content: lastUserMsg.content }
+                            ],
+                            stream: true
+                        });
                         return readReasoningStream(response, d => d.choices?.[0]?.delta?.content || '');
                     }
                 ];
 
+                // لو الموديل اللي الطالب مختاره هو Gemini نفسه (أو معلّم الألماني/الممتحن)، نبدأ
+                // بـ Groq في التفكير عشان منضغطش على نفس المزوّد بطلبين ورا بعض (تفكير + رد)
+                // فيرجّع 429.
+                const selectedModelValue = (document.getElementById('modelSelect') || {}).value;
+                if (['gemini', 'german-teacher', 'examiner'].includes(selectedModelValue)) attempts.reverse();
+
+                deepThinkLastFailStatus = null;
                 let fullText = '';
                 for (const attempt of attempts) {
                     try {
                         fullText = (await attempt()) || '';
                     } catch (attemptError) {
                         if (attemptError.name === 'AbortError') throw attemptError; // الطالب وقف بنفسه
+                        if (attemptError.status) deepThinkLastFailStatus = attemptError.status;
                         console.warn('Deep think provider failed, trying next one', attemptError);
                         fullText = '';
                     }
@@ -2350,7 +2373,9 @@
                 try {
                     deepThinkResult = await runDeepThinkingPass(chat, abortController.signal);
                     if (deepThinkResult) deepThinkReasoningContext = deepThinkResult.reasoningText;
-                    else showToast('التفكير العميق مقدرش يكمل المرة دي — هنجاوبك عادي', 'error');
+                    else showToast(deepThinkLastFailStatus === 429
+                        ? 'التفكير العميق: الموديل مزدحم دلوقتي (429) — هنجاوبك عادي، جرّب تاني بعد شوية'
+                        : `التفكير العميق مقدرش يكمل المرة دي${deepThinkLastFailStatus ? ` (${deepThinkLastFailStatus})` : ''} — هنجاوبك عادي`, 'error');
                 } catch (deepThinkError) {
                     if (deepThinkError.name === 'AbortError') {
                         isGenerating = false;
@@ -3971,6 +3996,29 @@
             throw lastErr;
         }
 
+        // 429 على موديلات OpenRouter المجانية (Qwen / GLM / openrouter-free) معناها إن المزوّد
+        // الأصلي مزدحم لحظيًا أو وصلنا حد الطلبات في الدقيقة — بيتحل غالبًا بعد ثواني.
+        // فبنستنى (Retry-After لو موجود، وإلا 3 ثم 6 ثواني) ونعيد الطلب لحد مرتين قبل ما نستسلم.
+        async function fetchWithRetry429(url, options, maxRetries, timeoutMs, max429Retries = 2) {
+            let res;
+            for (let i = 0; i <= max429Retries; i++) {
+                res = await fetchWithRetry(url, options, maxRetries, timeoutMs);
+                if (res.status !== 429 || i === max429Retries) return res;
+                const retryAfter = Number(res.headers.get('Retry-After')) || 0;
+                const waitMs = Math.min(retryAfter > 0 ? retryAfter : 3 * (i + 1), 8) * 1000;
+                try { if (res.body) res.body.cancel(); } catch (e) {}
+                await new Promise((resolve, reject) => {
+                    const t = setTimeout(resolve, waitMs);
+                    if (options.signal) options.signal.addEventListener('abort', () => {
+                        clearTimeout(t);
+                        const abortErr = new Error('Aborted'); abortErr.name = 'AbortError';
+                        reject(abortErr);
+                    }, { once: true });
+                });
+            }
+            return res;
+        }
+
         async function streamGroq(messages, signal) {
             const response = await fetchWithRetry(`${settings.backendUrl}/api/groq`, {
                 method: 'POST',
@@ -4032,7 +4080,7 @@
         }
 
         async function streamOpenRouter(messages, signal) {
-            const response = await fetchWithRetry(`${settings.backendUrl}/api/openrouter`, {
+            const response = await fetchWithRetry429(`${settings.backendUrl}/api/openrouter`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4239,7 +4287,7 @@
         }
 
         async function streamMistral(messages, signal) {
-            const response = await fetchWithRetry(`${settings.backendUrl}/api/mistral`, {
+            const response = await fetchWithRetry429(`${settings.backendUrl}/api/mistral`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4254,7 +4302,7 @@
                 let detail = '';
                 try { detail = (await response.text()).slice(0, 200); } catch (e) {}
                 console.error('Mistral API error', response.status, detail);
-                throw new Error(`GPT-OSS API Error (${response.status}): ${detail || 'no detail'}`);
+                throw new Error(response.status === 429 ? 'GLM مزدحم دلوقتي (429) — الموديل المجاني وصل للحد مؤقتًا' : `GLM API Error (${response.status}): ${detail || 'no detail'}`);
             }
 
             const reader = response.body.getReader();
@@ -4361,7 +4409,7 @@
         }
 
         async function streamQwen(messages, signal) {
-            const response = await fetchWithRetry(`${settings.backendUrl}/api/qwen`, {
+            const response = await fetchWithRetry429(`${settings.backendUrl}/api/qwen`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4376,7 +4424,7 @@
                 let detail = '';
                 try { detail = (await response.text()).slice(0, 200); } catch (e) {}
                 console.error('Qwen API error', response.status, detail);
-                throw new Error(`Qwen API Error (${response.status}): ${detail || 'no detail'}`);
+                throw new Error(response.status === 429 ? 'Qwen مزدحم دلوقتي (429) — الموديل المجاني وصل للحد مؤقتًا' : `Qwen API Error (${response.status}): ${detail || 'no detail'}`);
             }
 
             const reader = response.body.getReader();
