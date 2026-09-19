@@ -4,16 +4,13 @@ import { reportApiUsage } from './_usageTrack.js';
 import { attemptWithFailover } from './_keystore.js';
 
 // ====================================================================================
-// كان هنا موديل Mistral (mistral-small-latest عن طريق api.mistral.ai) — اتشال
-// خالص واتستبدل بـ gpt-oss-20b-free عن طريق CometAPI. بيستخدم مفتاح مستقل
-// COMETAPI_CHAT_API_KEY (مختلف عمدًا عن COMETAPI_API_KEY المستخدم في
-// tts-cometapi.js لصوت Kling — عشان الاستهلاك يفضل منفصل بين الميزتين).
-// ضيف المفتاح من صفحة admin-apikeys.html، وتقدر تحط أكتر من مفتاح وهيتبدّل
-// بينهم تلقائيًا لو واحد فشل (شوف _keystore.js).
+// الموديل هنا شغّال عن طريق OpenRouter (z-ai/glm-5.2:free). بيستخدم المفتاح
+// OPENROUTER_API_KEY — ضيفه من صفحة admin-apikeys.html، وتقدر تحط أكتر من مفتاح
+// وهيتبدّل بينهم تلقائيًا لو واحد فشل (شوف _keystore.js).
 // ====================================================================================
 
-const COMETAPI_URL = 'https://api.cometapi.com/v1/chat/completions';
-const COMET_MODEL = 'gpt-5-nano-2025-08-07';
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const OPENROUTER_MODEL = 'z-ai/glm-5.2:free';
 
 export default async function handler(request) {
   try {
@@ -26,12 +23,12 @@ export default async function handler(request) {
 
     const rawBody = await request.text();
 
-    // نجبر الموديل على gpt-oss-20b-free دايمًا، حتى لو وصل اسم موديل قديم
-    // (mistral-small-latest) من نسخة فرونت إند لسه متحدّثتش.
+    // نجبر الموديل على z-ai/glm-5.2:free دايمًا، حتى لو وصل اسم موديل قديم
+    // من نسخة فرونت إند لسه متحدّثتش.
     let body = rawBody;
     try {
       const parsed = JSON.parse(rawBody);
-      parsed.model = COMET_MODEL;
+      parsed.model = OPENROUTER_MODEL;
       body = JSON.stringify(parsed);
     } catch (e) {
       // لو الـ body مش JSON صالح، سيبه زي ما هو ووديه للمزوّد يرجّع خطأه بنفسه.
@@ -39,7 +36,7 @@ export default async function handler(request) {
 
     let upstream;
     try {
-      upstream = await attemptWithFailover('COMETAPI_CHAT_API_KEY', (key) => fetch(COMETAPI_URL, {
+      upstream = await attemptWithFailover('OPENROUTER_API_KEY', (key) => fetch(OPENROUTER_URL, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${key}`,
@@ -49,12 +46,12 @@ export default async function handler(request) {
       }));
     } catch (err) {
       if (err.code === 'NO_API_KEY') {
-        return new Response(JSON.stringify({ error: 'COMETAPI_CHAT_API_KEY غير مضبوط في Environment Variables — ضيفه من صفحة admin-apikeys.html' }), {
+        return new Response(JSON.stringify({ error: 'OPENROUTER_API_KEY غير مضبوط في Environment Variables — ضيفه من صفحة admin-apikeys.html' }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' }
         });
       }
-      return new Response(JSON.stringify({ error: 'تعذر الوصول لـ CometAPI' }), {
+      return new Response(JSON.stringify({ error: 'تعذر الوصول لـ OpenRouter' }), {
         status: 502,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -68,7 +65,7 @@ export default async function handler(request) {
       // عشان تقدر تشوفه حتى لو الطالب مبعتلكش سكرين شوت للـ console.
       try {
         const errText = await upstream.clone().text();
-        console.error(`⚠️ CometAPI رجّع status ${upstream.status}:`, errText.slice(0, 500));
+        console.error(`⚠️ OpenRouter رجّع status ${upstream.status}:`, errText.slice(0, 500));
       } catch (e) {}
       return new Response(upstream.body, {
         status: upstream.status,
@@ -92,7 +89,7 @@ export default async function handler(request) {
         } catch (err) {
           try {
             controller.enqueue(new TextEncoder().encode(
-              `data: {"error":{"message":"انقطع الاتصال بـ CometAPI أثناء الرد"}}\n\n`
+              `data: {"error":{"message":"انقطع الاتصال بـ OpenRouter أثناء الرد"}}\n\n`
             ));
           } catch (e) {}
           controller.close();
