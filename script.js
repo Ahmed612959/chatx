@@ -10398,7 +10398,7 @@ ${r.pathSummary}
         let isLastGeneratedUrl = null; // لازم يكون رابط عام (مش base64) عشان التعديل يشتغل عليه
         let isLastGeneratedProvider = null; // المزوّد اللي أنشأ الصورة (لازم نستخدم نفسه في التعديل)
         let isLastGeneratedSize = null; // { width, height } — بنستخدمها تاني وقت التعديل عشان الأبعاد تفضل زي ما هي
-        const EDIT_CAPABLE_PROVIDERS = ['grok', 'flux']; // مطابق لـ EDIT_PROVIDERS في index.js
+        const EDIT_CAPABLE_PROVIDERS = ['grok', 'grok2', 'flux']; // مطابق لـ EDIT_PROVIDERS في index.js
 
         async function runImageStudioGenerate() {
             const rawPrompt = document.getElementById('isGeneratePrompt').value.trim();
@@ -10443,7 +10443,7 @@ ${r.pathSummary}
                 document.getElementById('isGenerateDownloadLink').href = src;
                 resultWrap.style.display = 'block';
                 statusEl.classList.remove('show');
-                const providerLabels = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max' };
+                const providerLabels = { qwen: 'Qwen', grok: 'Grok', grok2: 'Grok Imagine 2', flux: 'Flux 2 Max' };
                 const usedLabel = providerLabels[data.usedProvider] || data.usedProvider;
                 const savedNote = data.savedToLibrary ? ' • 📥 اتحفظت في مكتبتي' : '';
                 statusEl.innerHTML = usedLabel
@@ -10546,7 +10546,7 @@ ${r.pathSummary}
             }
         }
 
-        const IMAGE_PROVIDER_LABELS = { qwen: 'Qwen', grok: 'Grok', flux: 'Flux 2 Max' };
+        const IMAGE_PROVIDER_LABELS = { qwen: 'Qwen', grok: 'Grok', grok2: 'Grok Imagine 2', flux: 'Flux 2 Max' };
 
         function openLibraryImageView(img) {
             currentLibraryViewId = img._id;
