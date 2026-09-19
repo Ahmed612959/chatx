@@ -10476,6 +10476,130 @@ ${r.pathSummary}
             }
         }
 
+        // ====================== تعديل صورة مرفوعة من جهاز الطالب ======================
+        let isUploadEditData = null; // { base64, dataUrl, width, height }
+
+        function loadImageFileToCanvasData(file) {
+            // بنصغّر الصورة (أقصى بُعد 2048) ونحوّلها JPEG عشان حجم الطلب يفضل صغير.
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        const w = img.naturalWidth, h = img.naturalHeight;
+                        let maxSide = 2048;
+                        let quality = 0.9;
+                        for (let attempt = 0; attempt < 6; attempt++) {
+                            const scale = Math.min(1, maxSide / Math.max(w, h));
+                            const cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+                            const canvas = document.createElement('canvas');
+                            canvas.width = cw; canvas.height = ch;
+                            const ctx = canvas.getContext('2d');
+                            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cw, ch); // خلفية بيضا للـ PNG الشفاف
+                            ctx.drawImage(img, 0, 0, cw, ch);
+                            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                            const base64 = dataUrl.split(',')[1];
+                            if (base64.length <= 3.6 * 1024 * 1024) {
+                                URL.revokeObjectURL(url);
+                                return resolve({ base64, dataUrl, width: cw, height: ch });
+                            }
+                            maxSide = Math.round(maxSide * 0.75);
+                            quality = Math.max(0.6, quality - 0.1);
+                        }
+                        URL.revokeObjectURL(url);
+                        reject(new Error('الصورة كبيرة جدًا حتى بعد التصغير'));
+                    } catch (e) { URL.revokeObjectURL(url); reject(e); }
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('تعذر قراءة الصورة')); };
+                img.src = url;
+            });
+        }
+
+        async function onUploadEditFileChange(input) {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+                showToast('المسموح: صور JPG أو PNG أو WebP بس', 'error');
+                input.value = '';
+                return;
+            }
+            try {
+                isUploadEditData = await loadImageFileToCanvasData(file);
+                document.getElementById('isUploadEditPreview').src = isUploadEditData.dataUrl;
+                document.getElementById('isUploadEditPreviewWrap').style.display = 'block';
+            } catch (e) {
+                isUploadEditData = null;
+                showToast(e.message || 'تعذر تجهيز الصورة', 'error');
+            }
+            input.value = '';
+        }
+
+        function clearUploadEditImage() {
+            isUploadEditData = null;
+            document.getElementById('isUploadEditPreviewWrap').style.display = 'none';
+            document.getElementById('isUploadEditPreview').removeAttribute('src');
+        }
+
+        async function runImageStudioUploadEdit() {
+            const prompt = document.getElementById('isUploadEditPrompt').value.trim();
+            const provider = document.getElementById('isUploadEditProvider').value;
+            if (!isUploadEditData) { showToast('اختر صورة من جهازك الأول', 'error'); return; }
+            if (!prompt) { showToast('اكتب وصف التعديل الأول', 'error'); return; }
+            const btn = document.getElementById('isUploadEditBtn');
+            const statusEl = document.getElementById('isGenerateStatus');
+            const resultWrap = document.getElementById('isGenerateResultWrap');
+            const editSection = document.getElementById('isEditSection');
+            btn.disabled = true;
+            statusEl.innerHTML = '<span class="btn-spinner"></span> جارٍ تعديل الصورة... (ممكن تاخد لحظات)';
+            statusEl.classList.add('show');
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/premium/edit-uploaded-image`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({
+                        imageBase64: isUploadEditData.base64, prompt, provider,
+                        width: isUploadEditData.width, height: isUploadEditData.height
+                    })
+                });
+                let data = {};
+                try { data = await res.json(); } catch (_) {}
+                if (typeof data.quotaRemaining === 'number') renderImageQuotaBadge({ used: data.quotaLimit - data.quotaRemaining, remaining: data.quotaRemaining, limit: data.quotaLimit });
+                if (!res.ok) {
+                    const err = new Error(res.status === 413 ? 'الصورة كبيرة جدًا — جرّب صورة أصغر' : (data.error || 'فشل تعديل الصورة'));
+                    if (data.debugAttempts) err.debugAttempts = data.debugAttempts;
+                    throw err;
+                }
+                const src = data.imageBase64 ? `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}` : data.imageUrl;
+                document.getElementById('isGenerateResultImg').src = src;
+                document.getElementById('isGenerateDownloadLink').href = src;
+                resultWrap.style.display = 'block';
+                // لو رجع رابط عام نسمح بتعديل تاني فوق النسخة المعدّلة بنفس المزوّد
+                if (data.imageUrl) {
+                    isLastGeneratedUrl = data.imageUrl;
+                    isLastGeneratedProvider = provider;
+                    isLastGeneratedSize = { width: isUploadEditData.width, height: isUploadEditData.height };
+                    editSection.style.display = 'block';
+                } else {
+                    editSection.style.display = 'none';
+                }
+                statusEl.innerHTML = `<span style="color:var(--success);font-size:11px;">تم التعديل ✅${data.savedToLibrary ? ' • اتحفظت في مكتبتي' : ''}</span>`;
+                statusEl.classList.add('show');
+                document.getElementById('isUploadEditPrompt').value = '';
+                resultWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (e) {
+                statusEl.innerHTML = `<span style="color:var(--danger);">${escapeHtml(e.message || 'تعذر تعديل الصورة')}</span>`;
+                if (e.debugAttempts) {
+                    const debugHtml = e.debugAttempts.map(a =>
+                        `<div>• ${a.provider}: ${a.reason || ('status ' + a.status)}${a.detail ? ' — ' + escapeHtml(a.detail) : ''}</div>`
+                    ).join('');
+                    statusEl.innerHTML += `<div style="margin-top:8px;font-size:10px;color:var(--text-3);text-align:right;direction:ltr;">${debugHtml}</div>`;
+                }
+                statusEl.classList.add('show');
+            } finally {
+                btn.disabled = lastImageQuotaEmpty;
+            }
+        }
+
         async function runImageStudioEdit() {
             const editPrompt = document.getElementById('isEditPrompt').value.trim();
             if (!editPrompt) { showToast('اكتب وصف التعديل الأول', 'error'); return; }

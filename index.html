@@ -1571,6 +1571,30 @@
                     </div>
                 </div>
                 <div class="calc-result" id="isGenerateStatus"></div>
+
+                <!-- تعديل صورة من جهاز الطالب — Grok / Grok Imagine 2 / Flux -->
+                <div id="isUploadEditSection" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
+                    <div style="font-size:12px;color:var(--text-2);font-weight:600;margin-bottom:8px;">🖼️ أو عدّل صورة من عندك</div>
+                    <input type="file" id="isUploadEditFile" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="onUploadEditFileChange(this)">
+                    <div id="isUploadEditPreviewWrap" style="display:none;margin-bottom:8px;position:relative;width:100px;">
+                        <img id="isUploadEditPreview" alt="الصورة المختارة للتعديل" style="width:100px;height:100px;object-fit:cover;border-radius: var(--radius-xs);display:block;">
+                        <button type="button" onclick="clearUploadEditImage()" style="position:absolute;top:-6px;left:-6px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;line-height:1;">✕</button>
+                    </div>
+                    <button type="button" class="btn-calc" style="background:var(--bg-2);color:var(--text-2);font-size:12px;margin-bottom:10px;" onclick="document.getElementById('isUploadEditFile').click()"><i class="fas fa-upload"></i> اختر صورة من جهازك</button>
+                    <div class="input-group">
+                        <label>الموديل</label>
+                        <select id="isUploadEditProvider" class="tool-input">
+                            <option value="grok">Grok</option>
+                            <option value="grok2">Grok Imagine 2</option>
+                            <option value="flux">Flux 2 Max</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>عايز تعدّل فيها إيه؟</label>
+                        <input type="text" id="isUploadEditPrompt" class="tool-input" placeholder="مثلًا: خلّي الخلفية غروب، أو حوّلها لرسم مائي">
+                    </div>
+                    <button class="btn-calc" id="isUploadEditBtn" onclick="runImageStudioUploadEdit()"><i class="fas fa-wand-magic-sparkles"></i> عدّل صورتي</button>
+                </div>
             </div>
 
             <!-- تبويب: إنشاء فيديو -->
