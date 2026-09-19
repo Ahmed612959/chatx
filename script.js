@@ -2160,51 +2160,98 @@
             try {
                 const messages = chat.messages;
                 const lastUserMsg = messages[messages.length - 1];
-                const parts = [{ text: lastUserMsg.content }];
-                if (lastUserMsg.image && lastUserMsg.image.base64) {
-                    parts.push({ inline_data: { mime_type: lastUserMsg.image.mimeType, data: lastUserMsg.image.base64 } });
-                }
                 const history = messages.slice(0, -1);
                 // السرعة المختارة (⚡ سريع / 🧠 عميق) بتحدد البرومبت وحد أقصى تقريبي
                 // لطول رد التفكير نفسه — نسخة "سريع" برومبتها أقصر أصلًا، وبنحط
                 // maxOutputTokens أقل ليها كمان عشان تنتهي فعليًا أسرع مش بس تتكتب أقصر.
                 const isQuickMode = settings.deepThinkSpeed === 'quick';
-                const requestBody = {
-                    contents: history.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })).concat([{ role: 'user', parts }]),
-                    systemInstruction: { parts: [{ text: isQuickMode ? DEEP_THINK_REASONING_SYSTEM_PROMPT_QUICK : DEEP_THINK_REASONING_SYSTEM_PROMPT }] }
-                };
-                if (isQuickMode) requestBody.generationConfig = { maxOutputTokens: 220 };
+                const reasoningPrompt = isQuickMode ? DEEP_THINK_REASONING_SYSTEM_PROMPT_QUICK : DEEP_THINK_REASONING_SYSTEM_PROMPT;
 
-                const response = await fetchWithRetry(`${settings.backendUrl}/api/gemini`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody),
-                    signal
-                });
-                if (!response.ok || !response.body) throw new Error('deep-think-unavailable');
-
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '';
-                let fullText = '';
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    buffer += decoder.decode(value, { stream: true });
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (const line of lines) {
-                        if (!line.startsWith('data: ')) continue;
-                        try {
-                            const data = JSON.parse(line.slice(6));
-                            const piece = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                            if (piece) {
-                                fullText += piece;
-                                if (textEl) { textEl.textContent = fullText; textEl.scrollTop = textEl.scrollHeight; }
+                // بتقرا ستريم SSE وتعرض التفكير لحظة بلحظة — مشتركة بين Gemini والمزوّد الاحتياطي.
+                // لو الاتصال اتقطع في نص الكلام وكان وصلنا نص مفيد، بنحتفظ بيه بدل ما نرميه.
+                const readReasoningStream = async (response, pickPiece) => {
+                    if (!response.ok || !response.body) throw new Error('deep-think-unavailable');
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+                    let text = '';
+                    try {
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            buffer += decoder.decode(value, { stream: true });
+                            const lines = buffer.split('\n');
+                            buffer = lines.pop();
+                            for (const line of lines) {
+                                if (!line.startsWith('data: ')) continue;
+                                const payload = line.slice(6).trim();
+                                if (!payload || payload === '[DONE]') continue;
+                                try {
+                                    const piece = pickPiece(JSON.parse(payload));
+                                    if (piece) {
+                                        text += piece;
+                                        if (textEl) { textEl.textContent = text; textEl.scrollTop = textEl.scrollHeight; }
+                                    }
+                                } catch (e) {}
                             }
-                        } catch (e) {}
+                        }
+                    } catch (readError) {
+                        if (readError.name === 'AbortError' || !text.trim()) throw readError;
                     }
+                    return text;
+                };
+
+                // بنجرّب أكتر من مزوّد بالترتيب: لو Gemini فشل أو رجّع نص فاضي (بطء، مفتاح،
+                // ضغط...)، بننقل لمزوّد احتياطي بدل ما نلغي التفكير العميق بصمت.
+                const attempts = [
+                    async () => {
+                        const parts = [{ text: lastUserMsg.content }];
+                        if (lastUserMsg.image && lastUserMsg.image.base64) {
+                            parts.push({ inline_data: { mime_type: lastUserMsg.image.mimeType, data: lastUserMsg.image.base64 } });
+                        }
+                        const requestBody = {
+                            contents: history.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })).concat([{ role: 'user', parts }]),
+                            systemInstruction: { parts: [{ text: reasoningPrompt }] }
+                        };
+                        if (isQuickMode) requestBody.generationConfig = { maxOutputTokens: 220 };
+                        const response = await fetchWithRetry(`${settings.backendUrl}/api/gemini`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(requestBody),
+                            signal
+                        }, 1, DEEP_THINK_TIMEOUT_MS);
+                        return readReasoningStream(response, d => d.candidates?.[0]?.content?.parts?.[0]?.text || '');
+                    },
+                    async () => {
+                        const response = await fetchWithRetry(`${settings.backendUrl}/api/groq`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                model: 'openai/gpt-oss-20b',
+                                messages: [
+                                    { role: 'system', content: reasoningPrompt },
+                                    ...history.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
+                                    { role: 'user', content: lastUserMsg.content }
+                                ],
+                                stream: true
+                            }),
+                            signal
+                        }, 1, DEEP_THINK_TIMEOUT_MS);
+                        return readReasoningStream(response, d => d.choices?.[0]?.delta?.content || '');
+                    }
+                ];
+
+                let fullText = '';
+                for (const attempt of attempts) {
+                    try {
+                        fullText = (await attempt()) || '';
+                    } catch (attemptError) {
+                        if (attemptError.name === 'AbortError') throw attemptError; // الطالب وقف بنفسه
+                        console.warn('Deep think provider failed, trying next one', attemptError);
+                        fullText = '';
+                    }
+                    if (fullText.trim()) break;
+                    if (textEl) textEl.textContent = '';
                 }
 
                 const elapsedSeconds = Math.max(1, Math.round((Date.now() - startTime) / 1000));
@@ -2303,6 +2350,7 @@
                 try {
                     deepThinkResult = await runDeepThinkingPass(chat, abortController.signal);
                     if (deepThinkResult) deepThinkReasoningContext = deepThinkResult.reasoningText;
+                    else showToast('التفكير العميق مقدرش يكمل المرة دي — هنجاوبك عادي', 'error');
                 } catch (deepThinkError) {
                     if (deepThinkError.name === 'AbortError') {
                         isGenerating = false;
@@ -2314,6 +2362,7 @@
                     }
                     console.error('Deep think pass failed', deepThinkError);
                     deepThinkResult = null;
+                    showToast('التفكير العميق مقدرش يكمل المرة دي — هنجاوبك عادي', 'error');
                 }
                 document.getElementById('typingIndicator').classList.add('active');
                 }
@@ -2357,20 +2406,7 @@
                     await streamMistral(chat.messages, abortController.signal);
                 } else if (model === 'sambanova') {
                     source = 'sambanova';
-                    try {
-                        await streamSambanova(chat.messages, abortController.signal);
-                    } catch (sambanovaError) {
-                        if (sambanovaError.name === 'AbortError') throw sambanovaError;
-                        // 429 = SambaNova نفسه مزدحم مؤقتًا (مش عطل في الاشتراك ولا الكود) —
-                        // بنحاول تلقائي موديل تاني بدل ما نوقف بخطأ للطالب مباشرة. أي خطأ
-                        // تاني (401، 500، إلخ) بيتصعّد زي ما هو عادي للـ catch العام تحت.
-                        if (sambanovaError.status === 429) {
-                            source = 'qwen';
-                            await streamQwen(chat.messages, abortController.signal);
-                        } else {
-                            throw sambanovaError;
-                        }
-                    }
+                    await streamSambanova(chat.messages, abortController.signal);
                 } else if (model === 'qwen') {
                     source = 'qwen';
                     await streamQwen(chat.messages, abortController.signal);
@@ -3879,6 +3915,21 @@
         // إرسال أول توكن (time-to-first-byte)، فبنمرّرله timeoutMs أعلى صراحة عند
         // النداء عليه (شوف streamClaudeOpus) بدل ما نغيّر الافتراضي العام لكل المزودين.
         const PROVIDER_ATTEMPT_TIMEOUT_MS = 12000;
+
+        // ⏱️ مهلة أطول للموديلات "التفكيرية"/البطيئة (Qwen 3.8 و GLM 5.2 و DeepSeek و
+        // OpenRouter و Gemini): الموديلات دي بتفكّر الأول وبتتأخر قبل ما ترد بأي حاجة،
+        // فمهلة الـ 12 ثانية العامة كانت بتقطعها وتنزّل الطالب لرد محلي وهي لسه شغالة.
+        // - لو الطالب اختار الموديل ده بنفسه: بنستناه لحد 90 ثانية.
+        // - جوه سلسلة "auto": 25 ثانية بس، عشان لو المزود واقع ننزل للي بعده بسرعة.
+        const SLOW_MODEL_TIMEOUT_MS = 90000;
+        const SLOW_MODEL_AUTO_TIMEOUT_MS = 25000;
+        function slowModelTimeout() {
+            const sel = document.getElementById('modelSelect');
+            return (sel && sel.value !== 'auto') ? SLOW_MODEL_TIMEOUT_MS : SLOW_MODEL_AUTO_TIMEOUT_MS;
+        }
+        // مهلة نداء "التفكير العميق" (Gemini أو الاحتياطي) — كان بياخد الـ 12 ثانية الافتراضية
+        // وأي بطء بسيط كان بيفشّله بصمت ويكمّل من غير تفكير.
+        const DEEP_THINK_TIMEOUT_MS = 45000;
         async function fetchWithRetry(url, options, maxRetries = 1, timeoutMs = PROVIDER_ATTEMPT_TIMEOUT_MS) {
             let lastErr;
             for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -3993,7 +4044,7 @@
                     stream: true
                 }),
                 signal
-            });
+            }, 1, slowModelTimeout());
 
             if (!response.ok) {
                 let detail = '';
@@ -4197,7 +4248,7 @@
                     stream: true
                 }),
                 signal
-            });
+            }, 1, slowModelTimeout());
 
             if (!response.ok) {
                 let detail = '';
@@ -4319,7 +4370,7 @@
                     stream: true
                 }),
                 signal
-            });
+            }, 1, slowModelTimeout());
 
             if (!response.ok) {
                 let detail = '';
@@ -4382,7 +4433,7 @@
                     stream: true
                 }),
                 signal
-            });
+            }, 1, slowModelTimeout());
 
             if (!response.ok) {
                 let detail = '';
@@ -4506,7 +4557,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody),
                 signal
-            });
+            }, 1, slowModelTimeout());
 
             if (!response.ok) {
                 let detail = '';
