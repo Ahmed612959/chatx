@@ -4347,7 +4347,7 @@
         }
 
         async function streamSambanova(messages, signal) {
-            const response = await fetchWithRetry429(`${settings.backendUrl}/api/sambanova`, {
+            const response = await fetchWithRetry(`${settings.backendUrl}/api/sambanova`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -4362,7 +4362,7 @@
                 let detail = '';
                 try { detail = (await response.text()).slice(0, 200); } catch (e) {}
                 console.error('SambaNova API error', response.status, detail);
-                const err = new Error(response.status === 429 ? 'SambaNova مزدحم دلوقتي (429) — وصل لحد الطلبات مؤقتًا' : `SambaNova API Error (${response.status}): ${detail || 'no detail'}`);
+                const err = new Error(`SambaNova API Error (${response.status}): ${detail || 'no detail'}`);
                 err.status = response.status; // بنحفظ الكود عشان اللي بينادي يقدر يميّز 429 (مزدحم) عن أي خطأ تاني
                 throw err;
             }
