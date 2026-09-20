@@ -1107,7 +1107,6 @@
             applyTheme(settings.theme);
             if (settings.model) document.getElementById('modelSelect').value = settings.model;
             applyDeepThinkBtnState();
-            applyWebSearchBtnState();
             if (chats.length === 0) createNewChat();
             else {
                 if (!currentChatId || !chats.find(c => c.id === currentChatId)) currentChatId = chats[0].id;
@@ -1606,185 +1605,6 @@
             } else {
                 badge.style.display = 'none';
             }
-        }
-
-        // ====================== البحث في الويب (Web Search) ======================
-        // لو الطالب مفعّل زرار "البحث في الويب": قبل ما الموديل يجاوب بنبعت سؤاله للسيرفر
-        // (/api/web-search) اللي بيجيب نتايج حية من النت، وبنحطها في الـ system prompt
-        // مرقّمة [1] [2]... ونطلب من الموديل يلخّص ويستشهد بيها ويختم بـ "الخلاصة". بعد
-        // الرد بنعرض شرايح المصادر تحت الفقاعة، وأرقام [n] جوه النص بتبقى لينكات.
-        // لو البحث فشل لأي سبب، الطالب بيتجاوب عادي من غير ما نوقف رسالته.
-        const WEB_SEARCH_PREMIUM_ONLY = false; // خليها true لو عايز الميزة لمشتركي premium_ai بس (لأن كل بحث بيستهلك رصيد من مزوّد البحث)
-        let pendingWebSearchContext = '';
-        let pendingWebSearchSources = null;
-
-        function toggleWebSearch() {
-            if (WEB_SEARCH_PREMIUM_ONLY && !settings.webSearch && !hasPremium('premium_ai')) {
-                showToast('البحث في الويب متاح لمشتركي Premium بس', 'error');
-                return;
-            }
-            settings.webSearch = !settings.webSearch;
-            saveData();
-            applyWebSearchBtnState();
-            showToast(settings.webSearch ? 'اتفعّل البحث في الويب 🌐 — هيدوّر على النت قبل كل رد' : 'اتقفل البحث في الويب', 'success');
-        }
-
-        function applyWebSearchBtnState() {
-            const btn = document.getElementById('webSearchBtn');
-            if (!btn) return;
-            btn.classList.toggle('active', !!settings.webSearch);
-            btn.setAttribute('aria-pressed', settings.webSearch ? 'true' : 'false');
-        }
-
-        function getHostFromUrl(url) {
-            try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; }
-        }
-
-        // بنجهّز نص البحث من آخر رسالة للطالب (من غير الملف المرفق). لو الرسالة قصيرة
-        // ومتابعة لسؤال قبلها (زي "وإيه الأعراض؟") بنضيف عليها سؤاله اللي فات عشان البحث يفهم السياق.
-        function buildWebSearchQuery(chat) {
-            const userMsgs = chat.messages.filter(m => m.role === 'user');
-            const last = userMsgs[userMsgs.length - 1];
-            if (!last) return '';
-            const clean = (m) => String(splitAttachmentFromContent(m.content).text || m.content || '').replace(/\s+/g, ' ').trim();
-            let q = clean(last);
-            if (q.length < 25 && userMsgs.length > 1) {
-                const prev = clean(userMsgs[userMsgs.length - 2]);
-                if (prev) q = `${prev.slice(0, 140)} ${q}`;
-            }
-            return q.slice(0, 300);
-        }
-
-        function shouldSkipWebSearch(q) {
-            if (!q || q.length < 4) return true;
-            return /^(شكرا|شكراً|تمام|ماشي|اوكي|أوكي|ok|okay|thanks|thx|ايوه|أيوه|اه|آه|لا|مرحبا|اهلا|أهلا|هاي|السلام عليكم)[\s!.؟?]*$/i.test(q);
-        }
-
-        async function runWebSearchPass(chat, signal) {
-            const query = buildWebSearchQuery(chat);
-            if (shouldSkipWebSearch(query)) return null;
-
-            const indicator = document.getElementById('webSearchIndicator');
-            const statusEl = document.getElementById('webSearchStatus');
-            const listEl = document.getElementById('webSearchLiveSources');
-            document.getElementById('typingIndicator').classList.remove('active');
-            if (listEl) listEl.innerHTML = '';
-            if (statusEl) statusEl.textContent = 'بيدوّر في الويب...';
-            if (indicator) {
-                document.getElementById('chatContainer').insertBefore(indicator, document.getElementById('typingIndicator'));
-                indicator.classList.add('active');
-            }
-            scrollToBottom();
-
-            try {
-                const headers = { 'Content-Type': 'application/json' };
-                if (schoolToken) headers['Authorization'] = `Bearer ${schoolToken}`;
-                const res = await fetchWithRetry(`${settings.backendUrl}/api/web-search`, {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify({ query, maxResults: 6 }),
-                    signal
-                }, 1, 20000);
-                if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    const err = new Error(errData.error || `web-search-unavailable (${res.status})`);
-                    err.status = res.status;
-                    err.userMessage = errData.error || '';
-                    throw err;
-                }
-                const data = await res.json();
-                const results = (Array.isArray(data.results) ? data.results : [])
-                    .filter(r => r && typeof r.url === 'string' && /^https?:\/\//i.test(r.url))
-                    .slice(0, 6);
-                if (!results.length) return null;
-
-                const sources = results.map((r, i) => ({
-                    n: i + 1,
-                    title: String(r.title || '').slice(0, 140),
-                    url: r.url,
-                    host: getHostFromUrl(r.url),
-                    published: r.published_date ? String(r.published_date).slice(0, 40) : ''
-                }));
-
-                if (statusEl) statusEl.textContent = `لقيت ${sources.length} مصادر — بيقراها ويلخّصلك...`;
-                if (listEl) listEl.innerHTML = sources.map(s =>
-                    `<span class="web-source-chip"><span class="web-source-num">${s.n}</span><span class="web-source-host">${escapeHtml(s.host)}</span></span>`
-                ).join('');
-                await new Promise(r => setTimeout(r, 500)); // لحظة قصيرة عشان الطالب يشوف المصادر قبل ما الرد يبدأ
-
-                const today = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
-                const blocks = results.map((r, i) => {
-                    const s = sources[i];
-                    return `[${s.n}] ${s.title || s.host} (${s.host})${s.published ? ' — ' + s.published : ''}\n${String(r.content || '').replace(/\s+/g, ' ').slice(0, 1200)}`;
-                }).join('\n\n');
-
-                const context = `اتعمل بحث حي في الويب دلوقتي على سؤال الطالب (تاريخ النهارده: ${today}). دي نتايج البحث مرقّمة:\n\n${blocks}\n\nقواعد الرد بالنتايج دي:\n- اعتمد على النتايج فوق في أي معلومة حديثة أو واقعية، وحط رقم المصدر بين قوسين مربعين زي [1] أو [2][3] بعد الجملة اللي استفدتها منه مباشرة.\n- متخترعش معلومة أو رقم أو رابط مش موجود في النتايج. لو النتايج مش كفاية أو متضاربة قول ده بصراحة، وجاوب باللي تعرفه مع التنبيه إنه مش من المصادر.\n- رتّب الرد كده: (1) إجابة مباشرة في سطرين أو تلاتة، (2) التفاصيل المهمة في نقط منظمة مع الأرقام المرجعية، (3) في الآخر سطر بعنوان \"**الخلاصة:**\" بيلخّص أهم حاجة في جملة أو اتنين.\n- متكتبش روابط ولا قايمة مصادر في آخر الرد — الواجهة بتعرضها للطالب لوحدها.\n- لو الموضوع طبي أو دوائي: نبّه بجملة قصيرة إن المعلومة للمذاكرة ولازم يراجعها مع منهجه ودكتوره قبل أي تطبيق عملي.\n- لو السؤال أصلاً مش محتاج بحث (شرح مفهوم ثابت في المنهج)، اشرحه عادي ومتقحمش المصادر بالعافية.`;
-
-                return { context, sources };
-            } finally {
-                if (indicator) indicator.classList.remove('active');
-            }
-        }
-
-        function buildWebSourcesHTML(sources) {
-            if (!Array.isArray(sources) || !sources.length) return '';
-            const chips = sources.filter(s => s && /^https?:\/\//i.test(s.url || '')).map(s => {
-                const host = escapeHtml(s.host || getHostFromUrl(s.url));
-                return `<a class="web-source-chip" href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(s.title || host)}">` +
-                    `<span class="web-source-num">${Number(s.n) || ''}</span>` +
-                    `<img class="web-source-favicon" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(s.host || getHostFromUrl(s.url))}&sz=32" alt="" loading="lazy" onerror="this.style.display='none'">` +
-                    `<span class="web-source-host">${host}</span></a>`;
-            }).join('');
-            if (!chips) return '';
-            return `<div class="web-sources"><div class="web-sources-title"><i class="fas fa-globe"></i> المصادر (${sources.length})</div><div class="web-sources-list">${chips}</div></div>`;
-        }
-
-        // بتحوّل أرقام [1] [2] في نص الرد لأزرار صغيرة بتفتح المصدر الحقيقي.
-        function decorateWebCitations(bubbleEl, sources) {
-            if (!bubbleEl || !Array.isArray(sources) || !sources.length) return;
-            const byN = {};
-            sources.forEach(s => { if (s && /^https?:\/\//i.test(s.url || '')) byN[s.n] = s; });
-            const walker = document.createTreeWalker(bubbleEl, NodeFilter.SHOW_TEXT, {
-                acceptNode(node) {
-                    if (!/\[\d{1,2}\]/.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
-                    if (node.parentElement && node.parentElement.closest('pre, code, a')) return NodeFilter.FILTER_REJECT;
-                    return NodeFilter.FILTER_ACCEPT;
-                }
-            });
-            const nodes = [];
-            while (walker.nextNode()) nodes.push(walker.currentNode);
-            nodes.forEach(node => {
-                const frag = document.createDocumentFragment();
-                node.nodeValue.split(/(\[\d{1,2}\])/).forEach(part => {
-                    const m = part.match(/^\[(\d{1,2})\]$/);
-                    const src = m && byN[Number(m[1])];
-                    if (src) {
-                        const a = document.createElement('a');
-                        a.className = 'web-cite';
-                        a.href = src.url;
-                        a.target = '_blank';
-                        a.rel = 'noopener noreferrer';
-                        a.title = src.title || src.host || '';
-                        a.textContent = m[1];
-                        frag.appendChild(a);
-                    } else if (part) {
-                        frag.appendChild(document.createTextNode(part));
-                    }
-                });
-                node.parentNode.replaceChild(frag, node);
-            });
-        }
-
-        // بتحقن شرايح المصادر + أزرار الاستشهاد جوه رد جاهز بالفعل في الـ DOM.
-        function attachWebSourcesToMessage(msgId, sources) {
-            const msgDiv = document.getElementById(msgId);
-            if (!msgDiv) return;
-            const bubble = msgDiv.querySelector('.msg-bubble');
-            if (!bubble || !bubble.parentElement) return;
-            decorateWebCitations(bubble, sources);
-            const wrap = document.createElement('div');
-            wrap.innerHTML = buildWebSourcesHTML(sources);
-            if (wrap.firstElementChild) bubble.parentElement.insertBefore(wrap.firstElementChild, bubble.nextSibling);
         }
 
         function toggleDuaReminders(enabled) {
@@ -2553,34 +2373,6 @@
                 model = 'zimage';
             }
 
-            // البحث في الويب: لو مفعّل، نجيب نتايج حية الأول (شوف runWebSearchPass) ونحطها
-            // كسياق للموديل. لو فشل لأي سبب مش AbortError، نكمّل عادي من غير بحث.
-            if (settings.webSearch && model !== 'local') {
-                try {
-                    const webResult = await runWebSearchPass(chat, abortController.signal);
-                    if (webResult) {
-                        pendingWebSearchContext = webResult.context;
-                        pendingWebSearchSources = webResult.sources;
-                    }
-                } catch (webError) {
-                    if (webError.name === 'AbortError') {
-                        isGenerating = false;
-                        abortController = null;
-                        setSendButtonState(false);
-                        document.getElementById('typingIndicator').classList.remove('active');
-                        const wsIndicator = document.getElementById('webSearchIndicator');
-                        if (wsIndicator) wsIndicator.classList.remove('active');
-                        showToast('تم إيقاف الرد', 'error');
-                        return;
-                    }
-                    console.warn('Web search failed', webError);
-                    showToast(webError.userMessage || (webError.status === 429
-                        ? 'البحث في الويب عليه ضغط دلوقتي — هنجاوبك من غير بحث'
-                        : 'البحث في الويب مقدرش يكمل المرة دي — هنجاوبك عادي'), 'error');
-                }
-                document.getElementById('typingIndicator').classList.add('active');
-            }
-
             // Deep Thinking: لو مفعّل من الطالب، بنعمل نداء تفكير حقيقي منفصل الأول (شوف
             // runDeepThinkingPass) قبل ما نكمّل لرد الموديل الأصلي المختار. لو فشل النداء
             // ده لأي سبب مش AbortError، بنتجاهله ونكمل عادي من غير ما نوقف رد الطالب.
@@ -2742,15 +2534,6 @@
                         saveData();
                     }
                 }
-                // البحث في الويب نجح: نحفظ المصادر مع رد البوت ونعرضها تحته + نحوّل [n] للينكات.
-                if (pendingWebSearchSources && pendingWebSearchSources.length) {
-                    const lastBotForWeb = chat.messages[chat.messages.length - 1];
-                    if (lastBotForWeb && lastBotForWeb.role === 'bot') {
-                        lastBotForWeb.webSources = pendingWebSearchSources;
-                        attachWebSourcesToMessage(lastBotForWeb.id, pendingWebSearchSources);
-                        saveData();
-                    }
-                }
                 // ====================== بنك الأسئلة الشائعة ======================
                 // بعد أي رد ناجح (وصلنا هنا يبقى معدّيش استثناء)، نبعت السؤال وآخر
                 // رد للبنك المشترك — مجهول تمامًا (مفيش توكن ولا اسم مستخدم في
@@ -2807,10 +2590,6 @@
                 if (deepThinkTimerInterval) { clearInterval(deepThinkTimerInterval); deepThinkTimerInterval = null; }
                 stopDeepThinkStatusCycle();
                 deepThinkReasoningContext = '';
-                pendingWebSearchContext = '';
-                pendingWebSearchSources = null;
-                const wsIndicatorEnd = document.getElementById('webSearchIndicator');
-                if (wsIndicatorEnd) wsIndicatorEnd.classList.remove('active');
                 updateCharCount();
                 // لو الطالب مبعّد عن التاب (تاب/تطبيق تاني) وقت ما الرد خلص، يوصله إشعار
                 // حقيقي من نظام التشغيل بدل ما يفوته من غير ما يعرف.
@@ -4165,12 +3944,6 @@
                 contentDiv.appendChild(thinkWrap.firstElementChild);
             }
             contentDiv.appendChild(bubble);
-            if (msg.role === 'bot' && Array.isArray(msg.webSources) && msg.webSources.length) {
-                decorateWebCitations(bubble, msg.webSources);
-                const webWrap = document.createElement('div');
-                webWrap.innerHTML = buildWebSourcesHTML(msg.webSources);
-                if (webWrap.firstElementChild) contentDiv.appendChild(webWrap.firstElementChild);
-            }
             contentDiv.appendChild(meta);
             div.appendChild(avatar);
             div.appendChild(contentDiv);
@@ -4873,9 +4646,6 @@
                 if (deepThinkReasoningContext) {
                     effectiveSystemPrompt += `\n\nده تحليلك الداخلي اللي عملته بنفسك من شوية على نفس سؤال الطالب ده — استخدمه عشان تجاوب بدقة وتركيز، من غير ما تكرره أو تشير إنه موجود:\n${deepThinkReasoningContext}`;
                 }
-            }
-            if (pendingWebSearchContext) {
-                effectiveSystemPrompt = (effectiveSystemPrompt || 'أنت مساعد أكاديمي ذكي.') + `\n\n${pendingWebSearchContext}`;
             }
             if (effectiveSystemPrompt) {
                 requestBody.systemInstruction = { parts: [{ text: effectiveSystemPrompt }] };
@@ -9744,7 +9514,6 @@ ${r.pathSummary}
                     extra += `\n\nده تحليلك الداخلي اللي عملته بنفسك من شوية على نفس سؤال الطالب ده — استخدمه عشان تجاوب بدقة وتركيز، من غير ما تكرره أو تشير إنه موجود:\n${deepThinkReasoningContext}`;
                 }
             }
-            if (pendingWebSearchContext) extra += `\n\n${pendingWebSearchContext}`;
             return base + extra;
         }
 
