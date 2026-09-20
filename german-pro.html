@@ -1,927 +1,1551 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://schoolx-eta.vercel.app https://chat-x.vercel.app https://api.alquran.cloud https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com wss://*.firebaseio.com; frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://schoolx-eta.vercel.app https://chat-x.vercel.app https://api.alquran.cloud https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com wss://*.firebaseio.com; frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self';">
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#6366f1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#58cc02">
 <title>German Pro | Chat X</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;500;600;700;800&family=Cairo:wght@400;600;700;900&family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
-
 <style>
+/* ====== German Pro — نفس نظام DESIGN.md (Duolingo-style): ورق أبيض، أخضر واحد، حدود 2px، بدون ظلال ولا تدرّجات ====== */
 :root {
-    --bg: #0a0e1a; --bg-2: #131827; --bg-glass: rgba(19, 24, 39, 0.75); --bg-glass-heavy: rgba(10, 14, 26, 0.95);
-    --accent: #6366f1; --accent-2: #8b5cf6; --accent-3: #ec4899; --accent-glow: rgba(99, 102, 241, 0.35);
-    --text-1: #f1f5f9; --text-2: #94a3b8; --text-3: #64748b;
-    --border: rgba(255, 255, 255, 0.08); --border-accent: rgba(99, 102, 241, 0.4);
-    --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
-    --radius: 16px; --radius-sm: 10px;
-    --font: 'Cairo', sans-serif;
-    --grad-bold: linear-gradient(120deg, var(--accent), var(--accent-2) 55%, var(--accent-3));
+    --color-eager-green: #58cc02; --color-storybook-green: #d7ffb8; --color-spark-blue: #1cb0f6; --color-fresh-leaf: #a5ed6e;
+    --color-night-ink: #000437; --color-paper-white: #ffffff; --color-charcoal: #4b4b4b; --color-pencil-gray: #777777; --color-faded-gray: #afafaf;
+    /* Feather → بديل مدوّر يدعم العربي (Baloo Bhaijaan 2) ثم Nunito Black؛ duolingo-sans → Nunito + Cairo للعربي */
+    --font-feather: 'Baloo Bhaijaan 2', 'Nunito', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-duolingo-sans: 'Nunito', 'Cairo', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --text-caption: 13px; --text-nav-label: 15px; --tracking-nav-label: 0.795px; --text-body: 17px; --text-subheading: 19px; --text-heading-sm: 32px; --text-heading: 48px; --text-display: 64px;
+    --spacing-8: 8px; --spacing-12: 12px; --spacing-16: 16px; --spacing-24: 24px; --spacing-32: 32px; --spacing-40: 40px; --spacing-48: 48px; --spacing-64: 64px; --spacing-80: 80px; --spacing-96: 96px;
+    --page-max-width: 1200px; --radius-xl: 12px;
+    /* لون الخطأ: لازم للتغذية الراجعة في التمارين (مش من لوحة DESIGN.md) — بيتستخدم في حالة "غلط" بس */
+    --err: #ff4b4b; --err-wash: #ffdfe0; --line: rgba(175, 175, 175, .45);
 }
-body.light {
-    --bg: #f8fafc; --bg-2: #ffffff; --bg-glass: rgba(255, 255, 255, 0.8); --bg-glass-heavy: rgba(255, 255, 255, 0.95);
-    --accent: #4f46e5; --accent-2: #7c3aed; --accent-3: #db2777; --accent-glow: rgba(79, 70, 229, 0.2);
-    --text-1: #0f172a; --text-2: #475569; --text-3: #94a3b8;
-    --border: rgba(0, 0, 0, 0.08); --border-accent: rgba(79, 70, 229, 0.3);
-}
-:root { --gold: #e8b64c; --gold-2: #f5d98a; --gold-glow: rgba(232, 182, 76, 0.45); }
-@keyframes gradientFlow { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-@keyframes floatIn { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-@keyframes bounceDot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.5; } 30% { transform: translateY(-6px); opacity: 1; } }
-@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-@keyframes confettiFall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 1; } 100% { transform: translateY(340px) rotate(540deg); opacity: 0; } }
-@keyframes popIn { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
-@keyframes ringGlow { 0%, 100% { box-shadow: 0 0 0 0 var(--gold-glow); } 50% { box-shadow: 0 0 14px 2px var(--gold-glow); } }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+body { font-family: var(--font-duolingo-sans); font-weight: 500; font-size: var(--text-body); line-height: 1.7; color: var(--color-pencil-gray); background: var(--color-paper-white); }
+body.lesson-open { overflow: hidden; }
+a { color: var(--color-spark-blue); font-weight: 700; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--color-spark-blue); outline-offset: 2px; }
+bdi[lang="de"], .de { direction: ltr; unicode-bidi: isolate; }
+.de-block { direction: ltr; text-align: left; }
+.wrap { max-width: var(--page-max-width); margin: 0 auto; padding: 0 var(--spacing-24); }
+.hidden { display: none !important; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-html, body { height: 100%; overflow: hidden; }
-body {
-    font-family: var(--font); background: var(--bg); color: var(--text-1);
-    height: 100dvh; display: flex; justify-content: center;
-    transition: background 0.4s ease, color 0.4s ease;
-}
-.app-container { display: flex; width: 100%; height: 100%; max-width: 1400px; position: relative; }
+/* ---------- الأزرار (12px radius + حدود 2px) ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 12px; padding: 12px 20px; font-weight: 700; font-size: var(--text-nav-label); letter-spacing: 0.053em; border: 2px solid transparent; min-height: 48px; line-height: 1.2; transition: background .15s, border-color .15s, color .15s; }
+.btn-primary { background: var(--color-eager-green); color: #fff; text-transform: uppercase; }
+.btn-primary:hover { background: #4fb802; }
+.btn-primary:disabled { background: #e5e5e5; color: var(--color-faded-gray); cursor: not-allowed; }
+.btn-outline { background: transparent; color: var(--color-spark-blue); border-color: var(--color-faded-gray); font-size: 14px; }
+.btn-outline:hover { background: #f7f7f7; }
+.btn-ghost { background: transparent; color: var(--color-pencil-gray); border-color: var(--color-faded-gray); text-transform: uppercase; }
+.btn-ghost:hover { background: #f7f7f7; }
+.btn-sm { min-height: 40px; padding: 8px 14px; }
+.icon-btn { width: 44px; height: 44px; border-radius: 12px; border: 2px solid var(--color-faded-gray); background: transparent; color: var(--color-pencil-gray); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; }
+.icon-btn:hover { background: #f7f7f7; }
+.icon-btn.speaking { border-color: var(--color-spark-blue); color: var(--color-spark-blue); }
+.pill { display: inline-flex; align-items: center; gap: 8px; border: 2px solid var(--color-faded-gray); border-radius: 12px; padding: 8px 16px; font-size: var(--text-nav-label); font-weight: 700; letter-spacing: 0.053em; color: var(--color-pencil-gray); background: transparent; text-transform: uppercase; }
+.pill.active { border-color: var(--color-eager-green); color: var(--color-eager-green); }
+.tag { display: inline-flex; align-items: center; gap: 6px; border: 2px solid var(--color-faded-gray); border-radius: 12px; padding: 2px 12px; font-size: var(--text-caption); font-weight: 700; color: var(--color-pencil-gray); }
+.tag.talk { border-color: var(--color-spark-blue); color: var(--color-spark-blue); }
+.tag.nurse { border-color: var(--color-eager-green); color: var(--color-eager-green); }
+.tag.life { border-color: var(--color-night-ink); color: var(--color-night-ink); }
 
-/* -------- Sidebar (خطة الوحدات) -------- */
-.sidebar {
-    width: 300px; min-width: 300px; background: var(--bg-2); border-left: 1px solid var(--border);
-    display: flex; flex-direction: column; overflow: hidden; transition: transform 0.3s ease;
-}
-@media (max-width: 767px) {
-    .sidebar {
-        position: fixed; top: 0; right: 0; height: 100dvh; width: 85vw; max-width: 320px;
-        transform: translateX(100%); box-shadow: -10px 0 40px rgba(0,0,0,0.5);
-        padding-top: env(safe-area-inset-top); z-index: 50;
-    }
-    .sidebar.open { transform: translateX(0); }
-}
-@media (min-width: 768px) { .sidebar { border-radius: 0 24px 24px 0; } }
-.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; }
-.sidebar-overlay.show { display: block; }
-
-.sb-header { padding: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; position: relative; overflow: hidden; }
-.sb-header::before {
-    content: ''; position: absolute; inset: 0; height: 2px; top: 0;
-    background: linear-gradient(90deg, transparent, var(--gold), var(--accent-2), var(--gold), transparent);
-    background-size: 200% 100%; animation: shimmer 3.5s linear infinite;
-}
-.sb-header .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px; }
-.sb-header .brand .flag { font-size: 18px; }
-.sb-header .badge {
-    font-size: 10px; background: linear-gradient(110deg, var(--gold) 30%, #fff6df 45%, var(--gold-2) 55%, var(--gold) 70%);
-    background-size: 250% 100%; animation: shimmer 2.8s ease-in-out infinite; color: #3a2a00;
-    padding: 2px 9px; border-radius: 20px; font-weight: 800; margin-right: 6px; letter-spacing: 0.4px;
-    box-shadow: 0 2px 8px var(--gold-glow);
-}
-.sb-header .level-pill { margin-top: 10px; font-size: 12px; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
-.sb-header .level-pill b { color: var(--accent); }
-
-/* -------- CEFR level roadmap (A1 → C1) -------- */
-.level-roadmap { display: flex; align-items: center; gap: 3px; margin-top: 12px; }
-.level-step {
-    flex: 1; text-align: center; font-size: 10px; font-weight: 800; padding: 5px 0; border-radius: 8px;
-    background: var(--bg); border: 1px solid var(--border); color: var(--text-3); transition: all 0.3s;
-}
-.level-step.past { background: rgba(16, 185, 129, 0.12); border-color: rgba(16,185,129,0.4); color: var(--success); }
-.level-step.current {
-    background: linear-gradient(135deg, var(--accent), var(--gold)); color: #fff; border-color: transparent;
-    box-shadow: 0 2px 10px var(--accent-glow); transform: scale(1.08);
-}
-
-/* -------- Achievement badges -------- */
-.badges-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-.ach-badge {
-    display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; padding: 4px 8px;
-    border-radius: 20px; background: var(--bg); border: 1px solid var(--gold-glow); color: var(--gold);
-}
-.ach-badge i { font-size: 10px; }
-
-/* -------- Vocabulary book button/modal -------- */
-.vocab-btn {
-    width: 100%; padding: 10px; background: linear-gradient(120deg, rgba(99,102,241,0.12), rgba(232,182,76,0.1));
-    border: 1px solid var(--border-accent); border-radius: var(--radius-sm); color: var(--text-1);
-    font-family: var(--font); font-size: 12.5px; font-weight: 700; cursor: pointer; margin-bottom: 8px;
-    display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;
-}
-.vocab-btn:hover { border-color: var(--gold); color: var(--gold); }
-.vocab-modal {
-    display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6);
-    align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);
-}
-.vocab-modal.show { display: flex; }
-.vocab-panel {
-    background: var(--bg-2); border: 1px solid var(--border); border-radius: 18px; max-width: 480px;
-    width: 100%; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
-    animation: floatIn 0.3s ease;
-}
-.vocab-panel-head { padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-.vocab-panel-head h3 { font-size: 15px; font-weight: 800; }
-.vocab-panel-body { padding: 14px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
-.vocab-chip {
-    padding: 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border);
-    font-size: 12.5px; font-weight: 700; text-align: center; direction: ltr;
-}
-.vocab-card {
-    padding: 12px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); text-align: right;
-}
-.vocab-card .vc-word { direction: ltr; text-align: left; font-size: 15px; font-weight: 800; color: var(--accent); display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.vocab-card .vc-ipa { direction: ltr; text-align: left; font-size: 11px; color: var(--text-3); margin-top: 3px; }
-.vocab-card .vc-meaning { font-size: 13px; font-weight: 700; margin-top: 6px; }
-.vocab-card .vc-example { font-size: 11.5px; color: var(--text-2); margin-top: 6px; border-top: 1px dashed var(--border); padding-top: 6px; line-height: 1.6; }
-.vocab-card .vc-example .de { direction: ltr; text-align: left; display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text-1); }
-.vocab-card .vc-example .de .tts-btn { width: 20px; height: 20px; font-size: 9px; margin: 0; flex-shrink: 0; }
-.vocab-panel-body.grammar-list { display: flex; flex-direction: column; gap: 10px; }
-.grammar-card { padding: 12px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); }
-.grammar-card h4 { font-size: 13.5px; font-weight: 800; margin-bottom: 6px; color: var(--gold); }
-.grammar-card .gc-body { font-size: 12.5px; line-height: 1.8; color: var(--text-2); }
-.grammar-card .gc-body table { width: 100%; border-collapse: collapse; margin: 6px 0; direction: ltr; font-size: 11.5px; }
-.grammar-card .gc-body th, .grammar-card .gc-body td { border: 1px solid var(--border); padding: 5px 7px; text-align: center; }
-.vocab-empty { grid-column: 1 / -1; text-align: center; color: var(--text-3); font-size: 12.5px; padding: 20px; }
-
-/* -------- TTS pronunciation button inside bot bubbles -------- */
-.tts-btn {
-    display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
-    border-radius: 7px; border: 1px solid var(--border); background: var(--bg-2); color: var(--text-3);
-    cursor: pointer; font-size: 10px; margin-right: 6px; vertical-align: middle; transition: all 0.2s;
-}
-.tts-btn:hover, .tts-btn.speaking { color: var(--accent); border-color: var(--accent); }
-.msg-toolbar { display: flex; align-items: center; gap: 4px; margin-top: 8px; }
-.copy-msg-btn {
-    width: 24px; height: 24px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg-2);
-    color: var(--text-3); cursor: pointer; font-size: 10px; display: inline-flex; align-items: center; justify-content: center;
-}
-.copy-msg-btn.copied { color: var(--success); border-color: var(--success); }
-
-/* -------- Progress bar (تقدّم الخطة الكلي) -------- */
-.progress-wrap { margin-top: 12px; }
-.progress-top { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-3); margin-bottom: 5px; }
-.progress-track { height: 7px; border-radius: 20px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
-.progress-fill {
-    height: 100%; border-radius: 20px; background: linear-gradient(90deg, var(--accent), var(--gold));
-    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); background-size: 200% 100%; animation: shimmer 4s linear infinite;
-}
-
-.plan-list { flex: 1; overflow-y: auto; padding: 10px; }
-.plan-list::-webkit-scrollbar { width: 4px; }
-.plan-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-.unit-card {
-    padding: 11px 12px; border-radius: var(--radius-sm); margin-bottom: 6px; font-size: 12.5px;
-    border: 1px solid var(--border); background: var(--bg); transition: all 0.25s;
-}
-.unit-card.active {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(232, 182, 76, 0.08));
-    border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold-glow); animation: ringGlow 2.5s ease-in-out infinite;
-}
-.unit-card.done { opacity: 0.55; }
-.unit-card.done .u-top span:first-child { animation: popIn 0.4s ease; }
-.unit-card .u-top { display: flex; justify-content: space-between; gap: 6px; align-items: flex-start; }
-.unit-card .u-title { font-weight: 700; line-height: 1.4; }
-.unit-card .u-track { font-size: 10.5px; color: var(--text-3); margin-top: 4px; }
-.unit-card .u-active-tag {
-    display: inline-block; margin-top: 6px; font-size: 9.5px; font-weight: 800; color: var(--gold);
-    letter-spacing: 0.3px;
-}
-.plan-empty { color: var(--text-3); font-size: 12.5px; padding: 14px; text-align: center; line-height: 1.7; }
-
-.sb-footer { padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
-.reset-btn {
-    width: 100%; padding: 10px; background: transparent; border: 1px solid var(--border);
-    border-radius: var(--radius-sm); color: var(--text-3); font-family: var(--font); font-size: 12px;
-    font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
-    transition: all 0.2s;
-}
-.reset-btn:hover { color: var(--danger); border-color: var(--danger); }
-
-/* -------- Main -------- */
-.main-area { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; background: var(--bg); }
-.top-bar {
-    padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center;
-    justify-content: space-between; gap: 10px; background: var(--bg-glass-heavy); backdrop-filter: blur(12px);
-    flex-shrink: 0; padding-top: max(12px, env(safe-area-inset-top));
-}
-.bot-identity { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.bot-avatar {
-    width: 38px; height: 38px; border-radius: 10px; background: var(--grad-bold); flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px;
-}
-.bot-text { min-width: 0; }
-.bot-name-badge { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
-.bot-name-badge h2 {
-    font-size: 16px; font-weight: 800;
-    background: linear-gradient(120deg, var(--text-1) 20%, var(--accent) 55%, var(--accent-3));
-    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-}
-.bot-sub { font-size: 10.5px; color: var(--text-2); font-weight: 600; }
-.top-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.streak-badge {
-    display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 20px;
-    background: linear-gradient(120deg, rgba(232,182,76,0.15), rgba(236,72,153,0.1));
-    border: 1px solid var(--gold-glow); font-size: 12px; font-weight: 800; color: var(--gold); flex-shrink: 0;
-}
-.streak-badge i { font-size: 11px; }
-
-/* -------- Confetti (احتفال بإنهاء وحدة) -------- */
-.confetti-piece {
-    position: fixed; top: -10px; width: 8px; height: 8px; z-index: 999; pointer-events: none;
-    animation: confettiFall linear forwards;
-}
-.icon-btn, .menu-btn, .action-btn {
-    width: 38px; height: 38px; border-radius: 10px; background: var(--bg-2); border: 1px solid var(--border);
-    color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center;
-    font-size: 14px; transition: all 0.2s; flex-shrink: 0;
-}
-.action-btn:hover { border-color: var(--accent); color: var(--accent); }
-.menu-btn { display: none; }
-@media (max-width: 767px) { .menu-btn { display: flex; } }
-
-.chat-container { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
-.chat-container::-webkit-scrollbar { width: 4px; }
-.chat-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-.welcome-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
-.welcome-logo {
-    width: 64px; height: 64px; border-radius: 18px; background: var(--grad-bold); display: flex;
-    align-items: center; justify-content: center; font-size: 28px; margin-bottom: 18px; box-shadow: 0 0 40px var(--accent-glow);
-    position: relative;
-}
-.welcome-logo::after {
-    content: ''; position: absolute; inset: -3px; border-radius: 20px; z-index: -1;
-    background: conic-gradient(var(--gold), var(--accent-2), var(--accent-3), var(--gold));
-    opacity: 0.6; filter: blur(6px);
-}
-.welcome-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
-.welcome-sub { font-size: 13px; color: var(--text-2); max-width: 420px; line-height: 1.8; margin-bottom: 20px; }
-.welcome-features { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 480px; }
-.welcome-feature {
-    display: flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: 20px;
-    background: var(--bg-glass); border: 1px solid var(--border); font-size: 11.5px; font-weight: 700; color: var(--text-2);
-}
-.welcome-feature i { color: var(--gold); font-size: 11px; }
-
-.message { display: flex; gap: 10px; max-width: 90%; animation: floatIn 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
-@media (min-width: 768px) { .message { max-width: 78%; gap: 12px; } }
-@media (max-width: 767px) { .message.bot.has-table { max-width: 97%; } }
-.message.user { flex-direction: row-reverse; margin-left: auto; }
-.msg-avatar {
-    width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; display: flex;
-    align-items: center; justify-content: center; font-size: 13px; margin-top: 2px;
-}
-.message.bot .msg-avatar { background: var(--grad-bold); color: white; }
-.message.user .msg-avatar { background: var(--bg-2); border: 1px solid var(--border); color: var(--text-2); }
-.msg-content { flex: 1; min-width: 0; max-width: 100%; }
-.msg-bubble {
-    padding: 12px 14px; border-radius: 16px; font-size: 14px; line-height: 1.7;
-    word-wrap: break-word; overflow-wrap: anywhere; max-width: 100%;
-}
-.message.bot .msg-bubble { background: var(--bg-glass); border: 1px solid var(--border); border-top-right-radius: 4px; }
-.message.user .msg-bubble {
-    background: var(--grad-bold); background-size: 200% 200%; color: #fff; border-top-left-radius: 4px;
-    animation: gradientFlow 8s ease infinite; box-shadow: 0 4px 16px -6px var(--accent-glow);
-}
-.msg-bubble p { margin-bottom: 8px; } .msg-bubble p:last-child { margin-bottom: 0; }
-.msg-bubble ul, .msg-bubble ol { margin: 6px 18px 10px; }
-.msg-bubble li { margin-bottom: 3px; }
-.msg-bubble code { font-family: 'Consolas', monospace; background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 5px; font-size: 12.5px; direction: ltr; unicode-bidi: isolate; display: inline-block; }
-.msg-bubble pre { background: rgba(0,0,0,0.28); padding: 10px 12px; border-radius: 10px; overflow-x: auto; margin: 8px 0; direction: ltr; }
-.msg-bubble pre code { background: transparent; padding: 0; display: block; }
-.msg-bubble strong { color: inherit; font-weight: 800; }
-.msg-bubble h1, .msg-bubble h2, .msg-bubble h3, .msg-bubble h4 { margin: 12px 0 6px; font-size: 15px; font-weight: 800; line-height: 1.5; }
-.msg-bubble h1:first-child, .msg-bubble h2:first-child, .msg-bubble h3:first-child { margin-top: 0; }
-.msg-bubble hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
-.msg-bubble blockquote { border-right: 3px solid var(--border-accent); padding: 4px 12px; margin: 8px 0; color: var(--text-2); font-size: 13px; }
-.msg-bubble table {
-    width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12.5px;
-    direction: ltr; text-align: center; overflow: hidden; border-radius: 8px; table-layout: auto;
-}
-.msg-bubble th, .msg-bubble td { border: 1px solid var(--border); padding: 8px 10px; white-space: normal; min-width: 84px; }
-.msg-bubble th { background: rgba(99, 102, 241, 0.15); font-weight: 800; color: var(--text-1); }
-.msg-bubble tr:nth-child(even) td { background: rgba(255, 255, 255, 0.02); }
-.msg-bubble .table-scroll {
-    overflow-x: auto; margin: 10px -14px; padding: 0 14px; -webkit-overflow-scrolling: touch;
-}
-.msg-bubble .table-scroll table { min-width: 100%; }
-@media (max-width: 480px) {
-    .msg-bubble .table-scroll { margin: 10px -12px; padding: 0 12px; }
-    .msg-bubble th, .msg-bubble td { padding: 7px 8px; font-size: 12px; }
-}
-.message.system-note { align-self: center; max-width: 90%; }
-.message.system-note .msg-bubble { background: transparent; border: 1px dashed var(--border-accent); color: var(--text-3); font-size: 12.5px; text-align: center; }
-
-.typing-indicator { display: flex; align-items: center; gap: 4px; padding: 14px; background: var(--bg-glass); border: 1px solid var(--border); border-radius: 16px; border-top-right-radius: 4px; width: fit-content; }
-.typing-indicator span { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: bounceDot 1.2s infinite ease-in-out; }
-.typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
-.typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
-
-.input-area {
-    padding: 12px 14px; border-top: 1px solid var(--border); background: var(--bg-glass-heavy);
-    backdrop-filter: blur(12px); flex-shrink: 0; padding-bottom: max(12px, env(safe-area-inset-bottom));
-}
-.input-row { display: flex; align-items: flex-end; gap: 8px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 18px; padding: 8px 8px 8px 14px; }
-.input-row textarea {
-    flex: 1; border: none; background: transparent; color: var(--text-1); font-family: var(--font);
-    font-size: 14px; resize: none; max-height: 120px; min-height: 24px; line-height: 1.6; padding: 6px 0;
-}
-.send-btn {
-    width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--grad-bold); color: #fff;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
-    box-shadow: 0 4px 14px var(--accent-glow); transition: transform 0.15s;
-}
-.send-btn:active { transform: scale(0.92); }
-.send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* -------- Locked screen -------- */
-#lockedScreen {
-    display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%;
-    width: 100%; text-align: center; padding: 30px;
-}
+/* ---------- القفل ---------- */
+#lockedScreen { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32px; gap: 16px; }
 #lockedScreen.show { display: flex; }
-.lock-icon {
-    width: 70px; height: 70px; border-radius: 20px; background: var(--bg-2); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center; font-size: 28px; color: var(--text-3); margin-bottom: 18px;
+#lockedScreen h1 { font-family: var(--font-feather); font-weight: 700; font-size: var(--text-heading); color: var(--color-eager-green); line-height: 1.2; letter-spacing: -0.02em; }
+#lockedScreen p { max-width: 420px; }
+
+/* ---------- الشريط العلوي ---------- */
+.topbar { position: sticky; top: 0; z-index: 30; background: var(--color-paper-white); border-bottom: 2px solid var(--line); }
+.topbar .wrap { display: flex; align-items: center; gap: 16px; min-height: 68px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--color-charcoal); font-weight: 700; font-size: 19px; }
+.brand svg { height: 40px; width: auto; }
+.brand b { font-family: var(--font-duolingo-sans); font-weight: 900; color: var(--color-eager-green); font-size: 22px; letter-spacing: -0.01em; }
+.nav { display: flex; gap: 4px; margin-inline-start: 8px; }
+.nav a { color: var(--color-pencil-gray); font-size: var(--text-nav-label); letter-spacing: 0.053em; padding: 8px 12px; border-radius: 12px; text-transform: uppercase; }
+.nav a:hover { color: var(--color-eager-green); }
+.top-actions { margin-inline-start: auto; display: flex; align-items: center; gap: 8px; }
+.stat { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--color-pencil-gray); padding: 6px 12px; border: 2px solid var(--color-faded-gray); border-radius: 12px; font-size: 15px; }
+.stat i { color: var(--color-spark-blue); } .stat.streak i { color: var(--color-eager-green); }
+@media (max-width: 860px) { .nav { display: none; } .top-actions .btn-outline .lbl { display: none; } }
+
+/* ---------- Hero ---------- */
+.section { padding: var(--spacing-80) 0; }
+.split { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: center; }
+.split.flip .split-art { order: -1; }
+.split-art { display: flex; justify-content: center; align-items: flex-end; min-height: 200px; }
+.hero { padding: 56px 0 40px; }
+.display { font-family: var(--font-feather); font-weight: 700; font-size: var(--text-display); line-height: 1.2; letter-spacing: -0.02em; color: var(--color-eager-green); }
+.headline { font-family: var(--font-duolingo-sans); font-weight: 700; font-size: var(--text-heading-sm); line-height: 1.35; color: var(--color-charcoal); margin: 12px 0 16px; }
+.section-title { font-family: var(--font-feather); font-weight: 700; font-size: var(--text-heading); line-height: 1.2; letter-spacing: -0.02em; color: var(--color-eager-green); margin-bottom: 12px; }
+.lead { max-width: 480px; font-size: var(--text-body); color: var(--color-pencil-gray); }
+.cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+.bubble { position: relative; border: 2px solid var(--color-faded-gray); border-radius: 12px; background: #fff; padding: 8px 14px; font-weight: 700; color: var(--color-charcoal); font-size: 17px; }
+.hero-art { position: relative; padding-top: 44px; }
+.hero-art .bubble { position: absolute; top: 0; inset-inline-start: 6%; }
+.hero-art .bubble.b2 { inset-inline-start: auto; inset-inline-end: 4%; top: 20px; }
+@media (max-width: 860px) { .split { grid-template-columns: 1fr; gap: 24px; } .split.flip .split-art { order: 0; } .display { font-size: 48px; } .headline { font-size: 24px; } .section { padding: 48px 0; } .hero-art { order: -1; } }
+
+/* ---------- شريط المستويات ---------- */
+.level-band { border-block: 2px solid var(--line); padding: 20px 0; }
+.level-band .wrap { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.level-band .lbl { font-weight: 700; color: var(--color-charcoal); margin-inline-end: 8px; }
+.level-pill { position: relative; }
+.level-pill small { font-size: 11px; letter-spacing: 0; text-transform: none; color: var(--color-faded-gray); font-weight: 700; }
+.level-pill.soon { border-style: dashed; }
+
+/* ---------- خطة المستوى ---------- */
+.path-head { margin-bottom: 24px; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+.filters .pill { text-transform: none; letter-spacing: 0; font-size: 15px; }
+.overall { display: flex; align-items: center; gap: 12px; margin-top: 20px; max-width: 480px; }
+.bar { flex: 1; height: 16px; border-radius: 12px; background: #e5e5e5; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--color-eager-green); border-radius: 12px; width: 0; transition: width .4s; }
+.overall b { color: var(--color-charcoal); min-width: 44px; }
+.unit { padding: 40px 0; border-top: 2px solid var(--line); }
+.unit.locked { opacity: .55; }
+.u-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.u-num { width: 40px; height: 40px; border-radius: 12px; border: 2px solid var(--color-faded-gray); display: inline-flex; align-items: center; justify-content: center; font-weight: 900; color: var(--color-charcoal); font-size: 18px; }
+.unit.done .u-num { background: var(--color-eager-green); border-color: var(--color-eager-green); color: #fff; }
+.u-title { font-size: var(--text-heading-sm); font-weight: 700; line-height: 1.25; color: var(--color-charcoal); }
+.u-de { font-size: var(--text-subheading); font-weight: 700; color: var(--color-spark-blue); margin-bottom: 8px; }
+.u-desc { max-width: 480px; margin-bottom: 8px; }
+.u-topics { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 16px; }
+.stations { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.station { display: inline-flex; align-items: center; gap: 8px; border: 2px solid var(--color-faded-gray); border-radius: 12px; background: transparent; padding: 10px 16px; min-height: 48px; font-weight: 700; font-size: 15px; color: var(--color-charcoal); }
+.station:hover { background: #f7f7f7; }
+.station.done { background: var(--color-storybook-green); border-color: var(--color-eager-green); }
+.station.done i { color: var(--color-eager-green); }
+.station.current { background: var(--color-eager-green); border-color: var(--color-eager-green); color: #fff; }
+.station.current:hover { background: #4fb802; }
+.station:disabled { color: var(--color-faded-gray); cursor: not-allowed; background: transparent; }
+.unlock-link { background: none; border: none; color: var(--color-spark-blue); font-weight: 700; text-decoration: underline; font-size: 14px; margin-top: 12px; }
+.soon-box { border: 2px dashed var(--color-faded-gray); border-radius: 12px; padding: 24px; max-width: 640px; }
+.soon-box h3 { color: var(--color-charcoal); font-size: 22px; margin-bottom: 8px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* ---------- قواعد المستوى ---------- */
+.g-list { margin-top: 24px; max-width: 760px; }
+.g-item { display: grid; grid-template-columns: 44px 1fr auto; gap: 16px; align-items: start; padding: 16px 0; border-top: 2px solid var(--line); }
+.g-item:last-child { border-bottom: 2px solid var(--line); }
+.g-item .n { width: 36px; height: 36px; border-radius: 12px; border: 2px solid var(--color-faded-gray); display: inline-flex; align-items: center; justify-content: center; font-weight: 900; color: var(--color-charcoal); }
+.g-item h4 { color: var(--color-charcoal); font-size: 19px; line-height: 1.4; }
+.g-item p { font-size: 15px; }
+.g-item .st { font-size: 22px; }
+
+/* ---------- المعلم (الشات) ---------- */
+.chat-panel { border: 2px solid var(--color-faded-gray); border-radius: 12px; display: flex; flex-direction: column; height: min(640px, 80vh); background: #fff; overflow: hidden; }
+.chat-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 2px solid var(--line); }
+.chat-head svg { height: 44px; width: auto; }
+.chat-head b { color: var(--color-charcoal); font-size: 19px; display: block; line-height: 1.3; }
+.chat-head small { font-size: 13px; }
+#chatContainer { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.welcome { margin: auto; text-align: center; max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.welcome h3 { color: var(--color-charcoal); font-size: 22px; }
+.sugg { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.sugg button { border: 2px solid var(--color-faded-gray); background: #fff; border-radius: 12px; padding: 8px 14px; font-weight: 700; color: var(--color-spark-blue); font-size: 14px; }
+.sugg button:hover { background: #f7f7f7; }
+.message { display: flex; gap: 10px; max-width: 92%; }
+.message.user { align-self: flex-start; flex-direction: row-reverse; }
+.message.bot { align-self: flex-end; }
+.msg-avatar { width: 38px; height: 38px; border-radius: 12px; border: 2px solid var(--color-faded-gray); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; overflow: hidden; }
+.msg-avatar svg { height: 34px; width: auto; }
+.msg-bubble { border: 2px solid var(--color-faded-gray); border-radius: 12px; padding: 10px 14px; color: var(--color-charcoal); line-height: 1.75; font-size: 16px; overflow-wrap: anywhere; }
+.message.user .msg-bubble { background: var(--color-storybook-green); border-color: var(--color-eager-green); }
+.msg-bubble p { margin: 4px 0; } .msg-bubble strong { color: var(--color-charcoal); }
+.msg-bubble table, .table-scroll table { border-collapse: separate; border-spacing: 0; border: 2px solid var(--color-faded-gray); border-radius: 12px; direction: ltr; margin: 8px 0; font-size: 14px; }
+.msg-bubble th, .msg-bubble td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: center; }
+.msg-bubble th { color: var(--color-eager-green); font-weight: 700; }
+.table-scroll { overflow-x: auto; }
+.msg-bubble ul, .msg-bubble ol { padding-inline-start: 22px; }
+.msg-bubble code { background: #f3f3f3; padding: 1px 6px; border-radius: 6px; direction: ltr; unicode-bidi: isolate; }
+.msg-toolbar { display: flex; gap: 6px; margin-top: 6px; }
+.msg-toolbar .icon-btn { width: 34px; height: 34px; font-size: 13px; }
+.msg-toolbar .icon-btn.copied { border-color: var(--color-eager-green); color: var(--color-eager-green); }
+.system-note { align-self: center; } .system-note .msg-bubble { border-style: dashed; font-size: 14px; }
+.typing-indicator { display: inline-flex; gap: 5px; padding: 12px 14px; border: 2px solid var(--color-faded-gray); border-radius: 12px; }
+.typing-indicator span { width: 8px; height: 8px; border-radius: 50%; background: var(--color-faded-gray); animation: tdot 1s infinite; }
+.typing-indicator span:nth-child(2) { animation-delay: .15s; } .typing-indicator span:nth-child(3) { animation-delay: .3s; }
+@keyframes tdot { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+.input-row { display: flex; gap: 8px; padding: 12px; border-top: 2px solid var(--line); align-items: flex-end; }
+.input-row textarea { flex: 1; resize: none; border: 2px solid var(--color-faded-gray); border-radius: 12px; padding: 10px 14px; font-family: inherit; font-size: 16px; font-weight: 500; color: var(--color-charcoal); max-height: 120px; line-height: 1.6; }
+.input-row textarea:focus { border-color: var(--color-spark-blue); outline: none; }
+.plan-mini { margin-top: 20px; }
+.plan-mini h4 { color: var(--color-charcoal); font-size: 19px; margin-bottom: 8px; }
+.plan-mini .row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 2px solid var(--line); font-size: 15px; }
+.plan-mini .row.active { color: var(--color-charcoal); font-weight: 700; }
+
+/* ---------- دفاتري ---------- */
+.book-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+.ach { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+.ach .tag i { color: var(--color-eager-green); }
+
+/* ---------- الفوتر (شريط أخضر كامل العرض) ---------- */
+.footer { background: var(--color-eager-green); color: #fff; padding: var(--spacing-48) 0 var(--spacing-32); margin-top: var(--spacing-64); }
+.footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 32px; }
+.footer h5 { color: #fff; font-size: var(--text-nav-label); font-weight: 900; letter-spacing: 0.053em; text-transform: uppercase; margin-bottom: 12px; }
+.footer a, .footer .flink { color: var(--color-fresh-leaf); font-weight: 700; display: block; margin-bottom: 8px; font-size: 15px; background: none; border: none; text-align: start; padding: 0; }
+.footer a:hover, .footer .flink:hover { color: #fff; }
+.footer .about { color: var(--color-storybook-green); font-size: 15px; max-width: 320px; }
+.footer .flogo { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; } .footer .flogo svg { height: 48px; width: auto; } .footer .flogo b { font-weight: 900; font-size: 24px; color: #fff; }
+.footer-bottom { margin-top: 32px; padding-top: 20px; border-top: 2px solid rgba(255,255,255,.35); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; }
+.credit { font-weight: 900; font-size: 17px; color: #fff; }
+.credit bdi { color: var(--color-storybook-green); }
+.footer .inst { color: var(--color-storybook-green); font-size: 14px; font-weight: 700; }
+@media (max-width: 860px) { .footer-grid { grid-template-columns: 1fr 1fr; } .footer-grid > :first-child { grid-column: 1 / -1; } }
+
+/* ---------- نافذة الدفاتر ---------- */
+.modal { position: fixed; inset: 0; background: rgba(75,75,75,.55); z-index: 60; display: none; align-items: center; justify-content: center; padding: 16px; }
+.modal.show { display: flex; }
+.modal-panel { background: #fff; border: 2px solid var(--color-faded-gray); border-radius: 12px; width: min(720px, 100%); max-height: 88vh; display: flex; flex-direction: column; }
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px; border-bottom: 2px solid var(--line); }
+.modal-head h3 { color: var(--color-charcoal); font-size: 22px; }
+.modal-body { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.vcard, .gcard { border: 2px solid var(--color-faded-gray); border-radius: 12px; padding: 12px 14px; }
+.vcard .w { font-weight: 900; color: var(--color-charcoal); font-size: 20px; display: flex; align-items: center; gap: 8px; direction: ltr; }
+.vcard .m { color: var(--color-charcoal); font-weight: 700; margin-top: 2px; }
+.vcard .x { margin-top: 6px; font-size: 14px; border-top: 2px dashed var(--line); padding-top: 6px; }
+.vcard .x .g { direction: ltr; text-align: left; display: block; color: var(--color-charcoal); font-weight: 700; }
+.gcard h4 { color: var(--color-charcoal); font-size: 19px; margin-bottom: 6px; }
+.empty { text-align: center; padding: 28px 12px; }
+
+/* ---------- الدرس (شاشة كاملة) ---------- */
+.lesson { position: fixed; inset: 0; background: #fff; z-index: 80; display: none; flex-direction: column; }
+.lesson.show { display: flex; }
+.lesson-top { display: flex; align-items: center; gap: 16px; padding: 14px 20px; max-width: 900px; width: 100%; margin: 0 auto; }
+.lesson-top .bar { height: 18px; }
+.lesson-top .xp { font-weight: 900; color: var(--color-spark-blue); white-space: nowrap; }
+.lesson-body { flex: 1; overflow-y: auto; padding: 8px 20px 24px; }
+.lesson-inner { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; min-height: 100%; }
+.q-title { font-size: 26px; font-weight: 800; color: var(--color-charcoal); line-height: 1.4; }
+.speaker { display: flex; align-items: center; gap: 12px; }
+.speaker svg { height: 96px; width: auto; flex-shrink: 0; }
+.speaker .bubble { font-size: 20px; line-height: 1.6; }
+.speaker .bubble::before { content: ''; position: absolute; right: -8px; top: 50%; width: 14px; height: 14px; background: #fff; border-top: 2px solid var(--color-faded-gray); border-right: 2px solid var(--color-faded-gray); transform: translateY(-50%) rotate(45deg); }
+.q-main { font-size: 30px; font-weight: 800; color: var(--color-charcoal); text-align: center; line-height: 1.4; }
+.q-main.de { direction: ltr; }
+.q-sub { text-align: center; font-size: 15px; }
+.emoji-big { font-size: 96px; line-height: 1.1; text-align: center; }
+.opts { display: grid; gap: 10px; }
+.opts.cols2 { grid-template-columns: 1fr 1fr; }
+.opt { border: 2px solid var(--color-faded-gray); border-radius: 12px; background: #fff; padding: 14px 16px; font-size: 19px; font-weight: 700; color: var(--color-charcoal); text-align: center; min-height: 56px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.opt.de-opt { direction: ltr; }
+.opt:hover { background: #f7f7f7; }
+.opt.sel { border-color: var(--color-spark-blue); color: var(--color-spark-blue); }
+.opt.ok { border-color: var(--color-eager-green); background: var(--color-storybook-green); color: var(--color-charcoal); }
+.opt.bad { border-color: var(--err); background: var(--err-wash); }
+.opt:disabled { cursor: default; }
+.teach { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding-top: 12px; }
+.teach .word { font-size: 40px; font-weight: 900; color: var(--color-charcoal); direction: ltr; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.art-chip { font-size: 15px; font-weight: 900; border-radius: 12px; padding: 0 12px; border: 2px solid; line-height: 1.6; }
+.art-chip.der { color: var(--color-spark-blue); border-color: var(--color-spark-blue); }
+.art-chip.die { color: var(--color-eager-green); border-color: var(--color-eager-green); }
+.art-chip.das { color: var(--color-night-ink); border-color: var(--color-night-ink); }
+.teach .mean { font-size: 26px; font-weight: 800; color: var(--color-charcoal); }
+.teach .ex { border: 2px solid var(--color-faded-gray); border-radius: 12px; padding: 12px 16px; width: 100%; text-align: start; }
+.teach .ex .g { direction: ltr; text-align: left; font-weight: 800; color: var(--color-charcoal); font-size: 19px; display: flex; gap: 10px; align-items: center; }
+.tip { border: 2px solid var(--color-faded-gray); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.tip h3 { font-size: var(--text-heading-sm); font-weight: 800; color: var(--color-charcoal); line-height: 1.3; }
+.tip .sub { color: var(--color-spark-blue); font-weight: 800; font-size: 19px; direction: ltr; text-align: left; }
+.tip p, .tip li { color: var(--color-charcoal); font-size: 17px; }
+.tip ul { padding-inline-start: 22px; display: flex; flex-direction: column; gap: 6px; }
+.gtable { width: 100%; border-collapse: separate; border-spacing: 0; border: 2px solid var(--color-faded-gray); border-radius: 12px; overflow: hidden; direction: ltr; }
+.gtable th { background: var(--color-storybook-green); color: var(--color-charcoal); font-weight: 900; padding: 8px 10px; font-size: 15px; }
+.gtable td { padding: 8px 10px; text-align: center; border-top: 2px solid var(--line); color: var(--color-charcoal); font-weight: 700; font-size: 16px; }
+.gtable td.hl { color: var(--color-eager-green); font-weight: 900; }
+.callout { background: var(--color-storybook-green); border-radius: 12px; padding: 12px 14px; color: var(--color-charcoal); font-size: 16px; }
+.exl { display: flex; flex-direction: column; gap: 6px; }
+.exl .r { display: flex; gap: 10px; align-items: center; border: 2px solid var(--line); border-radius: 12px; padding: 8px 12px; }
+.exl .r .g { direction: ltr; text-align: left; font-weight: 800; color: var(--color-charcoal); flex: 1; }
+.exl .r .a { font-size: 14px; }
+.dlg-view { display: flex; flex-direction: column; gap: 10px; }
+.dlg-line { display: flex; gap: 10px; align-items: flex-start; }
+.dlg-line.b { flex-direction: row-reverse; }
+.dlg-line .who { width: 34px; height: 34px; border-radius: 12px; border: 2px solid var(--color-faded-gray); display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--color-charcoal); flex-shrink: 0; }
+.dlg-line .txt { border: 2px solid var(--color-faded-gray); border-radius: 12px; padding: 8px 12px; max-width: 86%; cursor: pointer; }
+.dlg-line.b .txt { background: var(--color-storybook-green); border-color: var(--color-eager-green); }
+.dlg-line .g { direction: ltr; text-align: left; font-weight: 800; color: var(--color-charcoal); font-size: 17px; }
+.dlg-line .a { font-size: 14px; }
+.dlg-line .a.off { display: none; }
+.passage { border: 2px solid var(--color-faded-gray); border-radius: 12px; padding: 14px 16px; }
+.passage h4 { color: var(--color-charcoal); margin-bottom: 6px; font-size: 17px; }
+.passage .g { direction: ltr; text-align: left; color: var(--color-charcoal); font-weight: 700; line-height: 1.7; }
+.passage .a { font-size: 14px; margin-top: 8px; border-top: 2px dashed var(--line); padding-top: 8px; }
+.build-area { min-height: 68px; border-block: 2px solid var(--line); padding: 8px 0; display: flex; flex-wrap: wrap; gap: 8px; direction: ltr; align-content: flex-start; }
+.bank { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; direction: ltr; }
+.tok { border: 2px solid var(--color-faded-gray); border-radius: 12px; background: #fff; padding: 8px 14px; font-size: 19px; font-weight: 700; color: var(--color-charcoal); min-height: 46px; }
+.tok:hover { background: #f7f7f7; }
+.tok.used { visibility: hidden; }
+.ans-in { width: 100%; border: 2px solid var(--color-faded-gray); border-radius: 12px; padding: 14px 16px; font-family: inherit; font-size: 21px; font-weight: 700; color: var(--color-charcoal); direction: ltr; text-align: left; }
+.ans-in:focus { border-color: var(--color-spark-blue); outline: none; }
+.ans-in.ok { border-color: var(--color-eager-green); background: var(--color-storybook-green); } .ans-in.bad { border-color: var(--err); background: var(--err-wash); }
+.sentence { direction: ltr; text-align: center; font-size: 26px; font-weight: 800; color: var(--color-charcoal); line-height: 1.8; }
+.blank { display: inline-block; min-width: 84px; border-bottom: 3px solid var(--color-faded-gray); text-align: center; color: var(--color-spark-blue); }
+.blank.ok { color: var(--color-eager-green); border-color: var(--color-eager-green); } .blank.bad { color: var(--err); border-color: var(--err); }
+.wtok { display: inline-block; padding: 2px 8px; border: 2px solid transparent; border-radius: 12px; cursor: pointer; }
+.wtok:hover { border-color: var(--color-faded-gray); }
+.wtok.sel { border-color: var(--color-spark-blue); color: var(--color-spark-blue); }
+.wtok.bad { border-color: var(--err); background: var(--err-wash); }
+.wtok.ok { border-color: var(--color-eager-green); background: var(--color-storybook-green); }
+.match { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.match .col { display: flex; flex-direction: column; gap: 10px; }
+.mopt { border: 2px solid var(--color-faded-gray); border-radius: 12px; background: #fff; padding: 12px; font-size: 18px; font-weight: 700; color: var(--color-charcoal); min-height: 54px; }
+.mopt.de { direction: ltr; }
+.mopt.sel { border-color: var(--color-spark-blue); color: var(--color-spark-blue); }
+.mopt.done { border-color: var(--color-eager-green); background: var(--color-storybook-green); visibility: hidden; }
+.mopt.bad { border-color: var(--err); background: var(--err-wash); }
+.conj { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; direction: ltr; max-width: 420px; margin: 0 auto; width: 100%; }
+.conj .p { font-weight: 900; color: var(--color-charcoal); text-align: right; font-size: 19px; }
+.conj .fixed { font-weight: 800; color: var(--color-charcoal); font-size: 19px; padding: 10px 14px; border: 2px solid var(--line); border-radius: 12px; background: #f7f7f7; }
+.conj input { border: 2px solid var(--color-faded-gray); border-radius: 12px; padding: 10px 14px; font-size: 19px; font-weight: 700; color: var(--color-charcoal); font-family: inherit; direction: ltr; width: 100%; }
+.conj input:focus { border-color: var(--color-spark-blue); outline: none; } .conj input.ok { border-color: var(--color-eager-green); background: var(--color-storybook-green); } .conj input.bad { border-color: var(--err); background: var(--err-wash); }
+.sortw { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; direction: ltr; }
+.buckets { direction: ltr; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.bucket { border: 2px dashed var(--color-faded-gray); border-radius: 12px; padding: 10px; min-height: 96px; background: #fff; text-align: center; }
+.bucket:hover { background: #f7f7f7; }
+.bucket h5 { color: var(--color-charcoal); font-size: 16px; margin-bottom: 6px; direction: ltr; }
+.bucket .in { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; direction: ltr; }
+.bucket .in .tok { font-size: 15px; min-height: 36px; padding: 4px 10px; }
+.bucket .in .tok.ok { border-color: var(--color-eager-green); background: var(--color-storybook-green); } .bucket .in .tok.bad { border-color: var(--err); background: var(--err-wash); }
+.speak-box { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.mic { width: 84px; height: 84px; border-radius: 50%; border: 2px solid var(--color-faded-gray); background: #fff; font-size: 30px; color: var(--color-spark-blue); }
+.mic.rec { border-color: var(--color-eager-green); color: var(--color-eager-green); animation: micp 1s infinite; }
+@keyframes micp { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+.lesson-foot { border-top: 2px solid var(--line); padding: 16px 20px calc(16px + env(safe-area-inset-bottom)); }
+.lesson-foot.ok { background: var(--color-storybook-green); border-color: var(--color-storybook-green); }
+.lesson-foot.bad { background: var(--err-wash); border-color: var(--err-wash); }
+.foot-inner { max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 16px; }
+.foot-inner .fb { flex: 1; display: flex; align-items: center; gap: 12px; min-width: 0; }
+.foot-inner .fb svg { height: 64px; width: auto; flex-shrink: 0; }
+.fb h4 { font-size: 22px; font-weight: 900; line-height: 1.3; } .lesson-foot.ok .fb h4 { color: var(--color-eager-green); } .lesson-foot.bad .fb h4 { color: var(--err); }
+.fb p { color: var(--color-charcoal); font-size: 16px; line-height: 1.5; } .fb .g { direction: ltr; display: inline-block; font-weight: 800; }
+.foot-inner .btn { min-width: 140px; }
+.lesson-foot .btn.skip { min-width: 0; }
+.done-screen { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; padding-top: 24px; }
+.done-screen h2 { font-family: var(--font-feather); font-weight: 700; font-size: var(--text-heading); color: var(--color-eager-green); line-height: 1.2; letter-spacing: -0.02em; }
+.done-stats { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.done-stats .stat { flex-direction: column; gap: 0; padding: 10px 20px; font-size: 24px; color: var(--color-charcoal); } .done-stats .stat small { font-size: 13px; color: var(--color-pencil-gray); font-weight: 700; }
+.confetti-piece { position: fixed; top: -12px; width: 10px; height: 14px; z-index: 200; animation: cfall linear forwards; }
+@keyframes cfall { to { transform: translateY(105vh) rotate(540deg); opacity: .9; } }
+@media (max-width: 560px) { .q-title { font-size: 22px; } .q-main { font-size: 26px; } .opts.cols2 { grid-template-columns: 1fr; } .speaker svg { height: 72px; } .foot-inner .fb svg { display: none; } .teach .word { font-size: 32px; } .u-title { font-size: 26px; } }
+@media print { .topbar, .footer, .lesson { display: none; } }
+@keyframes pulsebar { from { width: 25%; } to { width: 85%; } }
+.think-art svg { animation: bob 2.4s ease-in-out infinite; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.opts.cols3 { grid-template-columns: repeat(3, 1fr); }
+/* إصلاح الموبايل: منع تمدد الأعمدة بسبب عرض الرسومات */
+.split > * { min-width: 0; }
+.split-art svg { max-width: 100%; }
+@media (max-width: 860px) {
+    .split { grid-template-columns: minmax(0, 1fr); }
+    .split-art svg { width: 100%; height: auto !important; max-height: 260px; }
+    .hero-art .bubble { font-size: 15px; padding: 6px 10px; }
 }
-#lockedScreen h1 { font-size: 19px; margin-bottom: 8px; }
-#lockedScreen p { color: var(--text-2); max-width: 380px; font-size: 13.5px; line-height: 1.8; }
-.back-link { margin-top: 20px; color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 700; }
+html, body { overflow-x: hidden; }
+@media (max-width: 560px) {
+    .foot-inner { flex-wrap: wrap; }
+    .foot-inner .fb { flex: 1 1 100%; }
+    .foot-inner .btn { flex: 1 1 auto; margin-inline-start: 0 !important; }
+}
+
 </style>
 </head>
 <body>
-
 <div id="lockedScreen">
-    <div class="lock-icon"><i class="fas fa-lock"></i></div>
-    <h1>🇩🇪 German Pro</h1>
+    <div id="lockedArt"></div>
+    <h1>German Pro</h1>
     <p>الميزة دي متاحة بس لطلاب Premium المفعّل لهم "German Pro". لو حاسس إن ده غلط، كلم الأدمن بتاعك.</p>
-    <a class="back-link" href="index.html">↩ رجوع لـ Chat X</a>
+    <a class="btn btn-outline" href="index.html">↩ رجوع لـ Chat X</a>
 </div>
 
-<div class="app-container" id="appContainer" style="display:none">
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-    <aside class="sidebar" id="sidebar">
-        <div class="sb-header">
-            <div class="brand"><span class="flag">🇩🇪</span> خطة German Pro <span class="badge">PREMIUM</span></div>
-            <div class="level-roadmap" id="levelRoadmap"></div>
-            <div class="progress-wrap">
-                <div class="progress-top"><span>تقدّمك في الخطة</span><span id="progressPct">0%</span></div>
-                <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-            </div>
-            <div class="badges-row" id="badgesRow"></div>
-        </div>
-        <div class="plan-list" id="planList">
-            <div class="plan-empty">هتظهر خطتك هنا بعد التقييم المبدئي — ابدأ الشات على اليمين.</div>
-        </div>
-        <div class="sb-footer">
-            <button class="vocab-btn" id="vocabBtn"><i class="fas fa-book-open"></i> دفتر المفردات (<span id="vocabCount">0</span>)</button>
-            <button class="vocab-btn" id="grammarBtn"><i class="fas fa-diagram-project"></i> دفتر القواعد (<span id="grammarCount">0</span>)</button>
-            <button class="reset-btn" id="resetBtn"><i class="fas fa-rotate-left"></i> إعادة تعيين الخطة من الصفر</button>
-        </div>
-    </aside>
-
-    <main class="main-area">
-        <div class="top-bar">
-            <div class="bot-identity">
-                <div class="bot-avatar"><i class="fas fa-graduation-cap"></i></div>
-                <div class="bot-text">
-                    <div class="bot-name-badge"><h2>Chat X</h2></div>
-                    <div class="bot-sub">🇩🇪 German Pro — الألمانية الاحترافية للتمريض</div>
-                </div>
-            </div>
+<div id="app" class="hidden">
+    <header class="topbar">
+        <div class="wrap">
+            <a class="brand" href="#home" aria-label="German Pro"><span id="brandArt"></span><b>German Pro</b></a>
+            <nav class="nav" aria-label="أقسام الصفحة">
+                <a href="#path">المسار</a>
+                <a href="#grammar">القواعد</a>
+                <a href="#teacher">المعلم</a>
+                <a href="#books">دفاتري</a>
+            </nav>
             <div class="top-actions">
-                <div class="streak-badge" id="streakBadge" style="display:none"><i class="fas fa-fire"></i> <span id="streakCount">0</span></div>
-                <button class="action-btn" id="themeBtn" aria-label="تبديل الوضع الليلي والنهاري" onclick="toggleTheme(event)"><i class="fas fa-moon" id="themeIcon"></i></button>
-                <button class="menu-btn" aria-label="الخطة" onclick="toggleSidebar()"><i class="fas fa-list-check"></i></button>
+                <span class="stat streak hidden" id="streakBadge" title="أيام متتالية"><i class="fas fa-fire"></i> <span id="streakCount">0</span></span>
+                <span class="stat" title="نقاط الخبرة"><i class="fas fa-bolt"></i> <span id="xpCount">0</span></span>
+                <a class="btn btn-outline btn-sm" href="index.html"><i class="fas fa-arrow-right"></i> <span class="lbl">رجوع لـ Chat X</span></a>
             </div>
         </div>
+    </header>
 
-        <div class="chat-container" id="chatContainer">
-            <div class="welcome-screen" id="welcomeScreen">
-                <div class="welcome-logo">🇩🇪</div>
-                <h1 class="welcome-title">أهلاً بيك في German Pro</h1>
-                <p class="welcome-sub">مدرّس ألماني احترافي متخصص في التمريض. ابعت أي رسالة (مثلاً "ابدأ") وهنعمل تقييم سريع، وبعدها هتاخد خطة تعلّم كاملة مبنية عليك.</p>
-                <div class="welcome-features">
-                    <div class="welcome-feature"><i class="fas fa-route"></i> خطة شخصية متكاملة</div>
-                    <div class="welcome-feature"><i class="fas fa-stethoscope"></i> متخصص في لغة التمريض</div>
-                    <div class="welcome-feature"><i class="fas fa-volume-high"></i> نطق دقيق لكل كلمة</div>
-                    <div class="welcome-feature"><i class="fas fa-brain"></i> يفتكر تقدّمك دايمًا</div>
+    <main>
+        <section class="section hero" id="home">
+            <div class="wrap split">
+                <div>
+                    <h1 class="display"><bdi lang="de">Hallo, Deutsch!</bdi></h1>
+                    <p class="headline">خطة كاملة لكل مستوى: محادثة، حياة يومية، ولغة المستشفى.</p>
+                    <p class="lead">كل مستوى من A1 لحد C1 فيه وحدات مرتّبة بقواعده الرسمية، وكلمات، وحوارات، وتمارين متنوعة. والمعلم الذكي جاهز يشرح ويصحّح.</p>
+                    <div class="cta-row">
+                        <button class="btn btn-primary" id="heroStart" type="button">ابدأ التعلم</button>
+                        <a class="btn btn-outline" href="#teacher">اختبر مستواك مع المعلم</a>
+                    </div>
+                </div>
+                <div class="split-art hero-art" id="heroArt"></div>
+            </div>
+        </section>
+
+        <div class="level-band">
+            <div class="wrap" id="levelBand" role="tablist" aria-label="المستويات"></div>
+        </div>
+
+        <section class="section" id="path">
+            <div class="wrap">
+                <div class="path-head">
+                    <h2 class="section-title" id="pathTitle">خطة A1</h2>
+                    <p class="lead" id="pathDesc"></p>
+                    <div class="overall"><div class="bar"><i id="overallFill"></i></div><b id="overallPct">0%</b></div>
+                    <div class="filters" id="trackFilters" role="group" aria-label="نوع الوحدات"></div>
+                </div>
+                <div id="unitList"></div>
+            </div>
+        </section>
+
+        <section class="section" id="grammar" style="padding-top:0">
+            <div class="wrap">
+                <h2 class="section-title" id="gTitle">قواعد A1</h2>
+                <p class="lead" id="gDesc"></p>
+                <div class="g-list" id="gList"></div>
+            </div>
+        </section>
+
+        <section class="section" id="teacher">
+            <div class="wrap split flip">
+                <div>
+                    <h2 class="section-title">المعلم</h2>
+                    <p class="lead">اسأل عن أي قاعدة، أو ابعت "ابدأ" وهنعمل تقييم سريع وتاخد خطة شخصية. كل رد فيه نطق بضغطة.</p>
+                    <div class="plan-mini" id="planMini"></div>
+                </div>
+                <div>
+                    <div class="chat-panel">
+                        <div class="chat-head"><span id="teacherArt"></span><div><b>المعلم الذكي</b><small>الألمانية الاحترافية للتمريض</small></div>
+                            <button class="btn btn-ghost btn-sm" id="resetBtn" type="button" style="margin-inline-start:auto" title="مسح خطة المعلم"><i class="fas fa-rotate-left"></i></button></div>
+                        <div id="chatContainer"></div>
+                        <div class="input-row">
+                            <textarea id="input" rows="1" placeholder="اكتب رسالتك هنا..." aria-label="رسالتك للمعلم"></textarea>
+                            <button class="btn btn-primary" id="sendBtn" type="button" aria-label="إرسال"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div class="input-area">
-            <div class="input-row">
-                <textarea id="input" rows="1" placeholder="اكتب رسالتك هنا..." onkeydown="handleKeydown(event)" oninput="autoGrow(this)"></textarea>
-                <button class="send-btn" id="sendBtn" onclick="send()"><i class="fas fa-paper-plane"></i></button>
+        <section class="section" id="books" style="padding-top:0">
+            <div class="wrap split">
+                <div>
+                    <h2 class="section-title">دفاتري</h2>
+                    <p class="lead">كل كلمة وقاعدة بتتعلمها بتتجمع هنا تلقائي، وتقدر تنزّلها PDF.</p>
+                    <div class="book-actions">
+                        <button class="btn btn-outline" id="vocabBtn" type="button"><i class="fas fa-book-open"></i> دفتر المفردات (<span id="vocabCount">0</span>)</button>
+                        <button class="btn btn-outline" id="grammarBtn" type="button"><i class="fas fa-diagram-project"></i> دفتر القواعد (<span id="grammarCount">0</span>)</button>
+                    </div>
+                    <div class="ach" id="badgesRow"></div>
+                </div>
+                <div class="split-art" id="booksArt"></div>
             </div>
-        </div>
+        </section>
     </main>
-</div>
 
-<div class="vocab-modal" id="vocabModal">
-    <div class="vocab-panel">
-        <div class="vocab-panel-head">
-            <h3>📘 دفتر مفرداتك</h3>
-            <div style="display:flex; gap:6px;">
-                <button class="action-btn" id="downloadVocabBtn" title="تحميل PDF"><i class="fas fa-download"></i></button>
-                <button class="action-btn" onclick="document.getElementById('vocabModal').classList.remove('show')"><i class="fas fa-xmark"></i></button>
+    <footer class="footer">
+        <div class="wrap">
+            <div class="footer-grid">
+                <div>
+                    <div class="flogo"><span id="footArt"></span><b>German Pro</b></div>
+                    <p class="about">الألمانية للحياة اليومية ولغة التمريض والمستشفى، من A1 لحد C1.</p>
+                </div>
+                <div><h5>المسار</h5><a href="#path">خطة المستوى</a><a href="#grammar">قواعد المستوى</a><a href="#teacher">المعلم</a></div>
+                <div><h5>المستويات</h5><div id="footLevels"></div></div>
+                <div><h5>الحساب</h5><a href="index.html">رجوع لـ Chat X</a><a href="#books">دفاتري</a><button class="flink" id="resetLocal" type="button">مسح تقدّم المنهج</button></div>
+            </div>
+            <div class="footer-bottom">
+                <span class="credit">تم صنع بواسطة <bdi lang="en">Ahmed Moussa Ahmed Hussin</bdi></span>
+                <span class="inst">معهد رعاية الضبعية الفني للتمريض</span>
             </div>
         </div>
-        <div class="vocab-panel-body" id="vocabPanelBody"></div>
-    </div>
+    </footer>
 </div>
 
-<div class="vocab-modal" id="grammarModal">
-    <div class="vocab-panel">
-        <div class="vocab-panel-head">
-            <h3>🧩 دفتر القواعد</h3>
-            <div style="display:flex; gap:6px;">
-                <button class="action-btn" id="downloadGrammarBtn" title="تحميل PDF"><i class="fas fa-download"></i></button>
-                <button class="action-btn" onclick="document.getElementById('grammarModal').classList.remove('show')"><i class="fas fa-xmark"></i></button>
-            </div>
-        </div>
-        <div class="vocab-panel-body" id="grammarPanelBody" style="display:block"></div>
+<div class="modal" id="vocabModal"><div class="modal-panel">
+    <div class="modal-head"><h3>دفتر المفردات</h3><div style="display:flex;gap:8px"><button class="icon-btn" id="downloadVocabBtn" title="تحميل PDF" type="button"><i class="fas fa-download"></i></button><button class="icon-btn" data-close="vocabModal" type="button" aria-label="إغلاق"><i class="fas fa-xmark"></i></button></div></div>
+    <div class="modal-body" id="vocabPanelBody"></div>
+</div></div>
+<div class="modal" id="grammarModal"><div class="modal-panel">
+    <div class="modal-head"><h3>دفتر القواعد</h3><div style="display:flex;gap:8px"><button class="icon-btn" id="downloadGrammarBtn" title="تحميل PDF" type="button"><i class="fas fa-download"></i></button><button class="icon-btn" data-close="grammarModal" type="button" aria-label="إغلاق"><i class="fas fa-xmark"></i></button></div></div>
+    <div class="modal-body" id="grammarPanelBody"></div>
+</div></div>
+
+<div class="lesson" id="lesson" role="dialog" aria-modal="true" aria-label="الدرس">
+    <div class="lesson-top">
+        <button class="icon-btn" id="lessonClose" type="button" aria-label="إنهاء الدرس"><i class="fas fa-xmark"></i></button>
+        <div class="bar"><i id="lessonBar"></i></div>
+        <span class="xp"><i class="fas fa-bolt"></i> <span id="lessonXp">0</span></span>
     </div>
+    <div class="lesson-body"><div class="lesson-inner" id="lessonInner"></div></div>
+    <div class="lesson-foot" id="lessonFoot"><div class="foot-inner" id="footInner"></div></div>
 </div>
 
 <script>
+/* ====================== الشخصيات (SVG مرسومة بالكود — أصلية) ======================
+   نفس لغة الرسم في DESIGN.md: أشكال مسطّحة مدوّرة + خطوط سودا عريضة + ألوان الشخصيات بس
+   (وردي/بنفسجي/أصفر/برتقالي/أزرق) — مفيش ظلال ولا تدرّجات.
+   لو عايز تستبدل أي شخصية بصورة كرتونية جاهزة: حط المسار في GP_ART_OVERRIDES تحت. */
+const GP_ART_OVERRIDES = {
+    // مثال:  owl: 'img/owl.png',  nurseF: 'img/nurse-woman.png'
+};
+const INK = '#111';
+const SW = 4;
+
+function owlSVG(o = {}) {
+    const mood = o.mood || 'happy';          // happy | cheer | sad | think
+    const gear = o.gear || 'none';           // none | nurse | grad
+    const G = '#58cc02', GD = '#46a302', BELLY = '#d7ffb8', OR = '#ff9600';
+    const wingsUp = mood === 'cheer';
+    const eyes = mood === 'cheer'
+        ? `<path d="M56 80 Q72 62 88 80" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/><path d="M112 80 Q128 62 144 80" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>`
+        : `<circle cx="72" cy="78" r="25" fill="#fff" stroke="${INK}" stroke-width="${SW}"/><circle cx="128" cy="78" r="25" fill="#fff" stroke="${INK}" stroke-width="${SW}"/>
+           <circle cx="${mood === 'think' ? 80 : 75}" cy="${mood === 'think' ? 70 : mood === 'sad' ? 86 : 80}" r="10" fill="${INK}"/><circle cx="${mood === 'think' ? 120 : 125}" cy="${mood === 'think' ? 70 : mood === 'sad' ? 86 : 80}" r="10" fill="${INK}"/>
+           <circle cx="${mood === 'think' ? 83 : 78}" cy="${mood === 'think' ? 66 : 76}" r="3.2" fill="#fff"/><circle cx="${mood === 'think' ? 123 : 128}" cy="${mood === 'think' ? 66 : 76}" r="3.2" fill="#fff"/>`;
+    const brows = mood === 'sad'
+        ? `<path d="M50 50 L84 60" stroke="${INK}" stroke-width="5" stroke-linecap="round"/><path d="M150 50 L116 60" stroke="${INK}" stroke-width="5" stroke-linecap="round"/><path d="M60 108 Q57 122 62 126 Q68 120 60 108Z" fill="#1cb0f6" stroke="${INK}" stroke-width="2"/>` : '';
+    const beak = mood === 'cheer'
+        ? `<path d="M84 100 Q100 96 116 100 Q114 120 100 124 Q86 120 84 100Z" fill="${OR}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/><path d="M90 108 Q100 118 110 108" fill="#c0392b" stroke="none"/>`
+        : mood === 'sad'
+        ? `<path d="M86 102 Q100 96 114 102 Q108 116 100 118 Q92 116 86 102Z" fill="${OR}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>`
+        : `<path d="M86 100 Q100 94 114 100 Q110 118 100 122 Q90 118 86 100Z" fill="${OR}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>`;
+    const wingL = wingsUp
+        ? `<path d="M46 128 Q14 96 22 62 Q42 74 56 110Z" fill="${GD}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>`
+        : `<path d="M46 118 Q22 140 34 176 Q56 168 60 132Z" fill="${GD}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>`;
+    const wingR = wingsUp
+        ? `<path d="M154 128 Q186 96 178 62 Q158 74 144 110Z" fill="${GD}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>`
+        : `<path d="M154 118 Q178 140 166 176 Q144 168 140 132Z" fill="${GD}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>`;
+    let hat = '';
+    if (gear === 'nurse') hat = `<path d="M60 34 Q60 14 100 14 Q140 14 140 34 L136 42 Q100 34 64 42Z" fill="#fff" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/><path d="M100 20 V36 M92 28 H108" stroke="#ff4b6e" stroke-width="5" stroke-linecap="round"/>`;
+    if (gear === 'grad') hat = `<path d="M100 6 L152 26 L100 44 L48 26Z" fill="#1cb0f6" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/><path d="M148 30 V56" stroke="${INK}" stroke-width="3"/><circle cx="148" cy="58" r="4" fill="#ffc800" stroke="${INK}" stroke-width="2"/>`;
+    const steth = gear === 'nurse'
+        ? `<path d="M74 122 Q70 158 100 162 Q130 158 126 122" fill="none" stroke="#4b4b4b" stroke-width="5" stroke-linecap="round"/><circle cx="100" cy="168" r="8" fill="#cfd8dc" stroke="${INK}" stroke-width="3"/>` : '';
+    return `<g>
+      <path d="M70 196 Q62 214 74 214 H96 Q98 200 92 196Z" fill="${OR}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+      <path d="M130 196 Q138 214 126 214 H104 Q102 200 108 196Z" fill="${OR}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+      ${wingL}${wingR}
+      <path d="M100 52 C42 52 34 100 38 140 C42 186 66 202 100 202 C134 202 158 186 162 140 C166 100 158 52 100 52Z" fill="${G}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+      <path d="M40 60 L54 30 L76 54Z M160 60 L146 30 L124 54Z" fill="${G}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"/>
+      <ellipse cx="100" cy="158" rx="38" ry="38" fill="${BELLY}" stroke="none"/>
+      <path d="M80 150 q6 8 12 0 M100 150 q6 8 12 0 M90 168 q6 8 12 0" fill="none" stroke="${GD}" stroke-width="3.5" stroke-linecap="round"/>
+      ${eyes}${brows}${beak}${steth}${hat}
+    </g>`;
+}
+
+const SKIN = { a: '#ffd7b5', b: '#e8b98a', c: '#c68642', d: '#8d5524' };
+
+function personSVG(o = {}) {
+    const skin = SKIN[o.skin] || o.skin || SKIN.b;
+    const topC = o.topColor || '#1cb0f6';
+    const botC = o.botColor || '#4b4b4b';
+    const hairC = o.hairColor || '#2b1d12';
+    const acc = o.acc || [];
+    const pose = o.pose || 'stand';
+    const has = k => acc.includes(k);
+    const st = `stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round" stroke-linecap="round"`;
+    let s = '';
+    if (has('backpack')) s += `<rect x="30" y="98" width="100" height="64" rx="18" fill="#ff9600" ${st}/>`;
+    // legs + shoes
+    s += `<rect x="52" y="164" width="24" height="58" rx="12" fill="${botC}" ${st}/><rect x="84" y="164" width="24" height="58" rx="12" fill="${botC}" ${st}/>`;
+    s += `<ellipse cx="62" cy="230" rx="18" ry="9" fill="#2b2b2b" ${st}/><ellipse cx="98" cy="230" rx="18" ry="9" fill="#2b2b2b" ${st}/>`;
+    // back hair (long)
+    if (o.hair === 'long') s += `<path d="M46 56 Q40 24 80 22 Q120 24 114 56 L118 108 Q80 118 42 108Z" fill="${hairC}" ${st}/>`;
+    // arms (behind body for stand/clip; raised drawn after)
+    const arm = (x1, y1, x2, y2) => `<path d="M${x1} ${y1} L${x2} ${y2}" stroke="${INK}" stroke-width="26" stroke-linecap="round" fill="none"/><path d="M${x1} ${y1} L${x2} ${y2}" stroke="${topC}" stroke-width="18" stroke-linecap="round" fill="none"/><circle cx="${x2}" cy="${y2}" r="10" fill="${skin}" ${st}/>`;
+    if (pose === 'stand') s += arm(50, 112, 38, 166) + arm(110, 112, 122, 166);
+    if (pose === 'wave') s += arm(50, 112, 38, 166) + arm(110, 112, 138, 76);
+    if (pose === 'cheer') s += arm(50, 112, 22, 74) + arm(110, 112, 138, 74);
+    if (pose === 'clip') s += arm(50, 112, 58, 150);
+    // body
+    s += `<rect x="42" y="94" width="76" height="80" rx="26" fill="${topC}" ${st}/>`;
+    if (o.top === 'coat') s += `<path d="M80 94 V174" ${st} fill="none"/><path d="M60 94 L80 130 L100 94" fill="#fff" ${st}/><path d="M42 120 H118" stroke="none"/>`;
+    if (o.top === 'pajama') s += `<path d="M46 116 H114 M44 136 H116 M44 156 H116" stroke="#fff" stroke-width="5" opacity=".8" fill="none"/>`;
+    if (o.top === 'scrubs') s += `<path d="M62 94 L80 118 L98 94" fill="none" ${st}/><rect x="86" y="134" width="20" height="16" rx="4" fill="none" stroke="${INK}" stroke-width="3"/>`;
+    if (o.top === 'apron') s += `<path d="M56 100 H104 V174 H56Z" fill="#fff" ${st}/><path d="M56 100 Q80 88 104 100" fill="none" ${st}/>`;
+    if (pose === 'clip') s += arm(110, 112, 100, 150);
+    // neck + head
+    s += `<rect x="70" y="84" width="20" height="14" fill="${skin}" ${st}/>`;
+    if (o.hair === 'hijab') {
+        const hc = o.hijabColor || '#a560e8';
+        s += `<path d="M38 62 Q34 16 80 16 Q126 16 122 62 Q124 100 108 118 L52 118 Q36 100 38 62Z" fill="${hc}" ${st}/>`;
+        s += `<ellipse cx="80" cy="62" rx="29" ry="32" fill="${skin}" ${st}/>`;
+    } else {
+        s += `<circle cx="80" cy="58" r="33" fill="${skin}" ${st}/>`;
+    }
+    // face
+    const mouth = o.mood === 'open' ? `<path d="M68 70 Q80 90 92 70Z" fill="#c0392b" ${st}/>` : `<path d="M69 71 Q80 82 91 71" fill="none" stroke="${INK}" stroke-width="3.5" stroke-linecap="round"/>`;
+    s += `<ellipse cx="69" cy="58" rx="3.6" ry="5.2" fill="${INK}"/><ellipse cx="91" cy="58" rx="3.6" ry="5.2" fill="${INK}"/>${mouth}`;
+    s += `<circle cx="60" cy="68" r="5" fill="#ff9aa2" opacity=".65"/><circle cx="100" cy="68" r="5" fill="#ff9aa2" opacity=".65"/>`;
+    // front hair
+    if (o.hair === 'short' || o.hair === 'long') s += `<path d="M47 56 Q44 22 80 22 Q116 22 113 56 Q104 38 80 38 Q56 38 47 56Z" fill="${hairC}" ${st}/>`;
+    if (o.hair === 'bun') s += `<circle cx="80" cy="18" r="13" fill="${hairC}" ${st}/><path d="M47 56 Q44 22 80 22 Q116 22 113 56 Q104 38 80 38 Q56 38 47 56Z" fill="${hairC}" ${st}/>`;
+    if (o.hair === 'curly') s += [50, 62, 74, 86, 98, 110].map((x, i) => `<circle cx="${x}" cy="${i % 2 ? 28 : 34}" r="12" fill="${hairC}" ${st}/>`).join('');
+    if (o.hair === 'grey') s += `<path d="M47 54 Q46 24 80 24 Q114 24 113 54 Q104 40 80 40 Q56 40 47 54Z" fill="#cfd8dc" ${st}/>`;
+    // accessories
+    if (has('glasses')) s += `<circle cx="69" cy="58" r="11" fill="none" stroke="${INK}" stroke-width="3"/><circle cx="91" cy="58" r="11" fill="none" stroke="${INK}" stroke-width="3"/><path d="M80 58 H80" stroke="${INK}" stroke-width="3"/>`;
+    if (has('mustache')) s += `<path d="M66 68 Q74 62 80 68 Q86 62 94 68 Q86 74 80 70 Q74 74 66 68Z" fill="${o.hairColor === '#cfd8dc' ? '#cfd8dc' : '#3b2a1a'}" ${st}/>`;
+    if (has('nursecap')) s += `<path d="M52 30 Q52 8 80 8 Q108 8 108 30 L104 38 Q80 30 56 38Z" fill="#fff" ${st}/><path d="M80 14 V30 M72 22 H88" stroke="#ff4b6e" stroke-width="4.5" stroke-linecap="round"/>`;
+    if (has('chefhat')) s += `<path d="M50 34 Q40 8 62 8 Q68 -4 82 6 Q98 -2 104 8 Q124 8 110 34Z" fill="#fff" ${st}/>`;
+    if (has('headset')) s += `<path d="M46 60 Q44 22 80 22 Q116 22 114 60" fill="none" stroke="#4b4b4b" stroke-width="5"/><rect x="40" y="56" width="10" height="20" rx="5" fill="#1cb0f6" ${st}/><path d="M46 76 Q52 92 70 84" fill="none" stroke="#4b4b4b" stroke-width="4"/>`;
+    if (has('steth')) s += `<path d="M64 98 Q60 138 80 140 Q100 138 96 98" fill="none" stroke="#4b4b4b" stroke-width="5" stroke-linecap="round"/><circle cx="80" cy="146" r="8" fill="#cfd8dc" ${st}/>`;
+    if (has('clip')) s += `<rect x="86" y="116" width="40" height="50" rx="7" fill="#ffc800" ${st}/><rect x="98" y="110" width="16" height="10" rx="3" fill="#cfd8dc" ${st}/><path d="M94 134 H118 M94 144 H118 M94 154 H110" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`;
+    if (has('badge')) s += `<rect x="90" y="126" width="18" height="12" rx="3" fill="#fff" stroke="${INK}" stroke-width="2.5"/>`;
+    if (has('bandage')) s += `<rect x="52" y="34" width="56" height="12" rx="6" fill="#fff" ${st}/><path d="M76 40 H84" stroke="#ff4b6e" stroke-width="3"/>`;
+    return `<g>${s}</g>`;
+}
+
+const GP_PRESETS = {
+    nurseF:   { hair: 'hijab', hijabColor: '#a560e8', skin: 'b', top: 'scrubs', topColor: '#1cb0f6', botColor: '#1cb0f6', acc: ['steth', 'badge'], pose: 'wave', mood: 'open' },
+    nurseF2:  { hair: 'bun', hairColor: '#2b1d12', skin: 'a', top: 'scrubs', topColor: '#ff86d0', botColor: '#ff86d0', acc: ['steth', 'nursecap'], pose: 'stand' },
+    nurseM:   { hair: 'short', hairColor: '#1d1d1d', skin: 'c', top: 'scrubs', topColor: '#58cc02', botColor: '#58cc02', acc: ['steth', 'badge'], pose: 'wave', mood: 'open' },
+    doctor:   { hair: 'short', hairColor: '#4b4b4b', skin: 'b', top: 'coat', topColor: '#ffffff', botColor: '#3a4a6b', acc: ['steth', 'glasses', 'clip'], pose: 'clip' },
+    patientM: { hair: 'grey', skin: 'a', top: 'pajama', topColor: '#1cb0f6', botColor: '#1cb0f6', acc: ['mustache'], pose: 'stand' },
+    patientF: { hair: 'hijab', hijabColor: '#ffc800', skin: 'b', top: 'pajama', topColor: '#ff86d0', botColor: '#ff86d0', acc: [], pose: 'wave' },
+    child:    { hair: 'curly', hairColor: '#3b2a1a', skin: 'c', top: 'shirt', topColor: '#ffc800', botColor: '#1cb0f6', acc: [], pose: 'cheer', mood: 'open', scale: .78 },
+    student:  { hair: 'short', hairColor: '#1d1d1d', skin: 'b', top: 'shirt', topColor: '#ff9600', botColor: '#4b4b4b', acc: ['backpack'], pose: 'wave', mood: 'open' },
+    studentF: { hair: 'long', hairColor: '#5a2a13', skin: 'a', top: 'shirt', topColor: '#a560e8', botColor: '#4b4b4b', acc: ['glasses'], pose: 'stand' },
+    chef:     { hair: 'short', skin: 'c', top: 'apron', topColor: '#ff9600', botColor: '#4b4b4b', acc: ['chefhat', 'mustache'], pose: 'cheer', mood: 'open' },
+    office:   { hair: 'long', hairColor: '#1d1d1d', skin: 'a', top: 'shirt', topColor: '#1cb0f6', botColor: '#4b4b4b', acc: ['headset'], pose: 'wave' },
+    shop:     { hair: 'hijab', hijabColor: '#58cc02', skin: 'b', top: 'apron', topColor: '#ff86d0', botColor: '#4b4b4b', acc: [], pose: 'wave', mood: 'open' },
+    grandpa:  { hair: 'grey', skin: 'b', top: 'shirt', topColor: '#a560e8', botColor: '#4b4b4b', acc: ['glasses', 'mustache'], pose: 'stand' }
+};
+
+/* art('nurseF', 160)  |  art('owl', 200, {mood:'cheer', gear:'nurse'})  |  art(['nurseF','patientM'], 300) = مشهد بشخصين */
+function art(key, height = 200, opts = {}) {
+    if (!Array.isArray(key) && GP_ART_OVERRIDES[key]) return `<img src="${GP_ART_OVERRIDES[key]}" alt="" style="height:${height}px;width:auto" loading="lazy">`;
+    if (Array.isArray(key)) {
+        const n = key.length, W = 170 * n;
+        const parts = key.map((k, i) => {
+            const isOwl = k === 'owl' || k.startsWith('owl:');
+            const inner = isOwl ? owlSVG({ gear: k.split(':')[1] || 'none', mood: opts.mood }) : personSVG(GP_PRESETS[k] || {});
+            const sc = (GP_PRESETS[k] && GP_PRESETS[k].scale) || 1;
+            const base = isOwl ? 0.95 : 0.92;
+            const x = i * 170 + (isOwl ? 0 : 5);
+            const y = isOwl ? 10 : 8 + (1 - sc) * 200;
+            return `<g transform="translate(${x + (1 - sc) * 60},${y}) scale(${base * sc})">${inner}</g>`;
+        }).join('');
+        return `<svg viewBox="0 0 ${W} 245" style="height:${height}px;width:auto" role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">${parts}</svg>`;
+    }
+    if (key === 'owl') return `<svg viewBox="0 0 200 220" style="height:${height}px;width:auto" role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">${owlSVG(opts)}</svg>`;
+    const p = GP_PRESETS[key] || GP_PRESETS.nurseF;
+    return `<svg viewBox="0 0 160 245" style="height:${height}px;width:auto" role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">${personSVG({ ...p, ...opts })}</svg>`;
+}
+
+</script>
+<script>
+/* ====================== German Pro — محرك الصفحة ====================== */
 const API = 'https://schoolx-eta.vercel.app'; // نفس سيرفر School X المستخدم في index.html
 const token = localStorage.getItem('sx_school_token');
 const premiumFeatures = JSON.parse(localStorage.getItem('sx_premium_features') || '[]');
 const schoolUser = JSON.parse(localStorage.getItem('sx_school_user') || 'null');
 const isAdminUser = schoolUser?.type === 'admin';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+if (window.marked) marked.setOptions({ breaks: true, gfm: true });
 
-marked.setOptions({ breaks: true, gfm: true });
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+const D = s => `<bdi lang="de" dir="ltr">${esc(s)}</bdi>`;
+const md = s => window.marked && window.DOMPurify ? DOMPurify.sanitize(marked.parse(s || '')) : esc(s);
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const DEFAULT_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1'];
+const TRACK_LABEL = { talk: '💬 محادثة', life: '🏠 حياة يومية', nurse: '🩺 تمريض ومستشفى' };
+const LESSONS = [
+    { id: 'w1', title: 'كلمات ١', icon: 'fa-font' },
+    { id: 'w2', title: 'كلمات ٢', icon: 'fa-language' },
+    { id: 'g', title: 'القاعدة', icon: 'fa-diagram-project' },
+    { id: 't', title: 'حوار واختبار', icon: 'fa-comments' }
+];
 
-// ---------- نفس نظام الوضع الليلي/النهاري المستخدم في index.html ----------
-const settings = JSON.parse(localStorage.getItem('sx_settings')) || { theme: 'dark' };
-function applyTheme(theme) {
-    document.body.className = theme === 'light' ? 'light' : '';
-    const icon = document.getElementById('themeIcon');
-    if (icon) icon.className = theme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
-}
-function toggleTheme() {
-    settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
-    applyTheme(settings.theme);
-    localStorage.setItem('sx_settings', JSON.stringify(settings));
-}
-applyTheme(settings.theme || 'dark');
-
-function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('sidebarOverlay').classList.toggle('show');
-}
-
-// ---------- تحقق من صلاحية الدخول ----------
+/* ---------- الصلاحية ---------- */
 if (!token || (!isAdminUser && !premiumFeatures.includes('premium_german_pro'))) {
-    document.getElementById('lockedScreen').classList.add('show');
+    $('#lockedScreen').classList.add('show');
+    $('#lockedArt').innerHTML = art('owl', 150, { mood: 'sad' });
 } else {
-    document.getElementById('appContainer').style.display = 'flex';
-    init();
+    $('#app').classList.remove('hidden');
+    window.__gpBoot = true;
 }
 
 async function api(path, opts = {}) {
-    const res = await fetch(API + path, {
-        ...opts,
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...(opts.headers || {}) }
-    });
+    const res = await fetch(API + path, { ...opts, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...(opts.headers || {}) } });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    if (!res.ok) { const e = new Error(data.error || ('HTTP ' + res.status)); e.status = res.status; e.code = data.code; throw e; }
     return data;
 }
 
-function trackLabel(t) { return t === 'nursing' ? '🩺 تمريض' : '💬 عام'; }
-function statusIcon(s) { return s === 'done' ? '✅' : s === 'active' ? '▶️' : '🔒'; }
+/* ---------- تقدّم الطالب (محلي، لكل حساب) ---------- */
+const PKEY = 'gp2_' + (schoolUser?.username || 'guest');
+let prog = { xp: 0, lessons: {}, vocab: {}, grammar: {}, open: {}, lastLevel: 'A1' };
+try { prog = { ...prog, ...(JSON.parse(localStorage.getItem(PKEY)) || {}) }; } catch (e) { /* تجاهل */ }
+const saveProg = () => { try { localStorage.setItem(PKEY, JSON.stringify(prog)); } catch (e) { /* التخزين ممتلئ */ } };
+const lkey = (L, n, lid) => `${L}:${n}:${lid}`;
+const isDone = (L, n, lid) => !!prog.lessons[lkey(L, n, lid)];
+const unitDoneCount = (L, n) => LESSONS.filter(l => isDone(L, n, l.id)).length;
+const unitComplete = (L, n) => unitDoneCount(L, n) === LESSONS.length;
 
-let lastDoneCount = 0;
-const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1'];
+/* ---------- الحالة العامة ---------- */
+const S = { level: 'A1', levels: DEFAULT_LEVELS.map(id => ({ id, titleAr: '', planReady: false })), syll: {}, plans: {}, units: {}, filter: 'all', loadingPlan: false };
 
-function renderLevelRoadmap(level) {
-    const idx = CEFR_LEVELS.indexOf((level || '').toUpperCase());
-    document.getElementById('levelRoadmap').innerHTML = CEFR_LEVELS.map((lv, i) => {
-        const cls = idx === -1 ? '' : (i < idx ? 'past' : i === idx ? 'current' : '');
-        return `<div class="level-step ${cls}">${lv}</div>`;
-    }).join('');
+/* ---------- الاستماع (سيرفر أولًا ثم نطق المتصفح) ---------- */
+let currentAudio = null, ttsWarnedOnce = false;
+const audioCache = new Map();
+function sanitizeForSpeech(text) {
+    return String(text).replace(/```[\s\S]*?```/g, '').replace(/\[[^\]]*\]/g, '').replace(/\([^)]*[\u0600-\u06FF][^)]*\)/g, '').replace(/[*_#>`|]/g, '').replace(/___/g, ' ').replace(/\s+/g, ' ').trim();
 }
-
-function renderBadges(doneCount, level) {
-    const badges = [];
-    if (doneCount >= 1) badges.push(['fa-star', 'أول وحدة']);
-    if (doneCount >= 5) badges.push(['fa-medal', '5 وحدات']);
-    if (doneCount >= 10) badges.push(['fa-trophy', '10 وحدات']);
-    if (['B1', 'B2', 'C1'].includes((level || '').toUpperCase())) badges.push(['fa-crown', 'وصلت B1+']);
-    document.getElementById('badgesRow').innerHTML = badges.map(([icon, label]) =>
-        `<span class="ach-badge"><i class="fas ${icon}"></i> ${label}</span>`
-    ).join('');
+function stopAudio() { if (currentAudio) { currentAudio.pause(); currentAudio = null; } if ('speechSynthesis' in window) speechSynthesis.cancel(); $$('.icon-btn.speaking').forEach(b => b.classList.remove('speaking')); }
+async function speak(text, btn, slow) {
+    stopAudio();
+    const clean = sanitizeForSpeech(text);
+    if (!clean) return;
+    if (btn) btn.classList.add('speaking');
+    const done = () => { if (btn) btn.classList.remove('speaking'); currentAudio = null; };
+    try {
+        let url = audioCache.get(clean);
+        if (!url) {
+            const resp = await fetch(API + '/api/german-pro/tts', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ text: clean }) });
+            if (!resp.ok) throw new Error('server-tts-failed');
+            url = URL.createObjectURL(await resp.blob());
+            audioCache.set(clean, url);
+        }
+        const audio = new Audio(url);
+        audio.playbackRate = slow ? 0.6 : 0.8; // السيرفر بيبعت الصوت بأبطأ وضع عنده أصلًا
+        currentAudio = audio;
+        audio.onended = done; audio.onerror = done;
+        await audio.play();
+    } catch (e) { speakWithBrowserFallback(clean, btn, slow); }
 }
-
-function renderPlan(plan, level, currentUnitId) {
-    renderLevelRoadmap(level);
-    const list = document.getElementById('planList');
-    if (!plan || !plan.length) {
-        list.innerHTML = '<div class="plan-empty">هتظهر خطتك هنا بعد التقييم المبدئي — ابدأ الشات على اليمين.</div>';
-        updateProgress(0, 0);
-        renderBadges(0, level);
-        return;
+let cachedVoices = [];
+function warmUpVoices() { if (!('speechSynthesis' in window)) return; cachedVoices = speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => { cachedVoices = speechSynthesis.getVoices(); }; }
+warmUpVoices();
+function speakWithBrowserFallback(clean, btn, slow) {
+    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+        if (!ttsWarnedOnce) { ttsWarnedOnce = true; alert('تعذر تشغيل الصوت من السيرفر ومتصفحك مش بيدعم نطق بديل. جرّب تاني كمان شوية.'); }
+        if (btn) btn.classList.remove('speaking'); return;
     }
-    list.innerHTML = plan.map(u => `
-        <div class="unit-card ${u.id === currentUnitId ? 'active' : ''} ${u.status === 'done' ? 'done' : ''}">
-            <div class="u-top"><span>${statusIcon(u.status)}</span><span class="u-title">${escapeHtml(u.title)}</span></div>
-            <div class="u-track">${trackLabel(u.track)} · ${escapeHtml(u.level || '')}</div>
-            ${u.id === currentUnitId ? '<span class="u-active-tag">📍 الوحدة الحالية</span>' : ''}
-        </div>
-    `).join('');
-
-    const doneCount = plan.filter(u => u.status === 'done').length;
-    updateProgress(doneCount, plan.length);
-    renderBadges(doneCount, level);
-    if (doneCount > lastDoneCount && lastDoneCount !== 0) { fireConfetti(); playChime(); }
-    lastDoneCount = doneCount;
+    const u = new SpeechSynthesisUtterance(clean);
+    u.lang = 'de-DE'; u.rate = slow ? 0.45 : 0.6;
+    const v = cachedVoices.find(x => x.lang === 'de-DE') || cachedVoices.find(x => x.lang && x.lang.startsWith('de'));
+    if (v) u.voice = v;
+    u.onend = () => btn && btn.classList.remove('speaking');
+    u.onerror = () => { if (btn) btn.classList.remove('speaking'); if (!ttsWarnedOnce) { ttsWarnedOnce = true; alert('تعذر تشغيل الصوت دلوقتي. جرّب تاني بعد شوية.'); } };
+    speechSynthesis.speak(u);
 }
+const speakBtn = (text, cls = '') => `<button class="icon-btn ${cls}" type="button" data-say="${esc(text)}" aria-label="استمع"><i class="fas fa-volume-high"></i></button>`;
+const slowBtn = (text) => `<button class="icon-btn" type="button" data-say="${esc(text)}" data-slow="1" aria-label="استمع ببطء" title="ببطء">🐢</button>`;
+document.addEventListener('click', e => {
+    const b = e.target.closest('[data-say]');
+    if (b) { e.stopPropagation(); speak(b.getAttribute('data-say'), b, b.hasAttribute('data-slow')); }
+});
 
-function updateProgress(done, total) {
-    const pct = total ? Math.round((done / total) * 100) : 0;
-    document.getElementById('progressPct').textContent = pct + '%';
-    document.getElementById('progressFill').style.width = pct + '%';
-}
-
-// -------- نغمة قصيرة بسيطة (Web Audio) عند إنهاء وحدة --------
+/* ---------- احتفال ونغمة ---------- */
 function playChime() {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        [523.25, 659.25, 783.99].forEach((freq, i) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.frequency.value = freq;
-            osc.type = 'sine';
-            gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.12);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.35);
-            osc.connect(gain).connect(ctx.destination);
-            osc.start(ctx.currentTime + i * 0.12);
-            osc.stop(ctx.currentTime + i * 0.12 + 0.35);
-        });
-    } catch (e) { /* الجهاز/المتصفح مش داعم Web Audio — تجاهل */ }
+        [523.25, 659.25, 783.99].forEach((f, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = f; o.type = 'sine'; g.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.12); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.35); o.connect(g).connect(ctx.destination); o.start(ctx.currentTime + i * 0.12); o.stop(ctx.currentTime + i * 0.12 + 0.35); });
+    } catch (e) { /* مفيش Web Audio */ }
 }
-
-// -------- احتفال بصري بسيط لما الطالب يخلّص وحدة --------
 function fireConfetti() {
-    const colors = ['#e8b64c', '#6366f1', '#8b5cf6', '#ec4899', '#10b981'];
-    for (let i = 0; i < 26; i++) {
-        const el = document.createElement('div');
-        el.className = 'confetti-piece';
-        el.style.left = Math.random() * 100 + 'vw';
-        el.style.background = colors[Math.floor(Math.random() * colors.length)];
-        el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-        el.style.animationDuration = (1.6 + Math.random() * 1.2) + 's';
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 3000);
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const colors = ['#58cc02', '#1cb0f6', '#ffc800', '#ff86d0', '#a560e8', '#ff9600'];
+    for (let i = 0; i < 40; i++) {
+        const el = document.createElement('div'); el.className = 'confetti-piece';
+        el.style.left = Math.random() * 100 + 'vw'; el.style.background = colors[i % colors.length];
+        el.style.borderRadius = Math.random() > 0.5 ? '50%' : '3px'; el.style.animationDuration = (1.6 + Math.random() * 1.4) + 's';
+        document.body.appendChild(el); setTimeout(() => el.remove(), 3200);
     }
 }
 
-// -------- سلسلة أيام الاستخدام (Streak) — محسوبة محليًا من تاريخ آخر زيارة --------
+/* ---------- streak (محسوب محليًا) ---------- */
 function updateStreak() {
-    const today = new Date().toISOString().slice(0, 10);
-    const key = 'gp_streak_data';
-    let data;
-    try { data = JSON.parse(localStorage.getItem(key)) || {}; } catch (e) { data = {}; }
-    if (data.lastDate === today) {
-        // زيارة تانية في نفس اليوم — من غير تغيير
-    } else {
-        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-        data.count = (data.lastDate === yesterday) ? (data.count || 0) + 1 : 1;
-        data.lastDate = today;
+    const today = new Date().toISOString().slice(0, 10), key = 'gp_streak_data';
+    let data; try { data = JSON.parse(localStorage.getItem(key)) || {}; } catch (e) { data = {}; }
+    if (data.lastDate !== today) {
+        const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        data.count = data.lastDate === y ? (data.count || 0) + 1 : 1; data.lastDate = today;
         localStorage.setItem(key, JSON.stringify(data));
     }
-    if (data.count > 1) {
-        document.getElementById('streakBadge').style.display = 'flex';
-        document.getElementById('streakCount').textContent = data.count;
+    if (data.count > 1) { $('#streakBadge').classList.remove('hidden'); $('#streakCount').textContent = data.count; }
+}
+
+/* ---------- رسومات الصفحة ---------- */
+function mountArt() {
+    $('#brandArt').innerHTML = art('owl', 40);
+    $('#heroArt').innerHTML = `<div class="bubble">${D('Guten Tag!')}</div><div class="bubble b2">${D('Willkommen!')}</div>` + art(['owl:nurse', 'nurseF', 'patientM'], 300, { mood: 'cheer' });
+    $('#teacherArt').innerHTML = art('owl', 44, { gear: 'grad' });
+    $('#footArt').innerHTML = art('owl', 48, { mood: 'cheer' });
+    $('#booksArt').innerHTML = art(['owl:grad', 'studentF'], 260);
+}
+
+/* ---------- شريط المستويات ---------- */
+function renderLevelBand() {
+    $('#levelBand').innerHTML = `<span class="lbl">🇩🇪 المستويات</span>` + S.levels.map(l =>
+        `<button class="pill level-pill ${l.id === S.level ? 'active' : ''}" type="button" role="tab" aria-selected="${l.id === S.level}" data-level="${l.id}">${l.id}${l.titleAr ? ` <small>${esc(l.titleAr)}</small>` : ''}</button>`).join('');
+    $('#footLevels').innerHTML = S.levels.map(l => `<a href="#path" data-level="${l.id}">${l.id}${l.titleAr ? ' — ' + esc(l.titleAr) : ''}</a>`).join('');
+}
+document.addEventListener('click', e => {
+    const b = e.target.closest('[data-level]');
+    if (b && !b.closest('#lesson')) { selectLevel(b.getAttribute('data-level')); if (b.tagName === 'BUTTON') document.getElementById('path').scrollIntoView(); }
+});
+
+/* ---------- مسار المستوى ---------- */
+function trackPill(t) { return `<span class="tag ${t}">${TRACK_LABEL[t] || t}</span>`; }
+
+async function selectLevel(L) {
+    S.level = L; prog.lastLevel = L; saveProg();
+    renderLevelBand();
+    const lv = S.levels.find(x => x.id === L) || {};
+    $('#pathTitle').textContent = `خطة ${L}`;
+    $('#gTitle').textContent = `قواعد ${L}`;
+    $('#pathDesc').textContent = lv.goalAr || '';
+    $('#gDesc').textContent = lv.sourceAr || '';
+    $('#trackFilters').innerHTML = '';
+    // القواعد الرسمية للمستوى تظهر فورًا (ثابتة)، والخطة بتتجهّز من الموديل
+    loadSyllabus(L).then(() => { if (S.level === L) renderGrammarOverview(); });
+    await loadPlan(L);
+}
+
+async function loadSyllabus(L) {
+    if (S.syll[L]) return S.syll[L];
+    try { S.syll[L] = await api(`/api/german-pro/curriculum/${L}/syllabus`); } catch (e) { S.syll[L] = null; }
+    if (S.syll[L]) { const lv = S.levels.find(x => x.id === L); if (lv) { lv.goalAr = S.syll[L].level.goalAr; lv.sourceAr = S.syll[L].level.sourceAr; } if (S.level === L) { $('#pathDesc').textContent = S.syll[L].level.goalAr; $('#gDesc').textContent = S.syll[L].level.sourceAr; } }
+    return S.syll[L];
+}
+
+function loadingBox(title, sub) {
+    return `<div class="soon-box" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><span class="think-art">${art('owl', 96, { mood: 'think', gear: 'grad' })}</span>
+        <div style="flex:1;min-width:220px"><h3>${esc(title)}</h3><p>${esc(sub)}</p><div class="bar" style="margin-top:12px"><i style="width:35%;animation:pulsebar 1.4s ease-in-out infinite alternate"></i></div></div></div>`;
+}
+
+async function loadPlan(L, force) {
+    const list = $('#unitList');
+    if (S.plans[L] && !force) { renderPath(); return; }
+    list.innerHTML = loadingBox(`المعلم بيبني خطة ${L}...`, 'بيرتّب الوحدات على قواعد المستوى الرسمية. أول مرة بس بياخد لحظات، وبعدها الخطة بتفتح فورًا.');
+    try {
+        const data = await api(`/api/german-pro/curriculum/${L}/plan`);
+        S.plans[L] = data.plan;
+        const lv = S.levels.find(x => x.id === L); if (lv) lv.planReady = true;
+        if (S.level === L) { renderPath(); renderGrammarOverview(); }
+    } catch (e) {
+        if (S.level !== L) return;
+        list.innerHTML = `<div class="soon-box"><h3>مقدرناش نجهّز الخطة دلوقتي</h3><p>${esc(e.message)}</p><div class="cta-row"><button class="btn btn-primary btn-sm" type="button" data-act="retry-plan">حاول تاني</button></div></div>`;
     }
 }
-updateStreak();
 
-function hideWelcome() {
-    const w = document.getElementById('welcomeScreen');
-    if (w) w.remove();
+function nextUnitIndex(L) {
+    const plan = S.plans[L]; if (!plan) return 1;
+    const u = plan.units.find(x => !unitComplete(L, x.index));
+    return u ? u.index : plan.units.length;
 }
+function isUnlocked(L, n) { return n === 1 || prog.open[L] || unitComplete(L, n - 1); }
+
+function renderPath() {
+    const L = S.level, plan = S.plans[L];
+    if (!plan) return;
+    const total = plan.units.length * LESSONS.length;
+    const done = plan.units.reduce((a, u) => a + unitDoneCount(L, u.index), 0);
+    const pct = total ? Math.round(done / total * 100) : 0;
+    $('#overallFill').style.width = pct + '%'; $('#overallPct').textContent = pct + '%';
+    const tracks = uniqTracks(plan);
+    $('#trackFilters').innerHTML = [['all', 'الكل']].concat(tracks.map(t => [t, TRACK_LABEL[t]])).map(([k, l]) =>
+        `<button class="pill ${S.filter === k ? 'active' : ''}" type="button" data-filter="${k}">${l}</button>`).join('');
+    const nextIdx = nextUnitIndex(L);
+    const adminBar = isAdminUser ? `<div class="soon-box" style="margin-bottom:24px;max-width:none"><b style="color:var(--color-charcoal)">أدوات الأدمن:</b> <button class="btn btn-outline btn-sm" type="button" data-act="warm-level">تجهيز كل دروس ${L} مقدّمًا</button> <button class="btn btn-ghost btn-sm" type="button" data-act="regen-plan">إعادة بناء خطة ${L}</button> <span id="warmStatus" style="margin-inline-start:8px"></span></div>` : '';
+    const units = plan.units.filter(u => S.filter === 'all' || u.track === S.filter);
+    $('#unitList').innerHTML = adminBar + units.map((u, k) => {
+        const unlocked = isUnlocked(L, u.index), dc = unitDoneCount(L, u.index), complete = dc === LESSONS.length;
+        const firstOpen = LESSONS.findIndex(l => !isDone(L, u.index, l.id));
+        const stations = LESSONS.map((l, i) => {
+            const d = isDone(L, u.index, l.id), cur = unlocked && !complete && i === firstOpen && u.index === nextIdx;
+            return `<button class="station ${d ? 'done' : ''} ${cur ? 'current' : ''}" type="button" data-open="${u.index}:${l.id}" ${unlocked ? '' : 'disabled'}><i class="fas ${d ? 'fa-check' : l.icon}"></i> ${l.title}</button>`;
+        }).join('');
+        const topics = u.grammar.map(g => `<span class="tag ${g.extra ? 'talk' : ''}" title="${esc(g.ar)}">${g.extra ? '＋ ' : ''}${D(g.de.length > 42 ? g.de.slice(0, 40) + '…' : g.de)}</span>`).join('');
+        const flip = k % 2 === 1 ? 'flip' : '';
+        return `<article class="unit ${complete ? 'done' : ''} ${unlocked ? '' : 'locked'}" id="unit-${u.index}"><div class="wrap split ${flip}" style="padding:0">
+            <div>
+                <div class="u-top"><span class="u-num">${complete ? '<i class="fas fa-check"></i>' : u.index}</span>${trackPill(u.track)}<span class="tag">${dc}/${LESSONS.length} محطات</span></div>
+                <h3 class="u-title">${u.emoji} ${esc(u.titleAr)}</h3>
+                <div class="u-de">${D(u.titleDe)}</div>
+                <p class="u-desc">${esc(u.descAr)}</p>
+                <div class="u-topics">${topics}</div>
+                <div class="stations">${stations}</div>
+                ${!unlocked ? `<button class="unlock-link" type="button" data-act="open-all">عندي خبرة — افتح كل وحدات ${L}</button>` : ''}
+                ${isAdminUser && unlocked ? `<button class="unlock-link" type="button" data-regen="${u.index}">أدمن: إعادة توليد الوحدة</button>` : ''}
+            </div>
+            <div class="split-art">${art(u.art.length > 1 ? u.art : u.art[0], 200)}</div>
+        </div></article>`;
+    }).join('') || '<div class="empty">مفيش وحدات في التصنيف ده.</div>';
+}
+function uniqTracks(plan) { return ['talk', 'life', 'nurse'].filter(t => plan.units.some(u => u.track === t)); }
+
+document.addEventListener('click', async e => {
+    const f = e.target.closest('[data-filter]');
+    if (f) { S.filter = f.getAttribute('data-filter'); renderPath(); return; }
+    const o = e.target.closest('[data-open]');
+    if (o) { const [n, lid] = o.getAttribute('data-open').split(':'); openLesson(S.level, parseInt(n, 10), lid); return; }
+    const act = e.target.closest('[data-act]')?.getAttribute('data-act');
+    if (act === 'retry-plan') loadPlan(S.level, true);
+    if (act === 'open-all') { prog.open[S.level] = true; saveProg(); renderPath(); }
+    if (act === 'warm-level') warmLevel(S.level);
+    if (act === 'regen-plan') regenPlan(S.level);
+    const r = e.target.closest('[data-regen]');
+    if (r) regenUnit(S.level, parseInt(r.getAttribute('data-regen'), 10));
+});
+
+/* ---------- قواعد المستوى (المرجع + ما أضافه الموديل) ---------- */
+function renderGrammarOverview() {
+    const L = S.level, sy = S.syll[L], plan = S.plans[L];
+    const list = $('#gList');
+    if (!sy) { list.innerHTML = '<div class="empty">تعذر تحميل قواعد المستوى.</div>'; return; }
+    const unitOf = {}; const extras = [];
+    if (plan) plan.units.forEach(u => u.grammar.forEach(g => { if (g.id) (unitOf[g.id] = unitOf[g.id] || []).push(u); else extras.push({ g, u }); }));
+    const row = (n, g, units) => {
+        const ok = units && units.length && units.every(u => isDone(L, u.index, 'g'));
+        const where = units && units.length ? 'تُدرَّس في: ' + units.map(u => `<a href="#unit-${u.index}">وحدة ${u.index}</a>`).join('، ') : (plan ? '' : 'هتتحدد وحدتها لما الخطة تجهز');
+        return `<div class="g-item"><span class="n">${n}</span><div><h4>${D(g.de)}</h4><p>${esc(g.ar)}${g.note ? ' — ' + esc(g.note) : ''}</p><p style="font-size:14px">${where}</p></div><span class="st" title="${ok ? 'اتعلّمت' : 'لسه'}">${ok ? '✅' : ''}</span></div>`;
+    };
+    let n = 0;
+    list.innerHTML = sy.grammar.map(g => row(++n, g, unitOf[g.id])).join('') +
+        extras.map(({ g, u }) => `<div class="g-item"><span class="n">＋</span><div><h4>${D(g.de)} <span class="tag talk" style="margin-inline-start:8px">إضافة من المعلم</span></h4><p>${esc(g.ar)}</p><p style="font-size:14px">تُدرَّس في: <a href="#unit-${u.index}">وحدة ${u.index}</a></p></div><span class="st"></span></div>`).join('');
+}
+
+/* ---------- أدوات الأدمن ---------- */
+async function warmLevel(L) {
+    const st = $('#warmStatus'); const plan = S.plans[L]; if (!plan) return;
+    for (const u of plan.units) {
+        st.textContent = `بيجهّز وحدة ${u.index} من ${plan.units.length}...`;
+        try { S.units[`${L}:${u.index}`] = await loadUnit(L, u.index, () => {}); } catch (e) { st.textContent = `وقف عند وحدة ${u.index}: ${e.message}`; return; }
+    }
+    st.textContent = 'تم تجهيز كل الوحدات ✅';
+}
+async function regenUnit(L, n) {
+    if (!confirm(`هيتم مسح محتوى وحدة ${n} وإعادة توليده من الذكاء الاصطناعي عند أول فتح. متأكد؟`)) return;
+    try { await api(`/api/german-pro/curriculum/${L}/unit/${n}/regenerate`, { method: 'POST' }); delete S.units[`${L}:${n}`]; alert('اتمسحت — هتتولّد من جديد عند فتحها.'); } catch (e) { alert('خطأ: ' + e.message); }
+}
+async function regenPlan(L) {
+    if (!confirm(`ده هيمسح خطة ${L} ودروسها كلها ويبنيها من جديد. متأكد؟`)) return;
+    try { await api(`/api/german-pro/curriculum/${L}/plan/regenerate`, { method: 'POST', body: JSON.stringify({ confirm: true }) }); S.plans[L] = null; Object.keys(S.units).forEach(k => k.startsWith(L + ':') && delete S.units[k]); loadPlan(L, true); } catch (e) { alert('خطأ: ' + e.message); }
+}
+
+/* ====================== الدروس: تحميل الوحدة + بناء الخطوات + التمارين ====================== */
+async function loadUnit(L, n, onStatus) {
+    const k = `${L}:${n}`;
+    if (S.units[k]) return S.units[k];
+    let fails = 0, planTried = false;
+    for (let i = 0; i < 40; i++) {
+        try {
+            const r = await api(`/api/german-pro/curriculum/${L}/unit/${n}`);
+            if (r.ready) { S.units[k] = r.unit; return r.unit; }
+            onStatus && onStatus(r.pending || []);
+            await sleep(r.retryAfterMs || 1500);
+        } catch (e) {
+            if (e.code === 'plan_missing' && !planTried) { planTried = true; const d = await api(`/api/german-pro/curriculum/${L}/plan`); S.plans[L] = d.plan; continue; }
+            if (++fails > 3) throw e;
+            await sleep(2500 * fails);
+        }
+    }
+    throw new Error('التجهيز أخد وقت أطول من المتوقع — جرّب تاني بعد لحظات.');
+}
+
+/* ---------- نصوص وتطبيع ---------- */
+const stripPunct = s => String(s).replace(/[.,!?;:"“”«»()]/g, ' ');
+const norm = s => stripPunct(s).toLowerCase().replace(/ß/g, 'ss').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/\s+/g, ' ').trim();
+function lev(a, b) {
+    const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+    let prev = Array.from({ length: n + 1 }, (_, i) => i);
+    for (let i = 1; i <= m; i++) { const cur = [i]; for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur; }
+    return prev[n];
+}
+function typeMatch(user, answers) {
+    const u = norm(user); if (!u) return null;
+    for (const a of answers) { const na = norm(a); if (u === na) return 'exact'; }
+    for (const a of answers) { const na = norm(a); if (/^(der|die|das) /.test(na) && u === na.slice(4)) return 'noart'; }
+    for (const a of answers) { const na = norm(a); if (na.length >= 6 && lev(u, na) <= 1) return 'typo'; }
+    return null;
+}
+const artOf = de => (/^(der|die|das) /.exec(de) || [])[1] || '';
+const bare = de => de.replace(/^(der|die|das) /, '');
+
+/* ---------- توليد تمارين الكلمات تلقائيًا من المفردات ---------- */
+function wordSteps(unit, words) {
+    const all = unit.vocab, steps = [], ex = [];
+    const others = (w, n, key) => shuffle(all.filter(x => x.de !== w.de)).slice(0, n).map(x => x[key]);
+    const mk = (opts, a) => { const o = shuffle(opts); return { opts: o, a: o.indexOf(a) }; };
+    words.forEach(w => steps.push({ t: 'teach', w }));
+    if (words.length >= 4) ex.push({ t: 'match', p: 'طابق الكلمة بمعناها', pairs: shuffle(words).slice(0, 5).map(w => [w.de, w.ar]) });
+    words.forEach((w, i) => {
+        const de2ar = i % 2 === 0;
+        const d = others(w, 3, de2ar ? 'ar' : 'de');
+        if (d.length >= 2) {
+            const m = mk([de2ar ? w.ar : w.de, ...d], de2ar ? w.ar : w.de);
+            ex.push({ t: 'mcq', p: 'اختار الترجمة الصحيحة', q: de2ar ? w.de : w.ar, qLang: de2ar ? 'de' : 'ar', optLang: de2ar ? 'ar' : 'de', ...m, expl: `${w.de} = ${w.ar}` });
+        }
+        if (w.emoji && all.length >= 4) { const m = mk([w.de, ...others(w, 3, 'de')], w.de); ex.push({ t: 'mcq', p: 'إيه الكلمة المناسبة للصورة؟', q: '', emoji: w.emoji, qLang: 'de', optLang: 'de', ...m, expl: `${w.de} = ${w.ar}` }); }
+        { const m = mk([w.de, ...others(w, 3, 'de')], w.de); ex.push({ t: 'listen', p: 'اسمع واختار الكلمة', text: w.de, opts: m.opts, a: m.a, expl: `${w.de} = ${w.ar}` }); }
+        if (artOf(w.de)) ex.push({ t: 'mcq', p: 'إيه الأداة الصحيحة؟', q: bare(w.de), qLang: 'de', optLang: 'de', opts: ['der', 'die', 'das'], a: ['der', 'die', 'das'].indexOf(artOf(w.de)), fixedOrder: true, expl: `${w.de} — ${w.ar}. احفظ الكلمة دايمًا مع أداتها.` });
+        if (i % 2 === 0) ex.push({ t: 'type', p: 'اكتب بالألمانية', q: w.ar, qLang: 'ar', a: w.de, alts: [bare(w.de)], expl: `${w.ar} = ${w.de}` });
+        if (w.ex && w.exAr && w.ex.split(' ').length <= 9) ex.push({ t: 'build', p: 'ترجم الجملة', q: w.exAr, a: w.ex, extra: [], alts: [], expl: w.ex });
+    });
+    let mixed = shuffle(ex.filter(e => e.t !== 'match'));
+    // منع تكرار نفس النوع ورا بعض قدر الإمكان + سقف للطول
+    const out = [];
+    while (mixed.length && out.length < 15) {
+        let k = mixed.findIndex(e => !out.length || e.t !== out[out.length - 1].t);
+        if (k < 0) k = 0;
+        out.push(mixed.splice(k, 1)[0]);
+    }
+    const m = ex.find(e => e.t === 'match');
+    return steps.concat(m ? [m] : [], out);
+}
+
+/* ---------- بناء خطوات الدرس ---------- */
+function expandExercises(list) {
+    const out = [];
+    (list || []).forEach(e => {
+        if (e.t === 'read') e.qs.forEach((q, i) => out.push({ ...q, passage: e.passage, firstOfPassage: i === 0 }));
+        else out.push(e);
+    });
+    return out;
+}
+function buildSteps(unit, lid) {
+    const half = Math.ceil(unit.vocab.length / 2);
+    if (lid === 'w1') return wordSteps(unit, unit.vocab.slice(0, half));
+    if (lid === 'w2') return wordSteps(unit, unit.vocab.slice(half));
+    if (lid === 'g') return [{ t: 'tip', grammar: unit.lesson.grammar }].concat(expandExercises(unit.gx));
+    const review = shuffle(unit.gx).slice(0, 3);
+    return [{ t: 'dlgview', dialogue: unit.lesson.dialogue }].concat(expandExercises(unit.rx), review);
+}
+
+/* ---------- جلسة الدرس ---------- */
+let SS = null;   // الجلسة الحالية
+let cur = null;  // السؤال الحالي
+const praises = ['ممتاز!', 'أحسنت!', 'رائع!', 'Sehr gut!', 'Super!', 'صح كده!'];
+
+async function openLesson(L, n, lid) {
+    stopAudio();
+    const el = $('#lesson'); el.classList.add('show'); document.body.classList.add('lesson-open');
+    $('#lessonBar').style.width = '0%'; $('#lessonXp').textContent = '0';
+    setFoot(null);
+    const inner = $('#lessonInner');
+    const cached = !!S.units[`${L}:${n}`];
+    inner.innerHTML = cached ? '' : `<div class="done-screen" style="padding-top:48px">${art('owl', 130, { mood: 'think', gear: 'grad' })}<h3 style="color:var(--color-charcoal);font-size:24px">المعلم بيجهّز الدرس...</h3><p id="lessonWait">أول مرة بس بتاخد لحظات.</p><div class="bar" style="width:260px"><i style="width:40%;animation:pulsebar 1.4s ease-in-out infinite alternate"></i></div></div>`;
+    let unit;
+    try {
+        unit = await loadUnit(L, n, pending => { const w = $('#lessonWait'); if (w) w.textContent = 'بيكتب: ' + pending.map(p => ({ vocab: 'الكلمات', lesson: 'شرح القاعدة والحوار', gx: 'تمارين القواعد', rx: 'تمارين المراجعة' }[p] || p)).join('، ') + '...'; });
+    } catch (e) {
+        inner.innerHTML = `<div class="done-screen" style="padding-top:48px">${art('owl', 120, { mood: 'sad' })}<h3 style="color:var(--color-charcoal);font-size:22px">مقدرناش نجهّز الدرس</h3><p>${esc(e.message)}</p><div class="cta-row"><button class="btn btn-primary" type="button" id="lessonRetry">حاول تاني</button><button class="btn btn-ghost" type="button" id="lessonExit">إغلاق</button></div></div>`;
+        $('#lessonRetry').onclick = () => openLesson(L, n, lid); $('#lessonExit').onclick = closeLesson;
+        return;
+    }
+    const steps = buildSteps(unit, lid);
+    SS = { L, n, lid, unit, queue: steps.map(s => ({ ...s })), total: steps.length, graded: 0, firstOk: 0, mistakes: 0, xp: 0, ended: false, gear: unit.track === 'nurse' ? 'nurse' : 'none' };
+    nextStep();
+}
+
+function closeLesson(force) {
+    if (SS && !SS.ended && !force && !confirm('لو خرجت دلوقتي هتفقد تقدّم الدرس ده. تخرج؟')) return;
+    stopAudio();
+    $('#lesson').classList.remove('show'); document.body.classList.remove('lesson-open'); SS = null; cur = null;
+    renderPath(); renderGrammarOverview(); updateTopStats(); renderBadges();
+}
+$('#lessonClose').addEventListener('click', () => closeLesson());
+
+function setBar() { const done = SS.total - SS.queue.length; $('#lessonBar').style.width = Math.max(0, Math.min(100, done / SS.total * 100)) + '%'; }
+function setFoot(mode, html) {
+    const f = $('#lessonFoot'); f.className = 'lesson-foot' + (mode ? ' ' + mode : '');
+    $('#footInner').innerHTML = html || '';
+}
+const speakerHTML = (text, mood = 'happy') => `<div class="speaker">${art('owl', 96, { mood, gear: SS.gear })}<div class="bubble">${esc(text)}</div></div>`;
+const INFO = new Set(['teach', 'tip', 'dlgview']);
+
+function nextStep() {
+    stopAudio();
+    if (!SS.queue.length) return finishLesson();
+    setBar();
+    const step = SS.queue[0];
+    cur = { step, ready: false, value: null, locked: false, check: null, skip: false };
+    const inner = $('#lessonInner');
+    const r = (RENDER[step.t] || RENDER.unknown)(step, cur);
+    inner.innerHTML = r.html;
+    inner.parentElement.scrollTop = 0;
+    if (INFO.has(step.t)) {
+        setFoot(null, `<button class="btn btn-primary" style="margin-inline-start:auto" type="button" id="footGo">متابعة</button>`);
+        $('#footGo').onclick = () => { SS.queue.shift(); nextStep(); };
+        $('#footGo').focus();
+    } else {
+        const skip = step.t === 'speak' ? `<button class="btn btn-ghost skip" type="button" id="footSkip">تخطّي</button>` : '';
+        setFoot(null, `${skip}<button class="btn btn-primary" style="margin-inline-start:auto" type="button" id="footGo" disabled>تحقق</button>`);
+        $('#footGo').onclick = doCheck;
+        if ($('#footSkip')) $('#footSkip').onclick = () => { cur.skip = true; SS.queue.shift(); nextStep(); };
+    }
+    r.init && r.init(inner);
+}
+function setReady(v) { cur.ready = v; const b = $('#footGo'); if (b && !cur.locked) b.disabled = !v; }
+
+function doCheck() {
+    if (!cur || cur.locked || !cur.ready) return;
+    cur.locked = true;
+    const res = cur.check(); // { ok, right, note, noRetry }
+    const step = cur.step;
+    SS.graded += step.isRetry ? 0 : 1;
+    if (res.ok) { if (!step.isRetry) { SS.firstOk++; SS.xp += 10; } else SS.xp += 2; $('#lessonXp').textContent = SS.xp; SS.queue.shift(); }
+    else {
+        SS.mistakes++; SS.queue.shift();
+        if (!res.noRetry && (step.retry || 0) < 2) SS.queue.push({ ...step, retry: (step.retry || 0) + 1, isRetry: true });
+    }
+    setBar();
+    const mood = res.ok ? 'cheer' : 'sad';
+    const head = res.ok ? praises[Math.floor(Math.random() * praises.length)] : 'الإجابة الصحيحة:';
+    const body = (res.ok ? '' : `<span class="g">${res.right || ''}</span> `) + (res.note ? esc(res.note) : '') + (!res.ok && step.expl ? `<br>${esc(step.expl)}` : (res.ok && step.expl && step.t !== 'teach' ? `<br><span style="font-size:14px">${esc(step.expl)}</span>` : ''));
+    setFoot(res.ok ? 'ok' : 'bad', `<div class="fb">${art('owl', 64, { mood })}<div><h4>${head}</h4><p>${body}</p></div></div>
+        <button class="icon-btn" type="button" id="footReport" title="بلّغ عن خطأ في التمرين" aria-label="بلّغ عن خطأ"><i class="fas fa-flag"></i></button>
+        <button class="btn btn-primary" type="button" id="footNext">متابعة</button>`);
+    $('#footNext').onclick = nextStep; $('#footNext').focus();
+    $('#footReport').onclick = () => reportStep(step);
+}
+document.addEventListener('keydown', e => {
+    if (!SS || !$('#lesson').classList.contains('show')) return;
+    if (e.key === 'Enter' && !(e.target.tagName === 'TEXTAREA')) {
+        const next = $('#footNext'); if (next) { e.preventDefault(); next.click(); return; }
+        const go = $('#footGo'); if (go && !go.disabled) { e.preventDefault(); go.click(); }
+    }
+});
+async function reportStep(step) {
+    const note = prompt('إيه الغلط اللي لقيته؟ (اختياري)') ;
+    if (note === null) return;
+    try { await api('/api/german-pro/curriculum/report', { method: 'POST', body: JSON.stringify({ level: SS.L, unit: SS.n, part: SS.lid, note, snapshot: { ...step, passage: undefined } }) }); alert('وصل البلاغ للأدمن، شكرًا! 🙏'); } catch (e) { alert('تعذر إرسال البلاغ: ' + e.message); }
+}
+
+function finishLesson() {
+    SS.ended = true;
+    const acc = SS.graded ? Math.round(SS.firstOk / SS.graded * 100) : 100;
+    if (acc === 100) SS.xp += 10;
+    prog.xp += SS.xp;
+    prog.lessons[lkey(SS.L, SS.n, SS.lid)] = { acc, at: Date.now() };
+    if (SS.lid === 'w1' || SS.lid === 'w2') {
+        const half = Math.ceil(SS.unit.vocab.length / 2);
+        (SS.lid === 'w1' ? SS.unit.vocab.slice(0, half) : SS.unit.vocab.slice(half)).forEach(w => { prog.vocab[w.de] = { word: w.de, pl: w.pl, meaning: w.ar, exampleDe: w.ex, exampleAr: w.exAr, level: SS.L, unit: SS.n }; });
+    }
+    saveProg();
+    const unitDone = unitComplete(SS.L, SS.n);
+    $('#lessonBar').style.width = '100%';
+    fireConfetti(); playChime();
+    $('#lessonInner').innerHTML = `<div class="done-screen">${art('owl', 170, { mood: 'cheer', gear: SS.gear })}
+        <h2>${unitDone ? 'خلّصت الوحدة!' : 'أحسنت!'}</h2>
+        <p style="max-width:420px">${unitDone ? `كملت كل محطات وحدة «${esc(SS.unit.titleAr)}». استمر!` : `خلّصت محطة «${LESSONS.find(l => l.id === SS.lid).title}» من وحدة «${esc(SS.unit.titleAr)}».`}</p>
+        <div class="done-stats"><span class="stat"><small>نقاط</small><b dir="ltr">+${SS.xp}</b></span><span class="stat"><small>الدقة</small><b dir="ltr">${acc}%</b></span><span class="stat"><small>أخطاء</small><b>${SS.mistakes}</b></span></div></div>`;
+    setFoot(null, `<button class="btn btn-primary" style="margin-inline-start:auto" type="button" id="footGo">متابعة</button>`);
+    $('#footGo').onclick = () => closeLesson(true); $('#footGo').focus();
+}
+
+/* ====================== رسم الأنواع المختلفة من الأسئلة ====================== */
+const RENDER = {};
+RENDER.unknown = s => ({ html: `<div class="q-title">تمرين غير مدعوم (${esc(s.t)})</div>` });
+const optBtn = (o, i, lang, cls = '') => `<button class="opt ${lang === 'de' ? 'de-opt' : ''} ${cls}" type="button" data-i="${i}">${lang === 'de' ? D(o) : esc(o)}</button>`;
+const qBlock = (s) => {
+    let h = '';
+    if (s.passage && s.firstOfPassage) h += '';
+    if (s.passage) h += `<div class="passage"><h4>📖 ${esc(s.passage.title || 'اقرأ النص')} ${speakBtn(s.passage.de)}</h4><div class="g">${esc(s.passage.de)}</div><div class="a"><details><summary style="cursor:pointer;color:var(--color-spark-blue);font-weight:700">الترجمة</summary>${esc(s.passage.ar || '')}</details></div></div>`;
+    return h;
+};
+
+/* ---- تعليم كلمة ---- */
+RENDER.teach = s => {
+    const w = s.w, a = artOf(w.de);
+    return { html: `<div class="teach"><div class="q-sub">كلمة جديدة</div>
+        ${w.emoji ? `<div class="emoji-big">${w.emoji}</div>` : ''}
+        <div class="word">${a ? `<span class="art-chip ${a}">${a}</span>` : ''}<bdi lang="de" dir="ltr">${esc(a ? bare(w.de) : w.de)}</bdi>${speakBtn(w.de)}${slowBtn(w.de)}</div>
+        ${w.pl ? `<div class="q-sub">الجمع: ${D(w.pl)}</div>` : ''}
+        <div class="mean">${esc(w.ar)}</div>
+        ${w.ex ? `<div class="ex"><div class="g">${D(w.ex)}${speakBtn(w.ex)}</div><div style="font-size:15px">${esc(w.exAr || '')}</div></div>` : ''}</div>` };
+};
+
+/* ---- شرح القاعدة ---- */
+function grammarHTML(gr) {
+    const secs = (gr.sections || []).map(s => `<div>${s.headingAr ? `<h4 style="color:var(--color-charcoal);font-size:19px;margin-bottom:6px">${esc(s.headingAr)}</h4>` : ''}<p>${esc(s.textAr)}</p>
+        ${s.table ? `<table class="gtable"><thead><tr>${s.table.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${s.table.rows.map(r => `<tr>${r.map((c, i) => `<td class="${i === r.length - 1 ? 'hl' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>` : ''}
+        ${s.examples ? `<div class="exl" style="margin-top:10px">${s.examples.map(x => `<div class="r"><div class="g">${esc(x.de)}</div><div class="a">${esc(x.ar)}</div>${speakBtn(x.de)}</div>`).join('')}</div>` : ''}</div>`).join('');
+    const tips = (gr.tipsAr || []).length ? `<div class="callout"><b>💡 نصيحة</b><ul style="padding-inline-start:20px;margin-top:4px">${gr.tipsAr.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : '';
+    return { secs, tips };
+}
+RENDER.tip = s => {
+    const gr = s.grammar; const { secs, tips } = grammarHTML(gr);
+    prog.grammar[`${SS.L}:${SS.n}`] = { titleAr: gr.titleAr, titleDe: gr.titleDe, sections: gr.sections, level: SS.L, unit: SS.n, unitTitle: SS.unit.titleAr }; saveProg();
+    return { html: `<div class="tip"><div class="q-sub" style="text-align:start">قاعدة الوحدة</div><h3>${esc(gr.titleAr || SS.unit.titleAr)}</h3>${gr.titleDe ? `<div class="sub">${D(gr.titleDe)}</div>` : ''}${secs}${tips}</div>` };
+};
+
+/* ---- عرض الحوار ---- */
+RENDER.dlgview = s => {
+    const d = s.dialogue;
+    return { html: `<div class="q-title">${esc(d.titleAr || 'الحوار')}</div><div class="q-sub" style="text-align:start">اضغط على أي سطر عشان تسمعه. الترجمة تحت كل سطر.</div>
+        <div class="dlg-view">${d.lines.map(l => `<div class="dlg-line ${l.who === 'B' ? 'b' : ''}"><span class="who">${l.who}</span><div class="txt" data-say="${esc(l.de)}"><div class="g">${esc(l.de)}</div><div class="a">${esc(l.ar)}</div></div></div>`).join('')}</div>
+        <div class="cta-row" style="justify-content:center"><button class="btn btn-outline btn-sm" type="button" id="playAll"><i class="fas fa-play"></i> اسمع الحوار كله</button></div>`,
+        init: root => { $('#playAll', root).onclick = async () => { for (const l of d.lines) { if (!SS || cur.step !== s) return; await new Promise(res => { speak(l.de); const t = setInterval(() => { if (!currentAudio && !(window.speechSynthesis && speechSynthesis.speaking)) { clearInterval(t); res(); } }, 300); setTimeout(() => { clearInterval(t); res(); }, 9000); }); await sleep(300); } }; } };
+};
+
+/* ---- اختيار من متعدد (يشمل الصور والأدوات والقراءة) ---- */
+RENDER.mcq = s => {
+    const order = s.fixedOrder ? s.opts.map((_, i) => i) : shuffle(s.opts.map((_, i) => i));
+    const lang = s.optLang || 'de';
+    const main = s.q ? `<div class="q-main ${s.qLang === 'de' ? 'de' : ''}">${s.qLang === 'de' ? D(s.q) : esc(s.q)}${s.qLang === 'de' && s.q.split(' ').length <= 12 ? ' ' + speakBtn(s.q) : ''}</div>` : '';
+    return { html: `${qBlock(s)}${speakerHTML(s.p || 'اختار الإجابة الصحيحة')}${s.emoji ? `<div class="emoji-big">${s.emoji}</div>` : ''}${main}
+        <div class="opts ${s.opts.length === 3 && s.fixedOrder ? '' : ''} ${s.opts.length === 4 && lang === 'de' ? 'cols2' : ''}">${order.map(i => optBtn(s.opts[i], i, lang)).join('')}</div>`,
+        init: root => {
+            $$('.opt', root).forEach(b => b.onclick = () => { if (cur.locked) return; $$('.opt', root).forEach(x => x.classList.remove('sel')); b.classList.add('sel'); cur.value = +b.dataset.i; setReady(true); });
+            cur.check = () => {
+                $$('.opt', root).forEach(x => { x.disabled = true; const i = +x.dataset.i; if (i === s.a) x.classList.add('ok'); else if (i === cur.value) x.classList.add('bad'); x.classList.remove('sel'); });
+                return { ok: cur.value === s.a, right: lang === 'de' ? esc(s.opts[s.a]) : esc(s.opts[s.a]) };
+            };
+        } };
+};
+RENDER.pic = RENDER.mcq;
+
+/* ---- صح / خطأ ---- */
+RENDER.tf = s => ({
+    html: `${qBlock(s)}${speakerHTML(s.p || 'صح أم خطأ؟')}<div class="q-main de">${D(s.q)} ${speakBtn(s.q)}</div>${s.qAr ? `<div class="q-sub">${esc(s.qAr)}</div>` : ''}
+        <div class="opts cols2"><button class="opt" type="button" data-v="1">صح ✔</button><button class="opt" type="button" data-v="0">خطأ ✘</button></div>`,
+    init: root => {
+        $$('.opt', root).forEach(b => b.onclick = () => { if (cur.locked) return; $$('.opt', root).forEach(x => x.classList.remove('sel')); b.classList.add('sel'); cur.value = b.dataset.v === '1'; setReady(true); });
+        cur.check = () => { $$('.opt', root).forEach(x => { x.disabled = true; const v = x.dataset.v === '1'; if (v === s.a) x.classList.add('ok'); else if (v === cur.value) x.classList.add('bad'); x.classList.remove('sel'); }); return { ok: cur.value === s.a, right: s.a ? 'صح ✔' : 'خطأ ✘' }; };
+    } });
+
+/* ---- إكمال جملة ---- */
+RENDER.fill = s => {
+    const parts = s.s.split('___');
+    return { html: `${speakerHTML(s.p || 'اختار الكلمة الصحيحة')}<div class="sentence">${esc(parts[0])}<span class="blank" id="blank">&nbsp;&nbsp;&nbsp;</span>${esc(parts[1] || '')}</div>${s.sAr ? `<div class="q-sub">${esc(s.sAr)}</div>` : ''}
+        <div class="opts ${s.opts.length === 4 ? 'cols2' : ''}">${shuffle(s.opts.map((_, i) => i)).map(i => optBtn(s.opts[i], i, 'de')).join('')}</div>`,
+        init: root => {
+            const bl = $('#blank', root);
+            $$('.opt', root).forEach(b => b.onclick = () => { if (cur.locked) return; $$('.opt', root).forEach(x => x.classList.remove('sel')); b.classList.add('sel'); cur.value = +b.dataset.i; bl.textContent = s.opts[cur.value]; setReady(true); });
+            cur.check = () => { $$('.opt', root).forEach(x => { x.disabled = true; const i = +x.dataset.i; if (i === s.a) x.classList.add('ok'); else if (i === cur.value) x.classList.add('bad'); x.classList.remove('sel'); }); const ok = cur.value === s.a; bl.classList.add(ok ? 'ok' : 'bad'); return { ok, right: `${esc(s.s.replace('___', s.opts[s.a]))}` }; };
+        } };
+};
+
+/* ---- ترجمة/ترتيب بالكلمات ---- */
+RENDER.build = s => {
+    const tokens = s.a.split(' ').filter(Boolean);
+    const bankItems = shuffle([...tokens.map((t, i) => ({ t, i })), ...(s.extra || []).map((t, k) => ({ t, i: 100 + k }))]);
+    const isOrder = s.t === 'order';
+    return { html: `${speakerHTML(s.p || (isOrder ? 'رتّب الكلمات' : 'ترجم الجملة'))}${s.q ? `<div class="q-main" style="font-size:24px">${esc(s.q)}</div>` : ''}${isOrder ? `<div style="text-align:center">${speakBtn(s.a)}</div>` : ''}
+        <div class="build-area" id="area" aria-label="إجابتك"></div><div class="bank" id="bank">${bankItems.map(b => `<button class="tok" type="button" data-k="${b.i}">${esc(b.t)}</button>`).join('')}</div>`,
+        init: root => {
+            const area = $('#area', root), bank = $('#bank', root); const placed = [];
+            const draw = () => { area.innerHTML = placed.map(p => `<button class="tok" type="button" data-p="${p.i}">${esc(p.t)}</button>`).join(''); $$('.tok', bank).forEach(b => b.classList.toggle('used', placed.some(p => String(p.i) === b.dataset.k))); setReady(placed.length > 0); };
+            bank.onclick = e => { const b = e.target.closest('.tok'); if (!b || cur.locked || b.classList.contains('used')) return; const it = bankItems.find(x => String(x.i) === b.dataset.k); placed.push(it); draw(); };
+            area.onclick = e => { const b = e.target.closest('.tok'); if (!b || cur.locked) return; const k = placed.findIndex(p => String(p.i) === b.dataset.p); if (k >= 0) { placed.splice(k, 1); draw(); } };
+            cur.check = () => {
+                const user = norm(placed.map(p => p.t).join(' '));
+                const ok = [s.a, ...(s.alts || [])].some(a => norm(a) === user);
+                $$('.tok', root).forEach(b => b.disabled = true);
+                return { ok, right: esc(s.a) };
+            };
+        } };
+};
+RENDER.order = RENDER.build;
+
+/* ---- كتابة ---- */
+RENDER.type = s => ({
+    html: `${speakerHTML(s.p || 'اكتب بالألمانية')}<div class="q-main ${s.qLang === 'de' ? 'de' : ''}">${s.qLang === 'de' ? D(s.q) : esc(s.q)}</div><input class="ans-in" id="ans" type="text" lang="de" dir="ltr" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="اكتب هنا...">
+        <div class="q-sub">ممكن تكتب ä = ae و ö = oe و ü = ue و ß = ss</div>`,
+    init: root => {
+        const inp = $('#ans', root); setTimeout(() => inp.focus(), 50);
+        inp.oninput = () => setReady(inp.value.trim().length > 0);
+        cur.check = () => {
+            const m = typeMatch(inp.value, [s.a, ...(s.alts || [])]);
+            inp.disabled = true; inp.classList.add(m ? 'ok' : 'bad');
+            const note = m === 'typo' ? 'قريب جدًا! فيه حرف غلط بسيط.' : (m === 'noart' && artOf(s.a) ? `تمام، بس لازم تكتب الأداة: ${s.a}` : '');
+            return { ok: !!m, right: esc(s.a), note };
+        };
+    } });
+RENDER.dict = s => ({
+    html: `${speakerHTML(s.p || 'اسمع واكتب اللي سمعته')}<div style="display:flex;gap:12px;justify-content:center"><button class="icon-btn" style="width:72px;height:72px;font-size:28px" type="button" data-say="${esc(s.text)}" aria-label="استمع"><i class="fas fa-volume-high"></i></button><button class="icon-btn" style="width:72px;height:72px;font-size:26px" type="button" data-say="${esc(s.text)}" data-slow="1" aria-label="استمع ببطء">🐢</button></div>
+        <input class="ans-in" id="ans" type="text" lang="de" dir="ltr" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="اكتب اللي سمعته...">`,
+    init: root => {
+        const inp = $('#ans', root); setTimeout(() => { speak(s.text); inp.focus(); }, 250);
+        inp.oninput = () => setReady(inp.value.trim().length > 0);
+        cur.check = () => { const m = typeMatch(inp.value, [s.text]); const u = norm(inp.value), a = norm(s.text); const close = !m && a.length >= 8 && lev(u, a) <= 1; inp.disabled = true; inp.classList.add(m || close ? 'ok' : 'bad'); return { ok: !!m || close, right: esc(s.text), note: (m === 'typo' || close) ? 'قريب جدًا! راجع الإملاء.' : (s.ar ? s.ar : '') }; };
+    } });
+
+/* ---- استماع واختيار ---- */
+RENDER.listen = s => ({
+    html: `${speakerHTML(s.p || 'اسمع واختار اللي سمعته')}<div style="display:flex;gap:12px;justify-content:center"><button class="icon-btn" style="width:84px;height:84px;font-size:32px" type="button" data-say="${esc(s.text)}" aria-label="استمع"><i class="fas fa-volume-high"></i></button><button class="icon-btn" style="width:84px;height:84px;font-size:28px" type="button" data-say="${esc(s.text)}" data-slow="1" aria-label="استمع ببطء">🐢</button></div>
+        <div class="opts">${shuffle(s.opts.map((_, i) => i)).map(i => optBtn(s.opts[i], i, 'de')).join('')}</div>`,
+    init: root => {
+        setTimeout(() => speak(s.text), 250);
+        $$('.opt', root).forEach(b => b.onclick = () => { if (cur.locked) return; $$('.opt', root).forEach(x => x.classList.remove('sel')); b.classList.add('sel'); cur.value = +b.dataset.i; setReady(true); });
+        cur.check = () => { $$('.opt', root).forEach(x => { x.disabled = true; const i = +x.dataset.i; if (i === s.a) x.classList.add('ok'); else if (i === cur.value) x.classList.add('bad'); x.classList.remove('sel'); }); return { ok: cur.value === s.a, right: esc(s.opts[s.a]) }; };
+    } });
+
+/* ---- الخطأ في الجملة ---- */
+RENDER.err = s => {
+    const toks = s.s.split(' ').filter(Boolean);
+    return { html: `${speakerHTML(s.p || 'اضغط على الكلمة الغلط')}<div class="sentence" id="sent">${toks.map((t, i) => `<span class="wtok" data-i="${i}">${esc(t)}</span>`).join(' ')}</div>`,
+        init: root => {
+            $$('.wtok', root).forEach(w => w.onclick = () => { if (cur.locked) return; $$('.wtok', root).forEach(x => x.classList.remove('sel')); w.classList.add('sel'); cur.value = +w.dataset.i; setReady(true); });
+            cur.check = () => { $$('.wtok', root).forEach((x, i) => { x.classList.remove('sel'); if (i === s.w) x.classList.add('ok'); else if (i === cur.value) x.classList.add('bad'); }); const fixed = toks.map((t, i) => i === s.w ? s.fix : t).join(' '); return { ok: cur.value === s.w, right: esc(fixed) }; };
+        } };
+};
+
+/* ---- تصريف الفعل ---- */
+RENDER.conj = s => ({
+    html: `${speakerHTML(s.p || 'أكمل التصريف')}<div class="q-main de">${D(s.v)}</div><div class="conj">${s.rows.map((r, i) => `<span class="p">${esc(r[0])}</span>${s.hide.includes(i) ? `<input data-i="${i}" type="text" lang="de" autocomplete="off" autocapitalize="none" spellcheck="false">` : `<span class="fixed">${esc(r[1])}</span>`}`).join('')}</div>`,
+    init: root => {
+        const ins = $$('input', root); if (ins[0]) setTimeout(() => ins[0].focus(), 50);
+        const upd = () => setReady(ins.every(x => x.value.trim()));
+        ins.forEach(x => x.oninput = upd);
+        cur.check = () => {
+            let all = true;
+            ins.forEach(x => { const row = s.rows[+x.dataset.i][1]; const ok = row.split('/').some(a => norm(a) === norm(x.value)); if (!ok) all = false; x.disabled = true; x.classList.add(ok ? 'ok' : 'bad'); });
+            return { ok: all, right: s.rows.map(r => `${esc(r[0])} ${esc(r[1])}`).join(' • ') };
+        };
+    } });
+
+/* ---- تصنيف ---- */
+RENDER.sort = s => {
+    return { html: `${speakerHTML(s.p || 'صنّف الكلمات')}<div class="sortw" id="pool">${s.items.map((it, i) => `<button class="tok" type="button" data-i="${i}">${esc(it[0])}</button>`).join('')}</div>
+        <div class="buckets">${s.buckets.map((b, k) => `<div class="bucket" data-b="${k}" role="button" tabindex="0"><h5>${esc(b)}</h5><div class="in"></div></div>`).join('')}</div>`,
+        init: root => {
+            const pool = $('#pool', root); const where = {}; let sel = null;
+            const draw = () => {
+                pool.innerHTML = s.items.map((it, i) => where[i] === undefined ? `<button class="tok ${sel === i ? 'sel' : ''}" type="button" data-i="${i}" style="${sel === i ? 'border-color:var(--color-spark-blue);color:var(--color-spark-blue)' : ''}">${esc(it[0])}</button>` : '').join('');
+                $$('.bucket', root).forEach(bk => { bk.querySelector('.in').innerHTML = s.items.map((it, i) => where[i] === +bk.dataset.b ? `<button class="tok" type="button" data-r="${i}">${esc(it[0])}</button>` : '').join(''); });
+                setReady(Object.keys(where).length === s.items.length);
+            };
+            root.onclick = e => {
+                if (cur.locked) return;
+                const t = e.target.closest('.tok'); const bk = e.target.closest('.bucket');
+                if (t && t.dataset.i !== undefined && t.closest('#pool')) { sel = +t.dataset.i; draw(); return; }
+                if (t && t.dataset.r !== undefined) { delete where[+t.dataset.r]; draw(); return; }
+                if (bk && sel !== null) { where[sel] = +bk.dataset.b; sel = null; draw(); }
+            };
+            draw();
+            cur.check = () => { let all = true; $$('.bucket .tok', root).forEach(tk => { const i = +tk.dataset.r; const ok = where[i] === s.items[i][1]; if (!ok) all = false; tk.classList.add(ok ? 'ok' : 'bad'); tk.disabled = true; }); return { ok: all, right: s.buckets.map((b, k) => `${esc(b)}: ${s.items.filter(it => it[1] === k).map(it => esc(it[0])).join('، ')}`).join(' • ') }; };
+        } };
+};
+
+/* ---- حوار: اختار الرد ---- */
+RENDER.dlg = s => ({
+    html: `${speakerHTML(s.p || 'اختار الرد المناسب')}<div class="dlg-view">${s.lines.map(l => `<div class="dlg-line ${l[0] === 'B' ? 'b' : ''}"><span class="who">${esc(l[0])}</span><div class="txt" data-say="${esc(l[1])}"><div class="g">${esc(l[1])}</div></div></div>`).join('')}</div>
+        <div class="opts">${shuffle(s.opts.map((_, i) => i)).map(i => optBtn(s.opts[i], i, 'de')).join('')}</div>`,
+    init: root => {
+        $$('.opt', root).forEach(b => b.onclick = () => { if (cur.locked) return; $$('.opt', root).forEach(x => x.classList.remove('sel')); b.classList.add('sel'); cur.value = +b.dataset.i; setReady(true); });
+        cur.check = () => { $$('.opt', root).forEach(x => { x.disabled = true; const i = +x.dataset.i; if (i === s.a) x.classList.add('ok'); else if (i === cur.value) x.classList.add('bad'); x.classList.remove('sel'); }); return { ok: cur.value === s.a, right: esc(s.opts[s.a]) }; };
+    } });
+
+/* ---- مطابقة ---- */
+RENDER.match = s => {
+    const L = shuffle(s.pairs.map((p, i) => ({ t: p[0], i }))), R = shuffle(s.pairs.map((p, i) => ({ t: p[1], i })));
+    return { html: `${speakerHTML(s.p || 'طابق الكلمات')}<div class="match"><div class="col" id="mL">${L.map(x => `<button class="mopt de" type="button" data-i="${x.i}">${esc(x.t)}</button>`).join('')}</div><div class="col" id="mR">${R.map(x => `<button class="mopt" type="button" data-i="${x.i}">${esc(x.t)}</button>`).join('')}</div></div>`,
+        init: root => {
+            let left = null, matched = 0, wrong = 0;
+            cur.check = () => ({ ok: wrong === 0, right: s.pairs.map(p => `${esc(p[0])} = ${esc(p[1])}`).join(' • '), noRetry: true });
+            const pick = (col, b) => {
+                if (cur.locked || b.classList.contains('done')) return;
+                if (col === 'L') { $$('#mL .mopt', root).forEach(x => x.classList.remove('sel')); b.classList.add('sel'); left = b; if (b.dataset.i !== undefined) speak(s.pairs[+b.dataset.i][0]); return; }
+                if (!left) return;
+                if (left.dataset.i === b.dataset.i) { left.classList.add('done'); b.classList.add('done'); left = null; matched++; if (matched === s.pairs.length) { cur.ready = true; doCheck(); } }
+                else { wrong++; b.classList.add('bad'); const l = left; l.classList.add('bad'); setTimeout(() => { b.classList.remove('bad'); l.classList.remove('bad', 'sel'); }, 500); left = null; }
+            };
+            $('#mL', root).onclick = e => { const b = e.target.closest('.mopt'); if (b) pick('L', b); };
+            $('#mR', root).onclick = e => { const b = e.target.closest('.mopt'); if (b) pick('R', b); };
+        } };
+};
+
+/* ---- نطق (ميكروفون) ---- */
+RENDER.speak = s => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    return { html: `${speakerHTML(s.p || 'انطق الجملة')}<div class="speak-box"><div class="q-main de">${D(s.text)} ${speakBtn(s.text)}</div>${s.ar ? `<div class="q-sub">${esc(s.ar)}</div>` : ''}
+        ${SR ? `<button class="mic" id="mic" type="button" aria-label="ابدأ التسجيل"><i class="fas fa-microphone"></i></button><div class="q-sub" id="heard">اضغط الميكروفون وانطق الجملة</div>` : `<div class="callout">متصفحك مش بيدعم التعرّف على الصوت. اضغط «تخطّي».</div>`}</div>`,
+        init: root => {
+            if (!SR) return;
+            const mic = $('#mic', root), heard = $('#heard', root);
+            mic.onclick = () => {
+                if (cur.locked) return;
+                const rec = new SR(); rec.lang = 'de-DE'; rec.interimResults = false; rec.maxAlternatives = 3;
+                mic.classList.add('rec'); heard.textContent = 'بسمعك...';
+                rec.onresult = e => { const txt = e.results[0][0].transcript; cur.value = txt; heard.innerHTML = `سمعتك: ${D(txt)}`; setReady(true); };
+                rec.onerror = () => { heard.textContent = 'مسمعتش كويس — جرّب تاني أو اضغط «تخطّي».'; };
+                rec.onend = () => mic.classList.remove('rec');
+                try { rec.start(); } catch (e) { heard.textContent = 'تعذر تشغيل الميكروفون.'; }
+            };
+            cur.check = () => {
+                const a = norm(s.text).split(' '), u = norm(cur.value || '').split(' ');
+                const hit = a.filter(w => u.includes(w)).length / a.length;
+                return { ok: hit >= 0.7, right: esc(s.text), note: hit >= 0.7 ? '' : 'النطق محتاج تحسين — استمع للجملة وكرّر.', noRetry: true };
+            };
+        } };
+};
+
+/* ====================== المعلم (الشات) + الدفاتر + الإنجازات + التشغيل ====================== */
+let allVocabulary = [], allGrammarNotes = [];
+const chatEl = () => $('#chatContainer');
+
+function hideWelcome() { const w = $('#welcomeBox'); if (w) w.remove(); }
+function showWelcome() {
+    chatEl().innerHTML = `<div class="welcome" id="welcomeBox">${art('owl', 120, { gear: 'grad' })}<h3>Hallo! أنا معلمك للألمانية</h3><p>ابعت "ابدأ" وهعمل لك تقييم سريع، أو اسألني عن أي قاعدة أو كلمة أو موقف في المستشفى.</p>
+        <div class="sugg">${['ابدأ', 'اشرحلي Perfekt', 'حوار بين ممرضة ومريض', 'علّمني كلمات الأدوية'].map(t => `<button type="button" data-sugg="${esc(t)}">${esc(t)}</button>`).join('')}</div></div>`;
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-sugg]'); if (b) { $('#input').value = b.getAttribute('data-sugg'); send(); } });
 
 function addMessage(role, content) {
     hideWelcome();
-    const box = document.getElementById('chatContainer');
-    const wrap = document.createElement('div');
-    if (role === 'system') {
-        wrap.className = 'message system-note';
-        wrap.innerHTML = `<div class="msg-content"><div class="msg-bubble">${escapeHtml(content)}</div></div>`;
-    } else {
-        wrap.className = 'message ' + (role === 'user' ? 'user' : 'bot');
-        const avatar = role === 'user' ? '<i class="fas fa-user"></i>' : '🇩🇪';
-        const bubbleHtml = role === 'user' ? escapeHtml(content) : DOMPurify.sanitize(marked.parse(content));
-        const toolbar = role === 'bot'
-            ? `<div class="msg-toolbar">
-                 <button class="tts-btn" title="استماع للنطق"><i class="fas fa-volume-high"></i></button>
-                 <button class="copy-msg-btn" title="نسخ"><i class="fas fa-copy"></i></button>
-               </div>`
-            : '';
-        wrap.innerHTML = `
-            <div class="msg-avatar">${avatar}</div>
-            <div class="msg-content"><div class="msg-bubble">${bubbleHtml}</div>${toolbar}</div>
-        `;
-        // بنحط النص عن طريق خاصية JS مباشرة (مش HTML attribute) عشان أي علامات
-        // تنصيص أو رموز جوه رد الموديل متكسرش الـ HTML خالص.
-        const ttsBtn = wrap.querySelector('.tts-btn');
-        const copyBtn = wrap.querySelector('.copy-msg-btn');
-        if (ttsBtn) ttsBtn.addEventListener('click', () => speakText(ttsBtn, content));
-        if (copyBtn) copyBtn.addEventListener('click', () => copyMsg(copyBtn, content));
-    }
-    box.appendChild(wrap);
+    const div = document.createElement('div');
+    div.className = `message ${role === 'system' ? 'system-note' : role}`;
+    if (role === 'system') { div.innerHTML = `<div class="msg-bubble">${esc(content)}</div>`; chatEl().appendChild(div); chatEl().scrollTop = chatEl().scrollHeight; return; }
+    const avatar = role === 'user' ? '<i class="fas fa-user"></i>' : art('owl', 34);
+    let inner;
     if (role === 'bot') {
-        const tables = wrap.querySelectorAll('.msg-bubble table');
-        tables.forEach(t => {
-            const scrollDiv = document.createElement('div');
-            scrollDiv.className = 'table-scroll';
-            t.parentNode.insertBefore(scrollDiv, t);
-            scrollDiv.appendChild(t);
-        });
-        if (tables.length) wrap.classList.add('has-table');
+        inner = md(content);
+        const tmp = document.createElement('div'); tmp.innerHTML = inner;
+        tmp.querySelectorAll('table').forEach(t => { const w = document.createElement('div'); w.className = 'table-scroll'; t.parentNode.insertBefore(w, t); w.appendChild(t); });
+        inner = tmp.innerHTML;
+    } else inner = esc(content).replace(/\n/g, '<br>');
+    div.innerHTML = `<div class="msg-avatar">${avatar}</div><div><div class="msg-bubble">${inner}</div>${role === 'bot' ? `<div class="msg-toolbar"><button class="icon-btn" data-tts type="button" title="استمع"><i class="fas fa-volume-high"></i></button><button class="icon-btn" data-copy type="button" title="نسخ"><i class="fas fa-copy"></i></button></div>` : ''}</div>`;
+    if (role === 'bot') {
+        const bubble = div.querySelector('.msg-bubble');
+        div.querySelector('[data-tts]').onclick = ev => speak(bubble.innerText, ev.currentTarget);
+        div.querySelector('[data-copy]').onclick = async ev => { const b = ev.currentTarget; try { await navigator.clipboard.writeText(bubble.innerText); b.classList.add('copied'); b.innerHTML = '<i class="fas fa-check"></i>'; setTimeout(() => { b.classList.remove('copied'); b.innerHTML = '<i class="fas fa-copy"></i>'; }, 1500); } catch (e) { /* مفيش clipboard */ } };
     }
-    box.scrollTop = box.scrollHeight;
-    return wrap;
+    chatEl().appendChild(div); chatEl().scrollTop = chatEl().scrollHeight;
 }
+function showTyping() { hideWelcome(); const d = document.createElement('div'); d.id = 'typingRow'; d.className = 'message bot'; d.innerHTML = `<div class="msg-avatar">${art('owl', 34, { mood: 'think' })}</div><div class="typing-indicator"><span></span><span></span><span></span></div>`; chatEl().appendChild(d); chatEl().scrollTop = chatEl().scrollHeight; }
+function hideTyping() { $('#typingRow')?.remove(); }
 
-// -------- استماع للنطق — من السيرفر أساسًا (بيشتغل مع أي طالب على أي جهاز)،
-// مع نطق المتصفح كخطة بديلة صامتة لو السيرفر فشل لأي سبب --------
-let currentAudio = null;
-let ttsWarnedOnce = false;
-
-function sanitizeForSpeech(text) {
-    return text
-        .replace(/```[\s\S]*?```/g, '')
-        .replace(/\[[^\]]*\]/g, '')                        // شيل [IPA]
-        .replace(/\([^)]*[\u0600-\u06FF][^)]*\)/g, '')     // شيل أي قوس فيه عربي (النطق التقريبي)
-        .replace(/[*_#>`|]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
+function renderPlanMini(plan, level, currentUnitId) {
+    const box = $('#planMini');
+    if (!plan || !plan.length) { box.innerHTML = `<h4>خطة المعلم الشخصية</h4><p style="font-size:15px">هتظهر هنا بعد التقييم المبدئي مع المعلم.</p>`; return; }
+    const icon = s => s === 'done' ? '✅' : s === 'current' ? '📍' : '⚪';
+    box.innerHTML = `<h4>خطة المعلم الشخصية${level ? ` — ${esc(level)}` : ''}</h4>` + plan.map(u => `<div class="row ${u.id === currentUnitId ? 'active' : ''}"><span>${icon(u.status)}</span><span>${esc(u.title)}</span></div>`).join('');
+    if (level && DEFAULT_LEVELS.includes(String(level).toUpperCase())) serverLevel = String(level).toUpperCase();
+    renderBadges();
 }
+let serverLevel = '';
 
-async function speakText(btn, text) {
-    // إيقاف أي صوت شغال دلوقتي
-    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-    if ('speechSynthesis' in window) speechSynthesis.cancel();
-    document.querySelectorAll('.tts-btn.speaking').forEach(b => b.classList.remove('speaking'));
-
-    const clean = sanitizeForSpeech(text);
-    if (!clean) return;
-
-    btn.classList.add('speaking');
-    btn.disabled = true;
-
+async function chatInit(silent) {
     try {
-        const resp = await fetch(API + '/api/german-pro/tts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ text: clean })
-        });
-        if (!resp.ok) throw new Error('server-tts-failed');
-
-        const blob = await resp.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audio.playbackRate = 0.8; // السيرفر بيبعت الصوت بأبطأ وضع متاح عنده أصلاً؛
-                                   // البطء الإضافي ده بيتحكم فيه المتصفح نفسه فوق الصوت الجاهز
-        currentAudio = audio;
-        audio.onended = () => { btn.classList.remove('speaking'); btn.disabled = false; URL.revokeObjectURL(url); currentAudio = null; };
-        audio.onerror = () => { btn.classList.remove('speaking'); btn.disabled = false; URL.revokeObjectURL(url); currentAudio = null; };
-        await audio.play();
-    } catch (e) {
-        // فشل السيرفر (شبكة/ضغط مؤقت) — نجرّب نطق المتصفح كحل بديل بدل ما نسيب
-        // الطالب من غير صوت خالص
-        speakWithBrowserFallback(btn, clean);
-    } finally {
-        btn.disabled = false;
-    }
+        const data = await api('/api/german-pro/state');
+        allVocabulary = data.vocabulary || []; allGrammarNotes = data.grammarNotes || [];
+        renderPlanMini(data.plan, data.level, data.currentUnitId);
+        renderNotebooks();
+        if (!silent && data.history && data.history.length) { hideWelcome(); data.history.forEach(m => addMessage(m.role === 'user' ? 'user' : 'bot', m.content)); }
+    } catch (e) { if (!silent) addMessage('system', 'تعذر تحميل حالتك مع المعلم: ' + e.message); }
 }
-
-let cachedVoices = [];
-function warmUpVoices() {
-    if (!('speechSynthesis' in window)) return;
-    cachedVoices = speechSynthesis.getVoices();
-    speechSynthesis.onvoiceschanged = () => { cachedVoices = speechSynthesis.getVoices(); };
+async function send() {
+    const input = $('#input'); const text = input.value.trim(); if (!text) return;
+    input.value = ''; autoGrow(input); $('#sendBtn').disabled = true;
+    addMessage('user', text); showTyping();
+    try {
+        const data = await api('/api/german-pro/message', { method: 'POST', body: JSON.stringify({ message: text }) });
+        hideTyping(); addMessage('bot', data.reply);
+        allVocabulary = data.vocabulary || allVocabulary; allGrammarNotes = data.grammarNotes || allGrammarNotes;
+        renderNotebooks(); renderPlanMini(data.plan, data.level, data.currentUnitId);
+        if (data.metaParsed === false) setTimeout(() => chatInit(true), 300);
+    } catch (e) { hideTyping(); addMessage('system', 'حصل خطأ: ' + e.message); }
+    finally { $('#sendBtn').disabled = false; input.focus(); }
 }
-warmUpVoices();
+function autoGrow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
 
-function speakWithBrowserFallback(btn, clean) {
-    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
-        if (!ttsWarnedOnce) { ttsWarnedOnce = true; alert('تعذر تشغيل الصوت من السيرفر ومتصفحك مش بيدعم نطق بديل. جرّب تاني كمان شوية.'); }
-        btn.classList.remove('speaking');
-        return;
-    }
-    const utter = new SpeechSynthesisUtterance(clean);
-    utter.lang = 'de-DE';
-    utter.rate = 0.58;
-    const deVoice = cachedVoices.find(v => v.lang === 'de-DE') || cachedVoices.find(v => v.lang && v.lang.startsWith('de'));
-    if (deVoice) utter.voice = deVoice;
-    utter.onend = () => btn.classList.remove('speaking');
-    utter.onerror = () => {
-        btn.classList.remove('speaking');
-        if (!ttsWarnedOnce) {
-            ttsWarnedOnce = true;
-            alert('تعذر تشغيل الصوت دلوقتي (من السيرفر ومن الجهاز). جرّب تاني بعد شوية.');
-        }
-    };
-    speechSynthesis.speak(utter);
+/* ---------- الدفاتر (شات المعلم + دروس المنهج) ---------- */
+const localVocab = () => Object.values(prog.vocab);
+const localGrammar = () => Object.values(prog.grammar);
+function renderNotebooks() {
+    const lv = localVocab(), gv = localGrammar();
+    const vocabAll = [...lv.map(v => ({ ...v, src: 'course' })), ...allVocabulary.filter(v => !prog.vocab[v.word]).map(v => ({ ...v, src: 'teacher' }))];
+    $('#vocabCount').textContent = vocabAll.length; $('#grammarCount').textContent = gv.length + allGrammarNotes.length;
+    const vb = $('#vocabPanelBody');
+    vb.innerHTML = vocabAll.length ? vocabAll.slice().reverse().map(v => `<div class="vcard"><div class="w">${esc(v.word)} ${speakBtn(v.word)}${v.pl ? `<span style="font-size:14px;font-weight:700;color:var(--color-pencil-gray)">${esc(v.pl)}</span>` : ''}</div>${v.ipa ? `<div class="x" style="border:none;padding:0;direction:ltr">${esc(v.ipa)}</div>` : ''}${v.meaning ? `<div class="m">${esc(v.meaning)}</div>` : ''}${v.exampleDe ? `<div class="x"><span class="g">${esc(v.exampleDe)} ${speakBtn(v.exampleDe)}</span>${v.exampleAr ? esc(v.exampleAr) : ''}</div>` : ''}</div>`).join('') : '<div class="empty">لسه مفيش مفردات — بتتجمع هنا تلقائيًا كل ما تخلّص محطة كلمات أو يعلّمك المعلم كلمة.</div>';
+    const gb = $('#grammarPanelBody');
+    const gcards = [...gv.slice().reverse().map(g => { const { secs, tips } = grammarHTML({ sections: g.sections, tipsAr: [] }); return `<div class="gcard"><h4>${esc(g.titleAr || g.titleDe || 'قاعدة')} <span class="tag">${esc(g.level)} · وحدة ${g.unit}</span></h4><div style="display:flex;flex-direction:column;gap:12px">${secs}</div></div>`; }),
+        ...allGrammarNotes.slice().reverse().map(g => `<div class="gcard"><h4>${esc(g.title)} <span class="tag talk">من المعلم</span></h4><div class="msg-bubble" style="border:none;padding:0">${md(g.explanation || '')}</div></div>`)];
+    gb.innerHTML = gcards.length ? gcards.join('') : '<div class="empty">لسه مفيش قواعد — بتتحفظ هنا تلقائيًا لما تفتح محطة «القاعدة» أو يشرحلك المعلم.</div>';
 }
+$('#vocabBtn').onclick = () => { renderNotebooks(); $('#vocabModal').classList.add('show'); };
+$('#grammarBtn').onclick = () => { renderNotebooks(); $('#grammarModal').classList.add('show'); };
+document.addEventListener('click', e => { const c = e.target.closest('[data-close]'); if (c) $('#' + c.getAttribute('data-close')).classList.remove('show'); if (e.target.classList?.contains('modal')) e.target.classList.remove('show'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $$('.modal.show').forEach(m => m.classList.remove('show')); });
 
-function copyMsg(btn, text) {
-    const clean = text.replace(/[*_#>`]/g, '');
-    navigator.clipboard.writeText(clean).then(() => {
-        btn.classList.add('copied');
-        setTimeout(() => btn.classList.remove('copied'), 1500);
-    });
-}
-
-function showTyping() {
-    hideWelcome();
-    const box = document.getElementById('chatContainer');
-    const wrap = document.createElement('div');
-    wrap.className = 'message bot';
-    wrap.id = 'typingRow';
-    wrap.innerHTML = `<div class="msg-avatar">🇩🇪</div><div class="msg-content"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
-    box.appendChild(wrap);
-    box.scrollTop = box.scrollHeight;
-}
-function hideTyping() { document.getElementById('typingRow')?.remove(); }
-
-// -------- دفتر المفردات (تراكمي — بيتحدّث تلقائي من كل رسالة) --------
-let allVocabulary = [];
-let allGrammarNotes = [];
-
-function renderVocabBook() {
-    document.getElementById('vocabCount').textContent = allVocabulary.length;
-    const body = document.getElementById('vocabPanelBody');
-    if (!allVocabulary.length) {
-        body.innerHTML = '<div class="vocab-empty">لسه مفيش مفردات محفوظة — هتتجمع تلقائي أول ما المعلم يعلّمك كلمة جديدة.</div>';
-        return;
-    }
-    body.innerHTML = allVocabulary.slice().reverse().map(v => `
-        <div class="vocab-card">
-            <div class="vc-word">${escapeHtml(v.word)} <button class="tts-btn" data-word="${escapeHtml(v.word)}" title="نطق الكلمة"><i class="fas fa-volume-high"></i></button></div>
-            ${v.ipa ? `<div class="vc-ipa">${escapeHtml(v.ipa)}</div>` : ''}
-            ${v.meaning ? `<div class="vc-meaning">${escapeHtml(v.meaning)}</div>` : ''}
-            ${v.exampleDe ? `<div class="vc-example"><span class="de"><button class="tts-btn" data-word="${escapeHtml(v.exampleDe)}" title="نطق الجملة"><i class="fas fa-volume-high"></i></button> ${escapeHtml(v.exampleDe)}</span>${v.exampleAr ? escapeHtml(v.exampleAr) : ''}</div>` : ''}
-        </div>
-    `).join('');
-    body.querySelectorAll('.tts-btn[data-word]').forEach(btn => {
-        btn.addEventListener('click', () => speakText(btn, btn.getAttribute('data-word')));
-    });
-}
-
-function renderGrammarBook() {
-    document.getElementById('grammarCount').textContent = allGrammarNotes.length;
-    const body = document.getElementById('grammarPanelBody');
-    body.className = 'vocab-panel-body grammar-list';
-    if (!allGrammarNotes.length) {
-        body.innerHTML = '<div class="vocab-empty">لسه مفيش قواعد محفوظة — هتتحفظ تلقائي كل ما المعلم يشرحلك قاعدة جديدة.</div>';
-        return;
-    }
-    body.innerHTML = allGrammarNotes.slice().reverse().map(g => `
-        <div class="grammar-card">
-            <h4>${escapeHtml(g.title)}</h4>
-            <div class="gc-body">${DOMPurify.sanitize(marked.parse(g.explanation || ''))}</div>
-        </div>
-    `).join('');
-}
-
-document.getElementById('vocabBtn')?.addEventListener('click', () => {
-    renderVocabBook();
-    document.getElementById('vocabModal').classList.add('show');
-});
-document.getElementById('grammarBtn')?.addEventListener('click', () => {
-    renderGrammarBook();
-    document.getElementById('grammarModal').classList.add('show');
-});
-document.getElementById('vocabModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'vocabModal') e.target.classList.remove('show');
-});
-document.getElementById('grammarModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'grammarModal') e.target.classList.remove('show');
-});
-
-// -------- تحميل PDF (عن طريق نافذة طباعة — بيدعم عربي/ألماني بشكل مثالي من غير مشاكل خطوط) --------
 function openPrintWindow(title, bodyHtml) {
     const win = window.open('', '_blank');
     if (!win) { alert('المتصفح منع فتح نافذة جديدة — اسمح بالنوافذ المنبثقة لهذا الموقع وحاول تاني.'); return; }
-    win.document.write(`
-        <!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${title}</title>
-        <style>
-            body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; padding: 30px; color: #111; direction: rtl; }
-            h1 { font-size: 20px; border-bottom: 3px solid #6366f1; padding-bottom: 10px; margin-bottom: 20px; }
-            .item { border: 1px solid #ddd; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; page-break-inside: avoid; }
-            .word { direction: ltr; text-align: left; font-size: 16px; font-weight: 800; color: #4f46e5; }
-            .ipa { direction: ltr; text-align: left; font-size: 11px; color: #666; margin-top: 2px; }
-            .meaning { font-weight: 700; margin-top: 6px; }
-            .example { font-size: 12px; color: #444; margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 6px; }
-            .example .de { direction: ltr; text-align: left; display: block; font-weight: 600; color: #111; }
-            h4 { color: #4f46e5; margin-bottom: 6px; }
-            table { border-collapse: collapse; width: 100%; direction: ltr; margin: 8px 0; }
-            th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: center; font-size: 12px; }
-            @media print { body { padding: 10px; } }
-        </style></head><body>
-        <h1>${title}</h1>
-        ${bodyHtml}
-        </body></html>
-    `);
+    win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${esc(title)}</title><style>
+        body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:30px;color:#4b4b4b;direction:rtl}
+        h1{font-size:22px;color:#58cc02;border-bottom:3px solid #58cc02;padding-bottom:10px;margin-bottom:20px}
+        .item{border:2px solid #afafaf;border-radius:12px;padding:12px 14px;margin-bottom:10px;page-break-inside:avoid}
+        .word{direction:ltr;text-align:left;font-size:17px;font-weight:800}.meaning{font-weight:700;margin-top:6px}
+        .example{font-size:13px;margin-top:6px;border-top:1px dashed #afafaf;padding-top:6px}.example .de{direction:ltr;text-align:left;display:block;font-weight:700}
+        h3{font-size:16px;margin:0 0 8px}table{border-collapse:collapse;direction:ltr;margin:8px 0}td,th{border:1px solid #afafaf;padding:5px 10px}
+        .foot{margin-top:24px;font-size:12px;color:#777;text-align:center}
+        </style></head><body><h1>${esc(title)}</h1>${bodyHtml}<div class="foot">German Pro — تم صنع بواسطة Ahmed Moussa Ahmed Hussin</div><script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script></body></html>`);
     win.document.close();
-    setTimeout(() => win.print(), 400);
+}
+$('#downloadVocabBtn').onclick = () => {
+    const lv = localVocab(), all = [...lv, ...allVocabulary.filter(v => !prog.vocab[v.word])];
+    if (!all.length) return alert('مفيش مفردات لسه.');
+    openPrintWindow('دفتر مفردات German Pro', all.map(v => `<div class="item"><div class="word">${esc(v.word)} ${v.pl ? '· ' + esc(v.pl) : ''}</div>${v.meaning ? `<div class="meaning">${esc(v.meaning)}</div>` : ''}${v.exampleDe ? `<div class="example"><span class="de">${esc(v.exampleDe)}</span>${esc(v.exampleAr || '')}</div>` : ''}</div>`).join(''));
+};
+$('#downloadGrammarBtn').onclick = () => {
+    const gv = localGrammar(); if (!gv.length && !allGrammarNotes.length) return alert('مفيش قواعد لسه.');
+    const local = gv.map(g => `<div class="item"><h3>${esc(g.titleAr || g.titleDe)} (${esc(g.level)} · وحدة ${g.unit})</h3>${(g.sections || []).map(s => `<p><b>${esc(s.headingAr || '')}</b><br>${esc(s.textAr)}</p>${s.table ? `<table><tr>${s.table.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr>${s.table.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table>` : ''}${(s.examples || []).map(x => `<div class="example"><span class="de">${esc(x.de)}</span>${esc(x.ar)}</div>`).join('')}`).join('')}</div>`).join('');
+    const teacher = allGrammarNotes.map(g => `<div class="item"><h3>${esc(g.title)}</h3>${md(g.explanation || '')}</div>`).join('');
+    openPrintWindow('دفتر قواعد German Pro', local + teacher);
+};
+
+/* ---------- إنجازات + إحصائيات ---------- */
+function updateTopStats() { $('#xpCount').textContent = prog.xp; }
+function renderBadges() {
+    const units = new Set(); Object.keys(prog.lessons).forEach(k => { const [L, n] = k.split(':'); if (unitComplete(L, +n)) units.add(L + ':' + n); });
+    const c = units.size, badges = [];
+    if (c >= 1) badges.push(['fa-star', 'أول وحدة']);
+    if (c >= 5) badges.push(['fa-medal', '5 وحدات']);
+    if (c >= 10) badges.push(['fa-trophy', '10 وحدات']);
+    if (c >= 20) badges.push(['fa-gem', '20 وحدة']);
+    const reachedB = Object.keys(prog.lessons).some(k => /^(B1|B2|C1):/.test(k)) || ['B1', 'B2', 'C1'].includes(serverLevel);
+    if (reachedB) badges.push(['fa-crown', 'وصلت B1+']);
+    if (prog.xp >= 500) badges.push(['fa-bolt', '500 نقطة']);
+    $('#badgesRow').innerHTML = badges.map(([i, l]) => `<span class="tag"><i class="fas ${i}"></i> ${l}</span>`).join('') || '<span style="font-size:14px">الإنجازات هتظهر هنا لما تخلّص أول وحدة.</span>';
 }
 
-document.getElementById('downloadVocabBtn')?.addEventListener('click', () => {
-    if (!allVocabulary.length) { alert('دفتر المفردات لسه فاضي.'); return; }
-    const html = allVocabulary.map(v => `
-        <div class="item">
-            <div class="word">${escapeHtml(v.word)}</div>
-            ${v.ipa ? `<div class="ipa">${escapeHtml(v.ipa)}</div>` : ''}
-            ${v.meaning ? `<div class="meaning">${escapeHtml(v.meaning)}</div>` : ''}
-            ${v.exampleDe ? `<div class="example"><span class="de">${escapeHtml(v.exampleDe)}</span>${v.exampleAr ? escapeHtml(v.exampleAr) : ''}</div>` : ''}
-        </div>
-    `).join('');
-    openPrintWindow('📘 دفتر مفردات German Pro', html);
-});
-
-document.getElementById('downloadGrammarBtn')?.addEventListener('click', () => {
-    if (!allGrammarNotes.length) { alert('دفتر القواعد لسه فاضي.'); return; }
-    const html = allGrammarNotes.map(g => `
-        <div class="item"><h4>${escapeHtml(g.title)}</h4>${DOMPurify.sanitize(marked.parse(g.explanation || ''))}</div>
-    `).join('');
-    openPrintWindow('🧩 دفتر قواعد German Pro', html);
-});
-
-async function init(silentRefresh) {
-    try {
-        const data = await api('/api/german-pro/state');
-        allVocabulary = data.vocabulary || [];
-        allGrammarNotes = data.grammarNotes || [];
-        renderPlan(data.plan, data.level, data.currentUnitId);
-        renderVocabBook();
-        renderGrammarBook();
-        if (!silentRefresh && data.history && data.history.length) {
-            hideWelcome();
-            data.history.forEach(m => addMessage(m.role === 'user' ? 'user' : 'bot', m.content));
-        }
-    } catch (e) {
-        if (!silentRefresh) addMessage('system', 'تعذر تحميل حالتك: ' + e.message);
-    }
+/* ---------- تشغيل ---------- */
+function startNext() {
+    const plan = S.plans[S.level];
+    if (!plan) { document.getElementById('path').scrollIntoView(); return; }
+    for (const u of plan.units) { if (!isUnlocked(S.level, u.index)) break; const lid = LESSONS.find(l => !isDone(S.level, u.index, l.id)); if (lid) return openLesson(S.level, u.index, lid.id); }
+    document.getElementById('path').scrollIntoView();
 }
-
-function autoGrow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
-function handleKeydown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
-
-async function send() {
-    const input = document.getElementById('input');
-    const text = input.value.trim();
-    if (!text) return;
-    input.value = '';
-    autoGrow(input);
-    document.getElementById('sendBtn').disabled = true;
-    addMessage('user', text);
-    showTyping();
-
-    try {
-        const data = await api('/api/german-pro/message', { method: 'POST', body: JSON.stringify({ message: text }) });
-        hideTyping();
-        addMessage('bot', data.reply);
-        allVocabulary = data.vocabulary || allVocabulary;
-        allGrammarNotes = data.grammarNotes || allGrammarNotes;
-        renderVocabBook();
-        renderGrammarBook();
-        renderPlan(data.plan, data.level, data.currentUnitId);
-        // لو رد المعلم اتقطع (حد الطول) وميتاداتاه معطلت، الخطة/التقدم بيفضلوا
-        // زي ما هما من غير تحديث في الرد ده — بنعيد نجيب الحالة الرسمية من
-        // السيرفر بهدوء عشان أي رسالة جاية تبدأ من الوضع الصح.
-        if (data.metaParsed === false) {
-            setTimeout(() => { init(true); }, 300);
-        }
-    } catch (e) {
-        hideTyping();
-        addMessage('system', 'حصل خطأ: ' + e.message);
-    } finally {
-        document.getElementById('sendBtn').disabled = false;
-        input.focus();
-    }
+async function boot() {
+    mountArt(); updateStreak(); updateTopStats(); renderBadges(); showWelcome(); renderLevelBand(); renderNotebooks();
+    $('#heroStart').onclick = startNext;
+    $('#sendBtn').onclick = send;
+    $('#input').addEventListener('input', e => autoGrow(e.target));
+    $('#input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+    $('#resetBtn').onclick = async () => { if (!confirm('هيتم مسح خطة المعلم وتقدّمك في الشات وتبدأ من الصفر — متأكد؟ (تقدمك في دروس المنهج مش هيتمسح)')) return; try { await api('/api/german-pro/reset', { method: 'POST' }); location.reload(); } catch (e) { alert('خطأ: ' + e.message); } };
+    $('#resetLocal').onclick = () => { if (!confirm('هيتم مسح تقدّمك ونقاطك ودفاترك في دروس المنهج على الجهاز ده. متأكد؟')) return; prog = { xp: 0, lessons: {}, vocab: {}, grammar: {}, open: {}, lastLevel: 'A1' }; saveProg(); location.reload(); };
+    try { const d = await api('/api/german-pro/curriculum/levels'); S.levels = d.levels; } catch (e) { /* نفضل على القيم الافتراضية */ }
+    const start = DEFAULT_LEVELS.includes(prog.lastLevel) ? prog.lastLevel : 'A1';
+    chatInit(false);
+    await selectLevel(start);
 }
+if (window.__gpBoot) boot();
 
 
-document.getElementById('resetBtn')?.addEventListener('click', async () => {
-    if (!confirm('هيتم مسح كل تقدمك وتبدأ من الصفر تاني — متأكد؟')) return;
-    try {
-        await api('/api/german-pro/reset', { method: 'POST' });
-        location.reload();
-    } catch (e) { alert('خطأ: ' + e.message); }
-});
-
-function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
 </script>
 </body>
 </html>
