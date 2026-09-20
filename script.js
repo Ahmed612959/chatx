@@ -2281,8 +2281,27 @@
 
             // صورة + طلب تعديل/إنشاء صورة مشابهة → نعرض كارت اختيار الموديل بدل تحليل الصورة العادي
             if (schoolToken && userMsg.image && rawTypedText) {
-                const imageIntent = detectImageEditIntent(rawTypedText);
+                // فهم النية بذكاء اصطناعي سريع (أي صياغة/لغة/برومبت) — مؤشر "بيكتب..." شغال في الأثناء
+                isGenerating = true;
+                setSendButtonState(true);
+                document.getElementById('typingIndicator').classList.add('active');
+                scrollToBottom();
+                let imageIntent = null;
+                try {
+                    imageIntent = (await classifyImageIntent(rawTypedText, abortController.signal)).intent;
+                } catch (e) {
+                    // الطالب ضغط إيقاف وإحنا لسه بنفهم طلبه
+                    isGenerating = false;
+                    abortController = null;
+                    setSendButtonState(false);
+                    document.getElementById('typingIndicator').classList.remove('active');
+                    pendingSkillContext = '';
+                    return;
+                }
                 if (imageIntent) {
+                    isGenerating = false;
+                    setSendButtonState(false);
+                    document.getElementById('typingIndicator').classList.remove('active');
                     pendingSkillContext = '';
                     await offerImageEditInChat(chat, userMsg, rawTypedText, imageIntent);
                     return;
@@ -10512,8 +10531,9 @@ ${r.pathSummary}
         // الصور العادي، بنعرض عليه كارت يختار منه الموديل (مع تنبيه إن العملية بتتحسب من
         // فرصه اليومية، أو إنها محاولته التجريبية الوحيدة لو الاستوديو مش مفعّل له)، وبعدها
         // بيظهر أنيميشن "بيتعدل..." في الشات لحد ما الصورة الجاهزة تظهر وتتحفظ في مكتبته.
-        // ملحوظة: الكشف عن النية بالكلمات المفتاحية — ولو اتكشف غلط، الطالب بيقدر يختار
-        // "حلّل الصورة بس" من نفس الكارت.
+        // ملحوظة: فهم النية بيتم بذكاء اصطناعي سريع على السيرفر (classifyImageIntent) — مش مربوط
+        // بكلمات معينة؛ والكشف بالكلمات (detectImageEditIntent) احتياطي بس لو السيرفر تعذّر.
+        // ولو اتكشف غلط، الطالب بيقدر يختار "حلّل الصورة بس" من نفس الكارت.
         const CHAT_IMAGE_PROVIDERS = [
             { key: 'grok', label: 'Grok', icon: '⚡' },
             { key: 'grok2', label: 'Grok Imagine 2', icon: '✨' },
@@ -10561,6 +10581,33 @@ ${r.pathSummary}
             if (create || want) return 'similar';
             if (hasIn(IMG_INTENT_EDIT) || ambiguousEdit) return 'edit';
             return null;
+        }
+
+        // ====== فهم نية الطالب: ذكاء اصطناعي سريع (السيرفر) — والكشف المحلي بالكلمات احتياطي بس ======
+        // بيرجّع { intent: 'edit' | 'similar' | null }. لو الطالب ضغط إيقاف بنرمي AbortError.
+        // لو السيرفر فشل أو اتأخر (أكتر من ~3 ثواني) بنستخدم detectImageEditIntent المحلية.
+        async function classifyImageIntent(text, signal) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 3200);
+            const onOuterAbort = () => ctrl.abort();
+            if (signal) signal.addEventListener('abort', onOuterAbort, { once: true });
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/chat/image-intent`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
+                    body: JSON.stringify({ text }),
+                    signal: ctrl.signal
+                });
+                if (!res.ok) throw new Error(`intent ${res.status}`);
+                const data = await res.json();
+                return { intent: data.intent === 'edit' || data.intent === 'similar' ? data.intent : null, source: 'ai' };
+            } catch (e) {
+                if (signal && signal.aborted) throw e; // الطالب هو اللي أوقف
+                return { intent: detectImageEditIntent(text), source: 'fallback' };
+            } finally {
+                clearTimeout(timer);
+                if (signal) signal.removeEventListener('abort', onOuterAbort);
+            }
         }
 
         function imageEditProviderLabel(key) {
