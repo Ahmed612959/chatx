@@ -285,6 +285,8 @@
             border-width: 1px;
             margin-top: 10px;
             opacity: 1;
+            display: flex;
+            align-items: center;
             transform: translateY(0) scale(1);
             transform-origin: top center;
             transition: height .38s cubic-bezier(.4,0,.2,1),
@@ -343,6 +345,9 @@
             overflow-x: auto;
             overflow-y: hidden;
             min-height: 0;
+            width: 100%;
+            display: flex;
+            align-items: center;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior-x: contain;
             scrollbar-width: none;
@@ -466,7 +471,7 @@
            واحد دايمًا على أي مقاس شاشة. */
         .top-actions {
             display: inline-flex; min-width: 100%; box-sizing: border-box;
-            gap: 6px; flex-shrink: 0; flex-wrap: nowrap; justify-content: center;
+            gap: 6px; flex-shrink: 0; flex-wrap: nowrap; justify-content: center; align-items: center;
             padding: 0 2px;
         }
         /* حجم أصغر للأيقونات جوه شريط الأدوات ده تحديدًا بس (من غير ما يأثر
@@ -1133,20 +1138,20 @@
 
         .input-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 8px; }
         .app-dev-footer {
-            display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap;
-            margin: 10px auto 2px; padding: 8px 18px; width: fit-content; max-width: 92%;
+            display: flex; align-items: center; justify-content: center; gap: 3px; flex-wrap: wrap;
+            margin: 4px auto 0; padding: 2px 10px; width: fit-content; max-width: 92%;
             background: var(--bg-2); border: 1px solid var(--border-accent); border-radius: 999px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-            font-family: 'Cairo', var(--font); font-size: 12px; font-weight: 600; color: var(--text-2);
-            letter-spacing: .2px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.05); line-height: 1.3;
+            font-family: 'Cairo', var(--font); font-size: 8.5px; font-weight: 600; color: var(--text-2);
+            letter-spacing: .1px;
         }
         .app-dev-footer .heart {
-            color: #ef4444; font-style: normal; display: inline-block; animation: devHeartBeat 1.4s ease-in-out infinite;
+            color: #ef4444; font-style: normal; display: inline-block; font-size: 9px; animation: devHeartBeat 1.4s ease-in-out infinite;
         }
         @keyframes devHeartBeat { 0%,100% { transform: scale(1); } 25% { transform: scale(1.25); } 50% { transform: scale(1); } }
         .app-dev-footer .dev-name {
-            font-family: 'Righteous', 'Cairo', var(--font); font-weight: 400; font-size: 12.5px;
-            direction: ltr; unicode-bidi: plaintext; letter-spacing: .4px;
+            font-family: 'Righteous', 'Cairo', var(--font); font-weight: 400; font-size: 9px;
+            direction: ltr; unicode-bidi: plaintext; letter-spacing: .2px;
             background: linear-gradient(90deg, var(--accent), var(--accent-2, var(--accent)));
             -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
         }
