@@ -26,6 +26,9 @@ import { reportApiUsage } from './_usageTrack.js';
 // مفيش داعي لأي ترجمة استريم.
 const FORCED_MODEL = 'openai/gpt-5.6-sol';
 const UPSTREAM_URL = 'https://api.onehop.ai/v1/chat/completions';
+const MAX_MESSAGES = 60;
+const MAX_MESSAGE_CHARS = 12000;
+const MAX_TOKENS_CAP = 2000;
 
 export default async function handler(request) {
   try {
@@ -79,13 +82,34 @@ export default async function handler(request) {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+    if (payload.messages.length > MAX_MESSAGES) {
+      return new Response(JSON.stringify({ error: 'عدد الرسايل في المحادثة أكبر من المسموح' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    const ALLOWED_ROLES = new Set(['system', 'user', 'assistant']);
+    const cleanMessages = [];
+    for (const m of payload.messages) {
+      const role = ALLOWED_ROLES.has(m?.role) ? m.role : 'user';
+      const content = typeof m?.content === 'string' ? m.content.slice(0, MAX_MESSAGE_CHARS) : '';
+      if (!content) continue;
+      cleanMessages.push({ role, content });
+    }
+    if (!cleanMessages.length) {
+      return new Response(JSON.stringify({ error: 'الرسايل فاضية' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     // بنبني الـ body إحنا من الأول — مش بنمرر جسم الطلب زي ما هو — عشان الموديل
     // يفضل مثبّت دايمًا بغض النظر عما بيبعته الفرونت إند.
     const forwardBody = JSON.stringify({
       model: FORCED_MODEL,
-      messages: payload.messages,
-      stream: payload.stream !== false
+      messages: cleanMessages,
+      stream: payload.stream !== false,
+      max_tokens: MAX_TOKENS_CAP
     });
 
     let upstream;
