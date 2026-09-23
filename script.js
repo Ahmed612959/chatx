@@ -5804,9 +5804,29 @@
             };
             sendHeartbeat(); // نبعت واحدة فورًا عند فتح التطبيق، مش نستنى أول interval
             schoolHeartbeatInterval = setInterval(sendHeartbeat, 2 * 60 * 1000); // كل دقيقتين
+            startPresenceHeartbeat(); // "مين فاتح دلوقتي" — لازم يفضل يتحدّث حتى لو الطالب ساكت
         }
         function stopSchoolHeartbeat() {
             if (schoolHeartbeatInterval) { clearInterval(schoolHeartbeatInterval); schoolHeartbeatInterval = null; }
+            stopPresenceHeartbeat();
+        }
+
+        // ====================== نبضة "مين فاتح دلوقتي" (Presence) ======================
+        // المشكلة اللي كانت موجودة: pingActivity() (اللي بتحدّث Presence.lastSeen في
+        // السيرفر) كانت بتتنادى بس لما الطالب يعمل نشاط فعلي (يسأل سؤال / يبعت رسالة في
+        // غرفة مذاكرة). يعني طالب فاتح التطبيق وقاعد بيقرا بس من غير ما "يعمل" حاجة كان
+        // بيفضل غير مسجّل كمتصل خالص — عشان كده كان بيظهر "مقفول" في لوحة "مين فاتح
+        // دلوقتي" رغم إن التطبيق فعلاً فاتح قدامه. الحل: نبضة مستقلة تمامًا عن أي نشاط،
+        // بتتبعت طول ما الطالب مسجّل دخول والتاب فاتح (حتى لو مش بيكتب حاجة)، كل دقيقة —
+        // أصغر من نافذة "أونلاين" بتاعة السيرفر (90 ثانية) عشان يفضل ظاهر متصل باستمرار.
+        let presenceHeartbeatInterval = null;
+        function startPresenceHeartbeat() {
+            if (presenceHeartbeatInterval) return; // شغالة أصلاً
+            pingActivity(true); // نبضة فورية عند فتح التطبيق، من غير ما نستنى أول interval
+            presenceHeartbeatInterval = setInterval(() => pingActivity(true), 60 * 1000); // كل دقيقة
+        }
+        function stopPresenceHeartbeat() {
+            if (presenceHeartbeatInterval) { clearInterval(presenceHeartbeatInterval); presenceHeartbeatInterval = null; }
         }
         // لو الطالب فاتح Chat X أصلاً ومربوط بحساب School X من قبل (توكن محفوظ في
         // localStorage من زيارة سابقة)، لازم نبدأ الـ heartbeat على طول من غير ما
@@ -6648,7 +6668,10 @@
         // بيتنادى بس لو الطالب مسجل دخول School X. بنبعت "ping" كل ما الطالب يبعت
         // رسالة أو يحل سؤال من بنك الأسئلة، مش على كل تفاعل صغير — عشان منزنقش السيرفر.
         let lastActivityPingAt = 0;
-        async function pingActivity() {
+        // presenceOnly=true: نبضة "لسه فاتح التطبيق" بس (من نبضة الحضور الدورية، مش من
+        // نشاط فعلي)، فمنبعتش messages:1 عشانها — عشان منضخمش عداد الرسايل/لوحة الصدارة
+        // الأسبوعية بنشاط وهمي؛ الهدف بس إن Presence.lastSeen يفضل محدّث.
+        async function pingActivity(presenceOnly) {
             if (!schoolToken) return;
             const now = Date.now();
             if (now - lastActivityPingAt < 60 * 1000) return; // حد أقصى مرة كل دقيقة
@@ -6660,7 +6683,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
                     body: JSON.stringify({
-                        messages: 1,
+                        messages: presenceOnly ? 0 : 1,
                         questions: 0,
                         seconds: elapsedSeconds,
                         fullName: schoolUser?.fullName
@@ -12759,6 +12782,11 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             liveNowRefreshTimer = null;
         }
 
+        // بيتخزن هنا آخر نتيجة (username/fullName الحقيقية لكل صف) عشان نقدر نستخدمها لما
+        // الطالب يدوس على صف معيّن — القايمة نفسها بتتعرض بالاسم المقنّع بس البيانات اللي
+        // وراها فيها اليوزرنيم الحقيقي (مطلوب لإرسال رسالة/لايك، مش لعرضه).
+        let liveNowUsersCache = {};
+
         async function loadLiveNowUsers() {
             const listEl = document.getElementById('liveNowList');
             if (!schoolToken || !listEl) return;
@@ -12769,29 +12797,120 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                 if (!res.ok) throw new Error('failed');
                 const data = await res.json();
                 const online = data.online || [];
+                const mostLiked = data.mostLiked || null;
 
                 const badge = document.getElementById('liveNowDotBadge');
                 if (badge) badge.style.display = online.length ? 'block' : 'none';
 
+                liveNowUsersCache = {};
+                [...online, ...(mostLiked ? [mostLiked] : [])].forEach(u => { liveNowUsersCache[u.username] = u; });
+
+                let html = '';
+
+                // كارت "الأكتر تفاعلاً" (أعلى لايكات) — ثابت فوق القايمة دايمًا حتى لو
+                // الطالب ده قافل التطبيق دلوقتي فعليًا، زي ما اتطلب بالظبط.
+                if (mostLiked && mostLiked.username !== schoolUser?.username) {
+                    const displayName = mostLiked.fullName || mostLiked.username || 'طالب';
+                    const masked = maskLiveName(displayName);
+                    const initial = displayName.trim().charAt(0) || '؟';
+                    html += `
+                        <div class="live-now-row" style="border:1px solid #f59e0b55;background:#f59e0b0d;cursor:pointer;" onclick="openLiveNowActions('${escapeHtml(mostLiked.username)}')">
+                            <div class="live-now-avatar" style="background:#f59e0b22;color:#f59e0b;">${escapeHtml(initial)}${mostLiked.online ? '<span class="live-now-dot"></span>' : ''}</div>
+                            <div style="flex:1;min-width:0;">
+                                <div class="live-now-name">👑 ${escapeHtml(masked)}</div>
+                                <div class="live-now-meta">⭐ الأكتر تفاعلاً (${mostLiked.totalLikes} لايك) • ${mostLiked.online ? '🟢 فاتح دلوقتي' : '⚪ مش فاتح دلوقتي'}</div>
+                            </div>
+                        </div>`;
+                }
+
                 if (!online.length) {
-                    listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش حد فاتح دلوقتي</div>';
+                    html += '<div style="text-align:center;padding:14px;color:var(--text-3);font-size:12px;">مفيش حد فاتح دلوقتي</div>';
+                    listEl.innerHTML = html;
                     return;
                 }
-                listEl.innerHTML = online.map(u => {
+                html += online.map(u => {
                     const displayName = u.fullName || u.username || 'طالب';
                     const masked = maskLiveName(displayName);
                     const initial = displayName.trim().charAt(0) || '؟';
+                    const likeBit = u.totalLikes ? ` • ${u.likedByMe ? '❤️' : '🤍'} ${u.totalLikes}` : '';
                     return `
-                        <div class="live-now-row">
+                        <div class="live-now-row" style="cursor:pointer;" onclick="openLiveNowActions('${escapeHtml(u.username)}')">
                             <div class="live-now-avatar">${escapeHtml(initial)}<span class="live-now-dot"></span></div>
                             <div style="flex:1;min-width:0;">
                                 <div class="live-now-name">${escapeHtml(masked)}</div>
-                                <div class="live-now-meta">🟢 أونلاين الآن • ${u.questionsToday || 0} سؤال النهاردة</div>
+                                <div class="live-now-meta">🟢 أونلاين الآن • ${u.questionsToday || 0} سؤال النهاردة${likeBit}</div>
                             </div>
+                            <i class="fas fa-chevron-left" style="color:var(--text-3);font-size:11px;"></i>
                         </div>`;
                 }).join('');
+                listEl.innerHTML = html;
             } catch (e) {
                 listEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--danger);font-size:12px;">تعذر تحميل القائمة</div>';
+            }
+        }
+
+        // ====================== خيارات لما تدوس على طالب فاتح دلوقتي ======================
+        // بتفتح شيت خيارات بسيط: (١) ابعتله "السلام عليكم" في غرفة مذاكرة جماعية،
+        // (٢) لايك — كل لايك بيزوّد فرصته إنه يتصدّر "الأكتر تفاعلاً" فوق القايمة.
+        function openLiveNowActions(username) {
+            const u = liveNowUsersCache[username];
+            if (!u) return;
+            const displayName = u.fullName || u.username || 'الطالب';
+            const liked = !!u.likedByMe;
+            let sheet = document.getElementById('liveNowActionsSheet');
+            if (!sheet) {
+                sheet = document.createElement('div');
+                sheet.id = 'liveNowActionsSheet';
+                sheet.className = 'modal-overlay';
+                document.body.appendChild(sheet);
+            }
+            sheet.innerHTML = `
+                <div class="modal" style="max-width:340px;">
+                    <div class="modal-header">
+                        <div class="modal-title">${escapeHtml(maskLiveName(displayName))}</div>
+                        <button class="close-modal" aria-label="إغلاق" onclick="document.getElementById('liveNowActionsSheet').classList.remove('active')"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="tool-section" style="display:flex;flex-direction:column;gap:10px;">
+                        <button class="btn-calc" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;" onclick="greetLiveNowUser('${escapeHtml(username)}')">
+                            <i class="fas fa-comment-dots"></i> ابعتله السلام عليكم في غرفة مذاكرة
+                        </button>
+                        <button class="action-btn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;" onclick="toggleLikeLiveNowUser('${escapeHtml(username)}')">
+                            <i class="fas fa-heart" style="color:${liked ? '#ef4444' : 'inherit'};opacity:${liked ? '1' : '0.55'};"></i>
+                            <span id="liveNowLikeBtnText">${liked ? 'إلغاء اللايك' : 'لايك'}</span>
+                        </button>
+                    </div>
+                </div>`;
+            openModal('liveNowActionsSheet');
+        }
+
+        async function greetLiveNowUser(username) {
+            closeModal('liveNowActionsSheet');
+            const u = liveNowUsersCache[username];
+            const displayName = u?.fullName || username;
+            closeLiveNowPanel();
+            await startGroupChatWith(username);
+            const input = document.getElementById('groupChatInput');
+            if (input) {
+                input.value = `السلام عليكم يا ${displayName} 👋`;
+                updateGroupChatSendButton();
+                await sendGroupChatMessage();
+            }
+        }
+
+        async function toggleLikeLiveNowUser(username) {
+            if (!schoolToken) return;
+            try {
+                const res = await fetch(`${FIXED_SCHOOL_API_URL}/api/presence/like/${encodeURIComponent(username)}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${schoolToken}` }
+                });
+                if (!res.ok) throw new Error('failed');
+                const data = await res.json();
+                showToast(data.liked ? 'تم عمل لايك ❤️' : 'تم إلغاء اللايك', 'success');
+                closeModal('liveNowActionsSheet');
+                loadLiveNowUsers(); // تحديث فوري للقايمة (خصوصًا ترتيب "الأكتر تفاعلاً")
+            } catch (e) {
+                showToast('تعذر تسجيل اللايك، حاول تاني', 'error');
             }
         }
 
