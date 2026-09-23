@@ -8013,7 +8013,7 @@
 
         // ====================== ثيمات غرفة المذاكرة ======================
         const GROUP_CHAT_THEME_KEY = 'groupChatThemeV1';
-        const GROUP_CHAT_THEME_CLASSES = ['gc-theme-whatsapp', 'gc-theme-midnight', 'gc-theme-sunset', 'gc-theme-ocean'];
+        const GROUP_CHAT_THEME_CLASSES = ['gc-theme-whatsapp', 'gc-theme-midnight', 'gc-theme-sunset', 'gc-theme-ocean', 'gc-theme-forest', 'gc-theme-lavender', 'gc-theme-coffee'];
 
         function getSavedGroupChatTheme() {
             try { return localStorage.getItem(GROUP_CHAT_THEME_KEY) || 'default'; } catch (e) { return 'default'; }
@@ -8373,8 +8373,6 @@
                     }
                     const isMe = m.senderUsername === schoolUser?.username;
                     if (!isMe && !isFirstLoad) receivedNewFromOther = true;
-                    // 🔍 لوج تشخيصي مؤقت — بيوريني هل GET رجّع الميديا فعلاً ولا الرسالة وصلت
-                    // من غير base64 خالص (يعني المشكلة في التخزين/القراءة مش في العرض). شيله بعدين.
                     // لو الرسالة دي كانت optimistic (اتبعتت محليًا واستنينا تأكيد السيرفر)، امسح النسخة
                     // المؤقتة واستبدلها بالنسخة الحقيقية بدل ما تتكرر على الشاشة.
                     if (isMe) {
@@ -8425,15 +8423,29 @@
             }).catch(() => {});
         }
 
+        // مؤشر الكتابة بقى فقاعة حقيقية جوه صندوق الرسايل نفسه (مش عنصر منفصل تحته) —
+        // عشان يرث خلفية الثيم المختار ويظهر في مكانه الطبيعي في المحادثة (آخر عنصر)،
+        // بالظبط زي واتساب/تليجرام. بما إن صندوق الرسايل بيتصفّر (innerHTML='') لما
+        // تفتح غرفة جديدة أو تمسح الشات، بنعيد إنشاء العنصر لو مش موجود بدل ما نفترض
+        // إنه لسه موجود من غرفة سابقة.
         function updateTypingIndicator(typingUsernames) {
-            const el = document.getElementById('groupChatTypingIndicator');
-            if (!el) return;
-            if (typingUsernames.length > 0) {
-                el.innerHTML = '<div class="typing-dots" style="padding:8px 12px;display:inline-flex;"><span></span><span></span><span></span><svg viewBox="0 0 64 22" xmlns="http://www.w3.org/2000/svg"><path class="ecg-line" d="M0,11 L14,11 L18,4 L22,18 L26,11 L40,11 L44,6 L48,16 L52,11 L64,11"/><circle class="ecg-dot" cx="22" cy="18" r="2"/></svg></div>';
-                el.style.display = 'block';
-            } else {
-                el.style.display = 'none';
+            const box = document.getElementById('groupChatMessages');
+            if (!box) return;
+            let el = document.getElementById('groupChatTypingIndicator');
+            if (!typingUsernames || typingUsernames.length === 0) {
+                el?.remove();
+                return;
             }
+            const wasNearBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 120;
+            if (!el || el.parentElement !== box) {
+                el?.remove();
+                el = document.createElement('div');
+                el.id = 'groupChatTypingIndicator';
+                el.style.cssText = 'align-self:flex-start;max-width:60%;padding:10px 14px;border-radius:14px;background:var(--gc-in-bg, var(--bg-2));color:var(--gc-in-text, var(--text-1));';
+                box.appendChild(el);
+                el.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span><svg viewBox="0 0 64 22" xmlns="http://www.w3.org/2000/svg"><path class="ecg-line" d="M0,11 L14,11 L18,4 L22,18 L26,11 L40,11 L44,6 L48,16 L52,11 L64,11"/><circle class="ecg-dot" cx="22" cy="18" r="2"/></svg></div>';
+            }
+            if (wasNearBottom) box.scrollTop = box.scrollHeight;
         }
 
         // بيحدّث علامات ✓ / ✓✓ على كل رسايلي بناءً على آخر وقت الطرف التاني فتح فيه الغرفة
@@ -8470,12 +8482,14 @@
         // ====================== إرفاق صورة في المحادثة الجماعية ======================
         let pendingGroupImage = null; // { base64, mimeType, name } — الصورة المختارة قبل الإرسال
 
-        // سقف أمان لطول الـ base64 (بالحروف) قبل الإرسال. حاطينه أقل بكتير من حد
-        // الـ 8 مليون حرف المسموح في السيرفر، عشان نضمن إن حجم الـ request body
-        // (JSON) يفضل تحت سقف Vercel الصارم للـ Serverless Functions (4.5MB) —
-        // 3 مليون حرف base64 ≈ 2.2MB بيانات فعلية، ده هيسيب هامش أمان كويس حتى
-        // مع أي overhead تاني في الـ request.
-        const GROUP_MEDIA_BASE64_SAFE_LIMIT = 3_000_000;
+        // سقف أمان لطول الـ base64 (بالحروف) قبل الإرسال. كان الرقم قبل كده 3 مليون
+        // حرف (~2.86MB JSON) — قريب جدًا من حد Vercel الفعلي للـ Serverless Functions،
+        // لدرجة إن صورة لوحدها كانت بالكاد بتعدي، وبمجرد ما تتضاف أي كلمة كابشن
+        // (كام بايت زيادة بس) كانت بتخليه يتخطى الحد ويترفض الطلب بالكامل من غير أي
+        // رسالة خطأ واضحة (Vercel بترفض الطلب قبل ما يوصل لكود السيرفر أصلًا). ده كان
+        // سبب "الصورة بتتبعت من غير كابشن، ومش بتتبعت مع كابشن" بالظبط. النهارده الحد
+        // اتقلل لهامش أمان حقيقي وكبير (~1.1MB صورة فعلية، أقل من نص الحد القديم).
+        const GROUP_MEDIA_BASE64_SAFE_LIMIT = 1_500_000;
 
         function updateGroupChatSendButton() {
             const hasText = document.getElementById('groupChatInput').value.trim().length > 0;
@@ -8486,11 +8500,11 @@
 
         function handleGroupChatImageSelect(file) {
             if (!file) return;
-            // ضغط أقوى شوية من الافتراضي (كان 1600px/0.82) عشان نقلل احتمال تخطي حد
-            // الـ body بتاع Vercel — 1280px وجودة 0.72 كافيين جدًا لمحادثة نصية وبيقللوا
-            // حجم الصورة بشكل ملحوظ من غير ما الجودة تبقى واضحة إنها ضعيفة.
+            // ضغط أقوى من الافتراضي (كان 1600px/0.82، بعدين 1280px/0.72) — النزول لـ
+            // 1100px/0.68 بيقلل احتمال الاصطدام بحد الأمان الجديد (خصوصًا لصور فيها
+            // تفاصيل كتير زي صفحات كتاب/سبورة) من غير ما الجودة تبقى غير واضحة.
             // بدل ما نبعتها على طول، بنفتح محرر بسيط (تدوير/عكس/سطوع/قص) قبل التأكيد.
-            compressImageFile(file, 1280, 0.72).then((compressedFile) => {
+            compressImageFile(file, 1100, 0.68).then((compressedFile) => {
                 openGroupImageEditor(compressedFile, file.name);
             });
         }
@@ -8697,7 +8711,7 @@
                 };
                 reader.onerror = () => showToast('تعذر حفظ التعديلات', 'error');
                 reader.readAsDataURL(blob);
-            }, 'image/jpeg', 0.85);
+            }, 'image/jpeg', 0.78);
         }
 
         function giCancelEdit() {
@@ -8717,6 +8731,14 @@
             // فحص كمان هنا احتياطًا.
             if (activeGroupChatStatus === 'pending' && activeGroupChatRequestedBy !== schoolUser?.username) {
                 showToast('لازم تقبل طلب المحادثة الأول', 'error');
+                return;
+            }
+            // فحص أمان أخير قبل الإرسال الفعلي: لو الصورة (مع أي كابشن مكتوب) هتخلي
+            // حجم الطلب يقرب من حد Vercel، نوقف ونوضح السبب بدل ما الطلب يترفض بصمت
+            // من غير رسالة خطأ مفهومة (ده كان بالظبط سبب "بتتبعت من غير كابشن بس مش
+            // بتتبعت معاه" قبل كده).
+            if (image && (image.base64.length + text.length) > GROUP_MEDIA_BASE64_SAFE_LIMIT) {
+                showToast('الصورة كبيرة قوي عشان تتبعت مع نص — جرب تصغّر منطقة القص أو قصّر الكابشن', 'error');
                 return;
             }
             input.value = '';
@@ -8744,11 +8766,10 @@
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
                     body: JSON.stringify({ text, image: image || undefined })
                 });
-                if (!res.ok) {
-                    // 🔍 لوج تشخيصي مؤقت — بيوريني status code والرد الحقيقي من السيرفر/Vercel
-                    // بدل ما الخطأ يتبلع في رسالة عامة. شيله بعد حل المشكلة.
-                    console.error('group-chat send failed:', res.status, await res.text().catch(() => '(no body)'));
-                    throw new Error('failed');
+                let data = null;
+                try { data = await res.json(); } catch (e) { /* رد مش JSON (مثلاً صفحة خطأ من Vercel نفسها) */ }
+                if (!res.ok || !data?.success) {
+                    throw new Error(data?.error || `فشل الإرسال (${res.status})`);
                 }
                 document.querySelector(`[data-optimistic-id="${CSS.escape(optimisticId)}"]`)?.remove();
                 await loadGroupChatMessages(false); // بيجيب النسخة الحقيقية (فيها الـ id وread receipts)
@@ -8758,7 +8779,7 @@
                 input.value = text; // نرجّع النص للمستخدم بدل ما يضيع لو الإرسال فشل
                 if (image) { pendingGroupImage = image; document.getElementById('groupChatPendingImageChip').style.display = 'flex'; }
                 updateGroupChatSendButton();
-                showToast('تعذر إرسال الرسالة', 'error');
+                showToast(e.message || 'تعذر إرسال الرسالة', 'error');
             }
         }
 
@@ -8871,18 +8892,15 @@
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${schoolToken}` },
                     body: JSON.stringify({ audio: audioObj })
                 });
-                if (!res.ok) {
-                    // 🔍 لوج تشخيصي مؤقت — نفس فكرة الصور. شيله بعد حل المشكلة.
-                    console.error('group-chat voice send failed:', res.status, await res.text().catch(() => '(no body)'));
-                    throw new Error('failed');
-                }
+                let data = null;
+                try { data = await res.json(); } catch (e) { /* رد مش JSON */ }
+                if (!res.ok || !data?.success) throw new Error(data?.error || `فشل الإرسال (${res.status})`);
                 document.querySelector(`[data-optimistic-id="${CSS.escape(optimisticId)}"]`)?.remove();
                 await loadGroupChatMessages(false);
                 pingActivity();
             } catch (e) {
-                console.error('group-chat voice send exception:', e);
                 optimisticBubble.remove();
-                showToast('تعذر إرسال الرسالة الصوتية', 'error');
+                showToast(e.message || 'تعذر إرسال الرسالة الصوتية', 'error');
             }
         }
 

@@ -155,6 +155,110 @@
         @keyframes iecPulse { 0%, 100% { filter: brightness(1) saturate(1); } 50% { filter: brightness(.92) saturate(1.15); } }
         @keyframes iecBar { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
 
+        /* ====== غرفة المذاكرة الجماعية: قائمة الثيمات ====== */
+        /* دي كانت من غير أي CSS خالص قبل كده — يعني القايمة كانت بتظهر كعنصر
+           عادي ثابت في نص الصفحة بدل ما تكون قائمة منسدلة تختفي/تظهر. */
+        #groupChatThemeMenu {
+            display: none;
+            position: absolute;
+            top: 52px;
+            left: 14px;
+            z-index: 20;
+            background: var(--bg-1, #fff);
+            border: 1px solid var(--border, rgba(120,120,140,.25));
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.2);
+            padding: 6px;
+            min-width: 190px;
+        }
+        #groupChatThemeMenu.active { display: block; }
+        .gc-theme-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-1, inherit);
+        }
+        .gc-theme-option:hover { background: var(--bg-2, rgba(120,120,140,.1)); }
+        .gc-theme-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 1px solid rgba(0,0,0,.15);
+        }
+
+        /* ====== غرفة المذاكرة الجماعية: الثيمات نفسها ======
+           كل ثيم بيحدد متغيرات CSS بيقرأها صندوق الرسايل وفقاعات الرسايل (اللي
+           أصلًا مكتوبة بـ var(--gc-out-bg, ...) في buildGroupChatBubble) — المتغيرات
+           دي كانت متعرّفة في الجافاسكريبت من غير أي تعريف فعلي ليها هنا، فتغيير
+           الثيم كان مش بيغيّر أي حاجة بصريًا خالص. */
+        #groupChatRoomModal.gc-theme-whatsapp {
+            --gc-bg: #e5ddd5; --gc-bg-image: none;
+            --gc-out-bg: #dcf8c6; --gc-out-text: #111b21;
+            --gc-in-bg: #ffffff; --gc-in-text: #111b21;
+        }
+        #groupChatRoomModal.gc-theme-midnight {
+            --gc-bg: #0b141a; --gc-bg-image: none;
+            --gc-out-bg: #005c4b; --gc-out-text: #e9edef;
+            --gc-in-bg: #1f2c34; --gc-in-text: #e9edef;
+        }
+        #groupChatRoomModal.gc-theme-sunset {
+            --gc-bg: #ff8583; --gc-bg-image: linear-gradient(160deg, #ff9a76, #ff6f91);
+            --gc-out-bg: rgba(255,255,255,.94); --gc-out-text: #7a3b2e;
+            --gc-in-bg: rgba(0,0,0,.28); --gc-in-text: #fff;
+        }
+        #groupChatRoomModal.gc-theme-ocean {
+            --gc-bg: #2193b0; --gc-bg-image: linear-gradient(160deg, #2193b0, #6dd5ed);
+            --gc-out-bg: rgba(255,255,255,.94); --gc-out-text: #0f4c5c;
+            --gc-in-bg: rgba(0,0,0,.25); --gc-in-text: #fff;
+        }
+        /* ثيمين جداد */
+        #groupChatRoomModal.gc-theme-forest {
+            --gc-bg: #16371f; --gc-bg-image: linear-gradient(160deg, #0f3d24, #2f7a4f);
+            --gc-out-bg: #8bc34a; --gc-out-text: #0d2b12;
+            --gc-in-bg: rgba(255,255,255,.14); --gc-in-text: #eafbe7;
+        }
+        #groupChatRoomModal.gc-theme-lavender {
+            --gc-bg: #f2edfb; --gc-bg-image: none;
+            --gc-out-bg: #b39ddb; --gc-out-text: #2a1a4a;
+            --gc-in-bg: #ffffff; --gc-in-text: #3a2a5c;
+        }
+        #groupChatRoomModal.gc-theme-coffee {
+            --gc-bg: #3e2723; --gc-bg-image: none;
+            --gc-out-bg: #a9744f; --gc-out-text: #fff6ee;
+            --gc-in-bg: #5d4037; --gc-in-text: #f5e9df;
+        }
+
+        /* ====== مؤشر الكتابة (فقاعة "بيكتب دلوقتي") ====== */
+        .typing-dots { display: inline-flex; align-items: center; gap: 4px; color: inherit; }
+        .typing-dots span {
+            width: 7px; height: 7px; border-radius: 50%; background: currentColor;
+            opacity: .4; animation: gcTypingBounce 1.2s infinite ease-in-out;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: .15s; }
+        .typing-dots span:nth-child(3) { animation-delay: .3s; }
+        .typing-dots svg { width: 42px; height: 16px; margin-inline-start: 4px; opacity: .6; }
+        .typing-dots .ecg-line {
+            fill: none; stroke: currentColor; stroke-width: 1.6;
+            stroke-linecap: round; stroke-linejoin: round;
+            stroke-dasharray: 130; stroke-dashoffset: 130;
+            animation: gcEcgDraw 1.8s linear infinite;
+        }
+        .typing-dots .ecg-dot { fill: currentColor; animation: gcTypingBounce 1.2s infinite ease-in-out; }
+        @keyframes gcTypingBounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: .4; }
+            30% { transform: translateY(-4px); opacity: 1; }
+        }
+        @keyframes gcEcgDraw {
+            0% { stroke-dashoffset: 130; }
+            60% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -130; }
+        }
+
     </style>
 </head>
 <body>
@@ -924,9 +1028,17 @@
                 <div class="gc-theme-option" onclick="setGroupChatTheme('ocean')">
                     <span class="gc-theme-swatch" style="background:linear-gradient(135deg,#2193b0,#6dd5ed);"></span> محيط هادئ
                 </div>
+                <div class="gc-theme-option" onclick="setGroupChatTheme('forest')">
+                    <span class="gc-theme-swatch" style="background:linear-gradient(135deg,#0f3d24,#2f7a4f);"></span> غابة خضراء
+                </div>
+                <div class="gc-theme-option" onclick="setGroupChatTheme('lavender')">
+                    <span class="gc-theme-swatch" style="background:#b39ddb;"></span> بنفسجي هادئ
+                </div>
+                <div class="gc-theme-option" onclick="setGroupChatTheme('coffee')">
+                    <span class="gc-theme-swatch" style="background:#a9744f;"></span> بني دافئ
+                </div>
             </div>
-            <div id="groupChatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background-color:var(--gc-bg,transparent);background-image:var(--gc-bg-image,none);background-size:140px;"></div>
-            <div id="groupChatTypingIndicator" style="display:none;padding:0 14px 6px;font-size:11px;color:var(--text-3);"></div>
+            <div id="groupChatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background-color:var(--gc-bg,transparent);background-image:var(--gc-bg-image,none);background-size:cover;background-repeat:no-repeat;"></div>
 
             <!-- بانر طلب المحادثة — بيظهر بس لما الغرفة لسه 'pending' (طلب جديد مش متقبل) -->
             <div id="groupChatRequestBanner" style="display:none;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--bg-2);flex-shrink:0;"></div>
