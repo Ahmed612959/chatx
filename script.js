@@ -12871,9 +12871,6 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                         <button class="close-modal" aria-label="إغلاق" onclick="document.getElementById('liveNowActionsSheet').classList.remove('active')"><i class="fas fa-times"></i></button>
                     </div>
                     <div class="tool-section" style="display:flex;flex-direction:column;gap:10px;">
-                        <button class="btn-calc" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;" onclick="greetLiveNowUser('${escapeHtml(username)}')">
-                            <i class="fas fa-comment-dots"></i> ابعتله السلام عليكم في غرفة مذاكرة
-                        </button>
                         <button class="action-btn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;" onclick="toggleLikeLiveNowUser('${escapeHtml(username)}')">
                             <i class="fas fa-heart" style="color:${liked ? '#ef4444' : 'inherit'};opacity:${liked ? '1' : '0.55'};"></i>
                             <span id="liveNowLikeBtnText">${liked ? 'إلغاء اللايك' : 'لايك'}</span>
@@ -12883,20 +12880,6 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
             openModal('liveNowActionsSheet');
         }
 
-        async function greetLiveNowUser(username) {
-            closeModal('liveNowActionsSheet');
-            const u = liveNowUsersCache[username];
-            const displayName = u?.fullName || username;
-            closeLiveNowPanel();
-            await startGroupChatWith(username);
-            const input = document.getElementById('groupChatInput');
-            if (input) {
-                input.value = `السلام عليكم يا ${displayName} 👋`;
-                updateGroupChatSendButton();
-                await sendGroupChatMessage();
-            }
-        }
-
         async function toggleLikeLiveNowUser(username) {
             if (!schoolToken) return;
             try {
@@ -12904,13 +12887,15 @@ ${active.map(s => `### مهارة: ${s.name}\n${s.instructions}`).join('\n\n')}`
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${schoolToken}` }
                 });
-                if (!res.ok) throw new Error('failed');
-                const data = await res.json();
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) throw new Error(data.error || 'failed');
                 showToast(data.liked ? 'تم عمل لايك ❤️' : 'تم إلغاء اللايك', 'success');
                 closeModal('liveNowActionsSheet');
                 loadLiveNowUsers(); // تحديث فوري للقايمة (خصوصًا ترتيب "الأكتر تفاعلاً")
             } catch (e) {
-                showToast('تعذر تسجيل اللايك، حاول تاني', 'error');
+                // بنعرض سبب الفشل الحقيقي الجاي من السيرفر (لو موجود) بدل رسالة عامة،
+                // عشان لو حصل خطأ تاني في المستقبل يبان السبب على طول بدل ما نحتاج نفتح الكود.
+                showToast(e.message && e.message !== 'failed' ? e.message : 'تعذر تسجيل اللايك، حاول تاني', 'error');
             }
         }
 
