@@ -1,24 +1,53 @@
 <!DOCTYPE html>
+<!--
+  ============================================================================
+  Chat X — الصفحة الرئيسية (index.html)
+  ============================================================================
+  ملفات المشروع الثلاثة:
+    • index.html  ← الهيكل (العناصر والنوافذ)         — الملف ده
+    • styles.css  ← كل التصميم والألوان والحركات
+    • script.js   ← كل المنطق (الشات، المكالمات، الغرف، الـ API ...)
+
+  قاعدة مهمة: أي دالة بتتنادى من هنا (onclick="..." أو oninput="...") لازم تكون
+  معرّفة في script.js، وأي id بيتقرأ في script.js لازم يكون موجود هنا.
+  للتأكد من ده تلقائيًا شغّل:  node tools/check-integrity.js
+
+  ترتيب الصفحة من فوق لتحت:
+    1) <head>            : الإعدادات، سياسة الأمان CSP، الخطوط، المكتبات الخارجية
+    2) شاشة البداية + noscript
+    3) الحاوية الرئيسية  : الشريط الجانبي (sidebar) + منطقة المحادثة (main)
+    4) النوافذ المنبثقة   : إعدادات، أدوات، مكتبة، قسم ديني، Premium ... إلخ
+    5) <script src="script.js">
+  ============================================================================
+-->
 <html lang="ar" dir="rtl">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://www.gstatic.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: data: https:; connect-src 'self' https://schoolx-eta.vercel.app https://chat-x.vercel.app https://api.alquran.cloud https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.r2.cloudflarestorage.com wss://*.firebaseio.com; base-uri 'self'; object-src 'none'; form-action 'self';">
+    <!-- الترميز لازم يكون أول عنصر في الـ head (ضمن أول 1024 بايت) عشان المتصفح يقرأ العربي صح -->
     <meta charset="UTF-8">
+
+    <!-- سياسة أمان المحتوى (CSP): بتحدد المواقع المسموح للصفحة تحمّل منها سكريبتات/خطوط/صور/اتصالات.
+         أي دومين جديد تستخدمه (مكتبة CDN أو API خارجي) لازم يتضاف هنا وإلا المتصفح هيمنعه. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://www.gstatic.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: data: https:; connect-src 'self' https://schoolx-eta.vercel.app https://chat-x.vercel.app https://api.alquran.cloud https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.r2.cloudflarestorage.com wss://*.firebaseio.com; base-uri 'self'; object-src 'none'; form-action 'self';">
+
+    <!-- ضبط العرض للموبايل (viewport-fit=cover عشان الصفحة تملا الشاشة حتى مع النوتش) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#6366f1">
+
+    <!-- بيانات الصفحة لمحركات البحث -->
     <title>Chat X | المساعد الأكاديمي الذكي لطلاب معاهد التمريض</title>
     <meta name="description" content="Chat X مساعد أكاديمي ذكي مجاني لطلاب معاهد التمريض — شرح المناهج، حل الأسئلة، بنك أسئلة تفاعلي، ومتابعة الدرجات والواجبات في مكان واحد.">
     <meta name="keywords" content="مساعد دراسي, طلاب تمريض, شرح مناهج طبية, بنك أسئلة تمريض, مساعد ذكاء اصطناعي تعليمي, Chat X">
     <meta name="author" content="Ahmed Mousaa">
     <link rel="canonical" href="https://chat-x.vercel.app/">
 
-    <!-- Open Graph -->
+    <!-- Open Graph: شكل الرابط لما يتشارك على واتساب/فيسبوك -->
     <meta property="og:type" content="website">
     <meta property="og:title" content="Chat X | المساعد الأكاديمي الذكي لطلاب معاهد التمريض">
     <meta property="og:description" content="مساعد دراسي ذكي مجاني: شرح، حل أسئلة، بنك أسئلة تفاعلي، ومتابعة أكاديمية لطلاب معاهد التمريض.">
     <meta property="og:locale" content="ar_EG">
     <meta property="og:image" content="/icons/og-image.png">
 
-    <!-- PWA -->
+    <!-- PWA: تثبيت التطبيق على الموبايل (manifest + أيقونات + إعدادات آيفون) -->
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -26,243 +55,45 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Chat X">
 
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Cairo:wght@300;400;500;600;700;800;900&family=Righteous&display=swap" rel="stylesheet">
+    <!-- الخطوط: IBM Plex Sans Arabic + Cairo (الخط الأساسي) + Righteous (الشعار)
+         + Amiri و Amiri Quran (نص القرآن والأذكار في القسم الديني — كانت بتتحمّل بـ @import
+         جوه ملف الـ CSS في مكان غلط فكان المتصفح بيتجاهلها، فاتنقلت هنا) -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Cairo:wght@300;400;500;600;700;800;900&family=Righteous&family=Amiri:wght@400;700&family=Amiri+Quran&display=swap" rel="stylesheet">
+
+    <!-- أيقونات Font Awesome (كل أيقونات الواجهة <i class="fas fa-...">) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- ===== المكتبات الخارجية (لازم تتحمّل قبل script.js) ===== -->
+    <!-- marked: تحويل ردود الذكاء الاصطناعي من Markdown إلى HTML -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+    <!-- DOMPurify: تنضيف الـ HTML الناتج من أي كود خبيث (حماية XSS) -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+    <!-- highlight.js: تلوين الأكواد داخل الردود + ثيم atom-one-dark -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <!-- html2pdf: تصدير المحادثة كملف PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- pdf.js: قراءة نص ملفات PDF اللي الطالب بيرفعها -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- tesseract.js: استخراج النص من الصور (OCR) -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- html5-qrcode: قراءة الباركود/الكيوركود في فحص الدواء بالكاميرا -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <!-- Firebase (لإشعارات البوش) — لازم تحط بيانات مشروعك في FIREBASE_CONFIG جوه السكريبت الرئيسي -->
+    <!-- Firebase (لإشعارات البوش) — لازم تحط بيانات مشروعك في FIREBASE_CONFIG جوه script.js -->
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
+
+    <!-- ملف التصميم الوحيد للصفحة (كان جزء منه inline هنا واتنقل جواه) -->
     <link rel="stylesheet" href="styles.css">
-    <style>
-        /* فاصل التاريخ بين رسايل الأيام المختلفة في الشات (اليوم / أمس / اسم اليوم / التاريخ) */
-        .chat-date-divider {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin: 18px 4px;
-            user-select: none;
-        }
-        .chat-date-divider::before,
-        .chat-date-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border, rgba(120,120,140,.25));
-        }
-        .chat-date-divider span {
-            flex-shrink: 0;
-            font-size: 11.5px;
-            font-weight: 700;
-            color: var(--text-2, #888);
-            background: var(--bg-2, rgba(120,120,140,.08));
-            border: 1px solid var(--border, rgba(120,120,140,.2));
-            padding: 5px 14px;
-            border-radius: 999px;
-            letter-spacing: .2px;
-            white-space: nowrap;
-        }
-
-        /* ضبط مساحة الشات عشان تملا شاشة أي جهاز (موبايل/تابلت/كمبيوتر) بالظبط
-           من غير ما تفيض أو تتقص، وتتعامل صح مع شريط أدوات المتصفح المتغيّر في
-           الموبايل (بنستخدم dvh بدل vh العادي)، ومع منطقة النوتش/الحواف
-           المستديرة في الآيفون (safe-area). */
-        html, body {
-            height: 100%;
-        }
-        .app-container {
-            height: 100vh;
-            height: 100dvh;
-            overflow: hidden;
-        }
-        .main-area {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            height: 100dvh;
-            overflow: hidden;
-            box-sizing: border-box;
-        }
-        .chat-container {
-            flex: 1 1 auto;
-            min-height: 0;
-            width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        .input-area {
-            flex-shrink: 0;
-            box-sizing: border-box;
-            padding-bottom: env(safe-area-inset-bottom, 0px);
-        }
-
-        /* لوحة "Deep Thinking" كانت بتاخد مساحة كبيرة جدًا من صفحة المحادثة
-           وهي بتتكتب لحظة بلحظة لأنها كانت بتكبر من غير حد أقصى للارتفاع.
-           دلوقتي بقى ليها ارتفاع أقصى ثابت ومعقول وبتعمل سكرول جوه نفسها،
-           فبتفضل مضغوطة وما بتاخدش مساحة المحادثة التانية. */
-        .deep-think-panel {
-            max-width: 100%;
-            box-sizing: border-box;
-        }
-        .deep-think-live-text {
-            max-height: 180px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            box-sizing: border-box;
-        }
-        @media (max-width: 480px) {
-            .deep-think-live-text {
-                max-height: 130px;
-            }
-        }
-
-        /* ====== كارت تعديل/إنشاء صورة من الشات ====== */
-        .img-edit-card { max-width: 340px; }
-        .img-edit-card .iec-title { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
-        .img-edit-card .iec-preview { position: relative; border-radius: 12px; overflow: hidden; max-width: 260px; margin: 6px 0 10px; background: var(--bg-2, rgba(120,120,140,.12)); }
-        .img-edit-card .iec-preview img { width: 100%; display: block; max-height: 260px; object-fit: cover; }
-        .img-edit-card .iec-preview.working img { animation: iecPulse 2.2s ease-in-out infinite; }
-        .img-edit-card .iec-preview.working::after {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.38) 50%, transparent 70%);
-            background-size: 220% 100%; animation: iecShimmer 1.5s linear infinite;
-        }
-        .img-edit-card .iec-modes { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
-        .img-edit-card .iec-chip { border: 1px solid var(--border, rgba(120,120,140,.35)); background: transparent; color: inherit; border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
-        .img-edit-card .iec-chip.active { background: var(--grad-bold, #6c5ce7); color: #fff; border-color: transparent; }
-        .img-edit-card .iec-notice { font-size: 12px; line-height: 1.7; padding: 8px 10px; border-radius: 10px; background: var(--bg-2, rgba(120,120,140,.12)); margin-bottom: 10px; }
-        .img-edit-card .iec-notice.warn { border: 1px solid rgba(230,126,34,.5); }
-        .img-edit-card .iec-notice.err { border: 1px solid rgba(231,76,60,.5); color: var(--danger, #e74c3c); }
-        .img-edit-card .iec-models { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
-        .img-edit-card .iec-model-btn { text-align: right; border: 1px solid var(--border, rgba(120,120,140,.35)); background: transparent; color: inherit; border-radius: 10px; padding: 9px 12px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .img-edit-card .iec-model-btn:hover { border-color: var(--primary, #6c5ce7); }
-        .img-edit-card .iec-links { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; }
-        .img-edit-card .iec-link { background: none; border: none; color: var(--text-3, #888); text-decoration: underline; cursor: pointer; padding: 0; font-family: inherit; font-size: 12px; }
-        .img-edit-card .iec-status { font-size: 12.5px; display: flex; align-items: center; gap: 8px; }
-        .img-edit-card .iec-bar { height: 4px; border-radius: 4px; background: var(--bg-2, rgba(120,120,140,.2)); overflow: hidden; margin-top: 8px; }
-        .img-edit-card .iec-bar::after { content: ''; display: block; height: 100%; width: 40%; border-radius: 4px; background: var(--grad-bold, #6c5ce7); animation: iecBar 1.3s ease-in-out infinite; }
-        .img-edit-download { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--text-2, inherit); text-decoration: none; padding: 5px 10px; border-radius: 8px; background: var(--bg-2, rgba(120,120,140,.12)); }
-        @keyframes iecShimmer { 0% { background-position: 200% 0; } 100% { background-position: -20% 0; } }
-        @keyframes iecPulse { 0%, 100% { filter: brightness(1) saturate(1); } 50% { filter: brightness(.92) saturate(1.15); } }
-        @keyframes iecBar { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
-
-        /* ====== غرفة المذاكرة الجماعية: قائمة الثيمات ====== */
-        /* دي كانت من غير أي CSS خالص قبل كده — يعني القايمة كانت بتظهر كعنصر
-           عادي ثابت في نص الصفحة بدل ما تكون قائمة منسدلة تختفي/تظهر. */
-        #groupChatThemeMenu {
-            display: none;
-            position: absolute;
-            top: 52px;
-            left: 14px;
-            z-index: 20;
-            background: var(--bg-1, #fff);
-            border: 1px solid var(--border, rgba(120,120,140,.25));
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,.2);
-            padding: 6px;
-            min-width: 190px;
-        }
-        #groupChatThemeMenu.active { display: block; }
-        .gc-theme-option {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 9px 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            color: var(--text-1, inherit);
-        }
-        .gc-theme-option:hover { background: var(--bg-2, rgba(120,120,140,.1)); }
-        .gc-theme-swatch {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            border: 1px solid rgba(0,0,0,.15);
-        }
-
-        /* ====== غرفة المذاكرة الجماعية: الثيمات نفسها ======
-           كل ثيم بيحدد متغيرات CSS بيقرأها صندوق الرسايل وفقاعات الرسايل (اللي
-           أصلًا مكتوبة بـ var(--gc-out-bg, ...) في buildGroupChatBubble) — المتغيرات
-           دي كانت متعرّفة في الجافاسكريبت من غير أي تعريف فعلي ليها هنا، فتغيير
-           الثيم كان مش بيغيّر أي حاجة بصريًا خالص. */
-        #groupChatRoomModal.gc-theme-whatsapp {
-            --gc-bg: #e5ddd5; --gc-bg-image: none;
-            --gc-out-bg: #dcf8c6; --gc-out-text: #111b21;
-            --gc-in-bg: #ffffff; --gc-in-text: #111b21;
-        }
-        #groupChatRoomModal.gc-theme-midnight {
-            --gc-bg: #0b141a; --gc-bg-image: none;
-            --gc-out-bg: #005c4b; --gc-out-text: #e9edef;
-            --gc-in-bg: #1f2c34; --gc-in-text: #e9edef;
-        }
-        #groupChatRoomModal.gc-theme-sunset {
-            --gc-bg: #ff8583; --gc-bg-image: linear-gradient(160deg, #ff9a76, #ff6f91);
-            --gc-out-bg: rgba(255,255,255,.94); --gc-out-text: #7a3b2e;
-            --gc-in-bg: rgba(0,0,0,.28); --gc-in-text: #fff;
-        }
-        #groupChatRoomModal.gc-theme-ocean {
-            --gc-bg: #2193b0; --gc-bg-image: linear-gradient(160deg, #2193b0, #6dd5ed);
-            --gc-out-bg: rgba(255,255,255,.94); --gc-out-text: #0f4c5c;
-            --gc-in-bg: rgba(0,0,0,.25); --gc-in-text: #fff;
-        }
-        /* ثيمين جداد */
-        #groupChatRoomModal.gc-theme-forest {
-            --gc-bg: #16371f; --gc-bg-image: linear-gradient(160deg, #0f3d24, #2f7a4f);
-            --gc-out-bg: #8bc34a; --gc-out-text: #0d2b12;
-            --gc-in-bg: rgba(255,255,255,.14); --gc-in-text: #eafbe7;
-        }
-        #groupChatRoomModal.gc-theme-lavender {
-            --gc-bg: #f2edfb; --gc-bg-image: none;
-            --gc-out-bg: #b39ddb; --gc-out-text: #2a1a4a;
-            --gc-in-bg: #ffffff; --gc-in-text: #3a2a5c;
-        }
-        #groupChatRoomModal.gc-theme-coffee {
-            --gc-bg: #3e2723; --gc-bg-image: none;
-            --gc-out-bg: #a9744f; --gc-out-text: #fff6ee;
-            --gc-in-bg: #5d4037; --gc-in-text: #f5e9df;
-        }
-
-        /* ====== مؤشر الكتابة (فقاعة "بيكتب دلوقتي") ====== */
-        .typing-dots { display: inline-flex; align-items: center; gap: 4px; color: inherit; }
-        .typing-dots span {
-            width: 7px; height: 7px; border-radius: 50%; background: currentColor;
-            opacity: .4; animation: gcTypingBounce 1.2s infinite ease-in-out;
-        }
-        .typing-dots span:nth-child(2) { animation-delay: .15s; }
-        .typing-dots span:nth-child(3) { animation-delay: .3s; }
-        .typing-dots svg { width: 42px; height: 16px; margin-inline-start: 4px; opacity: .6; }
-        .typing-dots .ecg-line {
-            fill: none; stroke: currentColor; stroke-width: 1.6;
-            stroke-linecap: round; stroke-linejoin: round;
-            stroke-dasharray: 130; stroke-dashoffset: 130;
-            animation: gcEcgDraw 1.8s linear infinite;
-        }
-        .typing-dots .ecg-dot { fill: currentColor; animation: gcTypingBounce 1.2s infinite ease-in-out; }
-        @keyframes gcTypingBounce {
-            0%, 60%, 100% { transform: translateY(0); opacity: .4; }
-            30% { transform: translateY(-4px); opacity: 1; }
-        }
-        @keyframes gcEcgDraw {
-            0% { stroke-dashoffset: 130; }
-            60% { stroke-dashoffset: 0; }
-            100% { stroke-dashoffset: -130; }
-        }
-
-    </style>
 </head>
 <body>
+    <!-- رابط "تخطي إلى المحتوى" لمستخدمي الكيبورد وقارئ الشاشة (مخفي لحد ما يدوس Tab) -->
     <a href="#mainContent" class="skip-to-content-link">تخطي إلى المحتوى الرئيسي</a>
+
+    <!-- ======================================================================
+         شاشة البداية (Splash): شعار + اسم Chat X بيتكتب حرف حرف.
+         script.js هو اللي بيكتب الحروف في #chatxSplashTitle ويضيف الكلاس chatx-hide لإخفائها.
+         ====================================================================== -->
     <div id="chatxSplash" aria-hidden="true">
       <div class="chatx-splash-inner">
         <div class="chatx-splash-logo-wrap">
@@ -274,6 +105,8 @@
         <div class="chatx-splash-dots"><span></span><span></span><span></span></div>
       </div>
     </div>
+
+    <!-- محتوى بديل بيظهر بس لو JavaScript مقفول (مفيد لمحركات البحث وللمستخدم) -->
     <noscript>
         <div style="max-width:640px;margin:40px auto;padding:24px;font-family:Tahoma,Arial,sans-serif;line-height:1.9;direction:rtl;text-align:right;">
             <h1>Chat X — المساعد الأكاديمي الذكي لطلاب معاهد التمريض</h1>
@@ -294,11 +127,22 @@
             <p><a href="/about.html">من نحن</a> · <a href="/privacy.html">سياسة الخصوصية</a> · <a href="/terms.html">شروط الاستخدام</a></p>
         </div>
     </noscript>
+
+    <!-- خلفية متدرجة ناعمة ثابتة وراء التطبيق كله -->
     <div class="bg-mesh"></div>
+
+    <!-- طبقة معتمة بتغطي الشاشة لما الشريط الجانبي يتفتح على الموبايل (الضغط عليها يقفله) -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
+    <!-- ======================================================================
+         الحاوية الرئيسية: [ الشريط الجانبي ] + [ منطقة الشات ]
+         ====================================================================== -->
     <div class="app-container">
+
+        <!-- ================= الشريط الجانبي: المحادثات + الإحصائيات + أزرار سريعة ================= -->
         <aside class="sidebar" id="sidebar">
+
+            <!-- رأس الشريط: زر محادثة جديدة + بحث في قائمة المحادثات -->
             <div class="sb-header">
                 <button class="btn-new" onclick="createNewChat()"><i class="fas fa-plus"></i> محادثة جديدة</button>
                 <div style="position:relative;margin-top:10px;">
@@ -306,11 +150,15 @@
                     <input type="text" id="chatSearchInput" class="tool-input" placeholder="ابحث في محادثاتك..." aria-label="ابحث في محادثاتك" style="padding-right:32px;font-size:12px;" oninput="filterChatList(this.value)">
                 </div>
             </div>
+
+            <!-- قائمة المحادثات (script.js بيملاها) + رسالة "مفيش نتايج" للبحث -->
             <div class="chat-list" id="chatList"></div>
             <div id="chatSearchEmpty" style="display:none;text-align:center;padding:20px 10px;color:var(--text-3);font-size:12px;">
                 <i class="fas fa-magnifying-glass" style="font-size:20px;margin-bottom:8px;display:block;opacity:.5;"></i>
                 مفيش نتايج تطابق بحثك
             </div>
+
+            <!-- إحصائيات الطالب: الأيام المتتالية + أسئلة النهاردة -->
             <div class="stats-bar">
                 <div class="stat-pill">
                     <div class="stat-num"><i class="fas fa-fire" style="color:var(--warning)"></i> <span id="streakCount">0</span></div>
@@ -321,7 +169,10 @@
                     <div class="stat-label">أسئلة النهاردة</div>
                 </div>
             </div>
+
+            <!-- ذيل الشريط: بيانات المستخدم + صف أزرار الميزات -->
             <div class="sb-footer">
+                <!-- الاسم والصورة وحالة الاتصال (بتتحدث بعد تسجيل الدخول بحساب School X) -->
                 <div class="sb-footer-user">
                     <div class="user-avatar" id="sbUserAvatarBox"><i class="fas fa-user-graduate"></i></div>
                     <div class="user-info">
@@ -329,37 +180,54 @@
                         <div class="user-status" id="sbUserStatus">متصل الآن</div>
                     </div>
                 </div>
+
+                <!-- أزرار الميزات (بعضها مخفي display:none وبيظهر من script.js حسب صلاحيات الحساب) -->
                 <div class="sb-footer-actions">
+                    <!-- تسجيل خروج سريع من School X -->
                     <button class="icon-btn" id="sbQuickLogoutBtn" style="display:none;" title="تسجيل الخروج من School X" aria-label="تسجيل الخروج من School X" onclick="quickSchoolLogout()"><i class="fas fa-right-from-bracket"></i></button>
+                    <!-- مين فاتح دلوقتي (مع نقطة خضراء لو فيه متصلين) -->
                     <button class="icon-btn" id="liveNowBtn" style="display:none;position:relative;" title="مين فاتح دلوقتي" aria-label="مين فاتح دلوقتي" onclick="openLiveNowPanel()">
                         <i class="fas fa-tower-broadcast"></i>
                         <span id="liveNowDotBadge" style="display:none;position:absolute;top:2px;left:2px;width:9px;height:9px;border-radius:50%;background:#22c55e;border:1.5px solid var(--bg-2);"></span>
                     </button>
+                    <!-- لوحة الصدارة الأسبوعية -->
                     <button class="icon-btn" id="leaderboardBtn" style="display:none;" title="لوحة الصدارة الأسبوعية" aria-label="لوحة الصدارة الأسبوعية" onclick="openLeaderboard()"><i class="fas fa-trophy"></i></button>
+                    <!-- غرف المذاكرة الجماعية -->
                     <button class="icon-btn" id="groupChatBtn" style="display:none;" title="غرفة مذاكرة جماعية" aria-label="غرفة مذاكرة جماعية" onclick="openGroupChatList()"><i class="fas fa-user-group"></i></button>
+                    <!-- البروفايل الأكاديمي (Premium) -->
                     <button class="icon-btn" id="academicProfileBtn" style="display:none;" title="البروفايل الأكاديمي (Premium)" aria-label="البروفايل الأكاديمي" onclick="openAcademicProfile()"><i class="fas fa-id-card-clip"></i></button>
+                    <!-- صفحات تعلم اللغات (Premium) بتتفتح في تاب جديد -->
                     <button class="icon-btn" id="germanProBtn" style="display:none;" title="German Pro — الألمانية الاحترافية للتمريض (Premium)" aria-label="German Pro" onclick="window.open('german-pro.html', '_blank')">🇩🇪</button>
                     <button class="icon-btn" id="englishProBtn" style="display:none;" title="English Pro — الإنجليزية الاحترافية للتمريض (Premium)" aria-label="English Pro" onclick="window.open('english-pro.html', '_blank')">🇬🇧</button>
+                    <!-- بنك أخطائي (مع عداد الأخطاء المتجمعة) -->
                     <button class="icon-btn" aria-label="بنك أخطائي" title="بنك أخطائي" onclick="openMistakesBankModal()" style="position:relative;">
                         <i class="fas fa-brain"></i>
                         <span id="mistakesBankBadge" style="display:none;position:absolute;top:-4px;left:-4px;min-width:16px;height:16px;padding:0 3px;border-radius: var(--radius-xs);background:var(--danger);color:#fff;font-size:9.5px;font-weight:800;align-items:center;justify-content:center;border:1.5px solid var(--bg-2);">0</span>
                     </button>
+                    <!-- فيديوهات الشرح (نقطة "جديد" بتظهر لو فيه فيديو جديد) -->
                     <button class="icon-btn" aria-label="فيديوهات الشرح" title="فيديوهات الشرح" style="position:relative;" onclick="dismissTvNewDot(); openModal('tutorialVideosModal'); loadTutorialVideos();">
                         <i class="fas fa-video"></i>
                         <span class="tv-new-dot" id="tvNewDotSidebar" style="display:none;"></span>
                     </button>
+                    <!-- سؤال اليوم من زميل -->
                     <button class="icon-btn" aria-label="سؤال اليوم من زميل" title="سؤال اليوم من زميل" onclick="openSharedQuestionsModal()"><i class="fas fa-users-line"></i></button>
+                    <!-- الإعلانات (نقطة حمرا لو فيه إعلان جديد) -->
                     <button class="icon-btn" aria-label="الإعلانات" onclick="openAnnouncementsModal()" style="position:relative;">
                         <i class="fas fa-bullhorn"></i>
                         <span id="announcementsBadge" style="display:none;position:absolute;top:2px;left:2px;width:9px;height:9px;border-radius:50%;background:var(--danger);border:1.5px solid var(--bg-2);"></span>
                     </button>
+                    <!-- الإعدادات -->
                     <button class="icon-btn" aria-label="الإعدادات" onclick="openModal('settingsModal'); loadSettingsProfileBadge();"><i class="fas fa-gear"></i></button>
                 </div>
             </div>
         </aside>
 
+        <!-- ================= منطقة المحادثة الرئيسية ================= -->
         <main class="main-area" id="mainContent" tabindex="-1">
+
+            <!-- ---------- الشريط العلوي: مربع اسم Chat X + مربع الأدوات ---------- -->
             <div class="top-bar">
+                <!-- مربع الاسم (Chat X) -->
                 <div class="tb-box tb-identity-box">
                     <div class="bot-identity">
                         <div class="bot-text">
@@ -367,25 +235,39 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- مربع الأدوات: بيتطوي (يختفي) لما الطالب يسكرول في المحادثة (script.js بيضيف الكلاس top-actions-hidden).
+                     كل زرار ليه data-tool-id عشان script.js يقدر يخفيه/يظهره حسب الصلاحيات -->
                 <div class="tb-box tb-tools-collapsible" id="topActionsWrap">
                 <div class="tb-tools-inner">
                 <div class="top-actions" id="topActionsBar">
+                    <!-- فتح الشريط الجانبي (بيظهر على الموبايل بس) -->
                     <button class="menu-btn" aria-label="فتح القائمة الجانبية" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                    <!-- الحسابات الموثقة (علامة الصح الزرقاء + نقطة "جديد") -->
                     <button class="action-btn verified-top-btn" id="verifiedAccountsTopBtn" data-tool-id="verified" aria-label="الحسابات الموثقة" title="الحسابات الموثقة" onclick="handleVerifiedTopBtnClick()">
-                        <img src="data:image/png;base64,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" alt="">
+                        <img src="/icons/verified-badge.png" alt="">
                         <span class="verified-new-dot" id="verifiedNewDot"></span>
                     </button>
+                    <!-- بحث داخل المحادثة الحالية -->
                     <button class="action-btn" data-tool-id="search" aria-label="بحث في المحادثة الحالية" title="بحث في المحادثة" onclick="toggleChatSearchBar()"><i class="fas fa-magnifying-glass"></i></button>
+                    <!-- تصدير المحادثة PDF -->
                     <button class="action-btn" data-tool-id="export-pdf" aria-label="تصدير المحادثة كملف PDF" onclick="exportPDF()"><i class="fas fa-file-pdf"></i></button>
+                    <!-- الوضع الليلي/النهاري -->
                     <button class="action-btn" data-tool-id="theme" aria-label="تبديل الوضع الليلي والنهاري" onclick="toggleTheme(event)"><i class="fas fa-moon" id="themeIcon"></i></button>
+                    <!-- القسم الديني -->
                     <button class="action-btn" data-tool-id="religion" aria-label="القسم الديني" onclick="openReligionSection()"><i class="fas fa-mosque"></i></button>
+                    <!-- مميزات Premium -->
                     <button class="action-btn" data-tool-id="premium" aria-label="مميزات Premium" onclick="openPremiumHub()"><i class="fas fa-crown"></i></button>
+                    <!-- المكتبة المشتركة -->
                     <button class="action-btn" data-tool-id="library" aria-label="المكتبة المشتركة" onclick="openModal('sharedLibraryModal'); switchLibraryTab('all');"><i class="fas fa-layer-group"></i></button>
+                    <!-- فيديوهات شرح المنصة -->
                     <button class="action-btn" data-tool-id="tutorial-videos" aria-label="فيديوهات شرح المنصة" title="فيديوهات شرح المنصة" id="tvTopBarBtn" style="position:relative;" onclick="dismissTvNewDot(); openModal('tutorialVideosModal'); loadTutorialVideos();">
                         <i class="fas fa-video"></i>
                         <span class="tv-new-dot" id="tvNewDot" style="display:none;"></span>
                     </button>
+                    <!-- الأدوات (حاسبات + بنك أسئلة + جدول مذاكرة ...) -->
                     <button class="action-btn" data-tool-id="tools" aria-label="فتح الأدوات" onclick="openModal('toolsModal')"><i class="fas fa-calculator"></i></button>
+                    <!-- استوديو الفيديو التلقائي -->
                     <button class="action-btn" data-tool-id="video-studio" aria-label="استوديو الفيديو التلقائي" title="حوّل أي ملخص لفيديو بالصوت" onclick="openModal('videoStudioModal')"><i class="fas fa-clapperboard"></i></button>
                 </div>
                 </div>
@@ -396,8 +278,8 @@
                  بيتحط جنب زرار الشارة في شريط الأدوات ومبيأثرش على استايل الشات نفسه. -->
             <div class="verified-tip-popover" id="verifiedTipPopover" role="dialog" aria-live="polite">
                 <div class="vt-arrow"></div>
-                <div class="vt-eyebrow"><i class="fas fa-sparkles"></i> جديد</div>
-                <div class="vt-title"><img src="data:image/png;base64,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" alt=""> الحسابات الموثقة</div>
+                <div class="vt-eyebrow"><i class="fas fa-wand-magic-sparkles"></i> جديد</div>
+                <div class="vt-title"><img src="/icons/verified-badge.png" alt=""> الحسابات الموثقة</div>
                 <div class="vt-body">دلوقتي تقدر تشوف كل الحسابات الموثقة (الأدمنز والطلاب) من هنا، وتتعرف عليهم بعلامة الصح الزرقاء ✓ جنب اسمهم. أي حساب يتفعّله التوثيق يقدر كمان يضيف صورة شخصية ليه، وتظهرله في رسايله جوه الشات.</div>
                 <div class="vt-actions">
                     <button class="vt-btn-primary" onclick="dismissVerifiedTip(true)">تمام، أشوفها</button>
@@ -405,8 +287,10 @@
                 </div>
             </div>
 
+            <!-- شريط الرسايل المثبّتة (بيتملي من script.js) -->
             <div class="pinned-bar" id="pinnedBar"></div>
 
+            <!-- شريط البحث داخل المحادثة الحالية: Enter = التالي، Shift+Enter = السابق -->
             <div class="chat-search-bar" id="chatSearchBar">
                 <input type="text" id="chatSearchBarInput" placeholder="دوّر في رسايل المحادثة دي..." aria-label="دوّر في المحادثة" oninput="performChatSearch(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); goToSearchMatch(event.shiftKey ? -1 : 1);}">
                 <span class="csb-count" id="chatSearchCount"></span>
@@ -415,15 +299,22 @@
                 <button aria-label="إغلاق البحث" title="إغلاق" onclick="toggleChatSearchBar(false)"><i class="fas fa-xmark"></i></button>
             </div>
 
+            <!-- ---------- سجل المحادثة: هنا بتتضاف الرسايل (role=log عشان قارئ الشاشة يقرا الجديد) ---------- -->
             <div class="chat-container" id="chatContainer" role="log" aria-live="polite" aria-label="سجل المحادثة">
+
+                <!-- شاشة الترحيب: بتظهر لما المحادثة فاضية، وبتختفي أول رسالة -->
                 <div class="welcome-screen" id="welcomeScreen">
                     <div class="welcome-logo"><i class="fas fa-graduation-cap"></i></div>
                     <h1 class="welcome-title">أهلاً بك في Chat X</h1>
                     <p class="welcome-sub">مساعدك الأكاديمي الذكي. اسأل عن الملخصات، خطط الدراسة، أو استخدم الحاسبات العلمية.</p>
+
+                    <!-- ماسكوت خريطة التقدم (ستايل دولينجو) -->
                     <div class="duo-mascot-card" onclick="openProgressTree()" role="button" aria-label="افتح خريطة التقدم">
                         <div class="duo-mascot-avatar-sm">🩺</div>
                         <div class="duo-mascot-msg" id="duoMascotMsg">أهلاً بيك 👋<br>دوس هنا تشوف "خريطة تقدّمك" 🗺️</div>
                     </div>
+
+                    <!-- كروت الوصول السريع (sendQuick بتبعت النص كأنه سؤال) -->
                     <div class="quick-grid">
                         <div class="quick-card" onclick="openProgressTree()">
                             <i class="fas fa-route"></i>
@@ -482,7 +373,8 @@
                         </div>
                     </div>
                 </div>
-                
+
+                <!-- مؤشر "التفكير العميق" الحي: بيظهر أثناء ما الموديل بيفكر قبل الرد (Deep Thinking) -->
                 <div class="deep-think-indicator" id="deepThinkIndicator">
                     <div class="msg-avatar" style="background: var(--grad-bold); color: white;"><i class="fas fa-graduation-cap"></i></div>
                     <div class="deep-think-panel">
@@ -495,14 +387,19 @@
                     </div>
                 </div>
 
+                <!-- مؤشر "بيكتب..." (نقط متحركة، أو موجة نبض قلب لو ثيم "كليني هادي" مفعّل) -->
                 <div class="typing-indicator" id="typingIndicator">
                     <div class="msg-avatar" style="background: var(--grad-bold); color: white;"><i class="fas fa-graduation-cap"></i></div>
                     <div class="typing-dots"><span></span><span></span><span></span><svg viewBox="0 0 64 22" xmlns="http://www.w3.org/2000/svg"><path class="ecg-line" d="M0,11 L14,11 L18,4 L22,18 L26,11 L40,11 L44,6 L48,16 L52,11 L64,11"/><circle class="ecg-dot" cx="22" cy="18" r="2"/></svg></div>
                 </div>
             </div>
 
+            <!-- ---------- منطقة الكتابة (أسفل الشاشة) ---------- -->
             <div class="input-area">
+                <!-- اقتراحات ذكية وشرايح المرفقات (بيتخفي تلقائيًا لو فاضي) -->
                 <div class="smart-suggestions" id="smartSuggestions"></div>
+
+                <!-- زرار تفعيل Deep Thinking (تفكير عميق) -->
                 <button type="button" class="deep-think-bar" id="deepThinkBtn" onclick="toggleDeepThink()" aria-pressed="false">
                     <span class="deep-think-bar-icon"><i class="fas fa-brain"></i></span>
                     <span class="deep-think-bar-text">
@@ -512,18 +409,24 @@
                     <span class="deep-think-bar-limit-badge" id="deepThinkLimitBadge" style="display:none;"></span>
                     <span class="deep-think-switch"><span class="deep-think-switch-knob"></span></span>
                 </button>
+                <!-- اختيار سرعة التفكير: سريع / عميق (بيظهر لما الميزة تتفعّل) -->
                 <div class="deep-think-speed-row" id="deepThinkSpeedRow">
                     <button type="button" class="deep-think-speed-chip" id="deepThinkSpeedQuick" onclick="setDeepThinkSpeed('quick')"><i class="fas fa-bolt"></i> سريع</button>
                     <button type="button" class="deep-think-speed-chip active" id="deepThinkSpeedDeep" onclick="setDeepThinkSpeed('deep')"><i class="fas fa-brain"></i> عميق</button>
                 </div>
+
+                <!-- صندوق الكتابة: [إرفاق] [مايك] [مكالمة] [نص] [إرسال] -->
                 <div class="input-wrapper">
                     <button class="attach-btn" aria-label="إرفاق ملف أو مهارة" onclick="openAttachMenu()">
                         <i class="fas fa-paperclip"></i>
                     </button>
+                    <!-- حقل اختيار الملف المخفي (بيتفتح من قائمة الإرفاق): نص/صورة/PDF -->
                     <input type="file" id="fileInput" hidden accept=".txt,.md,.jpg,.jpeg,.png,.pdf" onchange="handleFileUpload(event)">
+                    <!-- سؤال بالصوت (تحويل كلام لنص) -->
                     <button class="mic-btn" id="micBtn" onclick="toggleVoiceInput()" title="سؤال بالصوت" aria-label="سؤال بالصوت">
                         <i class="fas fa-microphone" id="micIcon"></i>
                     </button>
+                    <!-- مكالمة صوتية حية مع المساعد -->
                     <button class="mic-btn" id="voiceCallBtn" onclick="openVoiceCallScreen()" title="مكالمة صوتية حية مع المساعد" aria-label="مكالمة صوتية حية مع المساعد" style="background:var(--grad-bold);color:#fff;">
                         <i class="fas fa-phone-volume"></i>
                     </button>
@@ -532,15 +435,19 @@
                         <i class="fas fa-paper-plane" id="sendBtnIcon"></i>
                     </button>
                 </div>
+
+                <!-- تحت الصندوق: عداد الحروف + اختيار الموديل -->
                 <div class="input-footer">
                     <span class="char-count" id="charCount">0 / 4000</span>
                     <select class="model-select" id="modelSelect" onchange="saveModelChoice()">
                         <option value="auto"> تلقائي</option>
+                        <!-- موديلات Premium: بتظهر بس للحسابات اللي الأدمن فعّل لها الذكاء المتقدم -->
                         <optgroup label="✨ موديلات Premium" id="premiumModelsGroup">
                             <option value="cerebras" id="cerebrasModelOption">🧠 Cerebras</option>
                             <option value="claude-opus" id="claudeOpusModelOption">✨ Claude Opus</option>
                             <option value="examiner" id="examinerModelOption">🎓 الممتحن الشرس</option>
                         </optgroup>
+                        <!-- الموديلات العامة: متاحة للكل -->
                         <optgroup label="الموديلات العامة">
                             <option value="groq">⚡ Groq</option>
                             <option value="gemini">🌟 Gemini</option>
@@ -560,8 +467,13 @@
         </main>
     </div>
 
-    <!-- Settings Modal -->
-    <!-- شاشة ترحيب أول استخدام -->
+    <!-- ======================================================================
+         النوافذ المنبثقة (Modals)
+         كل نافذة = <div class="modal-overlay" id="..."> وبتتفتح/تتقفل بـ openModal(id) / closeModal(id)
+         من script.js (الكلاس active على الـ overlay هو اللي بيظهرها).
+         ====================================================================== -->
+
+    <!-- ================= شاشة ترحيب أول استخدام ================= -->
     <div class="modal-overlay" id="onboardingModal">
         <div class="modal" style="max-width:380px;text-align:center;">
             <div style="padding:28px 22px 22px;">
@@ -598,6 +510,7 @@
         </div>
     </div>
 
+    <!-- ================= سؤال اليوم من زميل (أسئلة شائعة مجهولة) ================= -->
     <div class="modal-overlay" id="sharedQuestionsModal">
         <div class="modal" style="max-width:480px;">
             <div class="modal-header">
@@ -613,6 +526,7 @@
         </div>
     </div>
 
+    <!-- ================= الإعلانات ================= -->
     <div class="modal-overlay" id="announcementsModal">
         <div class="modal" style="max-width:480px;">
             <div class="modal-header">
@@ -625,6 +539,11 @@
         </div>
     </div>
 
+    <!-- ======================================================================
+         نافذة الإعدادات: ملف شخصي، رابط سيرفر، نسخ احتياطي، تنبيهات، ألوان،
+         صوت، إشعارات، تسجيل دخول School X، تواصل مع الأدمن، وأقسام الأدمن.
+         الأقسام المخفية (display:none) بتظهر من script.js حسب نوع الحساب.
+         ====================================================================== -->
     <div class="modal-overlay" id="settingsModal">
         <div class="modal">
             <div class="modal-header">
@@ -638,6 +557,7 @@
                 <div id="settingsProfileBadgeArea" style="font-size:11.5px;color:var(--text-3);">سجّل دخولك بحساب School X (من تحت) عشان تشوف صورتك وحالة التوثيق.</div>
             </div>
 
+            <!-- رابط سيرفر مخصص (اختياري) لو الـ API مستضاف في مكان تاني -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-link"></i> رابط سيرفر مخصص (اختياري)</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -652,6 +572,7 @@
                 <div id="backendStatus" style="margin-top:10px;"></div>
             </div>
 
+            <!-- نسخة احتياطية: تصدير/استيراد المحادثات والإعدادات (متخزنة على الجهاز فقط) -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-cloud-arrow-down"></i> نسخة احتياطية لبياناتك</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -665,6 +586,7 @@
                 <div id="backupStatus" style="margin-top:10px;"></div>
             </div>
 
+            <!-- تذكير الصلاة على النبي والاستغفار -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-bell"></i> التنبيهات</div>
                 <label style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;">
@@ -673,6 +595,7 @@
                 </label>
             </div>
 
+            <!-- نمط الألوان: الافتراضي / كليني هادي -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-palette"></i> نمط الألوان</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -688,6 +611,7 @@
                 </div>
             </div>
 
+            <!-- اختيار الصوت الطبيعي لزراير "استمع" والتحميل الصوتي -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-microphone-lines"></i> الصوت الطبيعي للردود</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -709,6 +633,7 @@
                 </div>
             </div>
 
+            <!-- إشعارات البوش (Firebase) — القسم مخفي وبيظهر لو المتصفح يدعمها -->
             <div class="tool-section" id="pushNotifSection" style="display:none;">
                 <div class="tool-title"><i class="fas fa-bell-concierge"></i> إشعارات الرسايل والغرف الجماعية</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -718,6 +643,7 @@
                 <div id="pushNotifStatus" style="margin-top:10px;font-size:12px;color:var(--text-2);"></div>
             </div>
 
+            <!-- منصات المطور: Chat X (أنت هنا) + رابط School X -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-layer-group"></i> منصات المطور</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:12px;line-height:1.7;">
@@ -733,7 +659,7 @@
                             <div style="font-size:11px;color:var(--text-2);margin-top:1px;">المساعد الأكاديمي الذكي — الشات ده</div>
                         </div>
                     </div>
-                    <a href="https://schoolx-eta.vercel.app" target="_blank" style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-2);border:1px solid var(--border);border-radius: var(--radius-md);transition: all var(--transition-base);">
+                    <a href="https://schoolx-eta.vercel.app" target="_blank" rel="noopener" style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-2);border:1px solid var(--border);border-radius: var(--radius-md);transition: all var(--transition-base);">
                         <div style="width:42px;height:42px;flex-shrink:0;border-radius:11px;background:var(--bg-glass);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:17px;">
                             <i class="fas fa-school"></i>
                         </div>
@@ -741,11 +667,12 @@
                             <div style="font-weight:800;font-size:13.5px;color:var(--text-1);">School X</div>
                             <div style="font-size:11px;color:var(--text-2);margin-top:1px;">منصة المدرسة — درجات، حضور، بنك أسئلة</div>
                         </div>
-                        <i class="fas fa-arrow-up-left-from-square" style="color:var(--text-3);font-size:12px;flex-shrink:0;"></i>
+                        <i class="fas fa-arrow-up-right-from-square" style="color:var(--text-3);font-size:12px;flex-shrink:0;"></i>
                     </a>
                 </div>
             </div>
 
+            <!-- ربط حساب School X: نموذج دخول (يتبدّل بصندوق "مسجّل دخول" بعد النجاح) -->
             <div class="tool-section" id="schoolLoginSection">
                 <div class="tool-title"><i class="fas fa-school"></i> ربط حساب School X</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -755,12 +682,14 @@
                     <input type="text" id="schoolApiUrlInput" class="tool-input" value="https://schoolx-eta.vercel.app" readonly disabled style="opacity:0.75;cursor:not-allowed;">
                     <p style="font-size:10px;color:var(--text-3);margin-top:4px;">رابط سيرفر School X ثابت ومش قابل للتعديل.</p>
                 </div>
+                <!-- الحالة: مش مسجّل دخول -->
                 <div id="schoolLoggedOutBox">
                     <div class="input-group"><input type="text" id="schoolUsernameInput" class="tool-input" placeholder="اسم المستخدم"></div>
                     <div class="input-group"><input type="password" id="schoolPasswordInput" class="tool-input" placeholder="كلمة المرور"></div>
                     <button class="btn-calc" onclick="schoolLogin()">تسجيل الدخول</button>
                     <button type="button" onclick="openPasswordResetModal()" style="display:block;margin:10px auto 0;background:none;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;">نسيت كلمة السر؟</button>
                 </div>
+                <!-- الحالة: مسجّل دخول -->
                 <div id="schoolLoggedInBox" style="display:none;">
                     <div id="schoolLoggedInText" style="font-size:13px;margin-bottom:10px;"></div>
                     <button class="btn-calc" onclick="schoolLogout()">تسجيل الخروج</button>
@@ -770,6 +699,7 @@
                 <div id="schoolLoginStatus" style="margin-top:10px;"></div>
             </div>
 
+            <!-- تواصل مع الأدمن (باسمك أو مجهول) — بيظهر للطلاب المسجّلين -->
             <div class="tool-section" id="contactAdminSection" style="display:none;">
                 <div class="tool-title"><i class="fas fa-envelope"></i> تواصل مع الأدمن</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -790,12 +720,16 @@
                 <div id="adminMsgStatus" style="margin-top:10px;"></div>
             </div>
 
+            <!-- ===== أقسام الأدمن فقط (مخفية لأي حساب غير أدمن) ===== -->
+
+            <!-- رابط لوحة تحكم Premium -->
             <div class="tool-section" id="adminPremiumPanelSection" style="display:none;">
                 <a href="/admin-premium.html" target="_blank" class="btn-calc" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:linear-gradient(120deg,#d4af37,#f0c869);color:#1a1400;">
                     <i class="fas fa-crown"></i> لوحة تحكم Premium
                 </a>
             </div>
 
+            <!-- صندوق الرسايل الواردة من الطلاب -->
             <div class="tool-section" id="adminInboxSection" style="display:none;">
                 <div class="tool-title"><i class="fas fa-inbox"></i> الرسايل الواردة من الطلاب</div>
                 <input type="text" id="adminInboxSearch" class="tool-input" placeholder="دوّر بالاسم أو بنص الرسالة..." style="margin-bottom:8px;" oninput="filterAdminInbox(this.value)">
@@ -806,12 +740,14 @@
                 <div id="adminInboxList" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;"></div>
             </div>
 
+            <!-- سجل عمليات الأدمن (Audit Log) -->
             <div class="tool-section" id="adminAuditLogSection" style="display:none;">
                 <div class="tool-title"><i class="fas fa-clipboard-list"></i> سجل عمليات الأدمن</div>
                 <button class="btn-calc" style="margin-bottom:10px;background:var(--bg-2);color:var(--text-2);" onclick="loadAdminAuditLog()"><i class="fas fa-rotate"></i> تحديث</button>
                 <div id="adminAuditLogList" style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;"></div>
             </div>
 
+            <!-- كشف مشاركة الحسابات -->
             <div class="tool-section" id="adminSharingSection" style="display:none;">
                 <div class="tool-title"><i class="fas fa-user-secret"></i> كشف مشاركة الحسابات</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -821,12 +757,14 @@
                 <div id="adminSharingList" style="display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto;"></div>
             </div>
 
+            <!-- مراجعة ملخصات المكتبة المشتركة قبل ظهورها للباقي -->
             <div class="tool-section" id="adminReviewSection" style="display:none;">
                 <div class="tool-title"><i class="fas fa-file-circle-check"></i> مراجعة ملخصات المكتبة المشتركة</div>
                 <button class="btn-calc" style="margin-bottom:10px;background:var(--bg-2);color:var(--text-2);" onclick="loadAdminReviewQueue()"><i class="fas fa-rotate"></i> تحديث</button>
                 <div id="adminReviewList" style="display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;"></div>
             </div>
 
+            <!-- تقييمات ردود الذكاء الاصطناعي (👍/👎) -->
             <div class="tool-section" id="adminRatingsSection" style="display:none;">
                 <div class="tool-title"><i class="fas fa-thumbs-up"></i> تقييمات ردود الذكاء الاصطناعي</div>
                 <button class="btn-calc" style="margin-bottom:10px;background:var(--bg-2);color:var(--text-2);" onclick="loadAdminRatingsSummary()"><i class="fas fa-rotate"></i> تحديث</button>
@@ -835,6 +773,7 @@
                 <div id="adminRatingsNegative" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;margin-top:8px;"></div>
             </div>
 
+            <!-- ذيل النافذة: روابط الصفحات التعريفية -->
             <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--text-3);">
                 Chat X — تطوير <a href="/developer.html" target="_blank" style="color:var(--text-2);font-weight:700;text-decoration:none;">Ahmed Mousaa</a>
                 <br>
@@ -849,7 +788,7 @@
         </div>
     </div>
 
-    <!-- Weekly Leaderboard Modal -->
+    <!-- ================= لوحة الصدارة الأسبوعية ================= -->
     <div class="modal-overlay" id="leaderboardModal">
         <div class="modal">
             <div class="modal-header">
@@ -861,10 +800,12 @@
                     ترتيبك بيتحسب من نشاطك الأسبوعي (شات + حل بنك الأسئلة). أعلى 10 طلاب كل أسبوع
                     بيفتحلهم مميزات إضافية، والترتيب بيرجع صفر تاني كل أسبوع جديد.
                 </p>
+                <!-- ترتيبك الحالي -->
                 <div id="myRankBox" style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg-glass);border:1px solid var(--border-accent);border-radius: var(--radius-md);margin-bottom:10px;">
                     <div style="font-size:12.5px;color:var(--text-2);">ترتيبك الأسبوع ده</div>
                     <div style="font-weight:800;font-size:15px;" id="myRankText">—</div>
                 </div>
+                <!-- المكافآت (بتظهر لو الطالب في أعلى 10) -->
                 <div id="myRewardsBox" style="display:none;padding:12px;background:linear-gradient(135deg, rgba(255,215,0,0.14), var(--bg-glass));border:1px solid rgba(255,215,0,0.5);border-radius: var(--radius-md);margin-bottom:14px;">
                     <div style="font-weight:800;font-size:13px;margin-bottom:8px;" id="myRewardsMessage"></div>
                     <div id="myRewardsList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
@@ -875,7 +816,8 @@
         </div>
     </div>
 
-    <!-- بنك أخطائي الشخصي: كل سؤال يغلطه الطالب في أي اختبار بيتجمع هنا تلقائي عشان
+    <!-- ================= بنك أخطائي الشخصي =================
+         كل سؤال يغلطه الطالب في أي اختبار بيتجمع هنا تلقائي عشان
          يراجعه لوحده. راجع addMistakeToBank / tryGradeActiveQuiz للربط. -->
     <div class="modal-overlay" id="mistakesBankModal">
         <div class="modal">
@@ -897,7 +839,7 @@
         </div>
     </div>
 
-    <!-- مين فاتح دلوقتي (Live Now) -->
+    <!-- ================= مين فاتح دلوقتي (Live Now) ================= -->
     <div class="modal-overlay" id="liveNowModal">
         <div class="modal">
             <div class="modal-header">
@@ -913,13 +855,15 @@
         </div>
     </div>
 
-    <!-- استوديو الفيديو التلقائي: ملخص → فيديو بصوت وشرائح متحركة -->
+    <!-- ================= استوديو الفيديو التلقائي: ملخص → فيديو بصوت وشرائح متحركة =================
+         ثلاث حالات بتتبدّل من script.js: (1) الإدخال vsInputSection (2) التقدم vsProgressSection (3) النتيجة vsResultSection -->
     <div class="modal-overlay" id="videoStudioModal">
         <div class="modal">
             <div class="modal-header">
                 <div class="modal-title"><i class="fas fa-clapperboard"></i> استوديو الفيديو التلقائي</div>
                 <button class="close-modal" aria-label="إغلاق" onclick="closeModal('videoStudioModal')"><i class="fas fa-times"></i></button>
             </div>
+            <!-- (1) الإدخال: النص + عدد الشرائح + الأفاتار + الاستايل + الحركة -->
             <div class="tool-section" id="vsInputSection">
                 <div class="tool-title"><i class="fas fa-align-right"></i> الصق الملخص أو النص اللي عايز تحوّله فيديو</div>
                 <textarea id="vsSummaryInput" class="tool-input" rows="6" style="resize:vertical;" placeholder="مثال: الصق هنا ملخص محاضرة أو أي نص عايز تفهمه بشكل فيديو بدل ما تقراه..."></textarea>
@@ -941,10 +885,12 @@
                     بيتعمل بالكامل من على جهازك (توليد شرائح بالذكاء الاصطناعي + صوت + تسجيل فيديو). محتاج متصفح Chrome أو Edge لأفضل نتيجة.
                 </p>
             </div>
+            <!-- (2) شريط التقدم أثناء التوليد -->
             <div class="tool-section" id="vsProgressSection" style="display:none;">
                 <div id="vsProgressText" style="font-size:13px;font-weight:700;text-align:center;">جارٍ التحضير...</div>
                 <div class="vs-progress-wrap"><div class="vs-progress-bar" id="vsProgressBar"></div></div>
             </div>
+            <!-- (3) الفيديو الناتج + تحميل -->
             <div class="tool-section" id="vsResultSection" style="display:none;">
                 <video class="vs-preview-video" id="vsPreviewVideo" controls playsinline></video>
                 <div style="display:flex;gap:8px;margin-top:10px;">
@@ -955,8 +901,10 @@
         </div>
     </div>
 
-    <!-- مكالمة صوتية حية مع المساعد -->
+    <!-- ================= مكالمة صوتية حية مع المساعد (شاشة كاملة) =================
+         كرة متحركة (orb) بتتغير حالتها: listening / speaking / thinking + نص المكالمة + أزرار التحكم -->
     <div class="call-overlay" id="voiceCallOverlay">
+        <!-- تبديل شكل المكالمة (داكن/أبيض) -->
         <button class="call-theme-toggle" id="callThemeToggle" onclick="toggleCallTheme()" title="غيّر شكل المكالمة" aria-label="غيّر شكل المكالمة"><i class="fas fa-sun" id="callThemeIcon"></i></button>
         <div class="call-top">
             <div class="call-brand">Chat X · مكالمة مباشرة</div>
@@ -965,6 +913,7 @@
         <div class="call-orb-wrap">
             <div class="call-ring"></div>
             <div class="call-ring"></div>
+            <!-- الضغط على الكرة = مقاطعة رد المساعد -->
             <button class="call-orb" id="callOrb" onclick="callBargeIn()" aria-label="اضغط عشان تقاطع الرد"><i class="fas fa-graduation-cap"></i></button>
         </div>
         <div class="call-transcript-wrap" id="callTranscriptWrap">
@@ -977,7 +926,7 @@
         </div>
     </div>
 
-    <!-- Group Study Chats List Modal -->
+    <!-- ================= قائمة غرف المذاكرة الجماعية + بدء محادثة جديدة بالـ @ ================= -->
     <div class="modal-overlay" id="groupChatListModal">
         <div class="modal">
             <div class="modal-header">
@@ -988,6 +937,7 @@
                 <div class="tool-title"><i class="fas fa-user-plus"></i> ابدأ مذاكرة مع زميلك</div>
                 <div style="position:relative;">
                     <input type="text" id="mentionSearchInput" class="tool-input" placeholder="اكتب @ ثم اسم زميلك..." oninput="handleMentionSearch(this.value)" autocomplete="off">
+                    <!-- اقتراحات الأسماء أثناء الكتابة -->
                     <div id="mentionSuggestions" style="display:none;position:absolute;top:100%;right:0;left:0;margin-top:4px;background:var(--bg-2);border:1px solid var(--border);border-radius: var(--radius-sm);overflow:hidden;z-index:10;max-height:200px;overflow-y:auto;"></div>
                 </div>
                 <div id="mentionSearchStatus" style="margin-top:8px;font-size:11px;color:var(--text-3);"></div>
@@ -999,7 +949,9 @@
         </div>
     </div>
 
-    <!-- Group Study Chat Room Modal -->
+    <!-- ================= غرفة المذاكرة الجماعية (الشات نفسه) =================
+         الثيمات: بيتحط على #groupChatRoomModal كلاس gc-theme-<name> من script.js،
+         والألوان معرّفة كمتغيرات --gc-* في styles.css -->
     <div class="modal-overlay" id="groupChatRoomModal">
         <div class="modal" style="display:flex;flex-direction:column;height:80vh;max-height:640px;position:relative;">
             <div class="modal-header">
@@ -1013,6 +965,8 @@
                     <button class="close-modal" aria-label="إغلاق" onclick="closeGroupChatRoom()"><i class="fas fa-times"></i></button>
                 </div>
             </div>
+
+            <!-- قائمة اختيار ثيم الشات (بتظهر بإضافة الكلاس active) -->
             <div id="groupChatThemeMenu">
                 <div class="gc-theme-option" onclick="setGroupChatTheme('default')">
                     <span class="gc-theme-swatch" style="background:var(--grad-bold);"></span> الافتراضي
@@ -1039,14 +993,18 @@
                     <span class="gc-theme-swatch" style="background:#a9744f;"></span> بني دافئ
                 </div>
             </div>
+
+            <!-- منطقة الرسايل (لونها وخلفيتها من متغيرات الثيم --gc-bg و --gc-bg-image) -->
             <div id="groupChatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background-color:var(--gc-bg,transparent);background-image:var(--gc-bg-image,none);background-size:cover;background-repeat:no-repeat;"></div>
 
             <!-- بانر طلب المحادثة — بيظهر بس لما الغرفة لسه 'pending' (طلب جديد مش متقبل) -->
             <div id="groupChatRequestBanner" style="display:none;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--bg-2);flex-shrink:0;"></div>
 
+            <!-- اختيار صورة للإرسال + شريحة معاينة الصورة المعلّقة -->
             <input type="file" id="groupChatImageInput" accept="image/*" style="display:none;" onchange="handleGroupChatImageSelect(this.files[0]); this.value='';">
             <div id="groupChatPendingImageChip" style="display:none;padding:8px 12px 0;align-items:center;gap:8px;"></div>
 
+            <!-- شريط الكتابة العادي: [صورة] [نص] [إرسال] [مايك] -->
             <div id="groupChatInputRow" style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;align-items:center;">
                 <button class="action-btn" style="width:38px;height:38px;flex-shrink:0;" aria-label="إرفاق صورة" onclick="document.getElementById('groupChatImageInput').click()"><i class="fas fa-image"></i></button>
                 <input type="text" id="groupChatInput" class="tool-input" placeholder="اكتب رسالتك..." style="flex:1;" oninput="notifyTypingInGroupChat();updateGroupChatSendButton();" onkeydown="if(event.key==='Enter'){event.preventDefault();sendGroupChatMessage();}">
@@ -1067,13 +1025,14 @@
         </div>
     </div>
 
-    <!-- محرر تعديل الصورة قبل إرسالها في غرفة المذاكرة: تدوير / عكس أفقي / سطوع / قص -->
+    <!-- ================= محرر تعديل الصورة قبل إرسالها في غرفة المذاكرة: تدوير / عكس أفقي / سطوع / قص ================= -->
     <div class="modal-overlay" id="groupImageEditModal">
         <div class="modal" style="max-width:420px;">
             <div class="modal-header">
                 <div class="modal-title"><i class="fas fa-crop-simple"></i> تعديل الصورة</div>
                 <button class="close-modal" aria-label="إلغاء" onclick="giCancelEdit()"><i class="fas fa-times"></i></button>
             </div>
+            <!-- مسرح التعديل: canvas للصورة + مربع القص بأربع مقابض للسحب -->
             <div id="giEditorStage" style="position:relative;width:100%;aspect-ratio:4/3;background:#000;border-radius: var(--radius-md);overflow:hidden;display:flex;align-items:center;justify-content:center;touch-action:none;">
                 <canvas id="giCanvas" style="max-width:100%;max-height:100%;display:block;"></canvas>
                 <div id="giCropBox" style="position:absolute;border:2px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.45);cursor:move;" onpointerdown="giCropPointerDown(event,'move')">
@@ -1100,20 +1059,23 @@
         </div>
     </div>
 
-    <!-- عارض صور بملء الشاشة — بديل window.open(dataURL) اللي المتصفحات الحديثة بترفضه
+    <!-- ================= عارض صور بملء الشاشة =================
+         بديل window.open(dataURL) اللي المتصفحات الحديثة بترفضه
          (بيرجع صفحة سودة/فاضية لأي data: URL كـ navigation مباشر). العرض هنا داخلي 100%. -->
     <div id="imageLightbox" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);align-items:center;justify-content:center;cursor:zoom-out;" onclick="closeImageLightbox()">
         <img id="imageLightboxImg" alt="معاينة الصورة" style="max-width:92vw;max-height:92vh;border-radius: var(--radius-xs);object-fit:contain;cursor:default;" onclick="event.stopPropagation()">
         <button onclick="closeImageLightbox()" aria-label="إغلاق" style="position:absolute;top:16px;left:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:18px;cursor:pointer;">✕</button>
     </div>
 
-    <!-- Tools Modal -->
+    <!-- ================= الأدوات: نسبة مئوية، BMI، بنك الأسئلة، جدول المذاكرة، فحص دواء، مكتبة، فيديوهات، Deep Thinking (أدمن)، استوديو الصور ================= -->
     <div class="modal-overlay" id="toolsModal">
         <div class="modal">
             <div class="modal-header">
                 <div class="modal-title"><i class="fas fa-calculator"></i> الأدوات</div>
                 <button class="close-modal" aria-label="إغلاق نافذة الأدوات" onclick="closeModal('toolsModal')"><i class="fas fa-times"></i></button>
             </div>
+
+            <!-- حاسبة النسبة المئوية -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-percentage"></i> النسبة المئوية</div>
                 <div class="input-group"><label>القيمة</label><input type="number" id="percValue" class="tool-input"></div>
@@ -1121,6 +1083,8 @@
                 <button class="btn-calc" onclick="calculatePercentage()">احسب</button>
                 <div class="calc-result" id="percResult"></div>
             </div>
+
+            <!-- حاسبة مؤشر كتلة الجسم BMI -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-weight"></i> BMI</div>
                 <div class="input-group"><label>الوزن (كجم)</label><input type="number" id="bmiWeight" class="tool-input"></div>
@@ -1128,6 +1092,8 @@
                 <button class="btn-calc" onclick="calculateBMI()">احسب</button>
                 <div class="calc-result" id="bmiResult"></div>
             </div>
+
+            <!-- بنك الأسئلة (من School X): اختيار مادة/فصل/نوع/عدد، أو "تركيز" المساعد على فصل -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-book-medical"></i> بنك الأسئلة (School X)</div>
                 <div class="input-group">
@@ -1155,6 +1121,7 @@
                 <button class="btn-calc" onclick="generateBankQuiz()">أنشئ الاختبار</button>
                 <div class="calc-result" id="bankQuizStatus"></div>
 
+                <!-- "ذاكر الفصل ده مع المساعد": المساعد يرد من محتوى الفصل الحقيقي -->
                 <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);">
                     <p style="font-size:11px;color:var(--text-2);margin-bottom:8px;line-height:1.7;">
                         أو خلّي المساعد "يركّز" على الفصل ده بالذات ويذاكرلك إياه بمحتواه الحقيقي (تعريفات، أسئلة، حالات) — كلمه عادي في الشات وهو هيرد من محتوى الفصل نفسه بدل ما يجيب كلام عام.
@@ -1164,6 +1131,8 @@
                     <div id="bankFocusStatus" style="margin-top:8px;font-size:12px;"></div>
                 </div>
             </div>
+
+            <!-- فتح جدول المذاكرة الشخصي -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-calendar-check"></i> جدول المذاكرة الشخصي</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -1171,6 +1140,8 @@
                 </p>
                 <button class="btn-calc" onclick="closeModal('toolsModal'); openStudySchedule();"><i class="fas fa-calendar-days"></i> افتح جدول المذاكرة</button>
             </div>
+
+            <!-- فحص دواء بالكاميرا -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-pills"></i> فحص دواء بالكاميرا (تدريب الصيدلية)</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -1178,6 +1149,8 @@
                 </p>
                 <button class="btn-calc" onclick="closeModal('toolsModal'); openDrugScanner();"><i class="fas fa-camera"></i> افتح الكاميرا</button>
             </div>
+
+            <!-- المكتبة المشتركة: تصفح + رفع ملخص -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-layer-group"></i> المكتبة المشتركة</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -1186,6 +1159,8 @@
                 <button class="btn-calc" onclick="closeModal('toolsModal'); openModal('sharedLibraryModal'); switchLibraryTab('all');"><i class="fas fa-book-open"></i> تصفح المكتبة</button>
                 <button class="btn-calc" style="background:var(--bg-2);color:var(--text-2);margin-top:6px;" onclick="closeModal('toolsModal'); openModal('uploadSummaryModal');"><i class="fas fa-cloud-upload-alt"></i> شارك ملخص</button>
             </div>
+
+            <!-- فيديوهات شرح المنصة -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-video"></i> فيديوهات شرح المنصة</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -1193,6 +1168,8 @@
                 </p>
                 <button class="btn-calc" onclick="closeModal('toolsModal'); openModal('tutorialVideosModal'); loadTutorialVideos();"><i class="fas fa-play"></i> شوف الفيديوهات</button>
             </div>
+
+            <!-- تحكم الأدمن في Deep Thinking (مخفي عن الطلاب) -->
             <div class="tool-section" id="deepThinkAdminSection" style="display:none;">
                 <div class="tool-title"><i class="fas fa-brain"></i> التحكم في Deep Thinking (أدمن)</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -1209,6 +1186,8 @@
                 <button class="btn-calc" onclick="saveDeepThinkAdminConfig()"><i class="fas fa-save"></i> حفظ الإعدادات</button>
                 <div class="calc-result" id="dtaSaveStatus"></div>
             </div>
+
+            <!-- استوديو الوسائط الذكي (Premium) -->
             <div class="tool-section">
                 <div class="tool-title"><i class="fas fa-wand-magic-sparkles"></i> استوديو الصور الذكي 👑</div>
                 <p style="font-size:11px;color:var(--text-2);margin-bottom:10px;line-height:1.7;">
@@ -1219,7 +1198,8 @@
         </div>
     </div>
 
-    <!-- جدول المذاكرة الشخصي: الطالب هو اللي بيكتب مواده ومواعيده بنفسه، مش الذكاء
+    <!-- ================= جدول المذاكرة الشخصي =================
+         الطالب هو اللي بيكتب مواده ومواعيده بنفسه، مش الذكاء
          الاصطناعي — الجدول ده تحت تحكمه بالكامل، وممكن يفعّل تذكير يوصله رسالة تلقائي
          أول ما يجي معاد أي مادة. راجع openStudySchedule/addStudyBlock/checkStudyScheduleReminders. -->
     <div class="modal-overlay" id="studyScheduleModal">
@@ -1240,6 +1220,7 @@
                     التذكير بيشتغل طول ما الموقع مفتوح عندك (تاب أو تطبيق) — مش لو قافل الموقع تمامًا.
                 </p>
 
+                <!-- نموذج إضافة فترة: اليوم (0=الأحد ... 6=السبت) + من/إلى + المادة -->
                 <div class="tool-title" style="margin-top:4px;"><i class="fas fa-plus"></i> إضافة فترة مذاكرة</div>
                 <div class="input-group">
                     <label>اليوم</label>
@@ -1275,7 +1256,8 @@
         </div>
     </div>
 
-    <!-- البروفايل الأكاديمي الموحّد (Premium) — بيجمع بيانات موجودة أصلاً في /api/me
+    <!-- ================= البروفايل الأكاديمي الموحّد (Premium) =================
+         بيجمع بيانات موجودة أصلاً في /api/me
          (حضور، نتائج امتحانات، واجبات، مخالفات) في شاشة واحدة بدل ما تكون متفرقة.
          مفيش أي endpoint جديد على السيرفر لازم للميزة دي — راجع openAcademicProfile(). -->
     <div class="modal-overlay" id="academicProfileModal">
@@ -1290,12 +1272,13 @@
         </div>
     </div>
 
-    <!-- قائمة الحسابات الموثقة (كل الأدمنز + الطلاب اللي فعّلهالهم الأدمن) — علامة
+    <!-- ================= قائمة الحسابات الموثقة =================
+         كل الأدمنز + الطلاب اللي فعّلهالهم الأدمن — علامة
          صح زرقاء بجانب كل اسم زي فيسبوك/إنستجرام/تويتر. -->
     <div class="modal-overlay" id="verifiedAccountsModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAWN0lEQVR42u1de5RdVXn/fXufc+6de28mL/KmxBDkMUFiYUlR2yasLlCihhackcSIAZVQHrIsKEWKM4MCFbXLqCRAeQVCbGfAlvBul5KsoksWVR41I6TENCrkMQQyj/s65+zv6x/n3Jk7SWYymfuYe4fzy9rrJrkz++yzv8f+vm9/+9tAhAgRIkSIECFChAgRIkSIECFChAgRIkSIECFChAh1ARGCCNVt/xHGhuYO0UMI0yoKHaLL9oAO0WgVVcwIzeXsP8KYRZKCFqDpOUmd9qwkh3xfCqE6RBf3f9qzkmx6TlLDPb8eUb+DFyEQCQCc9KysFo3Pi4+TiGCgsY0Y975+LnUOEHIbBO3Eo+q7VRQWgdBCBgBO+qk0i+ALMFgkDEU2tpPBhtc/Rg8cPJaIAaol+QJq6oTlTcJGqxHN4gLiBW9EdvDJLrYaH207zqMtANAsojsBHpZYIrSkDXprO/kAcMJ/yBIFtKkYlkIAccNJswFyAL8XnXYfVnUBBi1goP6YoD4ZoEM0Wsic8IT5rj1dXeu9wy4ATQIVsgcTFFQDtBiAGT+GwbfeWEZdALDkObG2ng0zSDAhPAeNswPCn/iMnCyEm4iwkiyAszACRnH/AIw9TTleN3/vjeX6usKYIgaoBvGbwSc8jVNI8StgBTBrENFhJNpAoNQkRZJHhhnrOIPv/O5C2je4xgMFwp3Q0TuDJiWvBeEqFVdJ7mdBoDH0YfoWKGVIMUxefXDH+ehCB1S9MYFVn5YLCTab2yilLE6zAVEgk4f+nAYA08eGlEroJK6D8KoTnvK/Dej1byyjPAA0dYjjpcwaIX29asA8Tge/A5AGQQ/TN8EwUVxp5Pk2QC8H6s8MoLqT/hYyC5+Qs7WDn3GeDYDRWfkCEcAoS1mqAeA8XuUcbiLyGY76po6rD3IOYI99ghxeoxweRsWURtb/q+3n2z+rt6WgvhhAAl984WbzS9WgP8Q5Ywikj7IPEYBVXA9KtgY4awwB6igIX+Aro+Jac5Zf3LFcnRVqB44YoPzE1yAyCx7zV1lJ/ZDpN4aIdAn9MQq0FgGI1Ni7EqNTWksan3vjfNpYGGvEAOX0+dtAZ5yB+AE228im+eKxAKTG9goSvroUTYNg7H0Jk61IfNmV7NGnvroDWbRB6iE2MH4M0NGhl8xopq3dR7acmgDd1ULugp+4N+hG+1bu9Q1Kkf7KMKnRjZb2e72v77zAua2pQ5wu4IhaYMkM0NbuTkFLi3nvMECrqFFH5UIc/6jMhDavQ1EjfCaAqNbUFCwlEOmFr08acDUrOCd1rQHmP+qepbVeLswLIFDDqmAiAsSA6UQV06dL3hcoojFr7IrQPhwLi1DMIs6bX0PJdoA0RGTYXyAwKbXTGLN514XOLye4BgjCtwDo+Ef9HyBmXaEcQEbJ8+IDkvfkaK30cVAEQjGbaJQRFlIAuwBcf/3vpj3/ZSxdyiBItcLKVMWJUSDi93Xk11nTnb8173pGBEKjGgMJIKoUS73KTMAA8Wh2CgUQIiI91dL+fnf9/7XErijM1cRhgDA4sqAjfSZiiRfE9f3QVYqSK0KtASJDjmUh65258yLnRXR06GoYhtUJBc8IGI3FulDbEM4ZECmCSET8gopjA2VbYnLyaQAvYkZzVYSjOgwQunoEOg4GRBJJ/qGqWAEGRKDjiudsYjBAQdMxlAgiwT/8MkAiwRxV87FV3g3kIjcowqGuYfEcTUAGkML7Meo5Ga1yk8PVFw2r2gpAIvk/soBMWAYQCTkgYoFamRurygogCOlE9D+s+ItUXQFUfwmI1oAR9L9M5CWgVRSQI4kYYEQNAICGnEKqMCr/IBHCblhoJ4YgH/yXRO0wLWSEPNqJsRtWNc4hVpYBOkSDSHAN5Wffk5kPpU8R19TSRm4tgcQ1AtJNsx7MLsA1lAeRoMJnEKlihG9RBhBMe+jtxgSnrhFSXyGlp4qbEyhF0TJwGEowC8XiJMwHwP7afs59v+eSqQcG57T8eYblZYBWUWhDmBUrdOwD7mpRdKOK2wsl60J8LyB+hBEMZRZom1TCAee9nWTMrX988vH70dliBmyDMmYOlYkYQsWnYubckz1XWVYbxawPi8cQL+cD0DTBt38PXtvGnGYaGASG7LhFjgLn/ReY/bY9lzQ8M6gNynMWkcpC/HAg8+7tXyzK/gZZ9gUgguTSwakd1EkiR4nQBBgBfAYcXY64jjBEhOJJDRGIn39MXHPz7jWpXx889+PEAEIQ4Iy7Yb2lM7eRZV+lbDvG2TQHufbqPUH4AvF7XUHSJjQ6wN4MYKmQEUqVU2EGEVRDUrHnesT+D2Z7iRt+dRn8gIJjZ4LSGCBck+bMS3eoKckLuScjwWDVe6p6hqWA/TnB8gUWvn6mjblJwgt7GF973sXejJSHCYK1wYCg9OQkmQPZR3e/2dBSqk0wdgYIrdJZd/evtiYl7+e+tAvArr107coTvzsr+MyJFu47J4ZiE/fZXQYXPZVD0iZw2bweEQCempR0TH969Z4vpTaU4iGMXUVvC7N8BF8UDwwRHTBUIdQ3cZsgCNxYStCdYXzmRI17z4mBQhuAJfg8a7bCrATBNRIk+palgSCixQOD5UvFtBgTA485ukfEM34kKUj/QnFdJcG8vKckf19acNFJFu49Jx5IvgwagpqAPRnBgZxAA+DyxvgVXJcAHD/rQUnuvZjSYy1TU5KRZtngQBwI7zXid2dC4p87SHyiQEGrkAlu+rmLjCfQ5V4UJXQAGKKypc382DQAkaBV1O41lJm5rvc1ZdmzxcsxRntWv45hFyT/ZPuwxEf4+cVnc3h8h4dpcYLPZZYOEYZlK/Zzr+1bQxm0jv0cwdh3AxcFBqSA1wM4+72gAYqJf9/Hhif+F57NYdNvPcxIEPxKbO+Gu4YifGcxLcbHDWyHzPxR739RQ+qjkk2Xdma/RqN7A8TPCFacYuO+jw9P/EufCYg/M0HwuGzRtuIooaF4Sku2/xf7rpr052gDleIGlpYPsAgEEAtlvka+93xgoE48VTBg8B2J+E9nByTfM3IIE5UHBBhXRPC1cLewJDuutEhdCxl0iO6+MvELzuc7qSGlwWwmktdnEdAdqv37z2s4lPgYJP7DXR5mNBB8U6HxMBtqSGnOZzu7v9z483LsEJYeqt0GgQhByY2cy2ZFWSQSbGeUfQ7kCP8u87OKJf/+ZQ1hkcChxGcAlzwVEH9mguCZCr23iIiyiHPZLBTdCBEqxf8vHwO0E6MTqvuqKW+Il7uD4kkFETMgGmWcBQrdDF3sbpSdC4LcrMDgY6woJj4OknwAlz6VwaYuFzMbCmq/AuMJw8AUTyrx3Du6r5ryBjpRloIS5THYmkBYuoUsx/1vZdxLSDspsC/lCgtLyKkeAz15Qd4X5HxBXA9+T2V6TrHBt7LJxv2fSAxL/NVPZrCpq3IGX9HIGNpRks9253X/CvfMSXl0bwG2bq0BDQAA7e0MbFG91055R4zcDKeBhMNloAxNAcj5wJQY4Za/jOPBTyXwhcUO0l5Y4AvleQ4EsClQ+ytOGZ74DGD1Exls2uaFkj8osVKJxiJwGojFfLPv6mP3A0tVMOdlMSnLxqWEVlATYO2b3PMyxZKniJsOqm2WOEBGEFp9+jNJnD57sLv7XnFx1bNZJB0aQqCS/PwMY8UiBw98cgTJfyKDh7e5mJVQA5JfQUfUkJPUkk+/NrNn8uIuwEd7+SqIlHG/ngSLQF3t5ELMdSKGRYRKzZQlCPryjLOP0zh9tobLQcKFz8Clix2s+3gD+vIM5uBnx/ociwR70owVTUcg/uMZPPybYM13TVWyhUnEMISu7WonN3S9y+ZZVuhcgFW+uxSoYFfRAMdaIXV8Blaf5gACXP5MBimboAhHvfVqK2BvWrBykYMHPhUQXxDE9IcQf3Mg+QVrvzqo7J0UqqxLwDYIWsUxwt8VkCpHVMgwkLIJP9vp4eW9BpbCQHi18PfVix2s/3gC/XkBF9kER9xPCV29vWnGykUONiwflHx10Jr/+c1pbPxNHjMSBNdUce9LRASkDPP30CFO4PqVjyPKxwCtWzTaiac17L9MNUw5RbJ9RgAtLCi1KRLkPEHzI/147e3DM8Elix2sX5YIloNw6RipT7DAVoK9/UOJL4dT+4+lsfF/Qsn3C4f4Sn+vUTVAS7bPqMSUk6ftevcytBOjdYsuo34pB/FbFdCGxsaeKVqoi5SeCeNJORlME9DvCuZOUnjyohROOkbD56HLgaWAB15xsebJNFLOyMtBQe1/9lQHG/46Oaza/3xI/FlJqoLBNywY2iZhv9t3qakv/0/vDnpftaABFrUR2omV699A8cZZ4rlGZLAcTDmab4CUQ3izl/GJHw+vCVYvdnDnsiT68gLDh3cRLQL29gtWHoH4F/97GhtfDSTfNRVy8UbXlHiuofjkmVqbv0d7O2NRG9WGBggOg0jjbT0Lta1eBTgGY6hSJeAsBfTlBfMmKTyxchJOHkYT3P9yHmueOFQTFLZ0V37AwYN/kxqB+P14+FUXM8dX8ofYAtBaAJ03ypzW+3eTd5S6E1geDbAIBCJR8G8hJ9kgfhgBrFCQ3itogj7GJzb1DW8TfDCGuz6ZDAzDUBNYBOwLJX9E4v9bPx5+xR00+GphYwpE4vtCTqJBuf4toMDtHl8NEO5GTf3Hno+Itp6H7zJQ+QsVJZTkPjfQBE9+dgRN8FIelz2exuQ4YX9GsOIDDh66YBTErxXJP5RkBpajyM39xbs3Ti95R7A0DRDuBDJ7t5OyCFKdhZJE4BnBJBuBTbBxBE3wpzHcszyJ/X2MFac6eGgkyf9JPx5+OY8ZCQQbO1KLzYCURQy+vRw7giWfC5j8rf3N1NDYIbme6tfwF8DSoU3QqPHUqkM1QSFD9z93ePjocRYSYY5+wS4oXBXxuUf7sOlVF8ckwyBPLZ9uEDEUn6wl29vS8w/TO8f1XIAAlwcxSwyWgKtWA+D7wCSH8GaPwbKHDtUEOiT0OQttJGwaIvmDxO/HppddHJMgeD4wLu9yNE0KASJcXkyLKmqA4FDinFZJpK13/pcsey78fFjKncZBIASWJvTnBfMaFZ76XCNOnnGoJlA0NErIAC5+pA+bXsljelLB40KNlpoW//CFYyS++1bSz79/d/u8zFgPilpjHQMI8LFPQbQaSP8Z+LL68Iwg5QB/7DE478EePH3x5CFMoIvuhxpC/JfzmJ48OIevxvMaBxNXFKfmUjFNqrMEhOcCuttn9QOyg3SMIeDxdJModBGD5YBx3oZevNYdLAdeWKDScJHB19mHTS/lMT0xdD+/ThqTjjGAHXu/SunwXMCYuHbsNsDAuQB9t+iYEsAM5AIObGVW10AO4gSClEOBJtjQg992G9jh3WI6vJhmVWcvNr2Uw7RE8ZYuargVj1FEACM6poT5n4tpUf04QBgFnNTW/a/UOKNZ+roluI9v/I+HD0QMJyus/WQKHznOwZu9Bm0/TeOxbS6mJsPs3XqCcHDRQmoGSV93Zx/uuAhoG6fj4QVjUACs+ZWVmnv8raStq2HFYpLtYUBA41ggQkKJz3mAL4LZKYWenCDtCibHB0/s1MNZdpEglkkNjQpezhPmtf1v/e7ruOuMcS4QUeQRAEDi5ncWk6hvkLIuICKI228AIhCpIXc0VpELCuf1XRZYRNAqtAVqlfJD7rIUBkTISQUFZ3zvMSPezZn2mbVSIqaonw4ZKBKVaH37XEW6jeyGD4ufB/ygSNR43hFEqKMDzGGRKFgxi+wGiJt5QQm39bZPLyoSRVyOVyp/mTggXJOEEm0HVpPgRnKSCyXfB7AnoKhM3BHWeYGyiWKNELdvJxm5tf/1n9Z6mbiD0CwanUGhSLRub0zJMdcI8BWQngo/GzHBSMS3GwgsByBmrdXb+/2etQsODM5prReKPBhFMer4jW/N1yr2KJR1Orys1M0dgFW09ALi+y/57H46f8ucnQfPYSVQWSK0kAGEcPX2WO6WubvEuL+FjlGhNnLUhjSBjpEYtyt/y5yduHp7DBCqJPHHHgo+OiUj2CM+WkXB3RsDS1QufjjrnwUQiqFVFLrgV+P62Oqp4XZiYYS1pKI/w/5hSDVvEbeqzunRrWEjaIDqP1aNx3tGqJ25qe6lUcyg6OrQ4byAwBLkCXxx5ACbR/SvmXmxqv2S0aVRR2AAmcgMwDJY0iXCYRhAAJ7AF0cKiCm6OXS4yZHwGDxPPAZoCrOHBL8HVPCqkRt4qBEYHKfcVTxnE8MN7OoUALAUHoGXI0ABPE6p5LWY4s1hJSQvR5aPR4vnrNKonhy2ikI7sX3NH+6g1JwrJL3XhPveoxgDCSCqbjaQRBgItsRHtzISUWKmlvRb67y1868szNXEYoCwiBS6QPbcvWuh7SthxwHhIxtHBMC4gJep/a1kYYGdIGhndKnapAA/Bxh3nffm7C+jCVLOIlA1xAAHGR/X/OHPSMWXi/EWjHiglEBgGJCcSDp+ek3nEwgLrDiJyf8aQtuhoEc+ZECGtN4pzJv9tXNeGI8hj89EjkXFXf7GTMtJvA5SjWCPau9uIhEoWyDS67s4CXfO2VfxOam7OEAB7cRhepNC1yiiAk3QaKd9uHLX7WiYfiuy71T/IOpo1v1YSiO7/3bcOX8frt4ew573+6PykLo6Be1k3jsaYKz2A96K67d5G3R8Pvxc7WQViTCsOMHkd5kefSoWzs5Wcx2vfTewdD4NqmG0z8sI4yZohwZCikdTvqP4CBEzQyRozHzI96PtrxDC0w4JyU3YOCdd7mKOkQYoXicBqL2//yXFUh+CN4ZStEEyGsNOaYRFzUEa8PoNQOroU9fFwE5qyfe/yLOOO2tgiasT1FdiZldQFIlZXS8cXFNwNAWXhcUX5ZDEpmox5lV47vnw3E8Jm5clNlWLckhY/KMrdE0QFjCp69FOjK76Eqr6C8iG6dG0ZudjFJu6HPlRVCYRMVBKw5kMuP17oOTbrNLr8cMT80Gfv3HUMVPXgNT1sJPz4PYCbEbXb2yyltyBzXL3+86vVOr2xPMCSkInACHBrhvgZpaBNCBmmLsJxECgEJus4ecyyKfXCTLfwR0n7BtgJgDoJJeBH+KS7f9CItcC6io4qSTyPQICH36ZEQFpgZf1hZwbgqhfZ93NZn1uyRS0wBd3fgepOdchs88Ng0kKQkEVKQCwUxrsASI/FpFv4a65XQCAJc9Z2LrUDBpqQliyRWPr2YHbdtmbJxOpm6BoJZQd2gdDlkwGyCAx00H/7u/KPQu+Wo/SX78MACE0dypMbVaEP2xEfFoL/BzAXvC1jgWffn6rwG/DXX+yZZBxwMNb6Acxwpd+v4S01QYdXwoAMPlg4dcOYMWB3LsdgmNX4d1ORmcz14vlPwEYICRWYcLX/HE1oC4G+++HgKHtbYDch7vmPhIQvkOjqXn06dZBXj4NSPRlu5tBdCnYPRWAgrJeh/AG3H3shkPGEqHaTFC047ZqdxJfkYYh/N3cMfaIYXOHPqT/K/amhn1+hHG0CaSIEK2iBgy8cvXfWnRBowiVtf8IFdIIddd/hAgRIkSIECFChAgRIkSIECFChAgRIkSIECFChAhlxP8D+w0x2wetFoQAAAAASUVORK5CYII=" alt="" style="width:20px;height:20px;vertical-align:-5px;"> الحسابات الموثقة</div>
+                <div class="modal-title"><img src="/icons/verified-badge.png" alt="" style="width:20px;height:20px;vertical-align:-5px;"> الحسابات الموثقة</div>
                 <button class="close-modal" aria-label="إغلاق" onclick="closeModal('verifiedAccountsModal')"><i class="fas fa-times"></i></button>
             </div>
             <div class="tool-section" id="verifiedAccountsContent">
@@ -1307,7 +1290,7 @@
         </div>
     </div>
 
-
+    <!-- ================= رفع ملخص للمكتبة المشتركة (مع شريط تقدم) ================= -->
     <div class="modal-overlay" id="uploadSummaryModal">
         <div class="modal">
             <div class="modal-header">
@@ -1345,7 +1328,7 @@
         </div>
     </div>
 
-    <!-- المكتبة المشتركة -->
+    <!-- ================= المكتبة المشتركة: تابين (كل المكتبة / ملفاتي) + فلتر الصف ================= -->
     <div class="modal-overlay" id="sharedLibraryModal">
         <div class="modal" style="display:flex;flex-direction:column;height:80vh;max-height:640px;">
             <div class="modal-header">
@@ -1369,13 +1352,15 @@
         </div>
     </div>
 
-    <!-- استرجاع كلمة السر ذاتيًا — خطوتين: تأكيد الهوية برقم الهاتف المسجّل، ثم كلمة سر جديدة -->
+    <!-- ================= استرجاع كلمة السر ذاتيًا =================
+         الخطوات: (1) اسم المستخدم + رقم الهاتف → (OTP تيليجرام لو مربوط) → (ربط تيليجرام اختياري) → (2) كلمة سر جديدة -->
     <div class="modal-overlay" id="passwordResetModal">
         <div class="modal">
             <div class="modal-header">
                 <div class="modal-title"><i class="fas fa-key"></i> استرجاع كلمة السر</div>
                 <button class="close-modal" aria-label="إغلاق نافذة استرجاع كلمة السر" onclick="stopResetTelegramLinkPoll(); closeModal('passwordResetModal')"><i class="fas fa-times"></i></button>
             </div>
+            <!-- الخطوة 1: تأكيد الهوية -->
             <div class="tool-section" id="prStep1">
                 <p style="font-size:11.5px;color:var(--text-2);margin-bottom:12px;line-height:1.8;">
                     اكتب اسم المستخدم. لو حسابك مربوط بـ Telegram هنبعتلك كود على طول هناك، ولو لأ اكتب رقم الهاتف <b>المسجّل عندنا مسبقًا</b> كتحقق بديل.
@@ -1385,6 +1370,7 @@
                 <button class="btn-calc" id="prVerifyBtn" onclick="verifyPasswordResetIdentity()"><i class="fas fa-check"></i> تأكيد الهوية</button>
                 <div class="calc-result" id="prStep1Status"></div>
             </div>
+            <!-- خطوة الكود: كود من 6 أرقام وصل على تيليجرام -->
             <div class="tool-section" id="prStepOtp" style="display:none;">
                 <p style="font-size:11.5px;color:var(--text-2);margin-bottom:12px;line-height:1.8;">
                     <i class="fab fa-telegram" style="color:#29a9eb;"></i> بعتنالك كود من 6 أرقام على بوت Telegram المربوط بحسابك — اكتبه هنا (صالح 10 دقايق).
@@ -1394,6 +1380,7 @@
                 <button type="button" onclick="verifyPasswordResetIdentity(true)" style="display:block;margin:10px auto 0;background:none;border:none;color:var(--accent);font-size:11.5px;font-weight:700;cursor:pointer;">إعادة إرسال الكود</button>
                 <div class="calc-result" id="prStepOtpStatus"></div>
             </div>
+            <!-- خطوة اختيارية: ربط تيليجرام بعد ما الهوية اتأكدت -->
             <div class="tool-section" id="prStepLinkTelegram" style="display:none;">
                 <div style="text-align:center;padding:6px 0 14px;">
                     <i class="fas fa-circle-check" style="font-size:28px;color:var(--success);margin-bottom:8px;display:block;"></i>
@@ -1409,6 +1396,7 @@
                 </div>
                 <button type="button" onclick="skipTelegramLinkGoToStep2()" style="display:block;margin:14px auto 0;background:none;border:none;color:var(--text-3);font-size:11.5px;font-weight:700;cursor:pointer;">تخطي، غيّر كلمة السر بس</button>
             </div>
+            <!-- الخطوة 2: كلمة السر الجديدة -->
             <div class="tool-section" id="prStep2" style="display:none;">
                 <p style="font-size:11.5px;color:var(--success);margin-bottom:12px;line-height:1.8;">
                     <i class="fas fa-circle-check"></i> اتأكدنا من هويتك — اكتب كلمة السر الجديدة (6 حروف/أرقام على الأقل).
@@ -1421,7 +1409,7 @@
         </div>
     </div>
 
-    <!-- سجل تسجيل الدخول الشخصي — آخر 20 حدث جلسة (دخول/منع/استرجاع كلمة سر) -->
+    <!-- ================= سجل تسجيل الدخول الشخصي — آخر 20 حدث جلسة (دخول/منع/استرجاع كلمة سر) ================= -->
     <div class="modal-overlay" id="loginHistoryModal">
         <div class="modal">
             <div class="modal-header">
@@ -1435,7 +1423,7 @@
         </div>
     </div>
 
-    <!-- ربط حساب Telegram — لاستلام كود تحقق حقيقي وقت استرجاع كلمة السر بدل رقم الهاتف -->
+    <!-- ================= ربط حساب Telegram — لاستلام كود تحقق حقيقي وقت استرجاع كلمة السر بدل رقم الهاتف ================= -->
     <div class="modal-overlay" id="telegramLinkModal">
         <div class="modal">
             <div class="modal-header">
@@ -1443,12 +1431,14 @@
                 <button class="close-modal" aria-label="إغلاق نافذة ربط Telegram" onclick="closeTelegramLinkModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="tool-section">
+                <!-- الحالة: مربوط بالفعل -->
                 <div id="tgLinkedView" style="display:none;text-align:center;padding:10px 0;">
                     <i class="fas fa-circle-check" style="font-size:32px;color:var(--success);margin-bottom:10px;display:block;"></i>
                     <p style="font-size:13px;font-weight:700;margin-bottom:14px;">حسابك مربوط بـ Telegram بالفعل ✅</p>
                     <p style="font-size:11px;color:var(--text-2);margin-bottom:14px;line-height:1.7;">هتستلم كود التحقق هناك تلقائيًا لما تحتاج تسترجع كلمة السر.</p>
                     <button class="btn-calc" style="background:var(--danger);color:#fff;" onclick="unlinkTelegram()"><i class="fas fa-link-slash"></i> فصل الربط</button>
                 </div>
+                <!-- الحالة: مش مربوط -->
                 <div id="tgUnlinkedView">
                     <p style="font-size:11.5px;color:var(--text-2);margin-bottom:14px;line-height:1.8;">
                         اربط حسابك ببوت Telegram الخاص بالمنصة عشان تقدر تسترجع كلمة السر بكود حقيقي بدل رقم الهاتف — أسرع وأأمن.
@@ -1464,13 +1454,14 @@
         </div>
     </div>
 
-    <!-- فيديوهات شرح المنصة: أي مستخدم يتفرج، الأدمن بس يقدر يرفع/يمسح -->
+    <!-- ================= فيديوهات شرح المنصة: أي مستخدم يتفرج، الأدمن بس يقدر يرفع/يمسح ================= -->
     <div class="modal-overlay" id="tutorialVideosModal">
         <div class="modal">
             <div class="modal-header" style="padding:16px 18px 0;margin-bottom:0;">
                 <div class="modal-title"><i class="fas fa-video"></i> فيديوهات شرح المنصة</div>
                 <button class="close-modal" aria-label="إغلاق فيديوهات الشرح" onclick="closeModal('tutorialVideosModal')"><i class="fas fa-times"></i></button>
             </div>
+            <!-- شريط الأدوات: بحث + عدد الفيديوهات + زرار الرفع (للأدمن فقط) -->
             <div class="tv-toolbar" style="padding-top:14px;">
                 <div class="tv-search-wrap">
                     <i class="fas fa-magnifying-glass"></i>
@@ -1479,6 +1470,7 @@
                 <span class="tv-count-text" id="tvCountText"></span>
                 <button id="tvUploadOpenBtn" class="btn-calc tv-upload-btn" style="display:none;" onclick="openModal('uploadTutorialVideoModal')"><i class="fas fa-cloud-upload-alt"></i> ارفع فيديو</button>
             </div>
+            <!-- ترتيب: الأحدث / الأكثر مشاهدة -->
             <div class="tv-sort-chips">
                 <button class="tv-sort-chip active" id="tvSortNewest" onclick="setTvSort('newest')"><i class="fas fa-clock"></i> الأحدث</button>
                 <button class="tv-sort-chip" id="tvSortViews" onclick="setTvSort('views')"><i class="fas fa-fire"></i> الأكثر مشاهدة</button>
@@ -1496,7 +1488,7 @@
         </div>
     </div>
 
-    <!-- رفع فيديو شرح جديد (الأدمن فقط) -->
+    <!-- ================= رفع فيديو شرح جديد (الأدمن فقط) ================= -->
     <div class="modal-overlay" id="uploadTutorialVideoModal">
         <div class="modal">
             <div class="modal-header">
@@ -1530,7 +1522,7 @@
         </div>
     </div>
 
-    <!-- مشغّل فيديو الشرح -->
+    <!-- ================= مشغّل فيديو الشرح ================= -->
     <div class="modal-overlay" id="videoPlayerModal">
         <div class="modal">
             <div class="modal-header" style="padding:14px 16px 0;margin-bottom:0;position:relative;">
@@ -1554,7 +1546,7 @@
         </div>
     </div>
 
-    <!-- معاينة الملفات (كل الأنواع: صور، PDF، Word/Excel، نصوص) -->
+    <!-- ================= معاينة الملفات (كل الأنواع: صور، PDF، Word/Excel، نصوص) ================= -->
     <div class="modal-overlay" id="filePreviewModal">
         <div class="modal">
             <div class="modal-header">
@@ -1565,7 +1557,7 @@
         </div>
     </div>
 
-    <!-- اختبار سريع اتولّد تلقائيًا من محتوى ملف بالمكتبة المشتركة (فيتشر 1) -->
+    <!-- ================= اختبار سريع اتولّد تلقائيًا من محتوى ملف بالمكتبة المشتركة (فيتشر 1) ================= -->
     <div class="modal-overlay" id="summaryQuizModal">
         <div class="modal" style="max-width:440px;max-height:82vh;display:flex;flex-direction:column;">
             <div class="modal-header">
@@ -1576,7 +1568,7 @@
         </div>
     </div>
 
-    <!-- تلخيص تلقائي لملف من المكتبة المشتركة (فيتشر 5) -->
+    <!-- ================= تلخيص تلقائي لملف من المكتبة المشتركة (فيتشر 5) ================= -->
     <div class="modal-overlay" id="summaryTLDRModal">
         <div class="modal" style="max-width:440px;max-height:80vh;display:flex;flex-direction:column;">
             <div class="modal-header">
@@ -1587,7 +1579,9 @@
         </div>
     </div>
 
-    <!-- استوديو الصور الذكي (Premium): تحليل صورة برؤية AI حقيقية + إنشاء صورة من وصف نصي -->
+    <!-- ================= استوديو الصور/الفيديو الذكي (Premium) =================
+         أربع تبويبات: تحليل صورة برؤية AI حقيقية | إنشاء صورة من وصف نصي | إنشاء فيديو | مكتبتي.
+         بتتبدّل بـ switchImageStudioTab(name) من script.js -->
     <div class="modal-overlay" id="imageStudioModal">
         <div class="modal" style="max-width:460px;max-height:85vh;display:flex;flex-direction:column;">
             <div class="modal-header">
@@ -1601,7 +1595,7 @@
                 <button id="isTabLibrary" class="lib-tab" onclick="switchImageStudioTab('library')"><i class="fas fa-images"></i> مكتبتي</button>
             </div>
 
-            <!-- تبويب: تحليل صورة -->
+            <!-- ===== تبويب: تحليل صورة ===== -->
             <div id="isPaneAnalyze" style="overflow-y:auto;flex:1;">
                 <input type="file" id="isAnalyzeFileInput" accept="image/*" style="display:none;" onchange="handleImageStudioFileSelect(this.files[0])">
                 <div id="isAnalyzePreviewWrap" style="display:none;text-align:center;margin-bottom:12px;">
@@ -1618,10 +1612,12 @@
                 <div class="calc-result" id="isAnalyzeResult" style="text-align:right;line-height:1.9;"></div>
             </div>
 
-            <!-- تبويب: إنشاء صورة -->
+            <!-- ===== تبويب: إنشاء صورة ===== -->
             <div id="isPaneGenerate" style="display:none;overflow-y:auto;flex:1;">
+                <!-- الحصة اليومية المتبقية -->
                 <div id="isQuotaBadge" style="font-size:11px;color:var(--text-3);text-align:center;margin-bottom:10px;padding:6px;border-radius: var(--radius-xs);background:var(--bg-2);"></div>
 
+                <!-- قوالب جاهزة لوصف الصورة -->
                 <div class="input-group">
                     <label>قوالب جاهزة (اختياري)</label>
                     <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -1630,10 +1626,11 @@
                         <button type="button" class="btn-calc" style="width:auto;padding:6px 10px;font-size:11px;background:var(--bg-2);color:var(--text-2);" onclick="applyImagePromptTemplate('comparison')">📊 جدول مقارنة</button>
                     </div>
                 </div>
+                <!-- وصف الصورة + تحسين الوصف بالذكاء الاصطناعي -->
                 <div class="input-group">
                     <label>اوصف الصورة اللي عايزها</label>
                     <input type="text" id="isGeneratePrompt" class="tool-input" placeholder="مثلًا: رسم توضيحي لجهاز الدوران في جسم الإنسان">
-                    <button type="button" class="btn-calc" id="isImproveBtn" style="margin-top:6px;background:var(--bg-2);color:var(--text-2);font-size:12px;" onclick="runImproveImagePrompt()"><i class="fas fa-sparkles"></i> حسّن الوصف بالذكاء الاصطناعي</button>
+                    <button type="button" class="btn-calc" id="isImproveBtn" style="margin-top:6px;background:var(--bg-2);color:var(--text-2);font-size:12px;" onclick="runImproveImagePrompt()"><i class="fas fa-wand-magic-sparkles"></i> حسّن الوصف بالذكاء الاصطناعي</button>
                     <div id="isImprovedPromptWrap" style="display:none;margin-top:8px;padding:10px;border-radius: var(--radius-xs);background:var(--bg-2);border:1px solid var(--border);">
                         <div style="font-size:10px;color:var(--text-3);margin-bottom:4px;">✨ الوصف بعد التحسين:</div>
                         <div id="isImprovedPromptText" style="font-size:12px;line-height:1.7;text-align:right;"></div>
@@ -1643,6 +1640,7 @@
                         </div>
                     </div>
                 </div>
+                <!-- أسلوب الصورة -->
                 <div class="input-group">
                     <label>أسلوب الصورة</label>
                     <select id="isGenerateStyle" class="tool-input">
@@ -1658,6 +1656,7 @@
                         <option value="infographic">📊 إنفوجرافيك تعليمي مبسّط</option>
                     </select>
                 </div>
+                <!-- مزوّد الصور (auto = يجرّب كلهم بالتتابع) -->
                 <div class="input-group">
                     <label>الموديل</label>
                     <select id="isGenerateProvider" class="tool-input">
@@ -1668,6 +1667,7 @@
                         <option value="flux">Flux 2 Max</option>
                     </select>
                 </div>
+                <!-- أبعاد الصورة -->
                 <div class="input-group">
                     <label>أبعاد الصورة</label>
                     <select id="isGenerateSize" class="tool-input">
@@ -1679,6 +1679,8 @@
                     </select>
                 </div>
                 <button class="btn-calc" id="isGenerateBtn" onclick="runImageStudioGenerate()"><i class="fas fa-paintbrush"></i> أنشئ الصورة</button>
+
+                <!-- نتيجة التوليد: الصورة + تحميل + إعادة + تعديل -->
                 <div id="isGenerateResultWrap" style="display:none;text-align:center;margin-top:14px;">
                     <img id="isGenerateResultImg" alt="الصورة اللي تم توليدها بالذكاء الاصطناعي" style="max-width:100%;border-radius: var(--radius-sm);box-shadow:0 2px 12px rgba(0,0,0,.2);" onerror="handleImageStudioGenerateError()">
                     <div style="margin-top:8px;display:flex;gap:8px;">
@@ -1721,7 +1723,7 @@
                 </div>
             </div>
 
-            <!-- تبويب: إنشاء فيديو -->
+            <!-- ===== تبويب: إنشاء فيديو (10 ثواني، 480p) ===== -->
             <div id="isPaneVideo" style="display:none;overflow-y:auto;flex:1;">
                 <div id="isVideoQuotaBadge" style="font-size:11px;color:var(--text-3);text-align:center;margin-bottom:10px;padding:6px;border-radius: var(--radius-xs);background:var(--bg-2);"></div>
                 <div style="font-size:11px;color:var(--text-3);background:var(--bg-2);border-radius: var(--radius-xs);padding:8px 10px;margin-bottom:12px;line-height:1.7;">
@@ -1731,6 +1733,7 @@
                     <label>اوصف الفيديو اللي عايزه</label>
                     <input type="text" id="isVideoPrompt" class="tool-input" placeholder="مثلًا: قلب بشري بينبض ويضخ الدم بشكل متحرك">
                 </div>
+                <!-- صورة بداية اختيارية من مكتبة الطالب -->
                 <div class="input-group">
                     <label>صورة تبدأ منها الفيديو (اختياري)</label>
                     <div id="isVideoImagePreviewWrap" style="display:none;margin-bottom:8px;position:relative;width:100px;">
@@ -1759,7 +1762,7 @@
                 <div class="calc-result" id="isVideoStatus"></div>
             </div>
 
-            <!-- تبويب: مكتبتي (الصور والفيديوهات المحفوظة) -->
+            <!-- ===== تبويب: مكتبتي (الصور والفيديوهات المحفوظة) ===== -->
             <div id="isPaneLibrary" style="display:none;overflow-y:auto;flex:1;">
                 <div style="font-size:12px;color:var(--text-2);font-weight:600;margin-bottom:8px;">🖼️ الصور</div>
                 <div id="isLibraryEmpty" style="display:none;text-align:center;color:var(--text-3);font-size:12px;padding:16px 0;">
@@ -1782,7 +1785,7 @@
         </div>
     </div>
 
-    <!-- اختيار صورة من المكتبة كمصدر لفيديو -->
+    <!-- ================= اختيار صورة من المكتبة كمصدر لفيديو ================= -->
     <div class="modal-overlay" id="videoImagePickerModal">
         <div class="modal" style="max-width:420px;max-height:80vh;display:flex;flex-direction:column;">
             <div class="modal-header">
@@ -1799,7 +1802,7 @@
         </div>
     </div>
 
-    <!-- عرض فيديو من المكتبة بالحجم الكامل -->
+    <!-- ================= عرض فيديو من المكتبة بالحجم الكامل ================= -->
     <div class="modal-overlay" id="libraryVideoViewModal">
         <div class="modal" style="max-width:460px;">
             <div class="modal-header">
@@ -1817,7 +1820,7 @@
         </div>
     </div>
 
-    <!-- عرض صورة من المكتبة بالحجم الكامل -->
+    <!-- ================= عرض صورة من المكتبة بالحجم الكامل ================= -->
     <div class="modal-overlay" id="libraryImageViewModal">
         <div class="modal" style="max-width:460px;">
             <div class="modal-header">
@@ -1836,7 +1839,8 @@
     </div>
 
 
-    <!-- القسم الديني: قرآن، تسبيح واستغفار، أذكار الصباح والمساء، قصص الأنبياء، أسماء الله الحسنى -->
+    <!-- ================= القسم الديني: قرآن، تسبيح واستغفار، أذكار الصباح والمساء، قصص الأنبياء، أسماء الله الحسنى =================
+         التابات بتتبدّل بـ switchReligionTab(name)، وكل تاب له لوحة relPanel-<name> -->
     <div class="modal-overlay" id="religionModal">
         <div class="modal">
             <div class="modal-header">
@@ -1844,6 +1848,7 @@
                 <button class="close-modal" aria-label="إغلاق القسم الديني" onclick="closeModal('religionModal')"><i class="fas fa-times"></i></button>
             </div>
 
+            <!-- شريط التابات -->
             <div class="rel-tabs" id="relTabs">
                 <button class="rel-tab-btn active" data-tab="quran" onclick="switchReligionTab('quran')"><i class="fas fa-book-quran"></i> القرآن</button>
                 <button class="rel-tab-btn" data-tab="tasbih" onclick="switchReligionTab('tasbih')"><i class="fas fa-hand-holding-heart"></i> تسبيح واستغفار</button>
@@ -1859,12 +1864,13 @@
                 <p>هذا القسم صُنع بنيّة إنه يبقى صدقة جارية، لكل طالب وطالبة بيفتحوا الصفحة دي يقرأوا آية أو يقولوا ذكر. <b>ادعِ لصاحب هذا العمل بظهر الغيب:</b> اللهم اجعله علمًا يُنتفع به، واغفر له ولوالديه، وارزقه من حيث لا يحتسب، وثبّته على الخير حتى يلقاك وأنت راضٍ عنه. 🤍</p>
             </div>
 
-            <!-- القرآن الكريم -->
+            <!-- ===== القرآن الكريم (النص من api.alquran.cloud) ===== -->
             <div class="rel-panel active" id="relPanel-quran">
                 <div class="quran-select-row">
                     <select id="quranSurahSelect" class="tool-input"></select>
                     <button class="btn-calc" style="width:auto;padding:0 16px;" onclick="loadSurah()">اقرأ</button>
                 </div>
+                <!-- آخر آية قرأتها + زرار المتابعة -->
                 <div id="quranLastRead" class="quran-lastread-row"></div>
                 <div class="quran-toolbar">
                     <div class="quran-fontsize-ctrl">
@@ -1876,6 +1882,7 @@
                         <i class="fas fa-up-right-from-square"></i> فتح السورة في صفحة
                     </button>
                 </div>
+                <!-- إطار المصحف المزخرف -->
                 <div class="quran-frame-wrap">
                     <span class="corner-tl"></span><span class="corner-br"></span>
                     <div class="quran-reader" id="quranReader">
@@ -1885,7 +1892,7 @@
                 <div style="font-size:10.5px;color:var(--text-3);text-align:center;margin-top:8px;">💡 دوس على أي آية لتفسيرها الميسّر، ودوس على رقمها لحفظها كآخر آية قرأتها</div>
             </div>
 
-            <!-- تسبيح واستغفار -->
+            <!-- ===== تسبيح واستغفار: عدّاد بالضغط + هدف لكل ذكر ===== -->
             <div class="rel-panel" id="relPanel-tasbih">
                 <div class="tasbih-card">
                     <div class="tasbih-select" id="tasbihSelect"></div>
@@ -1901,17 +1908,17 @@
                 </div>
             </div>
 
-            <!-- أذكار الصباح -->
+            <!-- ===== أذكار الصباح ===== -->
             <div class="rel-panel" id="relPanel-morning">
                 <div class="adhkar-list" id="adhkarMorningList"></div>
             </div>
 
-            <!-- أذكار المساء -->
+            <!-- ===== أذكار المساء ===== -->
             <div class="rel-panel" id="relPanel-evening">
                 <div class="adhkar-list" id="adhkarEveningList"></div>
             </div>
 
-            <!-- قصص الأنبياء -->
+            <!-- ===== قصص الأنبياء ===== -->
             <div class="rel-panel" id="relPanel-prophets">
                 <div class="prophets-intro">
                     <div class="pi-title">📖 سلسلة قصص الأنبياء</div>
@@ -1920,14 +1927,14 @@
                 <div class="prophets-grid" id="prophetsGrid"></div>
             </div>
 
-            <!-- أسماء الله الحسنى -->
+            <!-- ===== أسماء الله الحسنى ===== -->
             <div class="rel-panel" id="relPanel-asma">
                 <div class="asma-grid" id="asmaGrid"></div>
             </div>
         </div>
     </div>
 
-    <!-- نافذة تفسير الآية (تفسير الميسر) -->
+    <!-- ================= نافذة تفسير الآية (تفسير الميسر) ================= -->
     <div class="modal-overlay" id="tafsirModal">
         <div class="modal">
             <div class="modal-header">
@@ -1938,7 +1945,8 @@
         </div>
     </div>
 
-    <!-- Drug Scanner Modal: فحص دواء بالكاميرا -->
+    <!-- ================= فحص دواء بالكاميرا =================
+         مرحلتين: (1) كاميرا حية + قراءة باركود + التقاط صورة (2) معاينة الصورة وتأكيدها -->
     <div class="modal-overlay" id="drugScanModal">
         <div class="modal">
             <div class="modal-header">
@@ -1946,6 +1954,7 @@
                 <button class="close-modal" aria-label="إغلاق نافذة فحص الدواء" onclick="closeDrugScanner()"><i class="fas fa-times"></i></button>
             </div>
 
+            <!-- المرحلة 1: الكاميرا الحية -->
             <div id="drugScanLiveWrap">
                 <div class="scan-view" id="drugScannerView">
                     <div class="scan-code-badge" id="drugScanCodeBadge"></div>
@@ -1957,6 +1966,7 @@
                 <div class="scan-status" id="drugScanStatus">جارٍ تشغيل الكاميرا...</div>
             </div>
 
+            <!-- المرحلة 2: معاينة الصورة الملتقطة -->
             <div id="drugScanPreviewWrap" style="display:none;">
                 <div class="scan-preview-wrap">
                     <img id="drugScanPreviewImg" alt="صورة العلبة الملتقطة">
@@ -1970,10 +1980,17 @@
         </div>
     </div>
 
+    <!-- حاوية الإشعارات المنبثقة بأسلوب الأيفون (script.js بيضيف فيها .ios-toast) -->
     <div class="toast-container" id="toastContainer" role="status" aria-live="polite" aria-atomic="true"></div>
+    <!-- حاوية تذكير الصلاة على النبي والاستغفار (بتتملي من script.js) -->
     <div id="duaOverlayContainer"></div>
 
-    <!-- Premium Hub -->
+    <!-- ======================================================================
+         مميزات Premium
+         ====================================================================== -->
+
+    <!-- ================= Premium Hub: كروت المميزات (بيفعّلها الأدمن لكل طالب) =================
+         كل كارت له شارة #premium-<name>-badge (مقفول/مفعّل) وزرار #premium-<name>-action يظهر لما تتفعّل. -->
     <div class="modal-overlay" id="premiumHubModal">
         <div class="modal">
             <div class="modal-header">
@@ -1983,6 +2000,7 @@
             <div class="premium-hub-header">مميزات إضافية بيفعّلها الأدمن لحسابك واحدة واحدة. اللي مقفول لسه محتاج الأدمن يفعّله ليك.</div>
             <button class="btn-calc" style="background:var(--bg-2);color:var(--accent);border:1px solid var(--border-accent);margin-bottom:14px;" onclick="openPremiumGuide()"><i class="fas fa-compass"></i> إزاي أستخدم مميزات Premium؟</button>
 
+            <!-- الذكاء الاصطناعي المتقدم -->
             <div class="premium-card">
                 <div class="premium-card-head">
                     <span class="premium-card-icon">🧠</span>
@@ -1992,6 +2010,7 @@
                 <div class="premium-card-desc">بيتفتحلك قسم "موديلات Premium" فوق في قايمة الموديلات (Cerebras وClaude Opus)، وتقدر تختار منه أو من الموديلات العامة براحتك في أي رسالة، مع حد رسايل أعلى بكتير من الوضع العادي.</div>
             </div>
 
+            <!-- امتحانات المحاكاة -->
             <div class="premium-card">
                 <div class="premium-card-head">
                     <span class="premium-card-icon">📝</span>
@@ -2003,6 +2022,7 @@
                 <div id="premium-mock-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
             </div>
 
+            <!-- مكتبة البرومبتس -->
             <div class="premium-card">
                 <div class="premium-card-head">
                     <span class="premium-card-icon">⚡</span>
@@ -2014,6 +2034,7 @@
                 <div id="premium-prompts-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
             </div>
 
+            <!-- المهارات المخصصة -->
             <div class="premium-card">
                 <div class="premium-card-head">
                     <span class="premium-card-icon">🧩</span>
@@ -2025,6 +2046,7 @@
                 <div id="premium-skills-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
             </div>
 
+            <!-- البروفايل الأكاديمي -->
             <div class="premium-card">
                 <div class="premium-card-head">
                     <span class="premium-card-icon">📊</span>
@@ -2036,6 +2058,7 @@
                 <div id="premium-academic-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
             </div>
 
+            <!-- التصميم الذهبي -->
             <div class="premium-card">
                 <div class="premium-card-head">
                     <span class="premium-card-icon">👑</span>
@@ -2049,6 +2072,7 @@
                 <div id="premium-theme-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
             </div>
 
+            <!-- مكتبة الأدوية -->
             <div class="premium-card">
                 <div class="premium-card-head">
                     <span class="premium-card-icon">💊</span>
@@ -2060,6 +2084,7 @@
                 <div id="premium-drugs-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
             </div>
 
+            <!-- محاكي المواقف الإكلينيكية -->
             <div class="premium-card">
                 <div class="premium-card-head">
                     <span class="premium-card-icon">🩺</span>
@@ -2071,6 +2096,7 @@
                 <div id="premium-clinical-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
             </div>
 
+            <!-- ملخص صوتي للمحاضرات -->
             <div class="premium-card">
                 <div class="premium-card-head">
                     <span class="premium-card-icon">🎙️</span>
@@ -2082,6 +2108,7 @@
                 <div id="premium-lecture-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
             </div>
 
+            <!-- الفيديو المتفرّع -->
             <div class="premium-card">
                 <div class="premium-card-head">
                     <span class="premium-card-icon">🎬</span>
@@ -2093,6 +2120,7 @@
                 <div id="premium-videosim-locknote" style="font-size:11px;color:var(--text-3);">اطلب من الأدمن يفعّلها لحسابك.</div>
             </div>
 
+            <!-- الصوت الواقعي (بيشتغل تلقائي — مفيش زرار) -->
             <div class="premium-card">
                 <div class="premium-card-head">
                     <span class="premium-card-icon">🎧</span>
@@ -2105,7 +2133,7 @@
         </div>
     </div>
 
-    <!-- مكتبة البرومبتس الذكية -->
+    <!-- ================= مكتبة البرومبتس الذكية ================= -->
     <div class="modal-overlay" id="premiumPromptsModal">
         <div class="modal">
             <div class="modal-header">
@@ -2117,7 +2145,7 @@
         </div>
     </div>
 
-    <!-- مهارات مخصصة (Skills) -->
+    <!-- ================= مهارات مخصصة (Skills): قائمة المهارات ================= -->
     <div class="modal-overlay" id="premiumSkillsModal">
         <div class="modal">
             <div class="modal-header">
@@ -2130,7 +2158,7 @@
         </div>
     </div>
 
-    <!-- محرر مهارة (إضافة/تعديل) -->
+    <!-- ================= محرر مهارة (إضافة/تعديل) ================= -->
     <div class="modal-overlay" id="skillEditorModal">
         <div class="modal">
             <div class="modal-header">
@@ -2150,7 +2178,7 @@
         </div>
     </div>
 
-    <!-- قائمة زرار الإرفاق (ملف / مهارة) -->
+    <!-- ================= قائمة زرار الإرفاق (ملف / مهارة) ================= -->
     <div class="modal-overlay" id="attachMenuModal">
         <div class="modal" style="max-width:320px;">
             <div class="modal-header">
@@ -2166,7 +2194,7 @@
         </div>
     </div>
 
-    <!-- اختيار مهارة (مجلد Skills) لإدراجها في المحادثة كـ /اسم-المهارة -->
+    <!-- ================= اختيار مهارة (مجلد Skills) لإدراجها في المحادثة كـ /اسم-المهارة ================= -->
     <div class="modal-overlay" id="skillPickerModal">
         <div class="modal">
             <div class="modal-header">
@@ -2179,7 +2207,7 @@
         </div>
     </div>
 
-    <!-- بناء امتحان المحاكاة -->
+    <!-- ================= بناء امتحان المحاكاة الشامل (فصول من مواد مختلفة + عدد أسئلة + مدة) ================= -->
     <div class="modal-overlay" id="mockExamModal">
         <div class="modal">
             <div class="modal-header">
@@ -2201,6 +2229,7 @@
             </div>
             <button class="btn-calc btn-secondary" style="margin-top:10px;" onclick="addChapterToMockExam()"><i class="fas fa-plus"></i> أضف الفصل للامتحان</button>
 
+            <!-- الفصول المضافة للامتحان -->
             <div class="mock-exam-chapter-list" id="mockExamChapterListEl"></div>
 
             <div style="display:flex;gap:8px;margin-top:6px;">
@@ -2219,7 +2248,7 @@
         </div>
     </div>
 
-    <!-- مكتبة الأدوية الشخصية -->
+    <!-- ================= مكتبة الأدوية الشخصية ================= -->
     <div class="modal-overlay" id="drugLibraryModal">
         <div class="modal">
             <div class="modal-header">
@@ -2232,7 +2261,7 @@
         </div>
     </div>
 
-    <!-- محاكي المواقف الإكلينيكية — اختيار التخصص -->
+    <!-- ================= محاكي المواقف الإكلينيكية — اختيار التخصص ================= -->
     <div class="modal-overlay" id="clinicalSimPickerModal">
         <div class="modal" style="max-width:380px;">
             <div class="modal-header">
@@ -2251,7 +2280,7 @@
         </div>
     </div>
 
-    <!-- ملخص صوتي للمحاضرات -->
+    <!-- ================= ملخص صوتي للمحاضرات: تسجيل → نص → ملخص ================= -->
     <div class="modal-overlay" id="lectureRecorderModal">
         <div class="modal" style="max-width:380px;">
             <div class="modal-header">
@@ -2272,7 +2301,7 @@
         </div>
     </div>
 
-    <!-- استوديو الحالات — 3 طرق لإضافة سيناريو جديد للفيديو المتفرّع -->
+    <!-- ================= استوديو الحالات — 3 طرق لإضافة سيناريو جديد للفيديو المتفرّع ================= -->
     <div class="modal-overlay" id="scenarioStudioModal">
         <div class="modal" style="max-width:380px;">
             <div class="modal-header">
@@ -2294,7 +2323,7 @@
         </div>
     </div>
 
-    <!-- فورم إضافة حالة (بيدوي أو AI عشوائي حسب aiRandom) -->
+    <!-- ================= فورم إضافة حالة (بيدوي أو AI عشوائي حسب aiRandom) ================= -->
     <div class="modal-overlay" id="customScenarioFormModal">
         <div class="modal" style="max-width:380px;">
             <div class="modal-header">
@@ -2331,7 +2360,7 @@
         </div>
     </div>
 
-    <!-- استخراج من بنك أسئلة المواقف -->
+    <!-- ================= استخراج حالة من بنك أسئلة المواقف ================= -->
     <div class="modal-overlay" id="bankScenarioPickerModal">
         <div class="modal" style="max-width:380px;">
             <div class="modal-header">
@@ -2353,6 +2382,7 @@
         </div>
     </div>
 
+    <!-- ================= الفيديو المتفرّع — قائمة الحالات ================= -->
     <div class="modal-overlay" id="videoSimListModal">
         <div class="modal">
             <div class="modal-header">
@@ -2365,7 +2395,8 @@
         </div>
     </div>
 
-    <!-- الفيديو المتفرّع — المشغّل -->
+    <!-- ================= الفيديو المتفرّع — المشغّل =================
+         المسرح (خلفية + شخصيات + Code Blue) ← مونيتور ECG ← السرد الصوتي ← عدّاد القرار ← الاختيارات ← شاشة النهاية -->
     <div class="modal-overlay" id="videoSimPlayerModal">
         <div class="modal" style="max-width:420px;">
             <div class="modal-header">
@@ -2376,6 +2407,7 @@
                 </div>
             </div>
 
+            <!-- المسرح: خلفية الغرفة + جسيمات + الشخصيات + بانر CODE BLUE -->
             <div id="simStage" class="sim-stage">
                 <div id="simStageBg" class="sim-stage-bg"></div>
                 <div id="simStageParticles" class="sim-stage-particles"></div>
@@ -2387,6 +2419,7 @@
                 </div>
             </div>
 
+            <!-- مونيتور العلامات الحيوية: شاشة ECG (canvas) + HR / SpO2 / BP -->
             <div id="simMonitor" class="sim-monitor sim-mood-normal">
                 <div class="sim-monitor-screen">
                     <canvas id="simEcgCanvas" class="sim-ecg-canvas"></canvas>
@@ -2399,6 +2432,7 @@
                 </div>
             </div>
 
+            <!-- صندوق السرد: اسم المتكلم + مؤشر الكلام + النص + زرار تخطي الصوت -->
             <div class="sim-narration-box">
                 <div id="simSpeakerTag" class="sim-speaker-tag" style="display:none;"></div>
                 <div id="simTalkIndicator" class="sim-talk-indicator"><span></span><span></span><span></span></div>
@@ -2406,6 +2440,7 @@
                 <button id="simSkipBtn" class="btn-calc btn-secondary" style="margin-top:8px;font-size:11.5px;padding:8px;" onclick="skipSimNarration()"><i class="fas fa-forward"></i> تخطي الصوت</button>
             </div>
 
+            <!-- عدّاد وقت اتخاذ القرار (غرفة الطوارئ) -->
             <div id="simTimerText" class="sim-timer-text" style="display:none;">
                 <span><i class="fas fa-stopwatch"></i> قرّر دلوقتي</span>
                 <span id="simTimerSeconds">--</span>
@@ -2413,8 +2448,10 @@
             <div id="simTimerBar" class="sim-timer-bar" style="display:none;">
                 <div id="simTimerFill" class="sim-timer-fill"></div>
             </div>
+            <!-- اختيارات القرار -->
             <div id="simChoicesWrap" class="sim-choices-wrap" style="display:none;"></div>
 
+            <!-- شاشة النهاية: شارة النتيجة + ملخص الوقت + تقييم AI + إعادة -->
             <div id="simEndingWrap" style="display:none;text-align:center;">
                 <div id="simEndingBadge" class="sim-ending-badge">...</div>
                 <div id="simEndingText" style="font-size:12.5px;color:var(--text-2);line-height:1.8;margin:10px 0 14px;"></div>
@@ -2430,6 +2467,10 @@
             </div>
         </div>
     </div>
+
+    <!-- ======================================================================
+         طبقة "دولينجو" التحفيزية (خريطة التقدم + الترحيب القصصي + دليل Premium)
+         ====================================================================== -->
 
     <!-- خريطة التقدم — شجرة مواد بستايل دولينجو، إضافة مستقلة لا تؤثر على أي مودال تاني -->
     <div class="modal-overlay" id="progressTreeModal">
@@ -2474,6 +2515,9 @@
         </div>
     </div>
 
+    <!-- ======================================================================
+         منطق التطبيق كله (لازم يكون آخر حاجة قبل </body> عشان كل العناصر فوق تكون اتحمّلت)
+         ====================================================================== -->
     <script src="script.js"></script>
 </body>
-    </html>
+</html>
