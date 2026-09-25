@@ -390,7 +390,7 @@ body {
                 padding .38s cubic-bezier(.4,0,.2,1),
                 border-width .38s cubic-bezier(.4,0,.2,1),
                 margin-top .38s cubic-bezier(.4,0,.2,1);
-    will-change: height, opacity, transform;
+    will-change: opacity, transform;
 }
 /* تدرج شفافية خفيف عند طرفي الصف بيلمّح إن فيه أيقونات تانية لو
    عملت سكرول، بدل ما الصف يتقطع فجأة على آخر أيقونة ظاهرة. الطبقة
@@ -2593,14 +2593,18 @@ a.web-cite:hover { background: var(--accent); color: #fff; }
 
 
 /* ===== Scroll reveal — إظهار شريط الأدوات عند السحب لأعلى ===== */
+/* إصلاح مشكلة الرعشة/التعليق: كان فيه هنا animation منفصلة على نفس
+   العنصر (.tb-tools-collapsible) بتتعارض مع الـtransition الأساسية
+   المعرّفة على نفس العنصر (اللي بتتحكم في opacity/transform/height
+   وقت الإظهار والإخفاء العادي) — لما الاتنين يشتغلوا مع بعض في نفس
+   اللحظة (خصوصًا لو المستخدم عمل سكرول لفوق ولتحت بسرعة)، المتصفح
+   كان "بيتلخبط" بين مين المتحكم في الـtransform، وده اللي بيظهر
+   كرعشة أو وقفة مفاجئة. الحل: العنصر الرئيسي (الصندوق نفسه) بقى
+   بيعتمد على الـtransition العادية بس (سلسة وثابتة)، والحركة
+   المتدرجة (كل أيقونة تظهر بعد التانية) اتسابت بس على الأيقونات
+   نفسها تحت (مش على الصندوق ككل)، فمفيش تعارض. */
 .tb-tools-collapsible.top-actions-revealing {
-    animation: chatxToolbarRevealCalm .78s cubic-bezier(.22,.72,.25,1) both !important;
-}
-
-@keyframes chatxToolbarRevealCalm {
-    0% { opacity: 0; transform: translate3d(0,-10px,0) scale(.985); filter: blur(1.5px); }
-    55% { opacity: .92; transform: translate3d(0,1px,0) scale(1.002); filter: blur(0); }
-    100% { opacity: 1; transform: translate3d(0,0,0) scale(1); filter: blur(0); }
+    animation: none !important;
 }
 
 /* حركة واحدة فقط عند الظهور — بطيئة وهادئة ومن غير قفزة أو تكرار. */
@@ -2618,8 +2622,10 @@ a.web-cite:hover { background: var(--accent); color: #fff; }
 .tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(9) { animation-delay: .52s !important; }
 .tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(10) { animation-delay: .58s !important; }
 
-/* زر القائمة ثابت ولا يشارك في حركة الأدوات المتسلسلة. يظهر بهدوء مع الشريط فقط. */
-.tb-tools-collapsible.top-actions-revealing .tb-fixed-menu-btn {
+/* زر القائمة وزرار الوضع الليلي/النهاري ثابتين ولا يشاركوا في حركة
+   الأدوات المتسلسلة. يظهروا بهدوء مع الشريط فقط. */
+.tb-tools-collapsible.top-actions-revealing .tb-fixed-menu-btn,
+.tb-tools-collapsible.top-actions-revealing .tb-fixed-theme-btn {
     animation: chatxMenuRevealCalm .62s cubic-bezier(.22,.72,.25,1) .06s both !important;
 }
 @keyframes chatxMenuRevealCalm {
@@ -2886,6 +2892,130 @@ a.web-cite:hover { background: var(--accent); color: #fff; }
         min-height: 36px !important;
         max-height: 36px !important;
         margin: 0 !important;
+    }
+}
+
+/* =====================================================================
+   تحديث جديد: تثبيت أيقونة الوضع الليلي/النهاري جنب زرار القائمة (☰)
+   بشكل دائم، وشارة الحسابات الموثقة كـSVG، وشكل مربع الاسم لما
+   شريط الأدوات يكون متطوي.
+   ===================================================================== */
+
+/* --- 1) عمود ثابت واحد (auto العرض) بياخد الزرارين الاتنين مع بعض،
+   بدل عمود بعرض 40px ثابت كان مناسب لزرار واحد بس. --- */
+.tb-tools-collapsible {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+}
+@media (max-width: 520px) {
+    .tb-tools-collapsible {
+        grid-template-columns: minmax(0, 1fr) auto !important;
+    }
+}
+.tb-tools-collapsible .tb-fixed-actions {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    justify-self: end !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    z-index: 50 !important;
+    flex: none !important;
+}
+
+/* --- 2) زرار الوضع الليلي/النهاري الثابت: نفس مقاس وشكل زرار القائمة
+   بالظبط عشان يبانوا زوج متناسق جنب بعض. --- */
+.tb-tools-collapsible .tb-fixed-theme-btn {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    box-sizing: border-box !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    flex: 0 0 38px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    background: color-mix(in srgb, var(--bg-2) 94%, transparent) !important;
+    color: var(--text-2) !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,.06) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    overflow: hidden !important;
+    position: relative !important;
+    transform: none !important;
+    transition: color .25s ease, border-color .25s ease, background-color .25s ease, box-shadow .25s ease !important;
+}
+.tb-tools-collapsible .tb-fixed-theme-btn i {
+    width: 18px !important;
+    height: 18px !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+.tb-tools-collapsible .tb-fixed-theme-btn:hover,
+.tb-tools-collapsible .tb-fixed-theme-btn:focus-visible {
+    color: var(--accent) !important;
+    border-color: var(--border-accent) !important;
+    background: var(--bg-2) !important;
+    box-shadow: 0 4px 14px var(--accent-glow) !important;
+    transform: none !important;
+}
+.tb-tools-collapsible .tb-fixed-theme-btn:active {
+    transform: scale(.95) !important;
+}
+@media (max-width: 520px) {
+    .tb-tools-collapsible .tb-fixed-actions { gap: 6px !important; }
+    .tb-tools-collapsible .tb-fixed-theme-btn {
+        width: 36px !important;
+        min-width: 36px !important;
+        max-width: 36px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        max-height: 36px !important;
+        border-radius: 11px !important;
+    }
+    .tb-tools-collapsible .tb-fixed-theme-btn i { font-size: 17px !important; }
+}
+
+/* --- 3) شارة الحسابات الموثقة: SVG جوه الكود بدل صورة خارجية، عشان
+   تفضل ظاهرة دايمًا حتى لو مسار الصورة القديم اتعطل أو ملفاتها
+   ماوصلتش، بنفس مقاسات الأيقونة القديمة بالظبط. --- */
+.verified-badge-icon {
+    width: 17px !important;
+    height: 17px !important;
+    display: block !important;
+    flex-shrink: 0 !important;
+}
+@media (max-width: 520px) {
+    .verified-badge-icon { width: 16px !important; height: 16px !important; }
+}
+
+/* --- 4) شكل مربع الاسم لما شريط الأدوات يكون مطوي (مخفي): بدل
+   مستطيل ماخد عرض الشاشة كله، يبقى شكله مربع صغير بحواف دائرية
+   بالكامل (pill) لسه في نص الشاشة، بيتظبط حسب طول الاسم بس.
+   script.js بيضيف/يشيل كلاس tb-collapsed-pill على المربع الموحّد
+   نفسه (.tb-unified-box) بالتزامن مع top-actions-hidden. --- */
+.tb-unified-box.tb-collapsed-pill {
+    align-self: center;
+    width: auto;
+    max-width: max-content;
+    border-radius: 999px !important;
+}
+.tb-unified-box.tb-collapsed-pill .tb-identity-row {
+    padding: 6px 22px;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .tb-unified-box {
+        transition: border-radius .3s ease;
     }
 }
 

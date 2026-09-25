@@ -4992,6 +4992,10 @@
             const wrap = document.getElementById('topActionsWrap');
             const chatContainer = document.getElementById('chatContainer');
             if (!wrap || !chatContainer) return;
+            // المربع الموحّد اللي فيه اسم Chat X + شريط الأدوات — لما شريط
+            // الأدوات يختفي، بنضيف كلاس على المربع ده عشان يرجع شكله
+            // مربع صغير بحواف دائرية بالكامل بدل مستطيل ماخد عرض الشاشة.
+            const unifiedBox = wrap.closest('.tb-unified-box');
 
             function measureHeight() {
                 const wasHidden = wrap.classList.contains('top-actions-hidden');
@@ -5019,18 +5023,31 @@
                 if (revealRunning) return;
                 revealRunning = true;
                 wrap.classList.remove('top-actions-revealing');
-                void wrap.offsetWidth;
-                wrap.classList.add('top-actions-revealing');
+                // إصلاح الرعشة/التعليق وقت السحب: كنا بنستخدم "void wrap.offsetWidth"
+                // عشان نجبر المتصفح يعيد حساب الـlayout فورًا (reflow متزامن)
+                // ونضمن إن الأنيميشن تشتغل من الأول. المشكلة إن ده بيحصل جوه
+                // نفس اللحظة اللي المتصفح بيكون فيها بيرسم إطارات السكرول
+                // (requestAnimationFrame)، فبيعمل "اختناق" لحظي في الـmain
+                // thread — وده اللي كان بيبان كرعشة أو تجميد بسيط. الحل
+                // القياسي البديل: نستنى فريمين (double requestAnimationFrame)
+                // بدل ما نجبر قراءة الـlayout يدويًا؛ النتيجة نفسها (الأنيميشن
+                // بتشتغل من الأول) من غير أي reflow متزامن يعطّل السكرول.
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        wrap.classList.add('top-actions-revealing');
+                    });
+                });
                 clearTimeout(revealTimer);
                 revealTimer = setTimeout(() => {
                     wrap.classList.remove('top-actions-revealing');
                     revealRunning = false;
-                }, 1700);
+                }, 1400);
             }
 
             function showToolbar(withAnimation = true) {
                 const wasHidden = isHiddenState || wrap.classList.contains('top-actions-hidden');
                 wrap.classList.remove('top-actions-hidden');
+                if (unifiedBox) unifiedBox.classList.remove('tb-collapsed-pill');
                 isHiddenState = false;
                 if (wasHidden && withAnimation) playRevealAnimation();
             }
@@ -5039,6 +5056,7 @@
                 if (isHiddenState) return;
                 wrap.classList.remove('top-actions-revealing');
                 wrap.classList.add('top-actions-hidden');
+                if (unifiedBox) unifiedBox.classList.add('tb-collapsed-pill');
                 isHiddenState = true;
             }
 
@@ -5066,6 +5084,7 @@
             // الحالة الابتدائية.
             if (chatContainer.scrollTop > HIDE_AT) {
                 wrap.classList.add('top-actions-hidden');
+                if (unifiedBox) unifiedBox.classList.add('tb-collapsed-pill');
                 isHiddenState = true;
             } else {
                 showToolbar(false);

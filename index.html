@@ -245,17 +245,20 @@
                 <div class="tb-tools-collapsible" id="topActionsWrap">
                 <div class="tb-tools-inner">
                 <div class="top-actions" id="topActionsBar">
-                    <!-- الحسابات الموثقة (علامة الصح الزرقاء + نقطة "جديد") -->
+                    <!-- الحسابات الموثقة (علامة الصح الزرقاء + نقطة "جديد") —
+                         شارة SVG مرسومة جوه الكود نفسه (مش صورة خارجية) عشان
+                         تفضل ظاهرة دايمًا حتى لو فيه مشكلة في تحميل الصور -->
                     <button class="action-btn verified-top-btn" id="verifiedAccountsTopBtn" data-tool-id="verified" aria-label="الحسابات الموثقة" title="الحسابات الموثقة" onclick="handleVerifiedTopBtnClick()">
-                        <img src="/icons/verified-badge.png" alt="">
+                        <svg class="verified-badge-icon" viewBox="0 0 22 22" width="17" height="17" aria-hidden="true">
+                            <path fill="#3897f0" d="M11 0l2.06 1.6 2.57-.53 1.24 2.31 2.57.53.24 2.6L21.9 8l-1.28 2.3.48 2.58-2.16 1.5-.24 2.6-2.57.53-1.24 2.31L11 19l-2.06 1.6-2.57-.53-1.24-2.31-2.57-.53-.24-2.6L0 13.9l1.28-2.3L.8 9.02l2.16-1.5.24-2.6 2.57-.53L7.01 1.6 9.07 0l1.93.86z"/>
+                            <path fill="#fff" d="M9.6 14.6l-3.1-3.1 1.3-1.3 1.8 1.8 4.4-4.4 1.3 1.3z"/>
+                        </svg>
                         <span class="verified-new-dot" id="verifiedNewDot"></span>
                     </button>
                     <!-- بحث داخل المحادثة الحالية -->
                     <button class="action-btn" data-tool-id="search" aria-label="بحث في المحادثة الحالية" title="بحث في المحادثة" onclick="toggleChatSearchBar()"><i class="fas fa-magnifying-glass"></i></button>
                     <!-- تصدير المحادثة PDF -->
                     <button class="action-btn" data-tool-id="export-pdf" aria-label="تصدير المحادثة كملف PDF" onclick="exportPDF()"><i class="fas fa-file-pdf"></i></button>
-                    <!-- الوضع الليلي/النهاري -->
-                    <button class="action-btn" data-tool-id="theme" aria-label="تبديل الوضع الليلي والنهاري" onclick="toggleTheme(event)"><i class="fas fa-moon" id="themeIcon"></i></button>
                     <!-- القسم الديني -->
                     <button class="action-btn" data-tool-id="religion" aria-label="القسم الديني" onclick="openReligionSection()"><i class="fas fa-mosque"></i></button>
                     <!-- مميزات Premium -->
@@ -273,10 +276,18 @@
                     <button class="action-btn" data-tool-id="video-studio" aria-label="استوديو الفيديو التلقائي" title="حوّل أي ملخص لفيديو بالصوت" onclick="openModal('videoStudioModal')"><i class="fas fa-clapperboard"></i></button>
                 </div>
                 </div>
-                <!-- زر الإعدادات/القائمة ثابت خارج منطقة التمرير، ومحوط بمسافة أمان ثابتة
-                     (شوف تعريف column-gap و padding-inline-end في الـCSS) بحيث محدش
-                     من الأيقونات يقدر يوصل جنبه حتى لو اتسحب لآخر الشريط -->
-                <button class="menu-btn tb-fixed-menu-btn" aria-label="فتح القائمة الجانبية" title="القائمة" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <!-- زرارين ثابتين خارج منطقة التمرير تمامًا: الوضع الليلي/النهاري
+                     وزرار القائمة (☰). التثبيت هنا يعني إنهم دايمًا ظاهرين
+                     جنب بعض، ومستحيل يتزحلقوا أو "يتهمّشوا" تحت أي أيقونة
+                     تانية في شريط الأدوات (شريط الأدوات ده بيترتب نفسه حسب
+                     الاستخدام، لكن الاتنين دول برّه الترتيب ده خالص). وبرضه
+                     محوطين بمسافة أمان ثابتة (شوف column-gap و padding-inline-end
+                     في الـCSS) بحيث محدش من الأيقونات المتحركة يقدر يوصلهم
+                     حتى لو اتسحب الشريط لآخره. -->
+                <div class="tb-fixed-actions">
+                    <button class="action-btn tb-fixed-theme-btn" data-tool-id="theme" aria-label="تبديل الوضع الليلي والنهاري" title="الوضع الليلي/النهاري" onclick="toggleTheme(event)"><i class="fas fa-moon" id="themeIcon"></i></button>
+                    <button class="menu-btn tb-fixed-menu-btn" aria-label="فتح القائمة الجانبية" title="القائمة" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                </div>
                 </div>
                 </div>
             </div>
