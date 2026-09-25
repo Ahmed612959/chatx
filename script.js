@@ -5084,28 +5084,39 @@
         }
         document.addEventListener('DOMContentLoaded', initTopActionsAutoHide);
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Chat X title: clicking it smoothly stops the side-edge motion, then releases it.
-    const titleBadge = document.querySelector('.bot-name-badge');
-    if (titleBadge) {
-        let resumeTimer = null;
-        titleBadge.setAttribute('role', 'button');
-        titleBadge.setAttribute('tabindex', '0');
-        const pauseTitle = () => {
-            clearTimeout(resumeTimer);
-            titleBadge.classList.add('is-title-paused');
-            resumeTimer = setTimeout(() => titleBadge.classList.remove('is-title-paused'), 1200);
-        };
-        titleBadge.addEventListener('click', pauseTitle);
-        titleBadge.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                pauseTitle();
-            }
-        });
-    }
-});
-
+        // حركة حرفي طرفي اسم "Chat X" (C و X) بتوقف بأنيميشن ناعم أول
+        // ما حد يدوس على الاسم، بدل ما توقف فجأة:
+        // 1) بنقرأ الـtransform الحالي بتاع الحرف لحظة الدوس (getComputedStyle)
+        //    عشان نمسك مكانه بالظبط في نص الحركة.
+        // 2) بنشيل الأنيميشن ونثبّت نفس الـtransform ده كـinline style،
+        //    فمفيش أي قفزة بصرية لحظة الإيقاف.
+        // 3) في الفريم اللي بعده بنضيف transition ونرجّع الـtransform
+        //    لوضعه الطبيعي (0)، فالحرف "يهدى" ويوقف تدريجيًا بدل ما
+        //    يتجمد فجأة في مكانه.
+        function stopChatXEdgeBounce(el) {
+            if (!el || el.dataset.cxStopped === '1') return;
+            el.dataset.cxStopped = '1';
+            const current = getComputedStyle(el).transform;
+            el.classList.add('cx-edge-stopped');
+            el.style.transform = (current && current !== 'none') ? current : 'translateY(0)';
+            requestAnimationFrame(() => {
+                el.style.transition = 'transform .55s cubic-bezier(.22,.61,.36,1)';
+                el.style.transform = 'translateY(0)';
+            });
+        }
+        function initChatXEdgeBounceStop() {
+            const badge = document.getElementById('botNameBadge');
+            const edgeStart = document.getElementById('cxEdgeStart');
+            const edgeEnd = document.getElementById('cxEdgeEnd');
+            if (!badge) return;
+            const stopBoth = () => {
+                stopChatXEdgeBounce(edgeStart);
+                stopChatXEdgeBounce(edgeEnd);
+            };
+            badge.addEventListener('click', stopBoth);
+            badge.addEventListener('touchstart', stopBoth, { passive: true });
+        }
+        document.addEventListener('DOMContentLoaded', initChatXEdgeBounceStop);
 
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => showToast('تم النسخ', 'success'))

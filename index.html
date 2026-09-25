@@ -225,20 +225,24 @@
         <!-- ================= منطقة المحادثة الرئيسية ================= -->
         <main class="main-area" id="mainContent" tabindex="-1">
 
-            <!-- ---------- الشريط العلوي: مربع اسم Chat X + مربع الأدوات ---------- -->
+            <!-- ---------- الشريط العلوي: مربع واحد موحّد بحواف دائرية واحدة
+                 (صف اسم Chat X فوق، وصف الأدوات القابل للطي تحته جوه نفس المربع) ---------- -->
             <div class="top-bar">
-                <!-- مربع الاسم (Chat X) -->
-                <div class="tb-box tb-identity-box">
-                    <div class="bot-identity">
-                        <div class="bot-text">
-                            <div class="bot-name-badge"><h2>Chat X</h2></div>
+                <div class="tb-box tb-unified-box">
+                    <!-- صف الاسم (Chat X) -->
+                    <div class="tb-identity-row">
+                        <div class="bot-identity">
+                            <div class="bot-text">
+                                <div class="bot-name-badge" id="botNameBadge" title="Chat X">
+                                    <h2><span class="cx-edge cx-edge-start" id="cxEdgeStart">C</span><span class="cx-mid">hat </span><span class="cx-edge cx-edge-end" id="cxEdgeEnd">X</span></h2>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- مربع الأدوات: بيتطوي (يختفي) لما الطالب يسكرول في المحادثة (script.js بيضيف الكلاس top-actions-hidden).
+                <!-- صف الأدوات: بيتطوي (يختفي) لما الطالب يسكرول في المحادثة (script.js بيضيف الكلاس top-actions-hidden).
                      كل زرار ليه data-tool-id عشان script.js يقدر يخفيه/يظهره حسب الصلاحيات -->
-                <div class="tb-box tb-tools-collapsible" id="topActionsWrap">
+                <div class="tb-tools-collapsible" id="topActionsWrap">
                 <div class="tb-tools-inner">
                 <div class="top-actions" id="topActionsBar">
                     <!-- الحسابات الموثقة (علامة الصح الزرقاء + نقطة "جديد") -->
@@ -269,8 +273,11 @@
                     <button class="action-btn" data-tool-id="video-studio" aria-label="استوديو الفيديو التلقائي" title="حوّل أي ملخص لفيديو بالصوت" onclick="openModal('videoStudioModal')"><i class="fas fa-clapperboard"></i></button>
                 </div>
                 </div>
-                <!-- زر الإعدادات/القائمة ثابت خارج منطقة التمرير، لذلك لا يركب فوق أيقونة أخرى -->
+                <!-- زر الإعدادات/القائمة ثابت خارج منطقة التمرير، ومحوط بمسافة أمان ثابتة
+                     (شوف تعريف column-gap و padding-inline-end في الـCSS) بحيث محدش
+                     من الأيقونات يقدر يوصل جنبه حتى لو اتسحب لآخر الشريط -->
                 <button class="menu-btn tb-fixed-menu-btn" aria-label="فتح القائمة الجانبية" title="القائمة" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                </div>
                 </div>
             </div>
 

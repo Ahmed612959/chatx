@@ -2889,177 +2889,113 @@ a.web-cite:hover { background: var(--accent); color: #fff; }
     }
 }
 
-
 /* =====================================================================
-   CHAT X — FINAL HEADER / TOOLBAR POLISH
-   - Chat X + toolbar share one rounded outer frame.
-   - A protected dead-zone keeps the menu button isolated from the scroller.
-   - Calm sequential reveal; no duplicate/fast animation.
-   - Chat X side accents gently float until the title is clicked.
+   تحديث جديد (طلب: دمج مربع الاسم والأدوات + مسافة أمان حوالين زر
+   القائمة + حركة حروف طرفي اسم Chat X):
+
+   1) مربع الاسم (Chat X) ومربع الأدوات بقوا جوه مربع واحد بس
+      (.tb-unified-box) بحواف دائرية موحّدة، بدل مربعين منفصلين كل
+      واحد ليه حواف لوحده. صف الأدوات بقى شفاف من غير حدود أو خلفية
+      خاصة بيه (لأنه بقى جزء من نفس المربع)، وبس بيظهر خط فاصل رفيع
+      فوقه لما يكون ظاهر (مش لما يكون متطوي).
+   2) مسافة أمان حقيقية (مش بس تأثير بصري) بين آخر أيقونة في الشريط
+      وزرار القائمة (☰): زودنا الفراغ بين عمود التمرير وعمود الزرار
+      في الـgrid، وضفنا padding داخلي كمان، فمحدش من الأيقونات يقدر
+      يوصل فعليًا لمنطقة الزرار حتى لو اتسحب الشريط لآخره.
+   3) حرفين الطرفين في اسم "Chat X" (C و X) بيتحركوا لفوق ولتحت بشكل
+      لطيف ومتبادل، وبيوقفوا بأنيميشن ناعم (مش وقفة مفاجئة) أول ما
+      حد يدوس على الاسم — الجافاسكريبت المسؤولة عن كده في script.js.
    ===================================================================== */
-.top-bar {
-    margin: 8px 12px 0 !important;
-    padding: 8px 10px 10px !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 26px !important;
-    background: var(--bg-2) !important;
-    box-shadow: 0 8px 28px rgba(0,0,0,.06) !important;
-    overflow: hidden !important;
-    gap: 7px !important;
-    box-sizing: border-box !important;
+
+/* ---- 1) مربع موحّد واحد بدل مربعين منفصلين ---- */
+.tb-unified-box {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0 !important;
 }
-.top-bar .tb-box {
+.tb-identity-row {
+    padding: 6px 16px 4px;
+}
+/* صف الأدوات بقى بدون حدود/خلفية/حواف خاصة بيه — بقى جزء من نفس
+   المربع اللي فوقه (.tb-unified-box) هو اللي بيدي الحواف الدائرية
+   والخلفية والحدود للمجموعة كلها مرة واحدة. */
+.tb-unified-box .tb-tools-collapsible {
+    border: 0 !important;
+    border-radius: 0 !important;
     background: transparent !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-}
-.top-bar .tb-identity-box {
-    padding: 2px 10px 3px !important;
-}
-.top-bar .tb-tools-collapsible {
     margin-top: 0 !important;
-    border: 0 !important;
-    border-radius: 18px !important;
-    background: color-mix(in srgb, var(--bg-2) 96%, transparent) !important;
-    box-shadow: none !important;
 }
-
-/* A real reserved zone for the menu: the scrolling viewport stops well before it. */
-.top-bar .tb-tools-collapsible {
-    grid-template-columns: minmax(0,1fr) 46px !important;
-    column-gap: 9px !important;
+.tb-unified-box .tb-tools-collapsible:not(.top-actions-hidden) {
+    border-top: 1px solid var(--border) !important;
 }
-.top-bar .tb-tools-collapsible .tb-tools-inner {
-    padding-inline: 2px 12px !important;
-    margin: 0 !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    clip-path: inset(0 0 0 0 round 14px) !important;
+.tb-unified-box .tb-tools-collapsible.top-actions-hidden {
+    border-top-width: 0 !important;
 }
-.top-bar .tb-tools-collapsible .top-actions {
-    gap: 8px !important;
-    padding: 0 3px !important;
-}
-.top-bar .tb-tools-collapsible .tb-fixed-menu-btn {
-    width: 40px !important;
-    min-width: 40px !important;
-    max-width: 40px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-    max-height: 40px !important;
-    margin: 0 !important;
-    border-radius: 13px !important;
-    z-index: 100 !important;
-    box-shadow: 0 2px 10px rgba(0,0,0,.07) !important;
-}
-
-/* Never let hover enlarge an icon into the reserved menu zone. */
-.top-bar .top-actions .action-btn:hover,
-.top-bar .top-actions .action-btn:focus-visible {
-    transform: scale(1.035) !important;
-}
-.top-bar .top-actions .action-btn:active {
-    transform: scale(.96) !important;
-}
-
-/* Remove the old edge overlays that could visually sit on top of a tool. */
-.top-bar .tb-tools-collapsible::before,
-.top-bar .tb-tools-collapsible::after {
-    width: 10px !important;
-    opacity: .55 !important;
-    z-index: 3 !important;
-}
-.top-bar .tb-tools-collapsible::before {
-    right: 48px !important;
+/* أقنعة التلاشي عند طرفي صف الأيقونات لازم تندمج مع خلفية المربع
+   الموحّد نفسه (مش خلفية منفصلة زي قبل). */
+.tb-unified-box .tb-tools-collapsible::before {
+    background: linear-gradient(to left, var(--bg-2), transparent) !important;
     border-radius: 0 !important;
 }
-.top-bar .tb-tools-collapsible::after {
-    left: 0 !important;
+.tb-unified-box .tb-tools-collapsible::after {
+    background: linear-gradient(to right, var(--bg-2), transparent) !important;
     border-radius: 0 !important;
 }
 
-/* Calm, regular reveal: each icon enters once, in order. */
-.top-bar .tb-tools-collapsible.top-actions-revealing .action-btn {
-    animation: chatxToolbarItemCalm .92s cubic-bezier(.22,.68,.25,1) both !important;
+/* ---- 2) مسافة أمان ثابتة حوالين زرار القائمة (☰) ---- */
+/* الفراغ بين عمود التمرير (الأيقونات) وعمود الزرار في الـgrid —
+   ده فراغ هيكلي حقيقي، مش مجرد تأثير بصري، فمفيش أي أيقونة تقدر
+   "تدخل" فيه حتى لو السحب وصل لآخر نقطة. */
+.tb-tools-collapsible {
+    column-gap: 16px !important;
 }
-.top-bar .tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(1) { animation-delay: .04s !important; }
-.top-bar .tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(2) { animation-delay: .14s !important; }
-.top-bar .tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(3) { animation-delay: .24s !important; }
-.top-bar .tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(4) { animation-delay: .34s !important; }
-.top-bar .tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(5) { animation-delay: .44s !important; }
-.top-bar .tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(6) { animation-delay: .54s !important; }
-.top-bar .tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(7) { animation-delay: .64s !important; }
-.top-bar .tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(8) { animation-delay: .74s !important; }
-.top-bar .tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(9) { animation-delay: .84s !important; }
-.top-bar .tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(10) { animation-delay: .94s !important; }
-@keyframes chatxToolbarItemCalm {
-    0% { opacity: 0; transform: translate3d(0,-7px,0) scale(.965); filter: blur(1.2px); }
-    55% { opacity: .96; transform: translate3d(0,1px,0) scale(1.01); filter: blur(0); }
-    100% { opacity: 1; transform: translate3d(0,0,0) scale(1); filter: none; }
+.tb-tools-inner {
+    scroll-padding-inline: 14px !important;
 }
-.top-bar .tb-tools-collapsible.top-actions-revealing .tb-fixed-menu-btn {
-    animation: chatxMenuCalm .7s ease-out .08s both !important;
+.tb-tools-inner .top-actions {
+    padding-inline-end: 14px !important;
 }
-@keyframes chatxMenuCalm {
-    0% { opacity: .35; transform: scale(.97); }
-    100% { opacity: 1; transform: scale(1); }
+.tb-fixed-menu-btn {
+    margin-inline-start: 10px !important;
 }
-
-/* Chat X title: subtle left/right edge motion, independent from the text. */
-.top-bar .bot-name-badge {
-    overflow: visible !important;
-    isolation: isolate;
-}
-.top-bar .bot-name-badge::before,
-.top-bar .bot-name-badge::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: 9px;
-    height: 62%;
-    border-radius: 999px;
-    background: linear-gradient(180deg, var(--accent), var(--accent-3));
-    opacity: .55;
-    z-index: -1;
-    pointer-events: none;
-    filter: blur(.15px);
-    transform: translateY(-50%);
-    animation: chatxSideFloat 2.8s ease-in-out infinite;
-}
-.top-bar .bot-name-badge::before { left: -5px; }
-.top-bar .bot-name-badge::after {
-    right: -5px;
-    animation-delay: -1.4s;
-}
-@keyframes chatxSideFloat {
-    0%,100% { transform: translateY(-58%) scaleY(.82); opacity: .42; }
-    50% { transform: translateY(-40%) scaleY(1.12); opacity: .78; }
-}
-.top-bar .bot-name-badge.is-title-paused::before,
-.top-bar .bot-name-badge.is-title-paused::after {
-    animation-play-state: paused !important;
-}
-
 @media (max-width: 520px) {
-    .top-bar {
-        margin-inline: 8px !important;
-        border-radius: 22px !important;
-        padding: 7px 7px 9px !important;
+    .tb-tools-collapsible {
+        column-gap: 12px !important;
     }
-    .top-bar .tb-tools-collapsible {
-        grid-template-columns: minmax(0,1fr) 43px !important;
-        column-gap: 7px !important;
-    }
-    .top-bar .tb-tools-collapsible .tb-tools-inner {
+    .tb-tools-inner .top-actions {
         padding-inline-end: 10px !important;
     }
-    .top-bar .tb-tools-collapsible .tb-fixed-menu-btn {
-        width: 38px !important;
-        min-width: 38px !important;
-        max-width: 38px !important;
-        height: 38px !important;
-        min-height: 38px !important;
-        max-height: 38px !important;
-    }
-    .top-bar .tb-tools-collapsible .top-actions { gap: 7px !important; }
+}
+
+/* ---- 3) حركة حروف طرفي اسم Chat X (C و X) لفوق ولتحت بالتبادل ---- */
+.bot-name-badge h2 {
+    /* عشان لو الحركة وقفت بـtransform مباشر عن طريق الجافاسكريبت
+       (بدل الأنيميشن) يبقى فيه transition جاهز يخليها تترجع بهدوء. */
+    display: inline-flex;
+    align-items: baseline;
+}
+.cx-edge {
+    display: inline-block;
+    animation: cxEdgeBounce 1.9s ease-in-out infinite;
+    will-change: transform;
+}
+.cx-edge-start { animation-delay: 0s; }
+/* الحرف التاني بيتحرك بعكس توقيت الأول (لما واحد لفوق التاني لتحت)
+   عشان يحسسوا إنهم بيترنّحوا مع بعض بشكل حلو، مش بيتحركوا مع بعض
+   بنفس التوقيت بالظبط. */
+.cx-edge-end { animation-delay: .95s; }
+@keyframes cxEdgeBounce {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-4px); }
+}
+/* الحالة بعد ما المستخدم يدوس على الاسم: الجافاسكريبت بتشيل
+   الأنيميشن وتحط transform كinline style بدلها، فبنجهز transition
+   هنا عشان أي تغيير في الـtransform بعد كده يبقى ناعم لحد ما يوقف
+   تمامًا بدل وقفة فجأة. */
+.cx-edge.cx-edge-stopped {
+    animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+    .cx-edge { animation: none !important; }
 }
