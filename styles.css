@@ -2540,19 +2540,12 @@ a.web-cite:hover { background: var(--accent); color: #fff; }
     65% { opacity: 1; transform: translateY(2px) scale(1.035); filter: blur(0); }
     100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
+/* لا توجد حركة تلقائية عند تحميل الصفحة؛ الحركة تُشغّل فقط عند إظهار الشريط بسبب السحب لأعلى. */
 .top-actions .action-btn,
-.top-actions .menu-btn {
-    animation: chatxToolReveal .46s cubic-bezier(.22,1,.36,1) both;
+.top-actions .menu-btn,
+.tb-fixed-menu-btn {
+    animation: none !important;
 }
-.top-actions > :nth-child(1) { animation-delay: .02s; }
-.top-actions > :nth-child(2) { animation-delay: .055s; }
-.top-actions > :nth-child(3) { animation-delay: .09s; }
-.top-actions > :nth-child(4) { animation-delay: .125s; }
-.top-actions > :nth-child(5) { animation-delay: .16s; }
-.top-actions > :nth-child(6) { animation-delay: .195s; }
-.top-actions > :nth-child(7) { animation-delay: .23s; }
-.top-actions > :nth-child(8) { animation-delay: .265s; }
-.top-actions > :nth-child(9) { animation-delay: .30s; }
 .top-actions > :nth-child(10) { animation-delay: .335s; }
 .top-actions > :nth-child(11) { animation-delay: .37s; }
 
@@ -2601,49 +2594,37 @@ a.web-cite:hover { background: var(--accent); color: #fff; }
 
 /* ===== Scroll reveal — إظهار شريط الأدوات عند السحب لأعلى ===== */
 .tb-tools-collapsible.top-actions-revealing {
-    animation: chatxToolbarReveal .62s cubic-bezier(.16,1,.3,1) both !important;
+    animation: chatxToolbarRevealCalm .78s cubic-bezier(.22,.72,.25,1) both !important;
 }
 
-@keyframes chatxToolbarReveal {
-    0% {
-        opacity: 0;
-        transform: translate3d(0,-18px,0) scale(.985);
-        filter: blur(5px);
-    }
-    45% {
-        opacity: 1;
-        transform: translate3d(0,3px,0) scale(1.006);
-        filter: blur(0);
-    }
-    72% {
-        transform: translate3d(0,-1px,0) scale(1.002);
-    }
-    100% {
-        opacity: 1;
-        transform: translate3d(0,0,0) scale(1);
-        filter: blur(0);
-    }
+@keyframes chatxToolbarRevealCalm {
+    0% { opacity: 0; transform: translate3d(0,-10px,0) scale(.985); filter: blur(1.5px); }
+    55% { opacity: .92; transform: translate3d(0,1px,0) scale(1.002); filter: blur(0); }
+    100% { opacity: 1; transform: translate3d(0,0,0) scale(1); filter: blur(0); }
 }
 
+/* حركة واحدة فقط عند الظهور — بطيئة وهادئة ومن غير قفزة أو تكرار. */
 .tb-tools-collapsible.top-actions-revealing .action-btn {
-    animation: chatxToolRise .52s cubic-bezier(.16,1,.3,1) both !important;
+    animation: chatxToolRevealCalm .72s cubic-bezier(.22,.72,.25,1) both !important;
 }
-.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(1) { animation-delay:.03s !important; }
-.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(2) { animation-delay:.065s !important; }
-.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(3) { animation-delay:.10s !important; }
-.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(4) { animation-delay:.135s !important; }
-.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(5) { animation-delay:.17s !important; }
-.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(6) { animation-delay:.205s !important; }
-.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(7) { animation-delay:.24s !important; }
-.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(8) { animation-delay:.275s !important; }
-.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(9) { animation-delay:.31s !important; }
-.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(10) { animation-delay:.345s !important; }
-.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(11) { animation-delay:.38s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(1) { animation-delay: .04s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(2) { animation-delay: .10s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(3) { animation-delay: .16s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(4) { animation-delay: .22s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(5) { animation-delay: .28s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(6) { animation-delay: .34s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(7) { animation-delay: .40s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(8) { animation-delay: .46s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(9) { animation-delay: .52s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(10) { animation-delay: .58s !important; }
 
-@keyframes chatxToolRise {
-    0% { opacity:0; transform:translate3d(0,-9px,0) scale(.88); }
-    65% { opacity:1; transform:translate3d(0,2px,0) scale(1.025); }
-    100% { opacity:1; transform:translate3d(0,0,0) scale(1); }
+/* زر القائمة ثابت ولا يشارك في حركة الأدوات المتسلسلة. يظهر بهدوء مع الشريط فقط. */
+.tb-tools-collapsible.top-actions-revealing .tb-fixed-menu-btn {
+    animation: chatxMenuRevealCalm .62s cubic-bezier(.22,.72,.25,1) .06s both !important;
+}
+@keyframes chatxMenuRevealCalm {
+    from { opacity: .35; transform: scale(.96); }
+    to { opacity: 1; transform: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2752,4 +2733,78 @@ a.web-cite:hover { background: var(--accent); color: #fff; }
     .tb-tools-inner { scroll-behavior: auto; scroll-snap-type: none; }
     .top-actions .action-btn,
     .top-actions .menu-btn { transition: none !important; }
+}
+
+
+/* ==========================================================================
+   [FINAL TOOLBAR POLISH] زر القائمة + حركة ظهور هادئة
+   ========================================================================== */
+.tb-tools-collapsible .tb-fixed-menu-btn {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    box-sizing: border-box !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    flex: 0 0 38px !important;
+    margin: 0 5px 0 7px !important;
+    padding: 0 !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    background: color-mix(in srgb, var(--bg-2) 94%, transparent) !important;
+    color: var(--text-2) !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,.06) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    overflow: hidden !important;
+    position: relative !important;
+    z-index: 30 !important;
+    transform: none !important;
+    transition: color .25s ease, border-color .25s ease, background-color .25s ease, box-shadow .25s ease !important;
+}
+.tb-tools-collapsible .tb-fixed-menu-btn i {
+    width: 18px !important;
+    height: 18px !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+.tb-tools-collapsible .tb-fixed-menu-btn:hover,
+.tb-tools-collapsible .tb-fixed-menu-btn:focus-visible {
+    color: var(--accent) !important;
+    border-color: var(--border-accent) !important;
+    background: var(--bg-2) !important;
+    box-shadow: 0 4px 14px var(--accent-glow) !important;
+    transform: none !important;
+}
+.tb-tools-collapsible .tb-fixed-menu-btn:active {
+    transform: scale(.95) !important;
+}
+@media (max-width: 520px) {
+    .tb-tools-collapsible .tb-fixed-menu-btn {
+        width: 36px !important;
+        min-width: 36px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        flex-basis: 36px !important;
+        margin-inline: 5px 6px !important;
+        border-radius: 11px !important;
+    }
+    .tb-tools-collapsible .tb-fixed-menu-btn i { font-size: 17px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tb-tools-collapsible.top-actions-revealing,
+    .tb-tools-collapsible.top-actions-revealing .action-btn,
+    .tb-tools-collapsible.top-actions-revealing .tb-fixed-menu-btn {
+        animation: none !important;
+    }
 }

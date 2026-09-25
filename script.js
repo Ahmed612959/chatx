@@ -5011,16 +5011,21 @@
             let rafPending = false;
             let lastScrollTop = Math.max(0, chatContainer.scrollTop || 0);
             let revealTimer = null;
+            let revealRunning = false;
 
             function playRevealAnimation() {
+                // امنع إعادة تشغيل نفس الحركة أثناء نفس عملية السحب؛
+                // ده كان سبب ظهور الأيقونات مرتين بسرعة.
+                if (revealRunning) return;
+                revealRunning = true;
                 wrap.classList.remove('top-actions-revealing');
-                // إجبار المتصفح على إعادة تشغيل الحركة بدون تغيير layout دائم.
                 void wrap.offsetWidth;
                 wrap.classList.add('top-actions-revealing');
                 clearTimeout(revealTimer);
                 revealTimer = setTimeout(() => {
                     wrap.classList.remove('top-actions-revealing');
-                }, 760);
+                    revealRunning = false;
+                }, 1700);
             }
 
             function showToolbar(withAnimation = true) {
