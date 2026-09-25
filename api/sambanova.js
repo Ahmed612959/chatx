@@ -5,12 +5,12 @@ import { reportApiUsage } from './_usageTrack.js';
 import { attemptWithFailover } from './_keystore.js';
 
 // ====================================================================================
-// الموديل هنا شغّال عن طريق Experiential Labs.
-// بيستخدم المفتاح EXPLABS_API_KEY.
+// الموديل هنا شغّال عن طريق CodeCraft API.
+// بيستخدم المفتاح CC_API_KEY.
 // ====================================================================================
 
-const EXPLABS_URL = 'https://api.experientiallabs.ai/v1/chat/completions';
-const EXPLABS_MODEL = 'claude-opus-5.5';
+const CODECRAFT_URL = 'https://codecraftapi.com/v1/chat/completions';
+const CODECRAFT_MODEL = 'claude-sonnet-5';
 
 export default async function handler(request) {
   try {
@@ -32,26 +32,36 @@ export default async function handler(request) {
 
     const rawBody = await request.text();
 
-    // نجبر الموديل على claude-opus-5.5 دايمًا،
-    // حتى لو وصل اسم موديل قديم من نسخة Frontend لسه متحدّثتش.
+    // نجبر الموديل على claude-sonnet-5 دائمًا
     let body = rawBody;
 
     try {
       const parsed = JSON.parse(rawBody);
-      parsed.model = EXPLABS_MODEL;
+
+      parsed.model = CODECRAFT_MODEL;
+
+      // القيم الافتراضية المطلوبة من CodeCraft
+      if (parsed.temperature === undefined) {
+        parsed.temperature = 1;
+      }
+
+      if (parsed.max_tokens === undefined) {
+        parsed.max_tokens = 8192;
+      }
+
       body = JSON.stringify(parsed);
     } catch (e) {
-      // لو الـ body مش JSON صالح، سيبه زي ما هو
-      // والمزوّد يرجّع الخطأ الخاص به.
+      // لو الـ body مش JSON صالح، نرسله كما هو
+      // والمزوّد سيرجع الخطأ الخاص به.
     }
 
     let upstream;
 
     try {
       upstream = await attemptWithFailover(
-        'EXPLABS_API_KEY',
+        'CC_API_KEY',
         (key) =>
-          fetch(EXPLABS_URL, {
+          fetch(CODECRAFT_URL, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${key}`,
@@ -65,7 +75,7 @@ export default async function handler(request) {
         return new Response(
           JSON.stringify({
             error:
-              'EXPLABS_API_KEY غير مضبوط في Environment Variables — ضيفه من إعدادات Vercel'
+              'CC_API_KEY غير مضبوط في Environment Variables — ضيفه من إعدادات Vercel'
           }),
           {
             status: 500,
@@ -78,7 +88,7 @@ export default async function handler(request) {
 
       return new Response(
         JSON.stringify({
-          error: 'تعذر الوصول لـ Experiential Labs'
+          error: 'تعذر الوصول لـ CodeCraft API'
         }),
         {
           status: 502,
@@ -90,15 +100,15 @@ export default async function handler(request) {
     }
 
     // تسجيل استخدام الـ API
-    await reportApiUsage('claude-opus-5.5', body.length);
+    await reportApiUsage('claude-sonnet-5', body.length);
 
     if (!upstream.ok || !upstream.body) {
-      // تسجيل تفاصيل الخطأ في Vercel Function Logs
+      // تسجيل تفاصيل الخطأ في Vercel Logs
       try {
         const errText = await upstream.clone().text();
 
         console.error(
-          `⚠️ Experiential Labs رجّع status ${upstream.status}:`,
+          `⚠️ CodeCraft API رجّع status ${upstream.status}:`,
           errText.slice(0, 500)
         );
       } catch (e) {}
@@ -113,8 +123,7 @@ export default async function handler(request) {
       });
     }
 
-    // قراءة الـ stream يدويًا حتى لا ينهار السيرفر
-    // إذا حدث خطأ بعد بدء الـ streaming.
+    // الحفاظ على Streaming
     const upstreamReader = upstream.body.getReader();
 
     const safeStream = new ReadableStream({
@@ -132,7 +141,7 @@ export default async function handler(request) {
           try {
             controller.enqueue(
               new TextEncoder().encode(
-                `data: {"error":{"message":"انقطع الاتصال بـ Experiential Labs أثناء الرد"}}\n\n`
+                `data: {"error":{"message":"انقطع الاتصال بـ CodeCraft API أثناء الرد"}}\n\n`
               )
             );
           } catch (e) {}
