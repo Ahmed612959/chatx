@@ -5004,31 +5004,75 @@
             window.addEventListener('resize', measureHeight, { passive: true });
             window.addEventListener('orientationchange', measureHeight, { passive: true });
 
-            const SHOW_AT = 4;   // اظهر لما نبقى قريبين جدًا من قمة المحادثة
-            const HIDE_AT = 48;  // اخفي بعد ما نبعد عن القمة بمسافة محسوسة
+            const SHOW_AT = 8;    // يظل ظاهرًا عند قمة المحادثة
+            const HIDE_AT = 34;   // يبدأ الاختفاء بعد النزول قليلًا
+            const REVEAL_DISTANCE = 6; // أقل مسافة صعود تُظهر الشريط
             let isHiddenState = false;
             let rafPending = false;
+            let lastScrollTop = Math.max(0, chatContainer.scrollTop || 0);
+            let revealTimer = null;
 
-            function applyState(scrollTop) {
-                if (!isHiddenState && scrollTop > HIDE_AT) {
-                    wrap.classList.add('top-actions-hidden');
-                    isHiddenState = true;
-                } else if (isHiddenState && scrollTop <= SHOW_AT) {
-                    wrap.classList.remove('top-actions-hidden');
-                    isHiddenState = false;
+            function playRevealAnimation() {
+                wrap.classList.remove('top-actions-revealing');
+                // إجبار المتصفح على إعادة تشغيل الحركة بدون تغيير layout دائم.
+                void wrap.offsetWidth;
+                wrap.classList.add('top-actions-revealing');
+                clearTimeout(revealTimer);
+                revealTimer = setTimeout(() => {
+                    wrap.classList.remove('top-actions-revealing');
+                }, 760);
+            }
+
+            function showToolbar(withAnimation = true) {
+                const wasHidden = isHiddenState || wrap.classList.contains('top-actions-hidden');
+                wrap.classList.remove('top-actions-hidden');
+                isHiddenState = false;
+                if (wasHidden && withAnimation) playRevealAnimation();
+            }
+
+            function hideToolbar() {
+                if (isHiddenState) return;
+                wrap.classList.remove('top-actions-revealing');
+                wrap.classList.add('top-actions-hidden');
+                isHiddenState = true;
+            }
+
+            function applyState(scrollTop, previousScrollTop) {
+                const delta = scrollTop - previousScrollTop;
+                const scrollingUp = delta < -REVEAL_DISTANCE;
+                const scrollingDown = delta > REVEAL_DISTANCE;
+
+                // عند السحب لأعلى: أظهر الشريط فورًا مع حركة دخول جذابة،
+                // حتى لو لم نصل إلى أعلى المحادثة بالكامل.
+                if (scrollingUp) {
+                    showToolbar(true);
+                    return;
+                }
+
+                // عند النزول: أخفِ الشريط بعد مسافة قصيرة، مع إبقائه ظاهرًا
+                // تمامًا عند بداية المحادثة.
+                if (scrollTop <= SHOW_AT) {
+                    showToolbar(false);
+                } else if (scrollingDown && scrollTop > HIDE_AT) {
+                    hideToolbar();
                 }
             }
 
-            // الحالة الابتدائية: لو المحادثة اتفتحت وهي متمررة لتحت (زي أي
-            // شات بيبدأ من آخر رسالة)، مربع الأدوات يتقفل من غير ما ننتظر
-            // أول اسكرول من الطالب.
-            applyState(chatContainer.scrollTop);
+            // الحالة الابتدائية.
+            if (chatContainer.scrollTop > HIDE_AT) {
+                wrap.classList.add('top-actions-hidden');
+                isHiddenState = true;
+            } else {
+                showToolbar(false);
+            }
 
             chatContainer.addEventListener('scroll', () => {
                 if (rafPending) return;
                 rafPending = true;
                 requestAnimationFrame(() => {
-                    applyState(chatContainer.scrollTop);
+                    const current = Math.max(0, chatContainer.scrollTop || 0);
+                    applyState(current, lastScrollTop);
+                    lastScrollTop = current;
                     rafPending = false;
                 });
             }, { passive: true });

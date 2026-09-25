@@ -430,33 +430,101 @@ body {
     .tb-tools-collapsible { transition: height .01s linear, opacity .01s linear; transform: none !important; }
 }
 
-/* صف الأيقونات نفسه: صف واحد ثابت، بيتمرر أفقيًا لو الأيقونات مش
-   هتاخد في عرض الشاشة (موبايل صغير)، وبيتوسط تلقائيًا لو عرض
-   الشاشة كفاية (تابلت/كمبيوتر) من غير ما نحتاج media queries
-   منفصلة لكل مقاس. الحيلة: .top-actions نفسه display:inline-flex
-   مع min-width:100% — لو المحتوى أصغر من العرض المتاح بيتمدد
-   ويتوسط، ولو أكبر بيرجع لحجمه الطبيعي ويتمرر بالتتابع الطبيعي
-   بدل ما يتوسط ويقص الطرفين. */
+/* صف الأدوات: منطقة التمرير منفصلة تمامًا عن زر القائمة الثابت.
+   زر ☰ موجود خارج .tb-tools-inner، لذلك لا يمكن أن يمر تحته أو يظهر فوق أي أداة أثناء السحب. */
+.tb-tools-collapsible {
+    direction: ltr;
+}
 .tb-tools-inner {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
     overflow-x: auto;
     overflow-y: hidden;
-    min-height: 0;
-    width: 100%;
     display: flex;
     align-items: center;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
+    direction: rtl;
+    isolation: isolate;
 }
 .tb-tools-inner::-webkit-scrollbar { display: none; }
 
-/* زرار فتح الشريط الجانبي (موبايل فقط) */
-.menu-btn {
-    width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--bg-2); border: 1px solid var(--border);
-    color: var(--text-2); cursor: pointer; display: none; align-items: center; justify-content: center;
-    font-size: 16px; flex-shrink: 0;
+/* الصف نفسه يأخذ عرض المحتوى الحقيقي، والتمرير يحدث داخله فقط */
+.top-actions {
+    display: inline-flex;
+    width: max-content;
+    min-width: max-content;
+    box-sizing: border-box;
+    gap: 7px;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 3px 4px;
 }
-@media (max-width: 767px) { .menu-btn { display: flex; } }
+
+/* زر القائمة خارج الـscroller، ثابت دائمًا في مكانه */
+.tb-fixed-menu-btn {
+    display: flex !important;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    margin-inline-start: 8px;
+    position: relative;
+    z-index: 20;
+    transform: none !important;
+    box-shadow: 0 0 0 4px var(--bg-2);
+    background: var(--bg-2);
+}
+.tb-fixed-menu-btn:hover,
+.tb-fixed-menu-btn:focus-visible,
+.tb-fixed-menu-btn:active {
+    transform: none !important;
+}
+
+/* حجم موحّد للأدوات داخل الشريط */
+.top-actions .action-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    font-size: 14px;
+    flex: 0 0 36px;
+    transform-origin: center;
+}
+.top-actions .action-btn:hover {
+    transform: scale(1.06);
+}
+.top-actions .action-btn:active {
+    transform: scale(.95);
+}
+.top-actions .verified-top-btn img { width: 15px; height: 15px; }
+
+/* على الشاشات الكبيرة يظهر الصف كاملًا، وعلى الصغيرة يظل قابلًا للتمرير */
+@media (min-width: 900px) {
+    .tb-tools-inner { overflow-x: hidden; }
+    .top-actions { margin-inline: auto; }
+}
+@media (max-width: 767px) {
+    .tb-fixed-menu-btn {
+        width: 38px;
+        height: 38px;
+        flex-basis: 38px;
+        margin-inline-start: 6px;
+    }
+    .top-actions .action-btn {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        flex-basis: 34px;
+        font-size: 13px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .top-actions .action-btn { transition: none !important; }
+}
 
 /* مربع اسم الشعار "Chat X" */
 .bot-identity { display: flex; align-items: center; justify-content: center; gap: 10px; min-width: 0; }
@@ -2528,6 +2596,61 @@ a.web-cite:hover { background: var(--accent); color: #fff; }
     .top-actions .action-btn i,
     .top-actions .menu-btn i { width: 15px !important; height: 15px !important; font-size: 14px !important; }
     .top-actions .verified-top-btn img { width: 16px !important; height: 16px !important; }
+}
+
+
+/* ===== Scroll reveal — إظهار شريط الأدوات عند السحب لأعلى ===== */
+.tb-tools-collapsible.top-actions-revealing {
+    animation: chatxToolbarReveal .62s cubic-bezier(.16,1,.3,1) both !important;
+}
+
+@keyframes chatxToolbarReveal {
+    0% {
+        opacity: 0;
+        transform: translate3d(0,-18px,0) scale(.985);
+        filter: blur(5px);
+    }
+    45% {
+        opacity: 1;
+        transform: translate3d(0,3px,0) scale(1.006);
+        filter: blur(0);
+    }
+    72% {
+        transform: translate3d(0,-1px,0) scale(1.002);
+    }
+    100% {
+        opacity: 1;
+        transform: translate3d(0,0,0) scale(1);
+        filter: blur(0);
+    }
+}
+
+.tb-tools-collapsible.top-actions-revealing .action-btn {
+    animation: chatxToolRise .52s cubic-bezier(.16,1,.3,1) both !important;
+}
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(1) { animation-delay:.03s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(2) { animation-delay:.065s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(3) { animation-delay:.10s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(4) { animation-delay:.135s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(5) { animation-delay:.17s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(6) { animation-delay:.205s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(7) { animation-delay:.24s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(8) { animation-delay:.275s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(9) { animation-delay:.31s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(10) { animation-delay:.345s !important; }
+.tb-tools-collapsible.top-actions-revealing .action-btn:nth-child(11) { animation-delay:.38s !important; }
+
+@keyframes chatxToolRise {
+    0% { opacity:0; transform:translate3d(0,-9px,0) scale(.88); }
+    65% { opacity:1; transform:translate3d(0,2px,0) scale(1.025); }
+    100% { opacity:1; transform:translate3d(0,0,0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tb-tools-collapsible.top-actions-revealing,
+    .tb-tools-collapsible.top-actions-revealing .action-btn {
+        animation: none !important;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

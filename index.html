@@ -241,8 +241,6 @@
                 <div class="tb-box tb-tools-collapsible" id="topActionsWrap">
                 <div class="tb-tools-inner">
                 <div class="top-actions" id="topActionsBar">
-                    <!-- فتح الشريط الجانبي (بيظهر على الموبايل بس) -->
-                    <button class="menu-btn" aria-label="فتح القائمة الجانبية" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                     <!-- الحسابات الموثقة (علامة الصح الزرقاء + نقطة "جديد") -->
                     <button class="action-btn verified-top-btn" id="verifiedAccountsTopBtn" data-tool-id="verified" aria-label="الحسابات الموثقة" title="الحسابات الموثقة" onclick="handleVerifiedTopBtnClick()">
                         <img src="/icons/verified-badge.png" alt="">
@@ -271,6 +269,8 @@
                     <button class="action-btn" data-tool-id="video-studio" aria-label="استوديو الفيديو التلقائي" title="حوّل أي ملخص لفيديو بالصوت" onclick="openModal('videoStudioModal')"><i class="fas fa-clapperboard"></i></button>
                 </div>
                 </div>
+                <!-- زر الإعدادات/القائمة ثابت خارج منطقة التمرير، لذلك لا يركب فوق أيقونة أخرى -->
+                <button class="menu-btn tb-fixed-menu-btn" aria-label="فتح القائمة الجانبية" title="القائمة" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                 </div>
             </div>
 
