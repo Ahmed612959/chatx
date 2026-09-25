@@ -2808,3 +2808,83 @@ a.web-cite:hover { background: var(--accent); color: #fff; }
         animation: none !important;
     }
 }
+
+
+/* =====================================================================
+   FINAL FIX — toolbar scroll viewport and fixed menu are separate columns.
+   The menu must NEVER overlap the horizontally scrolling tools.
+   ===================================================================== */
+.tb-tools-collapsible {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    column-gap: 6px !important;
+    width: 100% !important;
+    overflow: hidden !important;
+    padding: 5px 7px !important;
+    box-sizing: border-box !important;
+}
+
+.tb-tools-collapsible .tb-tools-inner {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    justify-self: stretch !important;
+    box-sizing: border-box !important;
+    padding: 2px 3px !important;
+}
+
+.tb-tools-collapsible .top-actions {
+    width: max-content !important;
+    min-width: max-content !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+}
+
+.tb-tools-collapsible .tb-fixed-menu-btn {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    justify-self: end !important;
+    position: relative !important;
+    inset: auto !important;
+    z-index: 50 !important;
+    flex: none !important;
+    margin: 0 !important;
+}
+
+/* Never make the menu sticky inside the scrolling viewport. */
+.tb-tools-collapsible .top-actions .menu-btn,
+.tb-tools-collapsible .top-actions .tb-fixed-menu-btn {
+    position: relative !important;
+    inset: auto !important;
+}
+
+@media (max-width: 520px) {
+    .tb-tools-collapsible {
+        grid-template-columns: minmax(0, 1fr) 40px !important;
+        column-gap: 5px !important;
+        padding-inline: 6px !important;
+    }
+    .tb-tools-collapsible .tb-tools-inner {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        padding-inline: 2px !important;
+    }
+    .tb-tools-collapsible .tb-fixed-menu-btn {
+        width: 36px !important;
+        min-width: 36px !important;
+        max-width: 36px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        max-height: 36px !important;
+        margin: 0 !important;
+    }
+}
