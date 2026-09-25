@@ -45,8 +45,13 @@
    مقروء. لو الملف مش موجود المتصفح بيكمل بالخط البديل (Righteous ثم Cairo).
    (الملف بيتولّد بـ: node tools/extract-assets.js — راجع README.md)
    ============================================================================ */
-/* FodaKufi asset غير مرفق في هذه الحزمة؛ يستخدم النظام الخطوط البديلة المعرّفة أدناه. */
-
+@font-face {
+    font-family: 'FodaKufi';
+    src: url('fonts/FodaKufi-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
 
 
 /* ============================================================================
@@ -56,8 +61,6 @@
    أي لون أو انحناء أو سرعة بتتغير من هنا بس، وتتطبق على الموقع كله.
    ============================================================================ */
 :root {
-    --primary: var(--accent);
-    --tb-tools-h: auto;
     /* الخلفيات */
     --bg: #0a0e1a; --bg-2: #131827; --bg-glass: rgba(19, 24, 39, 0.75); --bg-glass-heavy: rgba(10, 14, 26, 0.95);
     /* لون سطح صلب (كان متستخدم var(--bg-1) في أماكن من غير ما يكون معرّف = شفاف/أبيض بالغلط) */
@@ -2329,4 +2332,210 @@ a.web-cite:hover { background: var(--accent); color: #fff; }
     0% { stroke-dashoffset: 130; }
     60% { stroke-dashoffset: 0; }
     100% { stroke-dashoffset: -130; }
+}
+
+/* ============================================================================
+   Chat X — تحسين شريط أدوات أعلى المحادثة (Toolbar v2)
+   الهدف: أيقونات موحّدة، صغيرة وواضحة + ظهور/اختفاء أنعم على الموبايل.
+   ============================================================================ */
+.tb-tools-collapsible {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    padding: 5px 8px !important;
+    min-height: 48px !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    isolation: isolate;
+    transition:
+        height .48s cubic-bezier(.22,1,.36,1),
+        opacity .28s ease,
+        transform .48s cubic-bezier(.22,1,.36,1),
+        padding .48s cubic-bezier(.22,1,.36,1),
+        border-width .3s ease,
+        margin-top .48s cubic-bezier(.22,1,.36,1),
+        filter .35s ease !important;
+}
+
+.tb-tools-inner {
+    width: 100% !important;
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch;
+}
+.tb-tools-inner::-webkit-scrollbar { display: none !important; }
+
+.top-actions {
+    width: max-content !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex: 0 0 auto !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+}
+
+/* كل أداة لها نفس المقاس بالضبط — يمنع أيقونة من تكبير الزر بسبب محتواها */
+.top-actions .action-btn,
+.top-actions .menu-btn {
+    width: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    flex: 0 0 36px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 11px !important;
+    border: 1px solid var(--border) !important;
+    background: color-mix(in srgb, var(--bg-2) 88%, transparent) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    font-size: 14px !important;
+    overflow: hidden !important;
+    position: relative !important;
+    transform: translateZ(0);
+}
+
+.top-actions .action-btn i,
+.top-actions .menu-btn i {
+    display: inline-flex !important;
+    width: 16px !important;
+    height: 16px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 15px !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.top-actions .verified-top-btn img {
+    display: block !important;
+    width: 17px !important;
+    height: 17px !important;
+    min-width: 17px !important;
+    min-height: 17px !important;
+    max-width: 17px !important;
+    max-height: 17px !important;
+    object-fit: contain !important;
+    margin: 0 !important;
+}
+
+/* لمعان صغير عند المرور بدل تكبير الأيقونات بشكل مبالغ فيه */
+.top-actions .action-btn::after,
+.top-actions .menu-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255,255,255,.20), transparent 48%);
+    opacity: 0;
+    transform: translateX(-25%);
+    transition: opacity .2s ease, transform .35s ease;
+    pointer-events: none;
+}
+.top-actions .action-btn:hover,
+.top-actions .menu-btn:hover {
+    color: var(--accent) !important;
+    border-color: var(--border-accent) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 7px 16px var(--accent-glow) !important;
+}
+.top-actions .action-btn:hover::after,
+.top-actions .menu-btn:hover::after {
+    opacity: 1;
+    transform: translateX(25%);
+}
+.top-actions .action-btn:active,
+.top-actions .menu-btn:active {
+    transform: scale(.93) !important;
+}
+
+/* ظهور الأدوات: دخول خفيف ومتدرج بدل القفزة المفاجئة */
+@keyframes chatxToolReveal {
+    0% { opacity: 0; transform: translateY(-12px) scale(.86); filter: blur(3px); }
+    65% { opacity: 1; transform: translateY(2px) scale(1.035); filter: blur(0); }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.top-actions .action-btn,
+.top-actions .menu-btn {
+    animation: chatxToolReveal .46s cubic-bezier(.22,1,.36,1) both;
+}
+.top-actions > :nth-child(1) { animation-delay: .02s; }
+.top-actions > :nth-child(2) { animation-delay: .055s; }
+.top-actions > :nth-child(3) { animation-delay: .09s; }
+.top-actions > :nth-child(4) { animation-delay: .125s; }
+.top-actions > :nth-child(5) { animation-delay: .16s; }
+.top-actions > :nth-child(6) { animation-delay: .195s; }
+.top-actions > :nth-child(7) { animation-delay: .23s; }
+.top-actions > :nth-child(8) { animation-delay: .265s; }
+.top-actions > :nth-child(9) { animation-delay: .30s; }
+.top-actions > :nth-child(10) { animation-delay: .335s; }
+.top-actions > :nth-child(11) { animation-delay: .37s; }
+
+/* عند الإخفاء: انزلاق للأعلى + blur بسيط، ثم يطوى الشريط بالكامل */
+.tb-tools-collapsible.top-actions-hidden {
+    height: 0 !important;
+    min-height: 0 !important;
+    opacity: 0 !important;
+    transform: translateY(-20px) scale(.96) !important;
+    filter: blur(3px) !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border-width: 0 !important;
+    margin-top: 0 !important;
+    pointer-events: none !important;
+}
+.tb-tools-collapsible.top-actions-hidden .action-btn,
+.tb-tools-collapsible.top-actions-hidden .menu-btn {
+    animation: chatxToolHide .22s ease forwards !important;
+}
+@keyframes chatxToolHide {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(-7px) scale(.9); }
+}
+
+/* على الموبايل: نسمح بالتمرير الأفقي فقط لو العدد أكبر من العرض */
+@media (max-width: 520px) {
+    .tb-tools-collapsible { padding-inline: 7px !important; min-height: 46px !important; }
+    .top-actions { gap: 6px !important; }
+    .top-actions .action-btn,
+    .top-actions .menu-btn {
+        width: 34px !important;
+        min-width: 34px !important;
+        max-width: 34px !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        max-height: 34px !important;
+        flex-basis: 34px !important;
+        border-radius: 10px !important;
+    }
+    .top-actions .action-btn i,
+    .top-actions .menu-btn i { width: 15px !important; height: 15px !important; font-size: 14px !important; }
+    .top-actions .verified-top-btn img { width: 16px !important; height: 16px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .top-actions .action-btn,
+    .top-actions .menu-btn,
+    .tb-tools-collapsible {
+        animation: none !important;
+        transition: opacity .15s linear, height .15s linear !important;
+        filter: none !important;
+    }
 }
