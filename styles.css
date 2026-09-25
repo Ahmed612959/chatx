@@ -2969,14 +2969,22 @@ a.web-cite:hover { background: var(--accent); color: #fff; }
 }
 
 /* ---- 3) حركة حروف طرفي اسم Chat X (C و X) لفوق ولتحت بالتبادل ---- */
+/* ملحوظة إصلاح: أول نسخة من التعديل ده خلّت h2 عبارة عن صف flex فيه
+   3 عناصر منفصلة (C / hat / X)، وده خلّى المتصفح يتعامل مع كل عنصر
+   لوحده بدل ما يعاملهم كسطر نص واحد متصل — فكان بيحصل "قصّ" لحرفي
+   الطرفين (C و X) لما المساحة تضيق شوية، وده سبب اختفاءهم. الحل:
+   نرجّع h2 يتصرف كنص عادي (مش flex)، والحروف التلاتة بيبقوا جزء من
+   نفس السطر بالظبط زي "Chat X" العادي قبل التعديل، وبس بنسمح
+   بالـtransform (حركة فوق/تحت) على حرفي الطرفين من غير ما نكسر تدفق
+   السطر. */
 .bot-name-badge h2 {
-    /* عشان لو الحركة وقفت بـtransform مباشر عن طريق الجافاسكريبت
-       (بدل الأنيميشن) يبقى فيه transition جاهز يخليها تترجع بهدوء. */
-    display: inline-flex;
-    align-items: baseline;
+    display: block;
+}
+.cx-edge,
+.cx-mid {
+    display: inline-block;
 }
 .cx-edge {
-    display: inline-block;
     animation: cxEdgeBounce 1.9s ease-in-out infinite;
     will-change: transform;
 }
