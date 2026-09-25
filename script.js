@@ -5084,6 +5084,29 @@
         }
         document.addEventListener('DOMContentLoaded', initTopActionsAutoHide);
 
+document.addEventListener('DOMContentLoaded', () => {
+    // Chat X title: clicking it smoothly stops the side-edge motion, then releases it.
+    const titleBadge = document.querySelector('.bot-name-badge');
+    if (titleBadge) {
+        let resumeTimer = null;
+        titleBadge.setAttribute('role', 'button');
+        titleBadge.setAttribute('tabindex', '0');
+        const pauseTitle = () => {
+            clearTimeout(resumeTimer);
+            titleBadge.classList.add('is-title-paused');
+            resumeTimer = setTimeout(() => titleBadge.classList.remove('is-title-paused'), 1200);
+        };
+        titleBadge.addEventListener('click', pauseTitle);
+        titleBadge.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                pauseTitle();
+            }
+        });
+    }
+});
+
+
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => showToast('تم النسخ', 'success'))
                 .catch(() => showToast('تعذر النسخ', 'error'));
