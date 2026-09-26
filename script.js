@@ -9561,12 +9561,24 @@ ${r.pathSummary}
         // ====================== بنك الأسئلة (School X) — جلب أسئلة حقيقية وإنشاء اختبارات ======================
         // البنوك دي ملفات ثابتة عامة على سيرفر school x (نفس رابط تسجيل الدخول)، كل ملف فيه
         // متغيّر JS واحد شكله { name, mcq: [{text, options, correct, correctTranslation}, ...], ... }
+        // ملحوظة: كل subject هنا لازم يطابق بنك حقيقي معرّف في الباك إند (index.js) —
+        // بنفس الـ suffix اللي بيستخدمه الباك إند في userId (مثال: '_gs' للجراحة،
+        // '_an1' للتشريح، '_fon' لمبادئ التمريض، '_internal' للباطنة، '_comm1' لصحة
+        // المجتمع) عشان أي بنك جديد يضاف في الباك إند يتضاف هنا بنفس الـ prefix.
+        // لو الـ ids مش دقيقة (فصل مش موجود فعليًا)، مفيش مشكلة: الكود تحت بيعطّل
+        // (disabled) أي فصل يفشل تحميله تلقائيًا من غير ما يبوّظ باقي القائمة.
         const BANK_CATALOG = [
             { subject: 'باطنة وجراحة (بنك 1)', prefix: 'chap', ids: [1,2,3,4,5,6,7,8,10] },
-            { subject: 'رعاية التمريض (Nursing Care)', prefix: 'chapter', ids: [1,2,3,4,5,6,7,8,9,10,11] },
+            { subject: 'مبادئ وأسس التمريض (Fundamentals of Nursing)', prefix: 'fon_chapter', ids: [1,2,3,4,5,6,7,8,9,10,11] },
             { subject: 'الجراحة العامة (General Surgery)', prefix: 'gs_chapter', ids: [1,2,3,4,5,6,7,8] },
             { subject: 'التشريح (Anatomy)', prefix: 'an1_chapter', ids: [1,2,3,4,5,6,7,8,9,10] },
-            { subject: 'تمريض صحة المجتمع (Community Health)', prefix: 'comm1_chapter', ids: [1,2,3,4,5] }
+            { subject: 'تمريض صحة المجتمع (Community Health)', prefix: 'comm1_chapter', ids: [1,2,3,4,5] },
+            // بنك جديد: الباطنة (Internal Medicine) — كان ناقص تمامًا من القايمة القديمة
+            // مع إن موديلاته (InternalHomework/InternalTournament, userId + '_internal')
+            // موجودة في الباك إند. الـ prefix والـ ids هنا مبنية على نفس نمط تسمية
+            // باقي البنوك ('internal' + '_chapter') — لازم تتأكد من العدد الفعلي لفصول
+            // البنك ده على سيرفر SchoolX وتظبط مصفوفة الـ ids لو مختلفة.
+            { subject: 'الباطنة (Internal Medicine)', prefix: 'internal_chapter', ids: [1,2,3,4,5,6,7,8,9,10] }
         ];
         let bankChaptersCache = {}; // key: "prefixN" -> {name, mcq:[...]} بعد أول تحميل
 
