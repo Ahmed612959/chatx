@@ -4992,6 +4992,10 @@
             const wrap = document.getElementById('topActionsWrap');
             const chatContainer = document.getElementById('chatContainer');
             if (!wrap || !chatContainer) return;
+            // المربع الموحّد اللي فيه اسم Chat X + شريط الأدوات — لما شريط
+            // الأدوات يختفي، بنضيف كلاس على المربع ده عشان يرجع شكله
+            // مربع صغير بحواف دائرية بالكامل بدل مستطيل ماخد عرض الشاشة.
+            const unifiedBox = wrap.closest('.tb-unified-box');
 
             function measureHeight() {
                 const wasHidden = wrap.classList.contains('top-actions-hidden');
@@ -5004,36 +5008,155 @@
             window.addEventListener('resize', measureHeight, { passive: true });
             window.addEventListener('orientationchange', measureHeight, { passive: true });
 
-            const SHOW_AT = 4;   // اظهر لما نبقى قريبين جدًا من قمة المحادثة
-            const HIDE_AT = 48;  // اخفي بعد ما نبعد عن القمة بمسافة محسوسة
+            const SHOW_AT = 8;    // يظل ظاهرًا عند قمة المحادثة
+            const HIDE_AT = 34;   // يبدأ الاختفاء بعد النزول قليلًا
+            const REVEAL_DISTANCE = 6; // أقل مسافة صعود تُظهر الشريط
             let isHiddenState = false;
             let rafPending = false;
+            let lastScrollTop = Math.max(0, chatContainer.scrollTop || 0);
+            let revealTimer = null;
+            let revealRunning = false;
 
-            function applyState(scrollTop) {
-                if (!isHiddenState && scrollTop > HIDE_AT) {
+            function playRevealAnimation() {
+                // امنع إعادة تشغيل نفس الحركة أثناء نفس عملية السحب؛
+                // ده كان سبب ظهور الأيقونات مرتين بسرعة.
+                if (revealRunning) return;
+                revealRunning = true;
+                wrap.classList.remove('top-actions-revealing');
+                // إصلاح الرعشة/التعليق وقت السحب: كنا بنستخدم "void wrap.offsetWidth"
+                // عشان نجبر المتصفح يعيد حساب الـlayout فورًا (reflow متزامن)
+                // ونضمن إن الأنيميشن تشتغل من الأول. المشكلة إن ده بيحصل جوه
+                // نفس اللحظة اللي المتصفح بيكون فيها بيرسم إطارات السكرول
+                // (requestAnimationFrame)، فبيعمل "اختناق" لحظي في الـmain
+                // thread — وده اللي كان بيبان كرعشة أو تجميد بسيط. الحل
+                // القياسي البديل: نستنى فريمين (double requestAnimationFrame)
+                // بدل ما نجبر قراءة الـlayout يدويًا؛ النتيجة نفسها (الأنيميشن
+                // بتشتغل من الأول) من غير أي reflow متزامن يعطّل السكرول.
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        wrap.classList.add('top-actions-revealing');
+                    });
+                });
+                clearTimeout(revealTimer);
+                revealTimer = setTimeout(() => {
+                    wrap.classList.remove('top-actions-revealing');
+                    revealRunning = false;
+                }, 1400);
+            }
+
+            let collapseSettleTimer = null;
+
+            function showToolbar(withAnimation = true) {
+                const wasHidden = isHiddenState
+                    || wrap.classList.contains('top-actions-hidden')
+                    || wrap.classList.contains('tb-collapsing');
+                // لو كان في نص مرحلة الإخفاء (fade-out) لسه ما قفلش الـheight،
+                // نلغي المؤقّت بتاعها عشان ميقفلش الشريط بعد ما إحنا فعلاً
+                // قررنا نظهره تاني.
+                clearTimeout(collapseSettleTimer);
+                wrap.classList.remove('tb-collapsing');
+                wrap.classList.remove('top-actions-hidden');
+                if (unifiedBox) unifiedBox.classList.remove('tb-collapsed-pill');
+                isHiddenState = false;
+                if (wasHidden && withAnimation) playRevealAnimation();
+            }
+
+            function hideToolbar() {
+                if (isHiddenState || wrap.classList.contains('tb-collapsing')) return;
+                wrap.classList.remove('top-actions-revealing');
+                // المرحلة الأولى: تلاشي وتصغير بصري بس (opacity/transform)،
+                // من غير أي تغيير في الـheight أو الـpadding لسه — يعني
+                // مفيش أي إعادة حساب layout في اللحظة دي، وده اللي كان
+                // بيسبب الرعشة/التجمد أثناء السكرول (شوف الشرح في الـCSS).
+                wrap.classList.add('tb-collapsing');
+                isHiddenState = true;
+                clearTimeout(collapseSettleTimer);
+                collapseSettleTimer = setTimeout(() => {
+                    // المرحلة التانية: دلوقتي بس، وهو أصلًا شفاف تمامًا
+                    // ومحدش شايفه، بنقفل الـheight فعليًا دفعة واحدة —
+                    // إعادة حساب واحدة بس مش متكررة كل فريم.
+                    wrap.classList.remove('tb-collapsing');
                     wrap.classList.add('top-actions-hidden');
-                    isHiddenState = true;
-                } else if (isHiddenState && scrollTop <= SHOW_AT) {
-                    wrap.classList.remove('top-actions-hidden');
-                    isHiddenState = false;
+                    if (unifiedBox) unifiedBox.classList.add('tb-collapsed-pill');
+                }, 230);
+            }
+
+            function applyState(scrollTop, previousScrollTop) {
+                const delta = scrollTop - previousScrollTop;
+                const scrollingUp = delta < -REVEAL_DISTANCE;
+                const scrollingDown = delta > REVEAL_DISTANCE;
+
+                // عند السحب لأعلى: أظهر الشريط فورًا مع حركة دخول جذابة،
+                // حتى لو لم نصل إلى أعلى المحادثة بالكامل.
+                if (scrollingUp) {
+                    showToolbar(true);
+                    return;
+                }
+
+                // عند النزول: أخفِ الشريط بعد مسافة قصيرة، مع إبقائه ظاهرًا
+                // تمامًا عند بداية المحادثة.
+                if (scrollTop <= SHOW_AT) {
+                    showToolbar(false);
+                } else if (scrollingDown && scrollTop > HIDE_AT) {
+                    hideToolbar();
                 }
             }
 
-            // الحالة الابتدائية: لو المحادثة اتفتحت وهي متمررة لتحت (زي أي
-            // شات بيبدأ من آخر رسالة)، مربع الأدوات يتقفل من غير ما ننتظر
-            // أول اسكرول من الطالب.
-            applyState(chatContainer.scrollTop);
+            // الحالة الابتدائية.
+            if (chatContainer.scrollTop > HIDE_AT) {
+                wrap.classList.add('top-actions-hidden');
+                if (unifiedBox) unifiedBox.classList.add('tb-collapsed-pill');
+                isHiddenState = true;
+            } else {
+                showToolbar(false);
+            }
 
             chatContainer.addEventListener('scroll', () => {
                 if (rafPending) return;
                 rafPending = true;
                 requestAnimationFrame(() => {
-                    applyState(chatContainer.scrollTop);
+                    const current = Math.max(0, chatContainer.scrollTop || 0);
+                    applyState(current, lastScrollTop);
+                    lastScrollTop = current;
                     rafPending = false;
                 });
             }, { passive: true });
         }
         document.addEventListener('DOMContentLoaded', initTopActionsAutoHide);
+
+        // حركة حرفي طرفي اسم "Chat X" (C و X) بتوقف بأنيميشن ناعم أول
+        // ما حد يدوس على الاسم، بدل ما توقف فجأة:
+        // 1) بنقرأ الـtransform الحالي بتاع الحرف لحظة الدوس (getComputedStyle)
+        //    عشان نمسك مكانه بالظبط في نص الحركة.
+        // 2) بنشيل الأنيميشن ونثبّت نفس الـtransform ده كـinline style،
+        //    فمفيش أي قفزة بصرية لحظة الإيقاف.
+        // 3) في الفريم اللي بعده بنضيف transition ونرجّع الـtransform
+        //    لوضعه الطبيعي (0)، فالحرف "يهدى" ويوقف تدريجيًا بدل ما
+        //    يتجمد فجأة في مكانه.
+        function stopChatXEdgeBounce(el) {
+            if (!el || el.dataset.cxStopped === '1') return;
+            el.dataset.cxStopped = '1';
+            const current = getComputedStyle(el).transform;
+            el.classList.add('cx-edge-stopped');
+            el.style.transform = (current && current !== 'none') ? current : 'translateY(0)';
+            requestAnimationFrame(() => {
+                el.style.transition = 'transform .55s cubic-bezier(.22,.61,.36,1)';
+                el.style.transform = 'translateY(0)';
+            });
+        }
+        function initChatXEdgeBounceStop() {
+            const badge = document.getElementById('botNameBadge');
+            const edgeStart = document.getElementById('cxEdgeStart');
+            const edgeEnd = document.getElementById('cxEdgeEnd');
+            if (!badge) return;
+            const stopBoth = () => {
+                stopChatXEdgeBounce(edgeStart);
+                stopChatXEdgeBounce(edgeEnd);
+            };
+            badge.addEventListener('click', stopBoth);
+            badge.addEventListener('touchstart', stopBoth, { passive: true });
+        }
+        document.addEventListener('DOMContentLoaded', initChatXEdgeBounceStop);
 
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => showToast('تم النسخ', 'success'))
