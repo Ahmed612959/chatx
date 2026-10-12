@@ -1,5 +1,3 @@
-export const config = { runtime: 'edge' };
-
 import { checkRateLimit, rateLimitResponse } from './_rateLimit.js';
 import { reportApiUsage } from './_usageTrack.js';
 
@@ -8,234 +6,199 @@ const OPENROUTER_URL =
 
 const MODEL = 'qwen/qwen3.8-omni-flash';
 
-export default async function handler(request) {
-  try {
-    // Allow POST requests only.
-    if (request.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        {
-          status: 405,
-          headers: {
-            'Content-Type': 'application/json',
-            'Allow': 'POST'
-          }
-        }
-      );
-    }
+export const config = {
+  runtime: 'nodejs',
+};
 
-    // Rate limiting: 10 requests per minute.
-    const rl = checkRateLimit(request, {
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({
+      error: 'Method not allowed',
+    });
+  }
+
+  try {
+    // Rate limiting
+    const rl = checkRateLimit(req, {
       limit: 10,
-      windowMs: 60_000
+      windowMs: 60_000,
     });
 
     if (!rl.allowed) {
-      return rateLimitResponse(rl.retryAfterSeconds);
+      const response = rateLimitResponse(
+        rl.retryAfterSeconds
+      );
+
+      res.statusCode = response.status;
+
+      response.headers.forEach((value, key) => {
+        res.setHeader(key, value);
+      });
+
+      return res.end(await response.text());
     }
 
-    // Read the API key from the new environment variable.
+    // API key
     const API_KEY = process.env.QWEN_OMNI_API_KEY;
 
     if (!API_KEY) {
-      return new Response(
-        JSON.stringify({
-          error:
-            'QWEN_OMNI_API_KEY غير مضبوط في Environment Variables'
-        }),
-        {
-          status: 500,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      return res.status(500).json({
+        error:
+          'QWEN_OMNI_API_KEY غير مضبوط في Environment Variables',
+      });
     }
 
-    // Read and validate the request body.
-    const rawBody = await request.text();
+    // Parse request body
+    let body = req.body;
 
-    let body;
-
-    try {
-      body = JSON.parse(rawBody);
-    } catch {
-      return new Response(
-        JSON.stringify({
-          error: 'Invalid JSON request body'
-        }),
-        {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch {
+        return res.status(400).json({
+          error: 'Invalid JSON request body',
+        });
+      }
     }
 
-    if (
-      !Array.isArray(body.messages) ||
-      body.messages.length === 0
-    ) {
-      return new Response(
-        JSON.stringify({
-          error: 'messages must be a non-empty array'
-        }),
-        {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+    if (!body || !Array.isArray(body.messages) ||
+        body.messages.length === 0) {
+      return res.status(400).json({
+        error: 'messages must be a non-empty array',
+      });
     }
 
-    // Force the requested model.
-    // Preserve messages, image content, and stream settings.
-    body.model = MODEL;
+    // Keep the requested model fixed.
+    body = {
+      ...body,
+      model: MODEL,
+    };
 
-    // Enable reasoning by default unless the client specifies it.
     if (body.reasoning === undefined) {
       body.reasoning = { enabled: true };
     }
 
+    // Call OpenRouter
     let upstream;
 
-    // Send the request to OpenRouter.
     try {
       upstream = await fetch(OPENROUTER_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${API_KEY}`,
+          Authorization: `Bearer ${API_KEY}`,
           'Content-Type': 'application/json',
-
           'HTTP-Referer':
             process.env.OPENROUTER_SITE_URL ||
             'https://vercel.com',
-
           'X-OpenRouter-Title':
-            process.env.OPENROUTER_APP_NAME ||
-            'Chat X'
+            process.env.OPENROUTER_APP_NAME || 'Chat X',
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
-    } catch (err) {
-      return new Response(
-        JSON.stringify({
-          error: 'تعذر الاتصال بخدمة OpenRouter'
-        }),
-        {
-          status: 502,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+    } catch (error) {
+      console.error('OpenRouter connection error:', error);
+
+      return res.status(502).json({
+        error: 'تعذر الاتصال بخدمة OpenRouter',
+      });
     }
 
-    // Track usage without allowing tracking failures to break the response.
+    // Track usage; tracking failures must not break the response.
     try {
-      await reportApiUsage('zimage', rawBody.length);
-    } catch (err) {
-      // Ignore usage tracking failures.
+      await reportApiUsage(
+        'zimage',
+        Buffer.byteLength(JSON.stringify(body), 'utf8')
+      );
+    } catch (error) {
+      console.error('Usage tracking error:', error);
     }
 
-    // Forward API errors from OpenRouter.
+    // Forward provider errors.
     if (!upstream.ok || !upstream.body) {
       const errorBody = await upstream.text();
 
-      return new Response(errorBody, {
-        status: upstream.status,
-        headers: {
-          'Content-Type':
-            upstream.headers.get('content-type') ||
-            'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      });
+      res.status(upstream.status);
+      res.setHeader(
+        'Content-Type',
+        upstream.headers.get('content-type') ||
+          'application/json'
+      );
+
+      return res.end(errorBody);
     }
 
     const contentType =
       upstream.headers.get('content-type') ||
       'application/json';
 
-    // Forward non-streaming responses directly.
-    if (!body.stream) {
-      return new Response(upstream.body, {
-        status: upstream.status,
-        headers: {
-          'Content-Type': contentType,
-          'Cache-Control': 'no-cache'
-        }
-      });
-    }
+    res.status(upstream.status);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'no-cache');
 
-    // Safely forward streaming responses.
-    const upstreamReader = upstream.body.getReader();
-    const encoder = new TextEncoder();
+    if (body.stream) {
+      res.setHeader('X-Accel-Buffering', 'no');
 
-    const safeStream = new ReadableStream({
-      async pull(controller) {
-        try {
-          const { done, value } = await upstreamReader.read();
+      if (!upstream.body.getReader) {
+        return res.status(502).json({
+          error: 'Streaming غير مدعوم في بيئة التشغيل الحالية',
+        });
+      }
 
-          if (done) {
-            controller.close();
+      const reader = upstream.body.getReader();
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+
+          if (done) break;
+
+          if (res.destroyed) {
+            await reader.cancel();
             return;
           }
 
-          controller.enqueue(value);
-        } catch (err) {
-          // Send an SSE error if the upstream stream is interrupted.
-          try {
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({
-                  error: {
-                    message:
-                      'انقطع الاتصال بخدمة OpenRouter أثناء الرد'
-                  }
-                })}\n\n`
-              )
-            );
-          } catch (e) {
-            // The client may have already disconnected.
+          if (!res.write(Buffer.from(value))) {
+            await new Promise((resolve) => {
+              res.once('drain', resolve);
+            });
           }
-
-          controller.close();
         }
-      },
 
-      async cancel(reason) {
-        try {
-          await upstreamReader.cancel(reason);
-        } catch (err) {
-          // Ignore cancellation errors.
+        return res.end();
+      } catch (error) {
+        console.error('OpenRouter stream error:', error);
+
+        if (!res.destroyed && !res.writableEnded) {
+          res.write(
+            `data: ${JSON.stringify({
+              error: {
+                message:
+                  'انقطع الاتصال بخدمة OpenRouter أثناء الرد',
+              },
+            })}\n\n`
+          );
+
+          return res.end();
         }
       }
-    });
+    }
 
-    return new Response(safeStream, {
-      status: upstream.status,
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'no-cache',
-        'X-Accel-Buffering': 'no'
-      }
-    });
+    // Non-streaming response
+    const responseBody = await upstream.text();
 
-  } catch (err) {
-    return new Response(
-      JSON.stringify({
+    return res.end(responseBody);
+  } catch (error) {
+    console.error('zimage API error:', error);
+
+    if (!res.headersSent) {
+      return res.status(500).json({
         error: 'خطأ غير متوقع في السيرفر',
-        detail: String(err)
-      }),
-      {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+      });
+    }
+
+    if (!res.destroyed && !res.writableEnded) {
+      return res.end();
+    }
   }
 }
